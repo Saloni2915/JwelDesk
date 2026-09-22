@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} — JewelDesk{% endblock %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'inventory_list' %}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i> Back to Inventory
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-gem me-2"></i> Jewellery Item Information
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger py-2">
+                        {% for error in form.non_field_errors %}
+                        <small class="d-block">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="row g-3">
+                        <!-- Item Code (Piece ID) -->
+                        <div class="col-md-4">
+                            <label for="{{ form.item_code.id_for_label }}" class="form-label">
+                                Piece ID / Tag <span class="text-danger">*</span>
+                            </label>
+                            {{ form.item_code }}
+                            {% if form.item_code.errors %}
+                            <div class="text-danger small mt-1">{{ form.item_code.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text small">Unique physical piece code.</div>
+                        </div>
+
+                        <!-- Design Code -->
+                        <div class="col-md-4">
+                            <label for="{{ form.design_code.id_for_label }}" class="form-label">
+                                Design / Model Code
+                            </label>
+                            {{ form.design_code }}
+                            {% if form.design_code.errors %}
+                            <div class="text-danger small mt-1">{{ form.design_code.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text small">Shared across pieces of same design.</div>
+                        </div>
+
+                        <!-- Name -->
+                        <div class="col-md-4">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">
+                                Item Name <span class="text-danger">*</span>
+                            </label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                            <div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Category -->
+                        <div class="col-md-4">
+                            <label for="{{ form.category.id_for_label }}" class="form-label">
+                                Category <span class="text-danger">*</span>
+                            </label>
+                            {{ form.category }}
+                            {% if form.category.errors %}
+                            <div class="text-danger small mt-1">{{ form.category.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">
+                                <a href="{% url 'category_list' %}" target="_blank" class="small"><i class="bi bi-tags"></i> Manage Categories</a>
+                            </div>
+                        </div>
+
+                        <!-- Metal Type -->
+                        <div class="col-md-4">
+                            <label for="{{ form.metal_type.id_for_label }}" class="form-label">
+                                Metal Type <span class="text-danger">*</span>
+                            </label>
+                            {{ form.metal_type }}
+                            {% if form.metal_type.errors %}
+                            <div class="text-danger small mt-1">{{ form.metal_type.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Purity -->
+                        <div class="col-md-4">
+                            <label for="{{ form.purity.id_for_label }}" class="form-label">
+                                Purity <span class="text-danger">*</span>
+                            </label>
+                            {{ form.purity }}
+                            {% if form.purity.errors %}
+                            <div class="text-danger small mt-1">{{ form.purity.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Gross Weight -->
+                        <div class="col-md-3">
+                            <label for="{{ form.gross_weight.id_for_label }}" class="form-label">
+                                Gross Weight (grams) <span class="text-danger">*</span>
+                            </label>
+                            {{ form.gross_weight }}
+                            {% if form.gross_weight.errors %}
+                            <div class="text-danger small mt-1">{{ form.gross_weight.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Net Weight -->
+                        <div class="col-md-3">
+                            <label for="{{ form.net_weight.id_for_label }}" class="form-label">
+                                Net Weight (grams) <span class="text-danger">*</span>
+                            </label>
+                            {{ form.net_weight }}
+                            {% if form.net_weight.errors %}
+                            <div class="text-danger small mt-1">{{ form.net_weight.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Making Charge -->
+                        <div class="col-md-3">
+                            <label for="{{ form.making_charge.id_for_label }}" class="form-label">
+                                Making Charge (₹)
+                            </label>
+                            {{ form.making_charge }}
+                            {% if form.making_charge.errors %}
+                            <div class="text-danger small mt-1">{{ form.making_charge.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Selling Price -->
+                        <div class="col-md-3">
+                            <label for="{{ form.selling_price.id_for_label }}" class="form-label">
+                                Selling Price (₹) <span class="text-danger">*</span>
+                            </label>
+                            {{ form.selling_price }}
+                            {% if form.selling_price.errors %}
+                            <div class="text-danger small mt-1">{{ form.selling_price.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Status -->
+                        <div class="col-md-4">
+                            <label for="{{ form.status.id_for_label }}" class="form-label">
+                                Status <span class="text-danger">*</span>
+                            </label>
+                            {{ form.status }}
+                            {% if form.status.errors %}
+                            <div class="text-danger small mt-1">{{ form.status.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                        <a href="{% url 'inventory_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-dark">
+                            <i class="bi bi-check-lg me-1"></i> {% if is_edit %}Update Item{% else %}Save Item{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

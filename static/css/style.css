@@ -1,0 +1,183 @@
+/* ========================================
+   JewelDesk - Custom Styles
+   ======================================== */
+
+/* Top Navbar */
+.top-navbar {
+    z-index: 1040;
+    height: 56px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Sidebar */
+.sidebar {
+    width: 240px;
+    min-height: calc(100vh - 56px);
+    margin-top: 56px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1030;
+    overflow-y: auto;
+    transition: width 0.3s ease;
+}
+
+.sidebar .sidebar-menu {
+    padding-top: 1rem;
+}
+
+.sidebar .nav-link {
+    color: #adb5bd;
+    padding: 0.7rem 1.25rem;
+    font-size: 0.9rem;
+    border-left: 3px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.sidebar .nav-link:hover {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-left-color: #d4a843;
+}
+
+.sidebar .nav-link.active {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.08);
+    border-left-color: #d4a843;
+    font-weight: 500;
+}
+
+.sidebar .nav-link i {
+    width: 20px;
+    text-align: center;
+}
+
+/* Sidebar section divider (e.g. Reports) */
+.sidebar .sidebar-section {
+    color: #6c757d;
+    padding: 0.9rem 1.25rem 0.3rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-weight: 600;
+}
+
+/* Main Content */
+.main-content {
+    margin-left: 240px;
+    margin-top: 56px;
+    padding: 1.5rem 2rem;
+    width: calc(100% - 240px);
+    min-height: calc(100vh - 56px);
+    background-color: #f5f6fa;
+}
+
+/* Cards */
+.card {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    transition: box-shadow 0.2s ease;
+}
+
+.card:hover {
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Stat Cards */
+.stat-card .stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+}
+
+.stat-card .stat-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.stat-card .stat-label {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+/* Tables */
+.table th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+    font-weight: 600;
+    border-bottom-width: 1px;
+}
+
+.table td {
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+
+/* Badges */
+.badge-gold {
+    background-color: #d4a843;
+    color: #fff;
+}
+
+.badge-silver {
+    background-color: #95a5a6;
+    color: #fff;
+}
+
+.badge-diamond {
+    background-color: #5dade2;
+    color: #fff;
+}
+
+/* Forms */
+.form-label {
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: #495057;
+}
+
+/* Search & Filter bar */
+.filter-bar {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* Action buttons */
+.btn-gold {
+    background-color: #d4a843;
+    border-color: #d4a843;
+    color: #fff;
+}
+
+.btn-gold:hover {
+    background-color: #c49a38;
+    border-color: #c49a38;
+    color: #fff;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 0;
+        overflow: hidden;
+    }
+
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+    }
+}

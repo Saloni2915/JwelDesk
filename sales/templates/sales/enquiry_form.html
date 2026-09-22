@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} — JewelDesk{% endblock %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'enquiry_list' %}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i> Back to Enquiries
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-chat-left-text me-2"></i> Enquiry Details
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger py-2">
+                        {% for error in form.non_field_errors %}
+                        <small class="d-block">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.customer.id_for_label }}" class="form-label">
+                                Customer <span class="text-danger">*</span>
+                            </label>
+                            {{ form.customer }}
+                            {% if form.customer.errors %}
+                            <div class="text-danger small mt-1">{{ form.customer.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.category.id_for_label }}" class="form-label">
+                                Category
+                            </label>
+                            {{ form.category }}
+                            {% if form.category.errors %}
+                            <div class="text-danger small mt-1">{{ form.category.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-8">
+                            <label for="{{ form.interested_item.id_for_label }}" class="form-label">
+                                Interested Item / Description <span class="text-danger">*</span>
+                            </label>
+                            {{ form.interested_item }}
+                            {% if form.interested_item.errors %}
+                            <div class="text-danger small mt-1">{{ form.interested_item.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="{{ form.budget.id_for_label }}" class="form-label">
+                                Budget (₹)
+                            </label>
+                            {{ form.budget }}
+                            {% if form.budget.errors %}
+                            <div class="text-danger small mt-1">{{ form.budget.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.status.id_for_label }}" class="form-label">
+                                Status <span class="text-danger">*</span>
+                            </label>
+                            {{ form.status }}
+                            {% if form.status.errors %}
+                            <div class="text-danger small mt-1">{{ form.status.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.next_followup_date.id_for_label }}" class="form-label">
+                                Next Follow-up Date
+                            </label>
+                            {{ form.next_followup_date }}
+                            {% if form.next_followup_date.errors %}
+                            <div class="text-danger small mt-1">{{ form.next_followup_date.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-12">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                Customer Notes / Requirements
+                            </label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                            <div class="text-danger small mt-1">{{ form.notes.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                        <a href="{% url 'enquiry_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-dark">
+                            <i class="bi bi-check-lg me-1"></i> {% if is_edit %}Update Enquiry{% else %}Save Enquiry{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

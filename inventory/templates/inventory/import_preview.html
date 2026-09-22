@@ -1,0 +1,310 @@
+{% extends 'base.html' %}
+
+{% block title %}Import Preview — JewelDesk{% endblock %}
+
+{% block page_title %}Import Preview{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    {% if can_import %}
+    <form method="post" class="d-inline">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="confirm">
+        <button type="submit" class="btn btn-success btn-sm">
+            <i class="bi bi-check-lg me-1"></i> Confirm Import ({{ summary.valid_count }})
+        </button>
+    </form>
+    {% else %}
+    <button type="button" class="btn btn-secondary btn-sm" disabled title="Fix the validation errors and upload again">
+        <i class="bi bi-slash-circle me-1"></i> Import Blocked
+    </button>
+    {% endif %}
+    <a href="{% url 'inventory_import' %}" class="btn btn-outline-dark btn-sm">
+        <i class="bi bi-upload me-1"></i> Upload Different File
+    </a>
+    <form method="post" class="d-inline">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="cancel">
+        <button type="submit" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-x-lg me-1"></i> Cancel
+        </button>
+    </form>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Result banner -->
+<div class="alert {% if can_import %}alert-success{% else %}alert-danger{% endif %} d-flex align-items-start" role="alert">
+    <i class="bi {% if can_import %}bi-check-circle{% else %}bi-exclamation-triangle{% endif %} me-2 mt-1"></i>
+    <div>
+        <strong>{{ stored_filename }}</strong> &mdash;
+        {% if can_import %}
+        all {{ summary.valid_count }} row(s) passed validation. Nothing has been imported yet: press
+        <strong>Confirm Import</strong> to add these {{ summary.valid_count }} jewellery item(s) to the inventory.
+        {% else %}
+        {{ summary.invalid_count }} of {{ summary.total_rows }} row(s) have validation errors, so
+        <strong>nothing will be imported</strong>. Fix the errors listed below and upload the corrected file.
+        {% endif %}
+    </div>
+</div>
+
+<!-- Summary cards -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card p-3">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-secondary bg-opacity-10 text-secondary me-3">
+                    <i class="bi bi-file-earmark-text"></i>
+                </div>
+                <div>
+                    <div class="stat-value">{{ summary.total_rows }}</div>
+                    <div class="stat-label">Rows in File</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card p-3">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-success bg-opacity-10 text-success me-3">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <div>
+                    <div class="stat-value">{{ summary.valid_count }}</div>
+                    <div class="stat-label">Valid Rows</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card p-3">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-danger bg-opacity-10 text-danger me-3">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+                <div>
+                    <div class="stat-value">{{ summary.invalid_count }}</div>
+                    <div class="stat-label">Invalid Rows</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card p-3">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-warning bg-opacity-10 text-warning me-3">
+                    <i class="bi bi-files"></i>
+                </div>
+                <div>
+                    <div class="stat-value">{{ duplicate_count }}</div>
+                    <div class="stat-label">Duplicate Piece IDs</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Duplicate Piece IDs -->
+{% if duplicate_count %}
+<div class="card mb-4">
+    <div class="card-header bg-white border-bottom py-3">
+        <h6 class="mb-0 fw-semibold text-dark">
+            <i class="bi bi-files me-1"></i> Duplicate Piece IDs ({{ duplicate_count }})
+        </h6>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Row</th>
+                        <th>Piece ID</th>
+                        <th>Name</th>
+                        <th>Duplicate Problem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in duplicate_rows %}
+                    <tr>
+                        <td><span class="badge bg-light text-dark border">{{ row.row_num }}</span></td>
+                        <td class="font-monospace">{{ row.item_code|default:"—" }}</td>
+                        <td>{{ row.name|default:"—" }}</td>
+                        <td>
+                            {% for error in row.errors %}
+                            {% if 'Duplicate Piece ID' in error or 'already exists in database' in error %}
+                            <div class="text-danger small">{{ error }}</div>
+                            {% endif %}
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="p-3 small text-muted border-top">
+            Every piece needs a unique Piece ID / tag. Either remove the repeated rows or give each physical
+            piece its own ID (sharing a <span class="font-monospace">design_code</span> is allowed).
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Invalid rows -->
+{% if summary.invalid_count %}
+<div class="card mb-4">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold text-dark">
+            <i class="bi bi-x-octagon me-1"></i> Invalid Rows ({{ summary.invalid_count }})
+        </h6>
+        {% if shown_invalid_count < summary.invalid_count %}
+        <span class="text-muted small">Showing the first {{ shown_invalid_count }} of {{ summary.invalid_count }}</span>
+        {% endif %}
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Row</th>
+                        <th>Piece ID</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Metal</th>
+                        <th>Gross Wt.</th>
+                        <th>Net Wt.</th>
+                        <th>Selling Price</th>
+                        <th>Validation Errors</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in invalid_rows %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-light text-dark border">{{ row.row_num }}</span>
+                            {% if row.row_num in duplicate_row_nums %}
+                            <span class="badge bg-warning text-dark ms-1">Duplicate</span>
+                            {% endif %}
+                        </td>
+                        <td class="font-monospace">{{ row.item_code|default:"—" }}</td>
+                        <td>{{ row.name|default:"—" }}</td>
+                        <td>{{ row.category_name|default:"—" }}</td>
+                        <td>{{ row.metal_type|default:"—" }}</td>
+                        <td>{{ row.gross_weight|default:"—" }}</td>
+                        <td>{{ row.net_weight|default:"—" }}</td>
+                        <td>{{ row.selling_price|default:"—" }}</td>
+                        <td>
+                            {% for error in row.errors %}
+                            <div class="text-danger small">&#8226; {{ error }}</div>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Valid rows -->
+{% if summary.valid_count %}
+<div class="card">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold text-dark">
+            <i class="bi bi-check2-square me-1"></i> Valid Rows ({{ summary.valid_count }})
+        </h6>
+        <span class="badge bg-success">{{ summary.valid_count }} ready to import</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Row</th>
+                        <th>Piece ID</th>
+                        <th>Design Code</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Metal</th>
+                        <th>Purity</th>
+                        <th>Net Wt. (g)</th>
+                        <th>Selling Price</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in valid_rows %}
+                    <tr>
+                        <td><span class="badge bg-light text-dark border">{{ row.row_num }}</span></td>
+                        <td class="font-monospace">{{ row.item_code }}</td>
+                        <td>
+                            <span class="badge bg-light text-secondary border font-monospace">{{ row.design_code }}</span>
+                        </td>
+                        <td>{{ row.name }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ row.category_name }}</span></td>
+                        <td>
+                            {% if row.metal_type == 'Gold' %}
+                            <span class="badge badge-gold">{{ row.metal_type }}</span>
+                            {% elif row.metal_type == 'Silver' %}
+                            <span class="badge badge-silver">{{ row.metal_type }}</span>
+                            {% elif row.metal_type == 'Diamond' %}
+                            <span class="badge badge-diamond">{{ row.metal_type }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ row.metal_type }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ row.purity }}</td>
+                        <td>{{ row.net_weight }}g</td>
+                        <td class="fw-semibold">₹{{ row.selling_price }}</td>
+                        <td>
+                            {% if row.status == 'Available' %}
+                            <span class="badge bg-success">Available</span>
+                            {% elif row.status == 'Sold' %}
+                            <span class="badge bg-danger">Sold</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">Reserved</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include 'includes/pagination.html' with page_obj=page_obj %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Confirm bar -->
+{% if can_import %}
+<div class="card mt-4">
+    <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div class="text-muted small">
+            <i class="bi bi-shield-check me-1"></i>
+            {{ summary.valid_count }} piece(s) will be inserted in a single database transaction. Categories
+            that do not exist yet are created automatically.
+        </div>
+        <form method="post" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="confirm">
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-check-lg me-1"></i> Confirm Import
+            </button>
+        </form>
+    </div>
+</div>
+{% else %}
+<div class="card mt-4 border-danger">
+    <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div class="text-muted small">
+            <i class="bi bi-exclamation-triangle text-danger me-1"></i>
+            The import button stays disabled until every row passes validation. Fix the
+            {{ summary.invalid_count }} row(s) listed above and upload the file again.
+        </div>
+        <a href="{% url 'inventory_import' %}" class="btn btn-outline-dark">
+            <i class="bi bi-upload me-1"></i> Upload Corrected File
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

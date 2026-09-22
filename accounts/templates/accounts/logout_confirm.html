@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}Logout — JewelDesk{% endblock %}
+
+{% block page_title %}Log Out{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-body p-4 text-center">
+                <i class="bi bi-box-arrow-right fs-1 text-muted"></i>
+                <h5 class="mt-2 mb-1">Log out of JewelDesk?</h5>
+                <p class="text-muted mb-4">You will need to sign in again to access the shop dashboard.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-center gap-2">
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Stay Logged In</a>
+                        <button type="submit" class="btn btn-dark">
+                            <i class="bi bi-box-arrow-right me-1"></i> Log Out
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

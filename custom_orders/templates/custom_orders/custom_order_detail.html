@@ -1,0 +1,249 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ order.order_number }} — JewelDesk{% endblock %}
+
+{% block page_title %}{{ order.order_number }}{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    {% if order.status != 'Delivered' and order.status != 'Cancelled' %}
+    <a href="{% url 'custom_orders:custom_order_edit' order.id %}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-pencil me-1"></i> Edit
+    </a>
+    {% endif %}
+    <a href="{% url 'custom_orders:custom_order_delete' order.id %}" class="btn btn-outline-danger btn-sm">
+        <i class="bi bi-trash me-1"></i> Delete / Cancel
+    </a>
+    <a href="{% url 'custom_orders:custom_order_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Back
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Order Details -->
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-info-circle me-1"></i> Order Details
+                </h6>
+                <div>{% include 'custom_orders/includes/status_badge.html' with status=order.status %}</div>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Order Number</div>
+                        <div class="fs-6 fw-semibold font-monospace">{{ order.order_number }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Jewellery Type</div>
+                        <div class="fs-6"><span class="badge bg-light text-dark border">{{ order.category.name }}</span></div>
+                    </div>
+                    <div class="col-sm-12">
+                        <div class="text-muted small">Design Description</div>
+                        <div class="fs-6">{{ order.design_description|linebreaksbr }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Metal Type</div>
+                        <div class="fs-6">
+                            {% if order.metal_type == 'Gold' %}
+                            <span class="badge badge-gold">{{ order.metal_type }}</span>
+                            {% elif order.metal_type == 'Silver' %}
+                            <span class="badge badge-silver">{{ order.metal_type }}</span>
+                            {% elif order.metal_type == 'Diamond' %}
+                            <span class="badge badge-diamond">{{ order.metal_type }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ order.metal_type }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Purity</div>
+                        <div class="fs-6">{{ order.purity }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Approx. Gross Weight</div>
+                        <div class="fs-6">{{ order.approx_gross_weight }} g</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Approx. Net Weight</div>
+                        <div class="fs-6">{{ order.approx_net_weight }} g</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Est. Making Charge</div>
+                        <div class="fs-6">₹{{ order.making_charge }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Estimated Total Price</div>
+                        <div class="fs-6 fw-semibold">₹{{ order.estimated_price }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Customer Budget</div>
+                        <div class="fs-6">{% if order.customer_budget %}₹{{ order.customer_budget }}{% else %}—{% endif %}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Advance Received</div>
+                        <div class="fs-6">₹{{ order.advance_amount }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Remaining Amount</div>
+                        <div class="fs-6 fw-semibold {% if order.remaining_amount > 0 %}text-danger{% endif %}">₹{{ order.remaining_amount }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Expected Delivery</div>
+                        <div class="fs-6">
+                            {{ order.expected_delivery_date|date:"M d, Y" }}
+                            {% if order.expected_delivery_date < today and order.status != 'Delivered' and order.status != 'Cancelled' %}
+                            <span class="badge bg-danger ms-1">Overdue</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Actual Delivery</div>
+                        <div class="fs-6">{% if order.actual_delivery_date %}{{ order.actual_delivery_date|date:"M d, Y" }}{% else %}—{% endif %}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reference Image -->
+        <div class="card mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-image me-1"></i> Reference Photo / Design
+                </h6>
+            </div>
+            <div class="card-body p-4 text-center">
+                {% if order.reference_image %}
+                    {% if reference_is_pdf %}
+                    <a href="{{ order.reference_image.url }}" target="_blank" class="btn btn-outline-primary">
+                        <i class="bi bi-file-earmark-pdf me-1"></i> View uploaded reference (PDF)
+                    </a>
+                    {% else %}
+                    <a href="{{ order.reference_image.url }}" target="_blank" title="Open full size">
+                        <img src="{{ order.reference_image.url }}" alt="Reference design" class="img-fluid rounded border" style="max-height: 480px;">
+                    </a>
+                    {% endif %}
+                {% else %}
+                <p class="text-muted mb-0">
+                    <i class="bi bi-image fs-4 d-block mb-1"></i>
+                    No reference photo uploaded for this order.
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer, Status, Notes & Timestamps -->
+    <div class="col-lg-4">
+        <!-- Customer Info -->
+        <div class="card mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-person-lines-fill me-1"></i> Customer
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <div class="text-muted small">Name</div>
+                    <a href="{% url 'customer_detail' order.customer.id %}" class="fs-5 fw-semibold text-decoration-none text-dark">
+                        {{ order.customer.name }}
+                    </a>
+                </div>
+                <div class="mb-3">
+                    <div class="text-muted small">Mobile</div>
+                    <div class="fs-6">
+                        <a href="tel:{{ order.customer.mobile }}" class="text-decoration-none text-dark">
+                            <i class="bi bi-telephone me-1 text-primary"></i> {{ order.customer.mobile }}
+                        </a>
+                    </div>
+                </div>
+                {% if order.customer.email %}
+                <div class="mb-3">
+                    <div class="text-muted small">Email</div>
+                    <div class="fs-6">
+                        <a href="mailto:{{ order.customer.email }}" class="text-decoration-none text-dark">
+                            <i class="bi bi-envelope me-1 text-primary"></i> {{ order.customer.email }}
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+                <div class="mb-3">
+                    <div class="text-muted small">Address</div>
+                    <div class="fs-6">{{ order.customer.address|default:"—"|linebreaksbr }}</div>
+                </div>
+                <a href="{% url 'customer_detail' order.customer.id %}" class="btn btn-outline-dark btn-sm w-100">
+                    <i class="bi bi-person me-1"></i> View Customer Profile
+                </a>
+            </div>
+        </div>
+
+        <!-- Status Update -->
+        <div class="card mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-arrow-repeat me-1"></i> Order Status
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <div class="text-muted small mb-1">Current Status</div>
+                    {% include 'custom_orders/includes/status_badge.html' with status=order.status %}
+                </div>
+                {% if status_form %}
+                <form method="post" action="{% url 'custom_orders:custom_order_status' order.id %}">
+                    {% csrf_token %}
+                    <label for="{{ status_form.status.id_for_label }}" class="form-label">Move this order to</label>
+                    {{ status_form.status }}
+                    {% if status_form.status.errors %}
+                    <div class="text-danger small mt-1">{{ status_form.status.errors.0 }}</div>
+                    {% endif %}
+                    <button type="submit" class="btn btn-dark btn-sm w-100 mt-3">
+                        <i class="bi bi-check-lg me-1"></i> Update Status
+                    </button>
+                </form>
+                {% else %}
+                <p class="text-muted small mb-0">
+                    This order is <strong>{{ order.status|lower }}</strong> — no further status changes are possible.
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if order.notes %}
+        <!-- Notes -->
+        <div class="card mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-journal-text me-1"></i> Notes
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                <p class="mb-0">{{ order.notes|linebreaksbr }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Timestamps -->
+        <div class="card">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-clock-history me-1"></i> Timestamps
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <div class="text-muted small">Created</div>
+                    <div class="fs-6">{{ order.created_at|date:"M d, Y h:i A" }}</div>
+                </div>
+                <div class="mb-0">
+                    <div class="text-muted small">Last Updated</div>
+                    <div class="fs-6">{{ order.updated_at|date:"M d, Y h:i A" }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ item.name }} ({{ item.item_code }}) — JewelDesk{% endblock %}
+
+{% block page_title %}{{ item.name }}{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="{% url 'inventory_add' %}?duplicate_from={{ item.id }}" class="btn btn-outline-dark btn-sm" title="Add another physical piece of this design">
+        <i class="bi bi-plus-square me-1"></i> Add Another Piece
+    </a>
+    <a href="{% url 'inventory_edit' item.id %}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-pencil me-1"></i> Edit
+    </a>
+    <a href="{% url 'inventory_delete' item.id %}" class="btn btn-outline-danger btn-sm">
+        <i class="bi bi-trash me-1"></i> Delete
+    </a>
+    <a href="{% url 'inventory_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Back
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Item Details Card -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-info-circle me-1"></i> Item Specifications
+                </h6>
+                <div>
+                    {% if item.status == 'Available' %}
+                    <span class="badge bg-success fs-6">Available</span>
+                    {% elif item.status == 'Sold' %}
+                    <span class="badge bg-danger fs-6">Sold</span>
+                    {% elif item.status == 'Reserved' %}
+                    <span class="badge bg-warning text-dark fs-6">Reserved</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Piece ID / Tag</div>
+                        <div class="fs-6 fw-semibold text-dark">{{ item.item_code }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Design Code</div>
+                        <div class="fs-6 fw-semibold">
+                            <span class="badge bg-light text-dark border font-monospace">{{ item.design_code|default:item.item_code }}</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Item Name</div>
+                        <div class="fs-6 fw-semibold">{{ item.name }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Category</div>
+                        <div class="fs-6">{{ item.category.name }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Metal Type</div>
+                        <div class="fs-6">
+                            {% if item.metal_type == 'Gold' %}
+                            <span class="badge badge-gold">{{ item.metal_type }}</span>
+                            {% elif item.metal_type == 'Silver' %}
+                            <span class="badge badge-silver">{{ item.metal_type }}</span>
+                            {% elif item.metal_type == 'Diamond' %}
+                            <span class="badge badge-diamond">{{ item.metal_type }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ item.metal_type }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Purity / Grade</div>
+                        <div class="fs-6">{{ item.purity }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Gross Weight</div>
+                        <div class="fs-6">{{ item.gross_weight }} grams</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Net Weight</div>
+                        <div class="fs-6">{{ item.net_weight }} grams</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Making Charge</div>
+                        <div class="fs-6">₹{{ item.making_charge }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Selling Price</div>
+                        <div class="fs-5 fw-bold text-success">₹{{ item.selling_price }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Created Date</div>
+                        <div class="fs-6">{{ item.created_at|date:"M d, Y, h:i A" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Other Physical Pieces of this Design -->
+        <div class="card mt-4">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-collection me-1"></i> Other Pieces with Design Code: <span class="badge bg-light text-dark border font-monospace">{{ item.design_code|default:item.item_code }}</span>
+                </h6>
+                <a href="{% url 'inventory_add' %}?duplicate_from={{ item.id }}" class="btn btn-outline-dark btn-sm">
+                    <i class="bi bi-plus-lg me-1"></i> Add Another Piece
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Piece ID</th>
+                                <th>Net Wt.</th>
+                                <th>Selling Price</th>
+                                <th>Status</th>
+                                <th class="text-end pe-3">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for piece in other_pieces %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'inventory_detail' piece.id %}" class="fw-semibold text-decoration-none text-dark">
+                                        {{ piece.item_code }}
+                                    </a>
+                                </td>
+                                <td>{{ piece.net_weight }}g</td>
+                                <td class="fw-semibold">₹{{ piece.selling_price }}</td>
+                                <td>
+                                    {% if piece.status == 'Available' %}
+                                    <span class="badge bg-success">Available</span>
+                                    {% elif piece.status == 'Sold' %}
+                                    <span class="badge bg-danger">Sold</span>
+                                    {% elif piece.status == 'Reserved' %}
+                                    <span class="badge bg-warning text-dark">Reserved</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end pe-3">
+                                    <a href="{% url 'inventory_detail' piece.id %}" class="btn btn-outline-info btn-sm py-0 px-2">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-3 text-muted small">
+                                    No other physical pieces currently recorded for design code '{{ item.design_code|default:item.item_code }}'.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sale / Status Info Sidebar -->
+    <div class="col-lg-4">
+        {% if item.status == 'Sold' and sale %}
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white py-3">
+                <h6 class="mb-0 fw-semibold">
+                    <i class="bi bi-cart-check me-1"></i> Sold Information
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-2"><strong>Customer:</strong> <a href="{% url 'customer_detail' sale.customer.id %}">{{ sale.customer.name }}</a></p>
+                <p class="mb-2"><strong>Sold Price:</strong> ₹{{ sale.sale_price }}</p>
+                <p class="mb-2"><strong>Payment:</strong> <span class="badge bg-light text-dark border">{{ sale.payment_method }}</span></p>
+                <p class="mb-2"><strong>Sale Date:</strong> {{ sale.sale_date|date:"M d, Y" }}</p>
+                <a href="{% url 'sale_detail' sale.id %}" class="btn btn-outline-danger btn-sm w-100 mt-2">View Sale Receipt</a>
+            </div>
+        </div>
+        {% elif item.status == 'Available' %}
+        <div class="card bg-success bg-opacity-10 border-success">
+            <div class="card-body text-center p-4">
+                <i class="bi bi-check-circle text-success fs-1 mb-2 d-block"></i>
+                <h6 class="fw-semibold text-success">Ready for Sale</h6>
+                <p class="text-muted small mb-3">This item is in stock and available for purchase.</p>
+                <a href="{% url 'sale_add' %}?item={{ item.id }}" class="btn btn-success btn-sm w-100">
+                    <i class="bi bi-cart-plus me-1"></i> Create Sale
+                </a>
+            </div>
+        </div>
+        {% else %}
+        <div class="card bg-warning bg-opacity-10 border-warning">
+            <div class="card-body text-center p-4">
+                <i class="bi bi-clock-history text-warning fs-1 mb-2 d-block"></i>
+                <h6 class="fw-semibold text-dark">Reserved</h6>
+                <p class="text-muted small mb-0">This item is reserved for an enquiry/order.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

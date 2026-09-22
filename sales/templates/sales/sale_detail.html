@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}Sale Receipt #{{ sale.id }} — JewelDesk{% endblock %}
+
+{% block page_title %}Sale Receipt #{{ sale.id }}{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    {% if whatsapp_url %}
+    <a href="{{ whatsapp_url }}" target="_blank" rel="noopener" class="btn btn-success btn-sm"
+       title="Open WhatsApp with a pre-filled thank-you message for {{ whatsapp_customer_name }}">
+        <i class="bi bi-whatsapp me-1"></i> Send WhatsApp Thank You
+    </a>
+    {% elif whatsapp_unavailable %}
+    <span class="btn btn-secondary btn-sm disabled" tabindex="-1" aria-disabled="true"
+          title="Customer WhatsApp number is not available.">
+        <i class="bi bi-whatsapp me-1"></i> Send WhatsApp Thank You
+    </span>
+    {% endif %}
+    <button onclick="window.print()" class="btn btn-outline-dark btn-sm">
+        <i class="bi bi-printer me-1"></i> Print Receipt
+    </button>
+    <a href="{% url 'sale_invoice_pdf' sale.pk %}" class="btn btn-dark btn-sm"
+       title="Download this invoice as a PDF file">
+        <i class="bi bi-file-earmark-pdf me-1"></i> Download Invoice PDF
+    </a>
+    <a href="{% url 'sale_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Back to Sales
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border">
+            <!-- Receipt Header -->
+            <div class="card-header bg-dark text-white p-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0 fw-bold"><i class="bi bi-gem me-2"></i> JewelDesk</h4>
+                        <small class="text-white-50">Jewellery Shop Management System</small>
+                    </div>
+                    <div class="text-end">
+                        <h5 class="mb-0 fw-semibold text-warning">INVOICE</h5>
+                        <small class="text-white-50">#INV-{{ sale.id|stringformat:"05d" }}</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                <!-- Info Row -->
+                <div class="row g-3 mb-4 pb-3 border-bottom">
+                    <div class="col-sm-6">
+                        <h6 class="text-muted text-uppercase small fw-bold mb-2">Billed To</h6>
+                        <div class="fw-bold fs-6">{{ sale.customer.name }}</div>
+                        <div>{{ sale.customer.mobile }}</div>
+                        {% if sale.customer.email %}<div>{{ sale.customer.email }}</div>{% endif %}
+                        {% if sale.customer.address %}<div class="text-muted small">{{ sale.customer.address }}</div>{% endif %}
+                    </div>
+                    <div class="col-sm-6 text-sm-end">
+                        <h6 class="text-muted text-uppercase small fw-bold mb-2">Invoice Details</h6>
+                        <div><strong>Invoice Date:</strong> {{ sale.sale_date|date:"M d, Y" }}</div>
+                        <div><strong>Time:</strong> {{ sale.sale_date|date:"h:i A" }}</div>
+                        <div><strong>Payment Method:</strong> <span class="badge bg-light text-dark border">{{ sale.payment_method }}</span></div>
+                    </div>
+                </div>
+
+                <!-- Item Details Table -->
+                <table class="table table-bordered mb-4">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Item Code</th>
+                            <th>Description</th>
+                            <th>Metal / Purity</th>
+                            <th>Net Weight</th>
+                            <th class="text-end">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <span class="fw-semibold">{{ sale.jewellery_item.item_code }}</span>
+                                {% if sale.jewellery_item.design_code and sale.jewellery_item.design_code != sale.jewellery_item.item_code %}
+                                <small class="text-muted d-block font-monospace">Design: {{ sale.jewellery_item.design_code }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ sale.jewellery_item.name }}</strong>
+                                <small class="text-muted d-block">{{ sale.jewellery_item.category.name }}</small>
+                            </td>
+                            <td>{{ sale.jewellery_item.metal_type }} / {{ sale.jewellery_item.purity }}</td>
+                            <td>{{ sale.jewellery_item.net_weight }}g</td>
+                            <td class="text-end fw-bold">₹{{ sale.sale_price }}</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="4" class="text-end">Total Amount:</th>
+                            <th class="text-end fs-5 text-success">₹{{ sale.sale_price }}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                {% if sale.notes %}
+                <div class="mb-3 p-3 bg-light rounded">
+                    <h6 class="text-muted small fw-bold mb-1">Notes:</h6>
+                    <p class="mb-0 small">{{ sale.notes }}</p>
+                </div>
+                {% endif %}
+
+                <div class="text-center text-muted small mt-4 pt-3 border-top">
+                    Thank you for your business! For any enquiries, please visit again.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

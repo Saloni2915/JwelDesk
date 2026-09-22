@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Category — JewelDesk{% endblock %}
+
+{% block page_title %}Delete Category{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white py-3">
+                <h6 class="mb-0 fw-semibold">
+                    <i class="bi bi-exclamation-triangle me-2"></i> Confirm Delete Category
+                </h6>
+            </div>
+            <div class="card-body p-4 text-center">
+                <p class="fs-5 mb-3">Are you sure you want to delete category <strong>{{ category.name }}</strong>?</p>
+                {% if category.items_count > 0 %}
+                <div class="alert alert-warning text-start mb-4">
+                    <i class="bi bi-exclamation-circle me-1"></i>
+                    Warning: There are <strong>{{ category.items_count }}</strong> jewellery item(s) in this category. You must reassign or delete those items before deleting this category.
+                </div>
+                {% endif %}
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="{% url 'category_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-danger" {% if category.items_count > 0 %}disabled{% endif %}>
+                            <i class="bi bi-trash me-1"></i> Confirm Delete
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

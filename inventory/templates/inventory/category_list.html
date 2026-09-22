@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Jewellery Categories — JewelDesk{% endblock %}
+
+{% block page_title %}Jewellery Categories{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'inventory_list' %}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i> Back to Inventory
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Categories List Table -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-tags me-1"></i> Existing Categories ({{ categories.count }})
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Category Name</th>
+                                <th>Description</th>
+                                <th>Items Count</th>
+                                <th class="text-end pe-3">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cat in categories %}
+                            <tr>
+                                <td>
+                                    <span class="fw-semibold text-dark">{{ cat.name }}</span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ cat.description|default:"—"|truncatechars:60 }}</small>
+                                </td>
+                                <td>
+                                    <a href="{% url 'inventory_list' %}?category={{ cat.id }}" class="badge bg-light text-dark border text-decoration-none">
+                                        {{ cat.items_count }} items
+                                    </a>
+                                </td>
+                                <td class="text-end pe-3">
+                                    <a href="{% url 'category_edit' cat.id %}" class="btn btn-outline-primary btn-sm py-0 px-2" title="Edit">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </a>
+                                    {% if cat.items_count == 0 %}
+                                    <a href="{% url 'category_delete' cat.id %}" class="btn btn-outline-danger btn-sm py-0 px-2" title="Delete">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </a>
+                                    {% else %}
+                                    <button class="btn btn-outline-secondary btn-sm py-0 px-2" disabled title="Cannot delete: contains items">
+                                        <i class="bi bi-lock"></i>
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">
+                                    <i class="bi bi-tags fs-3 d-block mb-2"></i>
+                                    No categories defined yet. Use the form on the right to add your first category.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Add Category Form -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-plus-circle me-1"></i> Add New Category
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" action="{% url 'category_add' %}" novalidate>
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">
+                            Category Name <span class="text-danger">*</span>
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                        <div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">
+                            Description
+                        </label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                        <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <button type="submit" class="btn btn-dark w-100">
+                        <i class="bi bi-plus-lg me-1"></i> Save Category
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

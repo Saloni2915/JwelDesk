@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% block title %}Bulk Import Inventory — JewelDesk{% endblock %}
+
+{% block page_title %}Bulk Import Inventory{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="{% url 'inventory_import_sample' %}" class="btn btn-outline-dark btn-sm">
+        <i class="bi bi-download me-1"></i> Sample CSV
+    </a>
+    <a href="{% url 'inventory_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Back to Inventory
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Upload Form -->
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-upload me-1"></i> Upload Jewellery Stock File
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="upload">
+
+                    <div class="mb-3">
+                        <label for="import_file" class="form-label">
+                            CSV or Excel file <span class="text-danger">*</span>
+                        </label>
+                        <input type="file" name="import_file" id="import_file" class="form-control"
+                               accept=".csv,.xlsx" required>
+                        <div class="form-text">
+                            Accepted formats: {{ allowed_extensions }} &middot; maximum {{ max_file_size_mb }} MB
+                            &middot; up to {{ max_rows }} data rows per import.
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-dark w-100">
+                        <i class="bi bi-clipboard-check me-1"></i> Validate &amp; Preview
+                    </button>
+                </form>
+
+                <div class="alert alert-info d-flex align-items-start mt-4 mb-0" role="alert">
+                    <i class="bi bi-info-circle me-2 mt-1"></i>
+                    <div class="small">
+                        Your file is only checked first. Nothing is saved to the inventory until you review the
+                        preview and press <strong>Confirm Import</strong>.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expected columns -->
+        <div class="card mt-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-table me-1"></i> Expected Columns
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Column</th>
+                                <th>Required</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="font-monospace">item_code</td>
+                                <td><span class="badge bg-danger">Yes</span></td>
+                                <td><small class="text-muted">Unique piece ID / tag / barcode. Cannot repeat inside the file or in the inventory.</small></td>
+                            </tr>
+                            <tr>
+                                <td class="font-monospace">design_code</td>
+                                <td><span class="badge bg-secondary">No</span></td>
+                                <td><small class="text-muted">Design / model code, defaults to the piece ID. Several pieces may share one design code.</small></td>
+                            </tr>
+                            <tr>
+                                <td class="font-monospace">name</td>
+                                <td><span class="badge bg-danger">Yes</span></td>
+                                <td><small class="text-muted">Item name, e.g. "22K Gold Solitaire Ring".</small></td>
+                            </tr>
+                            <tr>
+                                <td class="font-monospace">category</td>
+                                <td><span class="badge bg-danger">Yes</span></td>
+                                <td><small class="text-muted">Matched by name; categories that do not exist yet are created automatically.</small></td>
+                            </tr>
+                            <tr>
+                                <td class="font-monospace">metal_type</td>
+                                <td><span class="badge bg-danger">Yes</span></td>
+                                <td><small class="text-muted">Gold, Silver, Diamond or Platinum (case-insensitive).</small></td>
+                            </tr>
+                            <tr>
+                                <td class="font-monospace">purity</td>
+                                <td><span class="badge bg-danger">Yes</span></td>
+                                <td><small class="text-muted">e.g. 22K (916), 18K, 925 Silver.</small></td>
+                            </tr>
+                            <tr>
+                                <td class="font-monospace">gross_weight</td>
+                                <td><span class="badge bg-danger">Yes</span></td>
+                                <td><small class="text-muted">Weight in grams (up to 3 decimals).</small></td>
+                            </tr>
+                            <tr>
+                                <td class="font-monospace">net_weight</td>
+                                <td><span class="badge bg-danger">Yes</span></td>
+                                <td><small class="text-muted">Weight in grams; cannot be greater than the gross weight.</small></td>
+                            </tr>
+                            <tr>
+                                <td class="font-monospace">making_charge</td>
+                                <td><span class="badge bg-secondary">No</span></td>
+                                <td><small class="text-muted">Amount in ₹, defaults to 0.00.</small></td>
+                            </tr>
+                            <tr>
+                                <td class="font-monospace">selling_price</td>
+                                <td><span class="badge bg-danger">Yes</span></td>
+                                <td><small class="text-muted">Amount in ₹, must be greater than 0.</small></td>
+                            </tr>
+                            <tr>
+                                <td class="font-monospace">status</td>
+                                <td><span class="badge bg-secondary">No</span></td>
+                                <td><small class="text-muted">Available, Sold or Reserved, defaults to Available.</small></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help and template cards -->
+    <div class="col-lg-5">
+        <div class="card mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-file-earmark-spreadsheet me-1"></i> Start From the Template
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                <p class="text-muted small mb-3">
+                    Download the sample CSV, replace the sample pieces with your own stock and upload it back.
+                    It can also be opened in Excel and saved as .xlsx before uploading.
+                </p>
+                <a href="{% url 'inventory_import_sample' %}" class="btn btn-gold w-100">
+                    <i class="bi bi-download me-1"></i> Download Sample CSV Template
+                </a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-list-check me-1"></i> How the Import Works
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                <ol class="ps-3 mb-0 small text-muted">
+                    <li class="mb-2">
+                        <strong class="text-dark">Upload</strong> a CSV or .xlsx file using the columns listed
+                        on the left.
+                    </li>
+                    <li class="mb-2">
+                        <strong class="text-dark">Validate &amp; preview</strong> - every row is checked for
+                        missing values, wrong metal/status names, weight rules, duplicates and invalid numbers.
+                    </li>
+                    <li class="mb-2">
+                        <strong class="text-dark">Confirm</strong> - the valid rows are inserted in a single
+                        database transaction. If one row fails, the whole import is rolled back.
+                    </li>
+                    <li>
+                        <strong class="text-dark">Audit</strong> - after importing you are returned to the
+                        inventory list, which reports how many pieces were added.
+                    </li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

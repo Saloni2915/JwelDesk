@@ -1,0 +1,17 @@
+{% if status == 'Enquiry' %}
+<span class="badge bg-primary">Enquiry</span>
+{% elif status == 'Estimate' %}
+<span class="badge bg-info text-dark">Estimate</span>
+{% elif status == 'Confirmed' %}
+<span class="badge bg-warning text-dark">Confirmed</span>
+{% elif status == 'In Making' %}
+<span class="badge badge-gold">In Making</span>
+{% elif status == 'Ready' %}
+<span class="badge bg-success">Ready</span>
+{% elif status == 'Delivered' %}
+<span class="badge bg-dark">Delivered</span>
+{% elif status == 'Cancelled' %}
+<span class="badge bg-danger">Cancelled</span>
+{% else %}
+<span class="badge bg-secondary">{{ status }}</span>
+{% endif %}

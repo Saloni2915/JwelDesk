@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+
+{% block title %}Sales Report — JewelDesk{% endblock %}
+
+{% block page_title %}Sales Report{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'sale_add' %}" class="btn btn-dark btn-sm">
+    <i class="bi bi-cart-plus me-1"></i> Create Sale
+</a>
+{% endblock %}
+
+{% block content %}
+<!-- Date Range Filter Card -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label for="report-period" class="form-label mb-1">Date Range</label>
+                <select name="period" id="report-period" class="form-select form-select-sm"
+                        onchange="this.form.submit()">
+                    <option value="today" {% if selected_period == 'today' %}selected{% endif %}>Today</option>
+                    <option value="week" {% if selected_period == 'week' %}selected{% endif %}>This Week</option>
+                    <option value="month" {% if selected_period == 'month' %}selected{% endif %}>This Month</option>
+                    <option value="custom" {% if selected_period == 'custom' %}selected{% endif %}>Custom Date Range</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="report-start" class="form-label mb-1">From</label>
+                <input type="date" name="start_date" id="report-start"
+                       value="{{ selected_start_date }}" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-3">
+                <label for="report-end" class="form-label mb-1">To</label>
+                <input type="date" name="end_date" id="report-end"
+                       value="{{ selected_end_date }}" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-3 d-flex gap-1">
+                <button type="submit" class="btn btn-outline-dark btn-sm w-100" title="Show Report">
+                    <i class="bi bi-funnel"></i> Show Report
+                </button>
+                <a href="{% url 'sales_report' %}" class="btn btn-outline-secondary btn-sm" title="Reset to Today">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary cards (totals for the selected range) -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card p-3">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-success bg-opacity-10 text-success me-3">
+                    <i class="bi bi-currency-rupee"></i>
+                </div>
+                <div>
+                    <div class="stat-value">₹{{ total_amount }}</div>
+                    <div class="stat-label">Total Sales Amount</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card p-3">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-primary bg-opacity-10 text-primary me-3">
+                    <i class="bi bi-receipt"></i>
+                </div>
+                <div>
+                    <div class="stat-value">{{ sales_count }}</div>
+                    <div class="stat-label">Number of Sales</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card p-3">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-warning bg-opacity-10 text-warning me-3">
+                    <i class="bi bi-gem"></i>
+                </div>
+                <div>
+                    <div class="stat-value">{{ items_sold }}</div>
+                    <div class="stat-label">Items Sold</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card p-3">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-info bg-opacity-10 text-info me-3">
+                    <i class="bi bi-graph-up"></i>
+                </div>
+                <div>
+                    <div class="stat-value">₹{{ average_sale_value }}</div>
+                    <div class="stat-label">Average Sale Value</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sales Table -->
+<div class="card">
+    <div class="card-header bg-white border-bottom py-3">
+        <h6 class="mb-0 fw-semibold text-dark">
+            <i class="bi bi-table me-1"></i>
+            Sales from {{ report_start|date:"M d, Y" }} to {{ report_end|date:"M d, Y" }}
+            ({{ sales_count }} sale{{ sales_count|pluralize }})
+        </h6>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Sale Date</th>
+                        <th>Invoice / Sale ID</th>
+                        <th>Customer</th>
+                        <th>Jewellery Item</th>
+                        <th>Design Code</th>
+                        <th>Metal Type</th>
+                        <th>Sale Price</th>
+                        <th>Payment Method</th>
+                        <th class="text-end pe-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sale in sales %}
+                    <tr>
+                        <td>{{ sale.sale_date|date:"M d, Y, h:i A" }}</td>
+                        <td>
+                            <a href="{% url 'sale_detail' sale.id %}" class="fw-semibold text-decoration-none text-dark">
+                                #{{ sale.id }}
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{% url 'customer_detail' sale.customer.id %}" class="text-decoration-none text-dark fw-medium">
+                                {{ sale.customer.name }}
+                            </a>
+                            <small class="text-muted d-block">{{ sale.customer.mobile }}</small>
+                        </td>
+                        <td>
+                            <a href="{% url 'inventory_detail' sale.jewellery_item.id %}" class="text-decoration-none text-dark">
+                                {{ sale.jewellery_item.name }}
+                            </a>
+                            <small class="text-muted d-block">{{ sale.jewellery_item.item_code }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-secondary border font-monospace">
+                                {{ sale.jewellery_item.design_code|default:sale.jewellery_item.item_code }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if sale.jewellery_item.metal_type == 'Gold' %}
+                            <span class="badge badge-gold">{{ sale.jewellery_item.metal_type }}</span>
+                            {% elif sale.jewellery_item.metal_type == 'Silver' %}
+                            <span class="badge badge-silver">{{ sale.jewellery_item.metal_type }}</span>
+                            {% elif sale.jewellery_item.metal_type == 'Diamond' %}
+                            <span class="badge badge-diamond">{{ sale.jewellery_item.metal_type }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ sale.jewellery_item.metal_type }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold text-success">₹{{ sale.sale_price }}</td>
+                        <td>
+                            <span class="badge bg-light text-dark border">
+                                <i class="bi bi-credit-card me-1"></i> {{ sale.payment_method }}
+                            </span>
+                        </td>
+                        <td class="text-end pe-3">
+                            <a href="{% url 'sale_detail' sale.id %}" class="btn btn-outline-info btn-sm py-0 px-2" title="View Receipt">
+                                <i class="bi bi-receipt"></i> Receipt
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-muted">
+                            <i class="bi bi-cart-x fs-3 d-block mb-2"></i>
+                            No sales recorded for the selected date range.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include 'includes/pagination.html' with page_obj=page_obj %}
+    </div>
+</div>
+{% endblock %}

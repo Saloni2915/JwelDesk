@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title %}Enquiry #{{ enquiry.id }} — JewelDesk{% endblock %}
+
+{% block page_title %}Enquiry #{{ enquiry.id }}{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="{% url 'enquiry_edit' enquiry.id %}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-pencil me-1"></i> Edit
+    </a>
+    <a href="{% url 'enquiry_delete' enquiry.id %}" class="btn btn-outline-danger btn-sm">
+        <i class="bi bi-trash me-1"></i> Delete
+    </a>
+    <a href="{% url 'enquiry_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Back
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Enquiry Details -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-info-circle me-1"></i> Enquiry Information
+                </h6>
+                <div>
+                    {% if enquiry.status == 'New' %}
+                    <span class="badge bg-primary fs-6">New</span>
+                    {% elif enquiry.status == 'Contacted' %}
+                    <span class="badge bg-info text-dark fs-6">Contacted</span>
+                    {% elif enquiry.status == 'Interested' %}
+                    <span class="badge bg-warning text-dark fs-6">Interested</span>
+                    {% elif enquiry.status == 'Purchased' %}
+                    <span class="badge bg-success fs-6">Purchased</span>
+                    {% elif enquiry.status == 'Closed' %}
+                    <span class="badge bg-secondary fs-6">Closed</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Customer</div>
+                        <div class="fs-6 fw-semibold">
+                            <a href="{% url 'customer_detail' enquiry.customer.id %}" class="text-decoration-none text-dark">
+                                {{ enquiry.customer.name }}
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Customer Mobile</div>
+                        <div class="fs-6">{{ enquiry.customer.mobile }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Interested Item</div>
+                        <div class="fs-6 fw-semibold">{{ enquiry.interested_item }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Category</div>
+                        <div class="fs-6">{{ enquiry.category.name|default:"—" }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Budget</div>
+                        <div class="fs-6 fw-bold text-success">{% if enquiry.budget %}₹{{ enquiry.budget }}{% else %}Not specified{% endif %}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Next Follow-up Date</div>
+                        <div class="fs-6">
+                            {% if enquiry.next_followup_date %}
+                            <i class="bi bi-calendar-check me-1 text-primary"></i> {{ enquiry.next_followup_date|date:"M d, Y" }}
+                            {% else %}
+                            <span class="text-muted">Not scheduled</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="text-muted small">Notes / Specific Requirements</div>
+                        <div class="p-3 bg-light rounded mt-1">{{ enquiry.notes|default:"No notes added."|linebreaksbr }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Enquiry Created Date</div>
+                        <div class="fs-6 text-muted">{{ enquiry.created_at|date:"M d, Y, h:i A" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Action / Convert to Sale -->
+    <div class="col-lg-4">
+        <div class="card mb-3">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-lightning-charge me-1"></i> Actions
+                </h6>
+            </div>
+            <div class="card-body d-flex flex-column gap-2">
+                <a href="{% url 'sale_add' %}?customer={{ enquiry.customer.id }}" class="btn btn-dark btn-sm">
+                    <i class="bi bi-cart-plus me-1"></i> Convert to Sale
+                </a>
+                <a href="{% url 'enquiry_edit' enquiry.id %}" class="btn btn-outline-dark btn-sm">
+                    <i class="bi bi-pencil me-1"></i> Update Status / Follow-up
+                </a>
+                <a href="tel:{{ enquiry.customer.mobile }}" class="btn btn-outline-success btn-sm">
+                    <i class="bi bi-telephone me-1"></i> Call Customer
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

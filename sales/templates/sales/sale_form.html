@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Sale — JewelDesk{% endblock %}
+
+{% block page_title %}Create Sale{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'sale_list' %}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i> Back to Sales
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-cart-plus me-2"></i> Sale Information
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-info py-2 small mb-4">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Only jewellery items with status <strong>Available</strong> are shown for selection. Once saved, the item status will automatically change to <strong>Sold</strong>.
+                </div>
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger py-2">
+                        {% for error in form.non_field_errors %}
+                        <small class="d-block">{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.customer.id_for_label }}" class="form-label">
+                                Customer <span class="text-danger">*</span>
+                            </label>
+                            {{ form.customer }}
+                            {% if form.customer.errors %}
+                            <div class="text-danger small mt-1">{{ form.customer.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">
+                                Don't see the customer? <a href="{% url 'customer_add' %}" target="_blank">Add Customer</a>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.jewellery_item.id_for_label }}" class="form-label">
+                                Jewellery Item <span class="text-danger">*</span>
+                            </label>
+                            {{ form.jewellery_item }}
+                            {% if form.jewellery_item.errors %}
+                            <div class="text-danger small mt-1">{{ form.jewellery_item.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.sale_price.id_for_label }}" class="form-label">
+                                Final Sale Price (₹) <span class="text-danger">*</span>
+                            </label>
+                            {{ form.sale_price }}
+                            {% if form.sale_price.errors %}
+                            <div class="text-danger small mt-1">{{ form.sale_price.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.payment_method.id_for_label }}" class="form-label">
+                                Payment Method <span class="text-danger">*</span>
+                            </label>
+                            {{ form.payment_method }}
+                            {% if form.payment_method.errors %}
+                            <div class="text-danger small mt-1">{{ form.payment_method.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-12">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                Sale Notes / Bill Reference
+                            </label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                            <div class="text-danger small mt-1">{{ form.notes.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                        <a href="{% url 'sale_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-dark">
+                            <i class="bi bi-check-lg me-1"></i> Complete Sale
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
