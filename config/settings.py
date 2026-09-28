@@ -21,12 +21,62 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ttj_u4t9h1q#5nt-5j%p60fjv(+#ke1o_@*k$g!1)#$imf@t_v'
+SECRET_KEY = os.environ.get(
+    'DJANGO_SECRET_KEY',
+    os.environ.get('SECRET_KEY', 'django-insecure-ttj_u4t9h1q#5nt-5j%p60fjv(+#ke1o_@*k$g!1)#$imf@t_v')
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Automatically set to False on Vercel deployment unless explicitly overridden via DJANGO_DEBUG=True.
+# In local development (where VERCEL is not set), it defaults to True for convenience.
+DEBUG = os.environ.get(
+    'DJANGO_DEBUG',
+    os.environ.get('DEBUG', 'False' if os.environ.get('VERCEL') else 'True')
+).lower() in ('1', 'true', 'yes')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'jwel-desk.vercel.app',
+    '.vercel.app',
+    'localhost',
+    '127.0.0.1',
+    '[::1]',
+]
+
+# Allow custom hosts from environment variables if defined
+extra_hosts = os.environ.get('ALLOWED_HOSTS', '')
+if extra_hosts:
+    ALLOWED_HOSTS.extend([h.strip() for h in extra_hosts.split(',') if h.strip()])
+
+# If VERCEL_URL is injected by Vercel environment (e.g. jwel-desk-xxx.vercel.app)
+vercel_url = os.environ.get('VERCEL_URL')
+if vercel_url and vercel_url not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(vercel_url)
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://jwel-desk.vercel.app',
+    'https://*.vercel.app',
+]
+
+extra_csrf = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
+if extra_csrf:
+    CSRF_TRUSTED_ORIGINS.extend([origin.strip() for origin in extra_csrf.split(',') if origin.strip()])
+
+if vercel_url:
+    origin = f"https://{vercel_url}"
+    if origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(origin)
+
+# Reverse proxy SSL header for Vercel edge CDN
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+# Silenced system checks
+SILENCED_SYSTEM_CHECKS = [
+    'mail.E001',
+]
+
 
 
 # Application definition
@@ -49,6 +99,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -82,10 +133,24 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
+if os.environ.get('VERCEL'):
+    # On Vercel serverless functions, the source repository filesystem is read-only.
+    # /tmp is the only writable directory on AWS Lambda/Vercel runtime.
+    default_db_path = Path('/tmp') / 'db.sqlite3'
+    seed_db = BASE_DIR / 'db.sqlite3'
+    if seed_db.exists() and not default_db_path.exists():
+        import shutil
+        try:
+            shutil.copy2(seed_db, default_db_path)
+        except Exception:
+            pass
+else:
+    default_db_path = BASE_DIR / 'db.sqlite3'
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': default_db_path,
     }
 }
 
@@ -124,11 +189,21 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+    },
+}
 
 # Uploaded files (e.g. custom order reference photos).
 # Served by Django itself only while DEBUG is True (development).
