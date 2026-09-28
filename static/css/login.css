@@ -1,0 +1,438 @@
+/* ==========================================================================
+   JewelDesk — Login page (accounts/login.html)
+   Loaded *after* css/style.css so it reuses the shared theme tokens
+   (--surface, --bg-primary, --input-bg, --accent, ...) exactly as the rest of
+   the app does. There is no separate theme system here: the page simply
+   follows the existing light / dark / gold themes via [data-theme].
+   ========================================================================== */
+
+body.jd-auth {
+    min-height: 100vh;
+    min-height: 100dvh;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.jd-auth__shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+/* ------------------------------------------
+   Left: jewellery showroom visual
+   ------------------------------------------ */
+.jd-auth__visual {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    padding: clamp(1.75rem, 3vw, 3.25rem);
+    overflow: hidden;
+    color: #fdf6e4;
+    background-color: #150f0a;
+    background-image: url("../images/login/jewellery-hero.jpg");
+    background-size: cover;
+    background-position: 64% 42%;
+    background-repeat: no-repeat;
+}
+
+/* Warm dark/gold scrim: keeps the jewellery readable and the text legible. */
+.jd-auth__scrim {
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(180deg,
+            rgba(18, 12, 7, 0.58) 0%,
+            rgba(18, 12, 7, 0.16) 36%,
+            rgba(14, 9, 5, 0.86) 100%),
+        radial-gradient(115% 75% at 12% 92%,
+            rgba(10, 6, 3, 0.82) 0%, rgba(10, 6, 3, 0) 62%);
+}
+
+[data-theme="dark"] .jd-auth__scrim {
+    background:
+        linear-gradient(180deg,
+            rgba(10, 8, 11, 0.64) 0%,
+            rgba(10, 8, 11, 0.24) 36%,
+            rgba(8, 6, 9, 0.90) 100%),
+        radial-gradient(115% 75% at 12% 92%,
+            rgba(6, 4, 7, 0.85) 0%, rgba(6, 4, 7, 0) 62%);
+}
+
+[data-theme="gold"] .jd-auth__scrim {
+    background:
+        linear-gradient(180deg,
+            rgba(34, 25, 10, 0.52) 0%,
+            rgba(34, 25, 10, 0.14) 36%,
+            rgba(26, 18, 6, 0.86) 100%),
+        radial-gradient(115% 75% at 12% 92%,
+            rgba(22, 15, 5, 0.82) 0%, rgba(22, 15, 5, 0) 62%);
+}
+
+.jd-auth__visual-inner {
+    position: relative;
+    z-index: 1;
+    max-width: 30rem;
+}
+
+.jd-auth__brand {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+}
+
+.jd-auth__brand-mark {
+    display: grid;
+    place-items: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 0.8rem;
+    font-size: 1.2rem;
+    color: #241a06;
+    background-color: #e8c777;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55),
+                0 8px 22px rgba(0, 0, 0, 0.38);
+}
+
+.jd-auth__brand-name {
+    font-size: 1.55rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: #ffffff;
+}
+
+.jd-auth__tagline {
+    margin: 0.5rem 0 0;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #e9c877;
+}
+
+.jd-auth__support {
+    margin: 0.9rem 0 0;
+    max-width: 26rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: rgba(255, 248, 232, 0.84);
+}
+
+.jd-auth__points {
+    display: grid;
+    gap: 0.45rem;
+    margin: 1.4rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.jd-auth__points li {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: 0.86rem;
+    color: rgba(255, 247, 230, 0.86);
+}
+
+.jd-auth__points i {
+    font-size: 0.78rem;
+    color: #dcb761;
+}
+/* ------------------------------------------
+   Right: login card
+   ------------------------------------------ */
+.jd-auth__panel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(1.5rem, 4vw, 3rem);
+    background-color: var(--bg-primary);
+    overflow-y: auto;
+}
+
+.jd-auth__card {
+    width: 100%;
+    max-width: 26.5rem;
+}
+
+.jd-auth__logo {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: var(--text-primary);
+}
+
+.jd-auth__logo-mark {
+    display: grid;
+    place-items: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    border-radius: 0.65rem;
+    font-size: 1rem;
+    color: var(--on-accent);
+    background-color: var(--accent);
+}
+
+.jd-auth__title {
+    margin: 1.15rem 0 0.45rem;
+    font-size: 1.7rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.jd-auth__subtitle {
+    margin: 0 0 1.5rem;
+    font-size: 0.92rem;
+    line-height: 1.55;
+    color: var(--text-secondary);
+}
+
+.jd-auth__alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin-bottom: 1.15rem;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid var(--danger);
+    border-radius: 0.7rem;
+    background-color: rgba(231, 76, 60, 0.10);
+    color: var(--danger);
+    font-size: 0.875rem;
+    line-height: 1.45;
+}
+
+.jd-auth__alert i {
+    margin-top: 0.1rem;
+}
+
+.jd-auth__notice {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-bottom: 1.15rem;
+    font-size: 0.86rem;
+}
+
+/* Fields ---------------------------------------------------------------- */
+.jd-auth__field {
+    margin-bottom: 1.1rem;
+}
+
+.jd-auth__label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.jd-auth__input {
+    position: relative;
+}
+
+.jd-auth__icon {
+    position: absolute;
+    top: 50%;
+    left: 0.95rem;
+    transform: translateY(-50%);
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.jd-auth__control {
+    width: 100%;
+    padding: 0.72rem 0.95rem 0.72rem 2.6rem;
+    border: 1px solid var(--input-border);
+    border-radius: 0.7rem;
+    background-color: var(--input-bg);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.jd-auth__control--password {
+    padding-right: 3rem;
+}
+
+.jd-auth__control:focus {
+    border-color: var(--accent);
+    background-color: var(--input-bg);
+    color: var(--text-primary);
+    box-shadow: 0 0 0 0.2rem var(--bs-focus-ring-color);
+}
+
+.jd-auth__toggle {
+    position: absolute;
+    top: 50%;
+    right: 0.3rem;
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    transform: translateY(-50%);
+    border: 0;
+    border-radius: 0.55rem;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.jd-auth__toggle:hover {
+    color: var(--accent);
+    background-color: var(--surface-hover);
+}
+
+.jd-auth__toggle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+/* Primary action -------------------------------------------------------- */
+.jd-auth__submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--accent);
+    border-radius: 0.7rem;
+    background-color: var(--accent);
+    color: var(--on-accent);
+    font-size: 0.98rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    transition: background-color 0.15s ease, border-color 0.15s ease,
+                box-shadow 0.15s ease;
+}
+
+.jd-auth__submit:hover,
+.jd-auth__submit:focus-visible {
+    background-color: var(--accent-hover);
+    border-color: var(--accent-hover);
+    color: var(--on-accent);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35),
+                0 6px 16px rgba(120, 84, 20, 0.28);
+}
+
+.jd-auth__submit:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* ------------------------------------------
+   Responsive: the visual becomes a top hero
+   ------------------------------------------ */
+@media (max-width: 991.98px) {
+    .jd-auth__shell {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .jd-auth__visual {
+        min-height: 15.5rem;
+        padding: 1.6rem 1.35rem;
+        background-position: 62% 34%;
+        border-radius: 0 0 1.1rem 1.1rem;
+    }
+
+    .jd-auth__brand-mark {
+        width: 2.2rem;
+        height: 2.2rem;
+        font-size: 1.05rem;
+        border-radius: 0.7rem;
+    }
+
+    .jd-auth__brand-name {
+        font-size: 1.3rem;
+    }
+
+    .jd-auth__tagline {
+        margin-top: 0.4rem;
+        font-size: 0.72rem;
+        letter-spacing: 0.14em;
+    }
+
+    .jd-auth__support {
+        margin-top: 0.6rem;
+        font-size: 0.86rem;
+        line-height: 1.5;
+    }
+
+    .jd-auth__points {
+        display: none;
+    }
+
+    .jd-auth__panel {
+        align-items: flex-start;
+        padding: 1.6rem 1.15rem 2.25rem;
+    }
+
+    .jd-auth__card {
+        max-width: 34rem;   /* keep the form comfortable, never cramped */
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .jd-auth__visual {
+        min-height: 12.5rem;
+        padding: 1.25rem 1.1rem;
+    }
+
+    .jd-auth__title {
+        font-size: 1.45rem;
+    }
+
+    .jd-auth__subtitle {
+        margin-bottom: 1.25rem;
+    }
+
+    .jd-auth__foot {
+        align-items: flex-start;
+    }
+}
+
+/* Short landscape screens: shrink the hero so the form stays visible. */
+@media (max-width: 991.98px) and (max-height: 560px) {
+    .jd-auth__visual {
+        min-height: 9rem;
+    }
+
+    .jd-auth__support {
+        display: none;
+    }
+}
+
+/* Desktop: the visual stays put while the form scrolls if needed. */
+@media (min-width: 992px) {
+    .jd-auth__visual {
+        position: sticky;
+        top: 0;
+        align-self: start;
+        height: 100vh;
+        height: 100dvh;
+    }
+}
+
+.jd-auth__foot {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 1.35rem 0 0;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+}
+
+.jd-auth__foot i {
+    color: var(--accent);
+}
+
+/* Short landscape screens: shrink the hero so the form stays visible. */

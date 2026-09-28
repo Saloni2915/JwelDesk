@@ -10,9 +10,10 @@ from django.db import transaction
 from django.db.models import Avg, Count, Q, Sum
 from django.utils import timezone
 from .models import Sale, Enquiry
-from .forms import SaleForm, EnquiryForm
+from .forms import PaymentForm, SaleForm, EnquiryForm
 from .whatsapp import get_whatsapp_context_for_sale
 from inventory.models import JewelleryItem
+from inventory import stock
 
 
 # ==============================================================================
@@ -24,13 +25,16 @@ def sale_list(request):
     """List all sales records with search and payment method filters."""
     sales = Sale.objects.select_related('customer', 'jewellery_item').order_by('-sale_date')
 
-    # Search (Customer name or item name/code)
+    # Search (Customer name or item name/code/tag/design/HUID)
     q = request.GET.get('q', '').strip()
     if q:
         sales = sales.filter(
             Q(customer__name__icontains=q) |
             Q(jewellery_item__name__icontains=q) |
-            Q(jewellery_item__item_code__icontains=q)
+            Q(jewellery_item__tag_number__icontains=q) |
+            Q(jewellery_item__item_code__icontains=q) |
+            Q(jewellery_item__design_code__icontains=q) |
+            Q(jewellery_item__huid__icontains=q)
         )
 
     # Payment method filter
@@ -75,21 +79,28 @@ def sale_add(request):
                 sale = form.save(commit=False)
                 item = sale.jewellery_item
 
-                # Business rule validation: item must be Available
+                # Business rule validation: the item must still be in stock.
                 # Re-fetch with select_for_update to prevent race conditions
                 locked_item = JewelleryItem.objects.select_for_update().get(pk=item.pk)
-                if locked_item.status == 'Sold':
+                if locked_item.status == 'Sold' or locked_item.quantity <= 0:
                     messages.error(request, f"Cannot complete sale: '{locked_item.name}' ({locked_item.item_code}) is already SOLD.")
                     return render(request, 'sales/sale_form.html', {'form': form, 'page_title': 'Create Sale'})
 
                 # Save sale
                 sale.save()
 
-                # Automatically update inventory item status to Sold
-                locked_item.status = 'Sold'
-                locked_item.save(update_fields=['status'])
+                # Reduce inventory: status/quantity and the stock movement are
+                # handled by the inventory stock service (single source of
+                # truth), so the stock can never be reduced twice for one sale.
+                movement = stock.record_sale(locked_item, sale, user=request.user)
 
-                messages.success(request, f"Sale #{sale.id} completed successfully! Item '{locked_item.name}' marked as Sold.")
+                if movement.stock_after == 0:
+                    messages.success(request, f"Sale #{sale.id} completed successfully! Item '{locked_item.name}' marked as Sold.")
+                else:
+                    messages.success(
+                        request,
+                        f"Sale #{sale.id} completed successfully! '{locked_item.name}' stock "
+                        f"reduced to {movement.stock_after}.")
                 return redirect('sale_detail', pk=sale.pk)
     else:
         form = SaleForm(initial=initial_data)
@@ -107,6 +118,8 @@ def sale_detail(request, pk):
     sale = get_object_or_404(Sale.objects.select_related('customer', 'jewellery_item', 'jewellery_item__category'), pk=pk)
     context = {
         'sale': sale,
+        'payments': sale.payments.all(),          # newest first (Payment.Meta)
+        'payment_form': PaymentForm(sale=sale),   # renders the Add Payment modal
     }
     context.update(get_whatsapp_context_for_sale(sale))
     return render(request, 'sales/sale_detail.html', context)
@@ -353,4 +366,40 @@ def sales_report(request):
         'average_sale_value': average_sale_value,
     }
     return render(request, 'sales/sales_report.html', context)
+
+
+@login_required
+def payment_add(request, pk):
+    """Record a payment against a sale and redirect back to its detail page.
+
+    The Add Payment form lives on the sale detail page and posts here.
+    GET simply returns to the sale; POST validates through PaymentForm
+    (amount > 0 and <= remaining due) before saving.
+    """
+    from django.contrib import messages
+    from django.shortcuts import get_object_or_404, redirect
+
+    from .forms import PaymentForm
+    from .models import Sale
+
+    sale = get_object_or_404(Sale, pk=pk)
+    if request.method != 'POST':
+        return redirect('sale_detail', pk=sale.pk)
+
+    form = PaymentForm(request.POST, sale=sale)
+    if form.is_valid():
+        payment = form.save(commit=False)
+        payment.sale = sale
+        payment.save()
+        messages.success(
+            request,
+            f'Payment of Rs. {payment.amount:,.2f} recorded. '
+            f'Due: Rs. {sale.due_amount:,.2f} ({sale.payment_status}).')
+        return redirect('sale_detail', pk=sale.pk)
+
+    errors = '; '.join(
+        ' '.join(errs) if field == '__all__' else f'{field}: {" ".join(errs)}'
+        for field, errs in form.errors.items())
+    messages.error(request, f'Payment not recorded — {errors}')
+    return redirect('sale_detail', pk=sale.pk)
 

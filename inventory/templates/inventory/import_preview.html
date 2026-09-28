@@ -171,6 +171,7 @@
                         <th>Category</th>
                         <th>Metal</th>
                         <th>Gross Wt.</th>
+                        <th>Stone Wt.</th>
                         <th>Net Wt.</th>
                         <th>Selling Price</th>
                         <th>Validation Errors</th>
@@ -190,6 +191,7 @@
                         <td>{{ row.category_name|default:"—" }}</td>
                         <td>{{ row.metal_type|default:"—" }}</td>
                         <td>{{ row.gross_weight|default:"—" }}</td>
+                        <td>{{ row.stone_weight|default:"0.000" }}</td>
                         <td>{{ row.net_weight|default:"—" }}</td>
                         <td>{{ row.selling_price|default:"—" }}</td>
                         <td>
@@ -227,7 +229,7 @@
                         <th>Category</th>
                         <th>Metal</th>
                         <th>Purity</th>
-                        <th>Net Wt. (g)</th>
+                        <th>Gross / Stone / Net (g)</th>
                         <th>Selling Price</th>
                         <th>Status</th>
                     </tr>
@@ -254,7 +256,10 @@
                             {% endif %}
                         </td>
                         <td>{{ row.purity }}</td>
-                        <td>{{ row.net_weight }}g</td>
+                        <td class="text-nowrap">
+                            <span class="fw-semibold">{{ row.net_weight }}g</span>
+                            <div class="text-muted small">Gross {{ row.gross_weight }}g{% if row.has_stone_weight %} &middot; Stone {{ row.stone_weight }}g{% endif %}</div>
+                        </td>
                         <td class="fw-semibold">₹{{ row.selling_price }}</td>
                         <td>
                             {% if row.status == 'Available' %}

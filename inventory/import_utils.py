@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from inventory.models import JewelleryItem, Category
+from inventory.stock import record_initial_stock
 
 HEADER_MAPPING = {
     'item_code': ['item_code', 'item code', 'piece_id', 'piece id', 'item_id', 'item id', 'tag', 'tag_number', 'barcode', 'code'],
@@ -15,6 +16,7 @@ HEADER_MAPPING = {
     'metal_type': ['metal_type', 'metal type', 'metal', 'metal_name'],
     'purity': ['purity', 'purity_grade', 'purity grade', 'grade', 'karat', 'carat'],
     'gross_weight': ['gross_weight', 'gross weight', 'gross_wt', 'gross wt', 'gross'],
+    'stone_weight': ['stone_weight', 'stone weight', 'stone_wt', 'stone wt', 'stone'],
     'net_weight': ['net_weight', 'net weight', 'net_wt', 'net wt', 'net'],
     'making_charge': ['making_charge', 'making charge', 'making_charges', 'making charges', 'mc'],
     'selling_price': ['selling_price', 'selling price', 'price', 'amount', 'rate', 'sale_price'],
@@ -193,21 +195,43 @@ def validate_import_rows(data_rows):
             except (InvalidOperation, ValueError):
                 errors.append(f"Invalid gross weight number: '{raw_gross}'.")
 
+        stone_weight = Decimal('0.000')
+        raw_stone = str(row.get('stone_weight', '')).replace(',', '').strip()
+        if raw_stone:
+            try:
+                stone_weight = Decimal(raw_stone)
+                if stone_weight < 0:
+                    errors.append("Stone weight cannot be negative.")
+            except (InvalidOperation, ValueError):
+                errors.append(f"Invalid stone weight number: '{raw_stone}'.")
+
         net_weight = None
         raw_net = str(row.get('net_weight', '')).replace(',', '').strip()
-        if not raw_net:
-            errors.append("Net weight is required.")
-        else:
+        if raw_net:
             try:
                 net_weight = Decimal(raw_net)
                 if net_weight <= 0:
                     errors.append("Net weight must be greater than 0.")
             except (InvalidOperation, ValueError):
                 errors.append(f"Invalid net weight number: '{raw_net}'.")
+        elif gross_weight is not None and stone_weight < gross_weight:
+            # Net weight is optional: it is the precious metal weight left after the
+            # stones are removed, exactly like `JewelleryItem.clean` computes it.
+            net_weight = gross_weight - stone_weight
+        else:
+            errors.append("Net weight is required.")
 
-        if gross_weight is not None and net_weight is not None:
-            if net_weight > gross_weight:
-                errors.append(f"Net weight ({net_weight}g) cannot exceed gross weight ({gross_weight}g).")
+        # Only report the single most specific weight problem for the row.
+        if gross_weight is not None and net_weight is not None and net_weight > gross_weight:
+            errors.append(f"Net weight ({net_weight}g) cannot exceed gross weight ({gross_weight}g).")
+        elif gross_weight is not None and stone_weight > gross_weight:
+            errors.append(f"Stone weight ({stone_weight}g) cannot exceed gross weight ({gross_weight}g).")
+        elif (gross_weight is not None and net_weight is not None
+                and net_weight + stone_weight > gross_weight):
+            errors.append(
+                f"Net weight ({net_weight}g) plus stone weight ({stone_weight}g) exceeds "
+                f"gross weight ({gross_weight}g)."
+            )
 
         # 8. Making charge
         making_charge = Decimal('0.00')
@@ -252,6 +276,8 @@ def validate_import_rows(data_rows):
             'metal_type': metal_type,
             'purity': purity,
             'gross_weight': str(gross_weight) if gross_weight is not None else raw_gross,
+            'stone_weight': str(stone_weight),
+            'has_stone_weight': stone_weight != 0,
             'net_weight': str(net_weight) if net_weight is not None else raw_net,
             'making_charge': str(making_charge),
             'selling_price': str(selling_price) if selling_price is not None else raw_price,
@@ -280,15 +306,15 @@ def generate_sample_csv():
     writer = csv.writer(output)
     writer.writerow([
         'item_code', 'design_code', 'name', 'category', 'metal_type',
-        'purity', 'gross_weight', 'net_weight', 'making_charge', 'selling_price', 'status'
+        'purity', 'gross_weight', 'stone_weight', 'net_weight', 'making_charge', 'selling_price', 'status'
     ])
     sample_rows = [
-        ['GLD-RN-101-A', 'DSN-RN-101', '22K Gold Floral Solitaire Ring (Piece 1)', 'Rings', 'Gold', '22K (916)', '5.500', '5.200', '2500.00', '48500.00', 'Available'],
-        ['GLD-RN-101-B', 'DSN-RN-101', '22K Gold Floral Solitaire Ring (Piece 2)', 'Rings', 'Gold', '22K (916)', '5.650', '5.350', '2500.00', '49800.00', 'Available'],
-        ['DIA-ER-201-A', 'DSN-ER-201', '18K Diamond Solitaire Studs (0.5ct)', 'Earrings', 'Diamond', '18K / VVS-1', '4.200', '3.800', '4500.00', '68000.00', 'Available'],
-        ['GLD-NK-301-A', 'DSN-NK-301', 'Royal Antique Temple Gold Necklace', 'Necklaces', 'Gold', '22K (916)', '45.000', '42.500', '22000.00', '345000.00', 'Available'],
-        ['GLD-CN-401-A', 'DSN-COIN-10G', '24K Pure Gold Minted Coin (10g)', 'Coins & Bars', 'Gold', '24K (999)', '10.000', '10.000', '800.00', '78500.00', 'Available'],
-        ['SLV-AK-501-A', 'DSN-AK-501', 'Sterling Silver Handcrafted Payal (Anklet)', 'Anklets', 'Silver', '925 Silver', '48.000', '48.000', '1200.00', '5600.00', 'Available'],
+        ['GLD-RN-101-A', 'DSN-RN-101', '22K Gold Floral Solitaire Ring (Piece 1)', 'Rings', 'Gold', '22K (916)', '5.500', '0.300', '5.200', '2500.00', '48500.00', 'Available'],
+        ['GLD-RN-101-B', 'DSN-RN-101', '22K Gold Floral Solitaire Ring (Piece 2)', 'Rings', 'Gold', '22K (916)', '5.650', '0.300', '5.350', '2500.00', '49800.00', 'Available'],
+        ['DIA-ER-201-A', 'DSN-ER-201', '18K Diamond Solitaire Studs (0.5ct)', 'Earrings', 'Diamond', '18K / VVS-1', '4.200', '0.400', '3.800', '4500.00', '68000.00', 'Available'],
+        ['GLD-NK-301-A', 'DSN-NK-301', 'Royal Antique Temple Gold Necklace', 'Necklaces', 'Gold', '22K (916)', '45.000', '2.500', '42.500', '22000.00', '345000.00', 'Available'],
+        ['GLD-CN-401-A', 'DSN-COIN-10G', '24K Pure Gold Minted Coin (10g)', 'Coins & Bars', 'Gold', '24K (999)', '10.000', '0.000', '10.000', '800.00', '78500.00', 'Available'],
+        ['SLV-AK-501-A', 'DSN-AK-501', 'Sterling Silver Handcrafted Payal (Anklet)', 'Anklets', 'Silver', '925 Silver', '48.000', '0.000', '48.000', '1200.00', '5600.00', 'Available'],
     ]
     for row in sample_rows:
         writer.writerow(row)
@@ -332,6 +358,7 @@ def create_jewellery_item_from_row(row, category):
             metal_type=row['metal_type'],
             purity=row['purity'],
             gross_weight=Decimal(row['gross_weight']),
+            stone_weight=Decimal(row.get('stone_weight') or '0.000'),
             net_weight=Decimal(row['net_weight']),
             making_charge=Decimal(row['making_charge']),
             selling_price=Decimal(row['selling_price']),
@@ -344,13 +371,16 @@ def create_jewellery_item_from_row(row, category):
         ) from exc
 
 
-def import_valid_rows(valid_rows):
+def import_valid_rows(valid_rows, user=None):
     """
     Insert every row of `valid_rows` inside a single atomic database transaction.
 
     Categories are matched by name and created automatically when they do not exist yet.
     If any single row fails, the whole transaction is rolled back, so the inventory is
     never left with a partially imported file.
+
+    Each created item also gets its opening stock recorded as a `StockMovement`,
+    so the stock history of imported items starts from zero like any other item.
 
     Returns the number of `JewelleryItem` records created.
     """
@@ -367,7 +397,12 @@ def import_valid_rows(valid_rows):
                 )
                 category_cache[category_name] = category
 
-            create_jewellery_item_from_row(row, category)
+            item = create_jewellery_item_from_row(row, category)
+            record_initial_stock(
+                item,
+                user=user,
+                notes='Opening stock recorded by bulk inventory import.',
+            )
             imported_count += 1
 
     return imported_count

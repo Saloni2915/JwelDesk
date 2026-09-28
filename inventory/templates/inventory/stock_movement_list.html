@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block title %}Stock Movements — JewelDesk{% endblock %}
+
+{% block page_title %}Stock Movement History{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="{% url 'inventory_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Back to Inventory
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Movement summary -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-4">
+        <div class="card h-100">
+            <div class="card-body py-3">
+                <div class="text-muted small text-uppercase">Movements</div>
+                <div class="fs-4 fw-semibold text-dark">{{ totals.movement_count }}</div>
+                <div class="text-muted small">matching the current filters</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4">
+        <div class="card h-100">
+            <div class="card-body py-3">
+                <div class="text-muted small text-uppercase">Stock In</div>
+                <div class="fs-4 fw-semibold text-success">+{{ totals.stock_in }}</div>
+                <div class="text-muted small">piece(s) added</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4">
+        <div class="card h-100">
+            <div class="card-body py-3">
+                <div class="text-muted small text-uppercase">Stock Out</div>
+                <div class="fs-4 fw-semibold text-danger">{{ totals.stock_out }}</div>
+                <div class="text-muted small">piece(s) removed (sales, damage, loss)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get">
+            <div class="row g-2 align-items-center">
+                <div class="col-12 col-md-3">
+                    <input type="text" name="q" value="{{ selected_q }}" class="form-control form-control-sm"
+                           placeholder="Search by piece ID, item name or notes...">
+                </div>
+                <div class="col-6 col-md-2">
+                    <select name="type" class="form-select form-select-sm">
+                        <option value="">All Movement Types</option>
+                        {% for key, val in movement_types %}
+                        <option value="{{ key }}" {% if selected_type == key %}selected{% endif %}>{{ val }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <input type="date" name="from" value="{{ selected_from }}" class="form-control form-control-sm"
+                           aria-label="From date" title="From date">
+                </div>
+                <div class="col-6 col-md-2">
+                    <input type="date" name="to" value="{{ selected_to }}" class="form-control form-control-sm"
+                           aria-label="To date" title="To date">
+                </div>
+                <div class="col-6 col-md-1 d-flex gap-1">
+                    <button type="submit" class="btn btn-outline-dark btn-sm w-100" title="Apply Filters">
+                        <i class="bi bi-funnel"></i>
+                    </button>
+                    <a href="{% url 'stock_movement_list' %}" class="btn btn-outline-secondary btn-sm" title="Clear Filters">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                </div>
+                {% if is_item_filter %}
+                <div class="col-md-2 text-md-end">
+                    <span class="badge bg-light text-dark border">Filtered by one item</span>
+                </div>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Movement history -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date &amp; Time</th>
+                        <th>Tag / Piece ID</th>
+                        <th>Item</th>
+                        <th>Movement</th>
+                        <th class="text-end">Qty</th>
+                        <th class="text-end">Previous</th>
+                        <th class="text-end">New</th>
+                        <th>Reason</th>
+                        <th>Notes</th>
+                        <th>Done By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for movement in movements %}
+                    <tr>
+                        <td class="text-nowrap">{{ movement.created_at|date:"M d, Y h:i A" }}</td>
+                        <td>
+                            <a href="{% url 'inventory_detail' movement.item.id %}"
+                               class="fw-semibold text-decoration-none text-dark">
+                                {{ movement.item.tag_number|default:movement.item.item_code }}
+                            </a>
+                        </td>
+                        <td>
+                            {{ movement.item.name }}
+                            {% if movement.sale_id %}
+                            <div class="small">
+                                <a href="{% url 'sale_detail' movement.sale_id %}" class="text-decoration-none">
+                                    Sale #{{ movement.sale_id }}
+                                </a>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {% if movement.is_stock_out %}bg-danger{% else %}bg-success{% endif %}">
+                                {{ movement.get_movement_type_display }}
+                            </span>
+                        </td>
+                        <td class="text-end fw-semibold {% if movement.is_stock_out %}text-danger{% else %}text-success{% endif %}">
+                            {{ movement.quantity_change }}
+                        </td>
+                        <td class="text-end text-muted">{{ movement.stock_before }}</td>
+                        <td class="text-end fw-semibold">{{ movement.stock_after }}</td>
+                        <td>{{ movement.reason|default:"—" }}</td>
+                        <td class="text-muted small">{{ movement.notes|default:"" }}</td>
+                        <td>{{ movement.created_by.username|default:"System" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                            No stock movements found. Adjust stock from an inventory item to start the history.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include 'includes/pagination.html' with page_obj=page_obj %}
+    </div>
+</div>
+{% endblock %}

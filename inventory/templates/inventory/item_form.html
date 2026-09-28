@@ -32,16 +32,35 @@
                     {% endif %}
 
                     <div class="row g-3">
+                        <!-- Jewellery Identity -->
+                        <div class="col-12">
+                            <h6 class="text-uppercase text-muted fw-bold border-bottom pb-2 small">
+                                <i class="bi bi-tag me-1"></i> Jewellery Identity
+                            </h6>
+                        </div>
+
+                        <!-- Tag Number -->
+                        <div class="col-md-4">
+                            <label for="{{ form.tag_number.id_for_label }}" class="form-label">
+                                Jewellery Tag Number
+                            </label>
+                            {{ form.tag_number }}
+                            {% if form.tag_number.errors %}
+                            <div class="text-danger small mt-1">{{ form.tag_number.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text small">Unique piece tag (e.g. JWL-000001). Leave blank to auto-generate.</div>
+                        </div>
+
                         <!-- Item Code (Piece ID) -->
                         <div class="col-md-4">
                             <label for="{{ form.item_code.id_for_label }}" class="form-label">
-                                Piece ID / Tag <span class="text-danger">*</span>
+                                Piece ID / Item Code <span class="text-danger">*</span>
                             </label>
                             {{ form.item_code }}
                             {% if form.item_code.errors %}
                             <div class="text-danger small mt-1">{{ form.item_code.errors.0 }}</div>
                             {% endif %}
-                            <div class="form-text small">Unique physical piece code.</div>
+                            <div class="form-text small">Internal piece identifier / SKU.</div>
                         </div>
 
                         <!-- Design Code -->
@@ -57,7 +76,7 @@
                         </div>
 
                         <!-- Name -->
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label for="{{ form.name.id_for_label }}" class="form-label">
                                 Item Name <span class="text-danger">*</span>
                             </label>
@@ -68,7 +87,7 @@
                         </div>
 
                         <!-- Category -->
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label for="{{ form.category.id_for_label }}" class="form-label">
                                 Category <span class="text-danger">*</span>
                             </label>
@@ -80,9 +99,68 @@
                                 <a href="{% url 'category_list' %}" target="_blank" class="small"><i class="bi bi-tags"></i> Manage Categories</a>
                             </div>
                         </div>
+                        <!-- Authentication & Hallmarking -->
+                        <div class="col-12 mt-3">
+                            <h6 class="text-uppercase text-muted fw-bold border-bottom pb-2 small">
+                                <i class="bi bi-patch-check me-1"></i> Authentication &amp; Hallmark
+                            </h6>
+                        </div>
+
+                        <!-- HUID -->
+                        <div class="col-md-3">
+                            <label for="{{ form.huid.id_for_label }}" class="form-label">
+                                HUID (BIS Hallmark ID)
+                            </label>
+                            {{ form.huid }}
+                            {% if form.huid.errors %}
+                            <div class="text-danger small mt-1">{{ form.huid.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text small">6-char alphanumeric code (e.g. AB1234).</div>
+                        </div>
+
+                        <!-- HUID Status -->
+                        <div class="col-md-3">
+                            <label for="{{ form.huid_status.id_for_label }}" class="form-label">
+                                HUID Status
+                            </label>
+                            {{ form.huid_status }}
+                            {% if form.huid_status.errors %}
+                            <div class="text-danger small mt-1">{{ form.huid_status.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Hallmark Status -->
+                        <div class="col-md-3">
+                            <label for="{{ form.hallmark_status.id_for_label }}" class="form-label">
+                                Hallmark Status
+                            </label>
+                            {{ form.hallmark_status }}
+                            {% if form.hallmark_status.errors %}
+                            <div class="text-danger small mt-1">{{ form.hallmark_status.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Hallmark Details -->
+                        <div class="col-md-3">
+                            <label for="{{ form.hallmark_details.id_for_label }}" class="form-label">
+                                Hallmark Details
+                            </label>
+                            {{ form.hallmark_details }}
+                            {% if form.hallmark_details.errors %}
+                            <div class="text-danger small mt-1">{{ form.hallmark_details.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Metal & Weights -->
+                        <div class="col-12 mt-3">
+                            <h6 class="text-uppercase text-muted fw-bold border-bottom pb-2 small">
+                                <i class="bi bi-gem me-1"></i> Metal &amp; Weights
+                            </h6>
+                        </div>
+
 
                         <!-- Metal Type -->
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label for="{{ form.metal_type.id_for_label }}" class="form-label">
                                 Metal Type <span class="text-danger">*</span>
                             </label>
@@ -93,7 +171,7 @@
                         </div>
 
                         <!-- Purity -->
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label for="{{ form.purity.id_for_label }}" class="form-label">
                                 Purity <span class="text-danger">*</span>
                             </label>
@@ -104,9 +182,9 @@
                         </div>
 
                         <!-- Gross Weight -->
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label for="{{ form.gross_weight.id_for_label }}" class="form-label">
-                                Gross Weight (grams) <span class="text-danger">*</span>
+                                Gross Wt. (g) <span class="text-danger">*</span>
                             </label>
                             {{ form.gross_weight }}
                             {% if form.gross_weight.errors %}
@@ -114,16 +192,35 @@
                             {% endif %}
                         </div>
 
+                        <!-- Stone Weight -->
+                        <div class="col-md-2">
+                            <label for="{{ form.stone_weight.id_for_label }}" class="form-label">
+                                Stone Wt. (g)
+                            </label>
+                            {{ form.stone_weight }}
+                            {% if form.stone_weight.errors %}
+                            <div class="text-danger small mt-1">{{ form.stone_weight.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
                         <!-- Net Weight -->
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label for="{{ form.net_weight.id_for_label }}" class="form-label">
-                                Net Weight (grams) <span class="text-danger">*</span>
+                                Net Wt. (g)
                             </label>
                             {{ form.net_weight }}
                             {% if form.net_weight.errors %}
                             <div class="text-danger small mt-1">{{ form.net_weight.errors.0 }}</div>
                             {% endif %}
+                            <div class="form-text small">Auto = Gross - Stone</div>
                         </div>
+                        <!-- Pricing & Stock -->
+                        <div class="col-12 mt-3">
+                            <h6 class="text-uppercase text-muted fw-bold border-bottom pb-2 small">
+                                <i class="bi bi-currency-rupee me-1"></i> Pricing &amp; Status
+                            </h6>
+                        </div>
+
 
                         <!-- Making Charge -->
                         <div class="col-md-3">

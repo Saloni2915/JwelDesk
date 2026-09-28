@@ -6,6 +6,9 @@
 
 {% block page_actions %}
 <div class="d-flex gap-2">
+    <a href="{% url 'stock_adjust' item.id %}" class="btn btn-dark btn-sm">
+        <i class="bi bi-arrow-left-right me-1"></i> Adjust Stock
+    </a>
     <a href="{% url 'inventory_add' %}?duplicate_from={{ item.id }}" class="btn btn-outline-dark btn-sm" title="Add another physical piece of this design">
         <i class="bi bi-plus-square me-1"></i> Add Another Piece
     </a>
@@ -41,26 +44,96 @@
                 </div>
             </div>
             <div class="card-body p-4">
-                <div class="row g-3">
-                    <div class="col-sm-6">
-                        <div class="text-muted small">Piece ID / Tag</div>
-                        <div class="fs-6 fw-semibold text-dark">{{ item.item_code }}</div>
-                    </div>
-                    <div class="col-sm-6">
-                        <div class="text-muted small">Design Code</div>
-                        <div class="fs-6 fw-semibold">
-                            <span class="badge bg-light text-dark border font-monospace">{{ item.design_code|default:item.item_code }}</span>
+                <!-- Section 1: Jewellery Identity -->
+                <div class="border-bottom pb-3 mb-4">
+                    <h6 class="text-uppercase text-muted fw-bold small mb-3">
+                        <i class="bi bi-tag me-1 text-primary"></i> Jewellery Identity
+                    </h6>
+                    <div class="row g-3">
+                        <div class="col-sm-4">
+                            <div class="text-muted small">Tag Number</div>
+                            <div class="fs-5 fw-bold text-dark font-monospace">
+                                <i class="bi bi-upc-scan me-1 text-secondary"></i>{{ item.tag_number }}
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="text-muted small">Piece ID / Code</div>
+                            <div class="fs-6 fw-semibold text-dark">{{ item.item_code }}</div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="text-muted small">Design / Model Code</div>
+                            <div class="fs-6 fw-semibold">
+                                <span class="badge bg-light text-dark border font-monospace">{{ item.design_code|default:item.item_code }}</span>
+                            </div>
+                        </div>
+                        <div class="col-sm-8">
+                            <div class="text-muted small">Item Name</div>
+                            <div class="fs-6 fw-semibold">{{ item.name }}</div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="text-muted small">Category</div>
+                            <div class="fs-6"><span class="badge bg-light text-dark border">{{ item.category.name }}</span></div>
                         </div>
                     </div>
-                    <div class="col-sm-6">
-                        <div class="text-muted small">Item Name</div>
-                        <div class="fs-6 fw-semibold">{{ item.name }}</div>
+                </div>
+
+                <!-- Section 2: Authentication / Hallmark -->
+                <div class="border-bottom pb-3 mb-4">
+                    <h6 class="text-uppercase text-muted fw-bold small mb-3">
+                        <i class="bi bi-patch-check me-1 text-primary"></i> Authentication &amp; Hallmark
+                    </h6>
+                    <div class="row g-3">
+                        <div class="col-sm-3">
+                            <div class="text-muted small">HUID Number</div>
+                            <div class="fs-6 fw-semibold font-monospace">
+                                {% if item.huid %}
+                                <span class="badge bg-dark text-white px-2 py-1 fs-6">{{ item.huid }}</span>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-sm-3">
+                            <div class="text-muted small">HUID Status</div>
+                            <div class="fs-6">
+                                {% if item.huid_status == 'Verified' %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Verified</span>
+                                {% elif item.huid_status == 'Pending' %}
+                                <span class="badge bg-warning text-dark"><i class="bi bi-hourglass me-1"></i> Pending</span>
+                                {% else %}
+                                <span class="badge bg-light text-secondary border">Not Applicable</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-sm-3">
+                            <div class="text-muted small">Hallmark Status</div>
+                            <div class="fs-6">
+                                {% if item.hallmark_status == 'Hallmarked' %}
+                                <span class="badge bg-success"><i class="bi bi-shield-check me-1"></i> Hallmarked</span>
+                                {% elif item.hallmark_status == 'Pending' %}
+                                <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Pending</span>
+                                {% else %}
+                                <span class="badge bg-light text-secondary border">Not Applicable</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-sm-3">
+                            <div class="text-muted small">Hallmark Details</div>
+                            <div class="fs-6 text-truncate" title="{{ item.hallmark_details }}">
+                                {{ item.hallmark_details|default:"—" }}
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-sm-6">
-                        <div class="text-muted small">Category</div>
-                        <div class="fs-6">{{ item.category.name }}</div>
+                </div>
+
+                <!-- Section 3: Jewellery Details & Pricing -->
+                <div class="row g-3">
+                    <div class="col-12">
+                        <h6 class="text-uppercase text-muted fw-bold small mb-0">
+                            <i class="bi bi-gem me-1 text-primary"></i> Jewellery Details &amp; Pricing
+                        </h6>
                     </div>
-                    <div class="col-sm-6">
+                    <div class="col-sm-3">
                         <div class="text-muted small">Metal Type</div>
                         <div class="fs-6">
                             {% if item.metal_type == 'Gold' %}
@@ -74,27 +147,31 @@
                             {% endif %}
                         </div>
                     </div>
-                    <div class="col-sm-6">
+                    <div class="col-sm-3">
                         <div class="text-muted small">Purity / Grade</div>
-                        <div class="fs-6">{{ item.purity }}</div>
+                        <div class="fs-6 fw-semibold">{{ item.purity }}</div>
                     </div>
-                    <div class="col-sm-6">
+                    <div class="col-sm-2">
                         <div class="text-muted small">Gross Weight</div>
-                        <div class="fs-6">{{ item.gross_weight }} grams</div>
+                        <div class="fs-6 fw-semibold">{{ item.gross_weight }} g</div>
                     </div>
-                    <div class="col-sm-6">
+                    <div class="col-sm-2">
+                        <div class="text-muted small">Stone Weight</div>
+                        <div class="fs-6 fw-semibold">{{ item.stone_weight }} g</div>
+                    </div>
+                    <div class="col-sm-2">
                         <div class="text-muted small">Net Weight</div>
-                        <div class="fs-6">{{ item.net_weight }} grams</div>
+                        <div class="fs-6 fw-bold text-primary">{{ item.net_weight }} g</div>
                     </div>
-                    <div class="col-sm-6">
+                    <div class="col-sm-4">
                         <div class="text-muted small">Making Charge</div>
                         <div class="fs-6">₹{{ item.making_charge }}</div>
                     </div>
-                    <div class="col-sm-6">
+                    <div class="col-sm-4">
                         <div class="text-muted small">Selling Price</div>
                         <div class="fs-5 fw-bold text-success">₹{{ item.selling_price }}</div>
                     </div>
-                    <div class="col-sm-6">
+                    <div class="col-sm-4">
                         <div class="text-muted small">Created Date</div>
                         <div class="fs-6">{{ item.created_at|date:"M d, Y, h:i A" }}</div>
                     </div>
@@ -102,7 +179,113 @@
             </div>
         </div>
 
+        <!-- Stock Position -->
+        <div class="card mt-4">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-box-seam me-1"></i> Stock &amp; Valuation
+                </h6>
+                <a href="{% url 'stock_adjust' item.id %}" class="btn btn-outline-dark btn-sm">
+                    <i class="bi bi-arrow-left-right me-1"></i> Adjust Stock
+                </a>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="text-muted small">Current Stock</div>
+                        <div class="fs-4 fw-semibold text-dark">{{ item.quantity }} piece(s)</div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="text-muted small">Stock Status</div>
+                        <div class="fs-6">
+                            {% if item.status == 'Sold' or item.quantity <= 0 %}
+                            <span class="badge bg-danger">Out of Stock</span>
+                            {% elif item.status == 'Reserved' %}
+                            <span class="badge bg-warning text-dark">Reserved</span>
+                            {% elif is_low_stock %}
+                            <span class="badge bg-warning text-dark">Low Stock</span>
+                            {% else %}
+                            <span class="badge bg-success">In Stock</span>
+                            {% endif %}
+                            {% if is_low_stock %}
+                            <div class="text-muted small mt-1">At or below {{ low_stock_threshold }} piece(s).</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="text-muted small">Estimated Value</div>
+                        <div class="fs-6 fw-semibold text-success">₹{{ stock_value|floatformat:2 }}</div>
+                        <div class="text-muted small">quantity &times; selling price</div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="text-muted small">Total Net Weight</div>
+                        <div class="fs-6 fw-semibold">{{ stock_weight|floatformat:3 }} g</div>
+                        <div class="text-muted small">{{ item.net_weight }} g per piece</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Stock Movements -->
+        <div class="card mt-4">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-clock-history me-1"></i> Recent Stock Movements
+                </h6>
+                {% if movement_count %}
+                <a href="{% url 'stock_movement_list' %}?item={{ item.id }}" class="btn btn-outline-secondary btn-sm">
+                    View all {{ movement_count }}
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Movement</th>
+                                <th class="text-end">Qty</th>
+                                <th class="text-end">Stock</th>
+                                <th>Reason</th>
+                                <th>By</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for movement in movements %}
+                            <tr>
+                                <td class="text-nowrap">{{ movement.created_at|date:"M d, Y h:i A" }}</td>
+                                <td>
+                                    {% if movement.is_stock_out %}
+                                    <span class="badge bg-danger">{{ movement.get_movement_type_display }}</span>
+                                    {% else %}
+                                    <span class="badge bg-success">{{ movement.get_movement_type_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end fw-semibold {% if movement.is_stock_out %}text-danger{% else %}text-success{% endif %}">
+                                    {{ movement.quantity_change }}
+                                </td>
+                                <td class="text-end text-nowrap">{{ movement.stock_before }} &rarr; {{ movement.stock_after }}</td>
+                                <td>{{ movement.reason|default:"—" }}</td>
+                                <td>{{ movement.created_by.username|default:"System" }}</td>
+                                <td class="text-muted small">{{ movement.notes|default:"" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center py-3 text-muted small">
+                                    No stock movements recorded for this item yet.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- Other Physical Pieces of this Design -->
+
         <div class="card mt-4">
             <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-semibold text-dark">
@@ -118,7 +301,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th>Piece ID</th>
-                                <th>Net Wt.</th>
+                                <th>Weights (g)</th>
                                 <th>Selling Price</th>
                                 <th>Status</th>
                                 <th class="text-end pe-3">Action</th>

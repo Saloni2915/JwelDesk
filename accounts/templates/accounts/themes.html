@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}Themes — JewelDesk{% endblock %}
+{% block page_title %}Themes{% endblock %}
+{% block content %}
+<p class="text-muted mb-3">Choose how JewelDesk looks</p>
+
+<div class="theme-grid">
+    <div class="theme-card{% if current_theme == 'light' %} is-selected{% endif %}" data-theme-card="light">
+        <div class="p-2">
+            <div class="tp-window tp-light">
+                <div class="tp-topbar"><span class="tp-dot"></span><span class="tp-dot"></span><span class="tp-dot"></span></div>
+                <div class="tp-body">
+                    <div class="tp-side"><span class="tp-pill on"></span><span class="tp-pill"></span><span class="tp-pill"></span><span class="tp-pill"></span></div>
+                    <div class="tp-main">
+                        <div class="tp-card"><span class="tp-line w60"></span><span class="tp-line w40"></span></div>
+                        <div class="tp-table">
+                            <div class="tp-thead"><i class="tdot w70"></i><i class="tdot w50"></i><i class="tdot w60"></i></div>
+                            <div class="trow"><div class="tcell"><i class="tdot w70"></i></div><div class="tcell"><i class="tdot w50"></i></div><div class="tcell"><i class="tdot w60"></i></div></div>
+                        </div>
+                        <div class="tp-actions"><span class="tp-btn"></span><span class="tp-stat s-red"></span><span class="tp-stat s-green"></span><span class="tp-stat s-amber"></span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="p-3 pt-2">
+            <h6 class="theme-name mb-1">Light</h6>
+            <p class="theme-desc mb-3">Clean, neutral surfaces for everyday work.</p>
+            <button type="button" class="btn btn-sm w-100 theme-apply-btn" data-theme="light">{% if current_theme == 'light' %}✓ Selected{% else %}Apply{% endif %}</button>
+        </div>
+    </div>
+
+    <div class="theme-card{% if current_theme == 'dark' %} is-selected{% endif %}" data-theme-card="dark">
+        <div class="p-2">
+            <div class="tp-window tp-dark">
+                <div class="tp-topbar"><span class="tp-dot"></span><span class="tp-dot"></span><span class="tp-dot"></span></div>
+                <div class="tp-body">
+                    <div class="tp-side"><span class="tp-pill on"></span><span class="tp-pill"></span><span class="tp-pill"></span><span class="tp-pill"></span></div>
+                    <div class="tp-main">
+                        <div class="tp-card"><span class="tp-line w60"></span><span class="tp-line w40"></span></div>
+                        <div class="tp-table">
+                            <div class="tp-thead"><i class="tdot w70"></i><i class="tdot w50"></i><i class="tdot w60"></i></div>
+                            <div class="trow"><div class="tcell"><i class="tdot w70"></i></div><div class="tcell"><i class="tdot w50"></i></div><div class="tcell"><i class="tdot w60"></i></div></div>
+                        </div>
+                        <div class="tp-actions"><span class="tp-btn"></span><span class="tp-stat s-red"></span><span class="tp-stat s-green"></span><span class="tp-stat s-amber"></span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="p-3 pt-2">
+            <h6 class="theme-name mb-1">Dark</h6>
+            <p class="theme-desc mb-3">Reduced glare for long sessions and low light.</p>
+            <button type="button" class="btn btn-sm w-100 theme-apply-btn" data-theme="dark">{% if current_theme == 'dark' %}✓ Selected{% else %}Apply{% endif %}</button>
+        </div>
+    </div>
+    <div class="theme-card{% if current_theme == 'gold' %} is-selected{% endif %}" data-theme-card="gold">
+        <div class="p-2">
+            <div class="tp-window tp-gold">
+                <div class="tp-topbar"><span class="tp-dot"></span><span class="tp-dot"></span><span class="tp-dot"></span></div>
+                <div class="tp-body">
+                    <div class="tp-side"><span class="tp-pill on"></span><span class="tp-pill"></span><span class="tp-pill"></span><span class="tp-pill"></span></div>
+                    <div class="tp-main">
+                        <div class="tp-card"><span class="tp-line w60"></span><span class="tp-line w40"></span></div>
+                        <div class="tp-table">
+                            <div class="tp-thead"><i class="tdot w70"></i><i class="tdot w50"></i><i class="tdot w60"></i></div>
+                            <div class="trow"><div class="tcell"><i class="tdot w70"></i></div><div class="tcell"><i class="tdot w50"></i></div><div class="tcell"><i class="tdot w60"></i></div></div>
+                        </div>
+                        <div class="tp-actions"><span class="tp-btn"></span><span class="tp-stat s-red"></span><span class="tp-stat s-green"></span><span class="tp-stat s-amber"></span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="p-3 pt-2">
+            <h6 class="theme-name mb-1">Gold / Premium</h6>
+            <p class="theme-desc mb-3">Warm cream tones with a refined gold accent.</p>
+            <button type="button" class="btn btn-sm w-100 theme-apply-btn" data-theme="gold">{% if current_theme == 'gold' %}✓ Selected{% else %}Apply{% endif %}</button>
+        </div>
+    </div>
+</div>
+
+<p class="mt-4 mb-0 small text-muted">
+    <i class="bi bi-shield-check me-1"></i> Theme is stored in your browser (jd-theme) and restored automatically on your next visit.
+</p>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var cards = document.querySelectorAll('.theme-card');
+    var btns = document.querySelectorAll('.theme-apply-btn');
+    btns.forEach(function (b) {
+        b.addEventListener('click', function () {
+            var t = b.getAttribute('data-theme');
+            if (!t) { return; }
+            jdApplyTheme(t);
+            cards.forEach(function (c) { c.classList.toggle('is-selected', c.getAttribute('data-theme-card') === t); });
+            btns.forEach(function (x) {
+                var on = x.getAttribute('data-theme') === t;
+                x.classList.toggle('is-current', on);
+                x.textContent = on ? '✓ Selected' : 'Apply';
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

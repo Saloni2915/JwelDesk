@@ -9,6 +9,10 @@ urlpatterns = [
     path('inventory/<int:pk>/edit/', views.inventory_edit, name='inventory_edit'),
     path('inventory/<int:pk>/delete/', views.inventory_delete, name='inventory_delete'),
 
+    # Stock tracking routes
+    path('inventory/<int:pk>/adjust-stock/', views.stock_adjust, name='stock_adjust'),
+    path('inventory/stock-movements/', views.stock_movement_list, name='stock_movement_list'),
+
     # Bulk import routes
     path('inventory/import/', views.inventory_import, name='inventory_import'),
     path('inventory/import/sample-csv/', views.inventory_import_sample, name='inventory_import_sample'),

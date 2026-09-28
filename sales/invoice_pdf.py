@@ -153,6 +153,23 @@ def build_invoice_pdf(sale):
     c.drawString(130 * mm, y, 'Grand Total')
     c.drawRightString(col_x[4], y, f'Rs. {sale.sale_price:,.2f}')
 
+    # Paid / Due / Status (calculated from recorded payments)
+    paid = sale.paid_amount
+    due = sale.due_amount
+    status = sale.payment_status
+    y -= 6 * mm
+    c.setFont('Helvetica', 10)
+    c.drawString(130 * mm, y, 'Paid')
+    c.drawRightString(col_x[4], y, f'Rs. {paid:,.2f}')
+    y -= 6 * mm
+    c.drawString(130 * mm, y, 'Due')
+    c.drawRightString(col_x[4], y, f'Rs. {due:,.2f}')
+    y -= 7 * mm
+    c.setFont('Helvetica-Bold', 10)
+    c.drawString(130 * mm, y, 'Status')
+    c.drawRightString(col_x[4], y, status)
+    c.setFont('Helvetica', 10)
+
     # ---- Payment / footer ----------------------------------------------
     c.setFont('Helvetica', 10)
     c.drawString(20 * mm, y, f'Payment: {sale.payment_method}')

@@ -149,9 +149,21 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+# Inventory ------------------------------------------------------------------
+#
+# Low-stock threshold, in pieces. A design (all physical pieces sharing a
+# design code) that still has stock but is down to this many pieces or fewer is
+# flagged as "Low Stock" on the inventory pages. The inventory list also
+# accepts a per-request override via ?threshold=. Default: 1 piece (the last
+# piece of a design). Set the environment variable
+# JEWELDESK_LOW_STOCK_THRESHOLD to change it without touching the code.
+
+INVENTORY_LOW_STOCK_THRESHOLD = int(
+    os.environ.get('JEWELDESK_LOW_STOCK_THRESHOLD', '1'))
 
 
 # Metal prices (dashboard) ---------------------------------------------------
+
 #
 # Gold (XAU) / Silver (XAG) rates shown on the dashboard come from an
 # external API. Credentials are read from environment variables only — never

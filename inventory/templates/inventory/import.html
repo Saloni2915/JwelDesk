@@ -108,12 +108,17 @@
                             <tr>
                                 <td class="font-monospace">gross_weight</td>
                                 <td><span class="badge bg-danger">Yes</span></td>
-                                <td><small class="text-muted">Weight in grams (up to 3 decimals).</small></td>
+                                <td><small class="text-muted">Total weight in grams (up to 3 decimals).</small></td>
+                            </tr>
+                            <tr>
+                                <td class="font-monospace">stone_weight</td>
+                                <td><span class="badge bg-secondary">No</span></td>
+                                <td><small class="text-muted">Stone / bead / wax weight in grams, defaults to 0.000. Cannot exceed the gross weight.</small></td>
                             </tr>
                             <tr>
                                 <td class="font-monospace">net_weight</td>
-                                <td><span class="badge bg-danger">Yes</span></td>
-                                <td><small class="text-muted">Weight in grams; cannot be greater than the gross weight.</small></td>
+                                <td><span class="badge bg-secondary">No</span></td>
+                                <td><small class="text-muted">Precious metal weight in grams. Leave blank to use gross weight minus stone weight.</small></td>
                             </tr>
                             <tr>
                                 <td class="font-monospace">making_charge</td>

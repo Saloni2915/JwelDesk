@@ -4,58 +4,29 @@ Global context processor for company branding.
 Makes the CompanySettings singleton available to every request as
 the ``company`` context variable, so the header/sidebar and every
 other template can render the shop name/logo/GSTIN dynamically.
-Fetches the singleton once per process (process-lifetime cache) and
-invalidates on changes — no per-request DB hit after warm.
+Reads the singleton on every request so saved branding changes appear
+immediately; a safe fallback is used while nothing is configured.
 """
-import threading
-from django.db.models.signals import post_delete, post_save
-
 from .models import CompanySettings
-
-
-_process_cache = {
-    'brand': None,          # cached CompanySettings instance
-    'update_signal': False,
-    'lock': threading.Lock(),
-}
 
 
 def company_settings_context(request):
-    """Return {'company': CompanySettings} for every template render."""
-    brand = _get_brand()
-    if brand is None:
-        return {'company': _make_fallback_company()}
-    return {'company': brand}
+    """Return ``{'company': <branding>}`` for every template render.
+
+    The branding row is read fresh from the database on every request, so a
+    change saved in Company Settings is visible in the header and sidebar on
+    the very next page load. (An earlier revision cached the row for the whole
+    process lifetime, which is why saved changes appeared to be ignored.)
+    """
+    return {'company': _load_company()}
 
 
-from .models import CompanySettings
-
-
-def _get_brand():
-    """Return the process-cached CompanySettings brand instance (or None)."""
-    with _process_cache['lock']:
-        if _process_cache['update_signal']:
-            _process_cache['brand'] = None
-            _process_cache['update_signal'] = False
-        brand = _process_cache['brand']
-        if brand is None:
-            brand = _load_brand()
-            _process_cache['brand'] = brand
-        return brand
-
-
-def _load_brand():
-    """Load the singleton from the database (process-level fetch)."""
-    try:
-        return CompanySettings.objects.get(pk=1)
-    except CompanySettings.DoesNotExist:
-        return None
-
-
-def invalidate_cache(sender, **kwargs):
-    """Cache invalidation hook wired to CompanySettings save/delete signals."""
-    with _process_cache['lock']:
-        _process_cache['update_signal'] = True
+def _load_company():
+    """Return the CompanySettings row (pk=1), or a safe fallback object."""
+    company = CompanySettings.objects.filter(pk=1).first()
+    if company is None:
+        return _make_fallback_company()
+    return company
 
 
 class _FallbackCompany:

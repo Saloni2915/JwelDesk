@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} — JewelDesk{% endblock %}
+
+{% block page_title %}Adjust Stock — {{ item.item_code }}{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="{% url 'inventory_detail' item.id %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Back to Item
+    </a>
+    <a href="{% url 'stock_movement_list' %}?item={{ item.id }}" class="btn btn-outline-dark btn-sm">
+        <i class="bi bi-clock-history me-1"></i> Stock History
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-arrow-left-right me-1"></i> Stock Adjustment
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger py-2">
+                    {% for error in form.non_field_errors %}
+                    <div class="small">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="{{ form.adjustment_type.id_for_label }}" class="form-label">
+                                Adjustment type <span class="text-danger">*</span>
+                            </label>
+                            {{ form.adjustment_type }}
+                            {% if form.adjustment_type.errors %}
+                            <div class="text-danger small mt-1">{{ form.adjustment_type.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.quantity.id_for_label }}" class="form-label">
+                                Number of pieces
+                            </label>
+                            {{ form.quantity }}
+                            {% if form.quantity.errors %}
+                            <div class="text-danger small mt-1">{{ form.quantity.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text small">{{ form.quantity.help_text }}</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.new_stock.id_for_label }}" class="form-label">
+                                Counted stock (for a stock take)
+                            </label>
+                            {{ form.new_stock }}
+                            {% if form.new_stock.errors %}
+                            <div class="text-danger small mt-1">{{ form.new_stock.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text small">{{ form.new_stock.help_text }}</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.reason.id_for_label }}" class="form-label">
+                                Reason <span class="text-danger">*</span>
+                            </label>
+                            {{ form.reason }}
+                            {% if form.reason.errors %}
+                            <div class="text-danger small mt-1">{{ form.reason.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text small">{{ form.reason.help_text }}</div>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                            <div class="text-danger small mt-1">{{ form.notes.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="alert alert-light border small mt-3 mb-0">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Stock can never go negative — a reduction larger than the stock on hand is
+                        rejected. Every adjustment is stored in the stock movement history with your
+                        user name and the date/time.
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                        <a href="{% url 'inventory_detail' item.id %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-dark">
+                            <i class="bi bi-check-lg me-1"></i> Apply Adjustment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-gem me-1"></i> {{ item.name }}
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="text-muted small">Piece ID</div>
+                        <div class="fw-semibold">{{ item.item_code }}</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Design Code</div>
+                        <div class="fw-semibold">{{ item.design_code|default:item.item_code }}</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Current stock</div>
+                        <div class="fs-4 fw-semibold text-dark">{{ item.quantity }} piece(s)</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Stock status</div>
+                        <div>
+                            {% if item.status == 'Sold' or item.quantity <= 0 %}
+                            <span class="badge bg-danger">Out of Stock</span>
+                            {% elif item.status == 'Reserved' %}
+                            <span class="badge bg-warning text-dark">Reserved</span>
+                            {% elif is_low_stock %}
+                            <span class="badge bg-warning text-dark">Low Stock</span>
+                            {% else %}
+                            <span class="badge bg-success">In Stock</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Metal / Purity</div>
+                        <div>{{ item.metal_type }} &middot; {{ item.purity }}</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Stock value</div>
+                        <div class="fw-semibold text-success">₹{{ stock_value|floatformat:2 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-clock-history me-1"></i> Last Movements
+                </h6>
+                {% if movement_count %}
+                <a href="{% url 'stock_movement_list' %}?item={{ item.id }}" class="btn btn-outline-secondary btn-sm">
+                    View all
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm align-middle mb-0">
+                    <tbody>
+                        {% for movement in movements %}
+                        <tr>
+                            <td class="small text-muted text-nowrap">{{ movement.created_at|date:"M d, Y h:i A" }}</td>
+                            <td>
+                                <span class="badge {% if movement.is_stock_out %}bg-danger{% else %}bg-success{% endif %}">
+                                    {{ movement.get_movement_type_display }}
+                                </span>
+                            </td>
+                            <td class="text-end fw-semibold">{{ movement.quantity_change }}</td>
+                            <td class="text-end text-nowrap small">{{ movement.stock_before }} &rarr; {{ movement.stock_after }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td class="text-center py-3 text-muted small">No stock movements yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

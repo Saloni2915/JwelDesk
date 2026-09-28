@@ -4,7 +4,7 @@ import re
 from .models import CompanySettings
 
 COMPANY_NAME_MAX = 200
-COMPANY_GSTIN_RE = re.compile(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z][0-9][A-Z0-9]$')
+COMPANY_GSTIN_RE = re.compile(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]{3}$')
 
 
 class CompanySettingsForm(forms.ModelForm):

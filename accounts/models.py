@@ -57,15 +57,19 @@ class CompanySettings(models.Model):
     def __str__(self):
         return self.company_name or 'Company Settings'
 
+    @property
+    def name(self):
+        """Display name for templates (alias of ``company_name``).
+
+        The header and sidebar render ``{{ company.name }}``. Falling back to
+        the product name keeps the branding readable before the shop has been
+        configured in Company Settings.
+        """
+        return self.company_name or 'JewelDesk'
+
     def save(self, *args, **kwargs):
         # Singleton: always overwrite the single settings row (pk=1).
         self.pk = 1
-        # Enforce model-level validation (GSTIN format, email, phone) on
-        # every save path, including the Django admin and any ORM save.
-        try:
-            self.full_clean()
-        except ValidationError:
-            pass  # let callers handle form-level errors; hard block below
         super().save(*args, **kwargs)
 
     @classmethod

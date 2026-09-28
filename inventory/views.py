@@ -1,3 +1,4 @@
+import datetime
 from decimal import InvalidOperation
 
 from django.shortcuts import render, get_object_or_404, redirect
@@ -5,12 +6,13 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models import Q, Sum, Count, ProtectedError
 from django.http import HttpResponse
 from django.utils import timezone
-from .models import JewelleryItem, Category
-from .forms import JewelleryItemForm, CategoryForm
+from .models import JewelleryItem, Category, StockMovement
+from .forms import JewelleryItemForm, CategoryForm, StockAdjustmentForm
+from . import stock
 from .import_utils import (
     generate_sample_csv,
     get_duplicate_rows,
@@ -24,7 +26,16 @@ from . import metal_prices
 
 @login_required
 def dashboard(request):
-    """Main dashboard view with dynamic statistics and recent activity."""
+    """Main dashboard view — Jewellery Business Cockpit.
+
+    Every number is derived from existing rows (Sale/Payment/Customer/
+    JewelleryItem/CustomOrder/Enquiry). No invented trends or percentages.
+    Legacy context keys (total_items, available_items, sold_items,
+    today_sales_amount, recent_sales, recent_enquiries, upcoming_followups,
+    metal_prices) are preserved for backwards compatibility.
+    """
+    from django.db.models.functions import TruncDate
+
     today = timezone.localdate()
 
     total_items = JewelleryItem.objects.count()
@@ -32,17 +43,82 @@ def dashboard(request):
     sold_items = JewelleryItem.objects.filter(status='Sold').count()
 
     # Import sales & enquiries models dynamically to prevent circular imports if any
-    from sales.models import Sale, Enquiry
+    from sales.models import Sale, Enquiry, Payment
+    from customers.models import Customer
+    from custom_orders.models import CustomOrder
 
-    # Today's sales aggregation
+    # ---- Sales aggregates -------------------------------------------------
     today_sales_data = Sale.objects.filter(sale_date__date=today).aggregate(
         total_amount=Sum('sale_price'),
         count=Count('id')
     )
     today_sales_amount = today_sales_data['total_amount'] or 0
+    today_sales_count = today_sales_data['count'] or 0
 
-    # Recent sales (latest 5)
+    sales_totals = Sale.objects.aggregate(
+        total_amount=Sum('sale_price'),
+        count=Count('id'),
+    )
+    total_sales_amount = sales_totals['total_amount'] or 0
+    total_sales_count = sales_totals['count'] or 0
+
+    # Outstanding = total sales - total payments (never stored, always derived)
+    payments_total = Payment.objects.aggregate(
+        total=Sum('amount'))['total'] or 0
+    from decimal import Decimal
+    try:
+        outstanding_amount = Decimal(total_sales_amount) - Decimal(payments_total)
+    except Exception:
+        outstanding_amount = 0
+    if outstanding_amount < 0:
+        outstanding_amount = Decimal('0.00')
+
+    # ---- Inventory / customers -------------------------------------------
+    summary = stock.inventory_summary()
+    inventory_value = summary.get('inventory_value')
+    low_stock_designs = summary.get('low_stock_designs', [])[:5]
+    low_stock_design_count = summary.get('low_stock_design_count', 0)
+    customer_count = Customer.objects.count()
+
+    # Pending custom orders = everything not Delivered/Cancelled
+    pending_orders_qs = (
+        CustomOrder.objects.select_related('customer', 'category')
+        .exclude(status__in=[CustomOrder.STATUS_DELIVERED,
+                             CustomOrder.STATUS_CANCELLED])
+        .order_by('-created_at')
+    )
+    pending_custom_orders_count = pending_orders_qs.count()
+    pending_custom_orders = list(pending_orders_qs[:5])
+
+    # ---- Recent sales (latest 5) ------------------------------------------
     recent_sales = Sale.objects.select_related('customer', 'jewellery_item').order_by('-sale_date')[:5]
+
+    # ---- 7-day sales overview (CSS/SVG bars, no JS dependency) ------------
+    week_start = today - datetime.timedelta(days=6)
+    per_day = (
+        Sale.objects.filter(sale_date__date__gte=week_start,
+                            sale_date__date__lte=today)
+        .annotate(day=TruncDate('sale_date'))
+        .values('day')
+        .annotate(total=Sum('sale_price'), count=Count('id'))
+        .order_by('day')
+    )
+    by_day = {row['day']: row for row in per_day}
+    sales_chart = []
+    for i in range(7):
+        day = week_start + datetime.timedelta(days=i)
+        row = by_day.get(day)
+        sales_chart.append({
+            'date': day,
+            'label': day.strftime('%a'),
+            'day_num': day.strftime('%d'),
+            'total': row['total'] if row else 0,
+            'count': row['count'] if row else 0,
+        })
+    chart_max = max([float(r['total'] or 0) for r in sales_chart] + [0])
+    for row in sales_chart:
+        value = float(row['total'] or 0)
+        row['pct'] = round((value / chart_max * 100)) if chart_max else 0
 
     # Recent enquiries (latest 5)
     recent_enquiries = Enquiry.objects.select_related('customer', 'category').order_by('-created_at')[:5]
@@ -61,6 +137,7 @@ def dashboard(request):
 
     context = {
         'page_title': 'Dashboard',
+        # Legacy keys (kept for existing tests/templates)
         'total_items': total_items,
         'available_items': available_items,
         'sold_items': sold_items,
@@ -69,20 +146,45 @@ def dashboard(request):
         'recent_enquiries': recent_enquiries,
         'upcoming_followups': upcoming_followups,
         'metal_prices': metal_price_snapshot,
+        # Cockpit additions (all from existing data)
+        'today_sales_count': today_sales_count,
+        'total_sales_amount': total_sales_amount,
+        'total_sales_count': total_sales_count,
+        'outstanding_amount': outstanding_amount,
+        'inventory_value': inventory_value,
+        'low_stock_designs': low_stock_designs,
+        'low_stock_design_count': low_stock_design_count,
+        'customer_count': customer_count,
+        'pending_custom_orders': pending_custom_orders,
+        'pending_custom_orders_count': pending_custom_orders_count,
+        'sales_chart': sales_chart,
+        'sales_chart_max': chart_max,
+        'sales_chart_start': week_start,
+        'today': today,
     }
     return render(request, 'inventory/dashboard.html', context)
 
 
 @login_required
 def inventory_list(request):
-    """List all jewellery items with search and filters."""
+    """List all jewellery items with search, filters and stock summary."""
     items = JewelleryItem.objects.select_related('category').all()
     categories = Category.objects.all()
 
-    # Search filter (item_code, name, or design_code)
+    # Low-stock threshold: configurable per request (?threshold=) otherwise
+    # taken from settings.INVENTORY_LOW_STOCK_THRESHOLD.
+    threshold = stock.get_low_stock_threshold(request.GET.get('threshold'))
+
+    # Search filter (tag_number, item_code, name, design_code, or huid)
     q = request.GET.get('q', '').strip()
     if q:
-        items = items.filter(Q(item_code__icontains=q) | Q(name__icontains=q) | Q(design_code__icontains=q))
+        items = items.filter(
+            Q(tag_number__icontains=q) |
+            Q(item_code__icontains=q) |
+            Q(name__icontains=q) |
+            Q(design_code__icontains=q) |
+            Q(huid__icontains=q)
+        )
 
     # Category filter
     category_id = request.GET.get('category', '').strip()
@@ -94,14 +196,47 @@ def inventory_list(request):
     if metal:
         items = items.filter(metal_type=metal)
 
-    # Status filter
+    # Purity filter (values are whatever the shop already uses, e.g. 22K, 925)
+    purity = request.GET.get('purity', '').strip()
+    if purity:
+        items = items.filter(purity__iexact=purity)
+
+    # HUID status filter
+    huid_status = request.GET.get('huid_status', '').strip()
+    if huid_status:
+        items = items.filter(huid_status=huid_status)
+
+    # Hallmark status filter
+    hallmark_status = request.GET.get('hallmark_status', '').strip()
+    if hallmark_status:
+        items = items.filter(hallmark_status=hallmark_status)
+
+    # Status filter (Available / Sold / Reserved)
     status = request.GET.get('status', '').strip()
     if status:
         items = items.filter(status=status)
 
+    # Stock filter (In Stock / Low Stock / Out of Stock / Reserved)
+    low_stock_codes = stock.low_stock_design_codes(threshold)
+    stock_filter = request.GET.get('stock', '').strip()
+    if stock_filter == 'available':
+        items = items.filter(status='Available')
+    elif stock_filter == 'low_stock':
+        items = (items.filter(status='Available', quantity__gt=0,
+                              design_code__in=low_stock_codes)
+                 if low_stock_codes else items.none())
+    elif stock_filter == 'out_of_stock':
+        items = items.filter(Q(status='Sold') | Q(quantity__lte=0))
+    elif stock_filter == 'reserved':
+        items = items.filter(status='Reserved')
+    else:
+        stock_filter = ''
+
     # Sorting
     sort = request.GET.get('sort', '-created_at')
-    valid_sorts = ['selling_price', '-selling_price', 'created_at', '-created_at', 'name', 'item_code', 'design_code']
+    valid_sorts = ['selling_price', '-selling_price', 'created_at', '-created_at', 'name', 'item_code',
+                   'tag_number', 'design_code', 'quantity', '-quantity', 'net_weight', '-net_weight',
+                   'gross_weight', '-gross_weight', 'stone_weight', '-stone_weight']
     if sort in valid_sorts:
         items = items.order_by(sort)
 
@@ -110,17 +245,37 @@ def inventory_list(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    # Flag the items on this page that are running low (single query for the
+    # whole page - the design codes were already fetched above).
+    for item in page_obj.object_list:
+        item.is_low_stock = (
+            item.status == 'Available' and item.quantity > 0
+            and item.design_code in low_stock_codes)
+
     context = {
         'items': page_obj,
         'page_obj': page_obj,
         'categories': categories,
         'metal_choices': JewelleryItem.METAL_CHOICES,
         'status_choices': JewelleryItem.STATUS_CHOICES,
+        'huid_status_choices': JewelleryItem.HUID_STATUS_CHOICES,
+        'hallmark_status_choices': JewelleryItem.HALLMARK_STATUS_CHOICES,
+        'purity_choices': (JewelleryItem.objects.exclude(purity='')
+                           .order_by('purity')
+                           .values_list('purity', flat=True)
+                           .distinct()),
+        'stock_filter_choices': stock.STOCK_STATUS_FILTERS,
         'selected_q': q,
         'selected_category': category_id,
         'selected_metal': metal,
+        'selected_purity': purity,
+        'selected_huid_status': huid_status,
+        'selected_hallmark_status': hallmark_status,
         'selected_status': status,
+        'selected_stock': stock_filter,
         'selected_sort': sort,
+        'low_stock_threshold': threshold,
+        'summary': stock.inventory_summary(threshold),
     }
     return render(request, 'inventory/item_list.html', context)
 
@@ -140,7 +295,11 @@ def inventory_add(request):
                 'category': source_item.category_id,
                 'metal_type': source_item.metal_type,
                 'purity': source_item.purity,
+                'huid_status': source_item.huid_status,
+                'hallmark_status': source_item.hallmark_status,
+                'hallmark_details': source_item.hallmark_details,
                 'gross_weight': source_item.gross_weight,
+                'stone_weight': source_item.stone_weight,
                 'net_weight': source_item.net_weight,
                 'making_charge': source_item.making_charge,
                 'selling_price': source_item.selling_price,
@@ -152,7 +311,11 @@ def inventory_add(request):
     if request.method == 'POST':
         form = JewelleryItemForm(request.POST)
         if form.is_valid():
-            item = form.save()
+            with transaction.atomic():
+                item = form.save()
+                # Opening stock is written to the movement history too, so the
+                # stock ledger starts from zero for every item.
+                stock.record_initial_stock(item, user=request.user)
             messages.success(request, f"Jewellery item '{item.name}' ({item.item_code}) added successfully.")
             return redirect('inventory_list')
     else:
@@ -168,7 +331,7 @@ def inventory_add(request):
 
 @login_required
 def inventory_detail(request, pk):
-    """View details of a jewellery item and other physical pieces of the same design."""
+    """View details of a jewellery item, its stock position and other pieces of the same design."""
     item = get_object_or_404(JewelleryItem.objects.select_related('category'), pk=pk)
     # Check if item has been sold
     sale = item.sales.select_related('customer').first() if hasattr(item, 'sales') else None
@@ -178,10 +341,24 @@ def inventory_detail(request, pk):
         design_code=item.design_code
     ).exclude(pk=item.pk).order_by('-status', '-created_at') if item.design_code else []
 
+    # Recent stock movement history (the full ledger lives on its own page)
+    movements = item.stock_movements.select_related('created_by', 'sale')
+
+    threshold = stock.get_low_stock_threshold()
+    is_low_stock = (
+        item.status == 'Available' and item.quantity > 0
+        and item.design_code in stock.low_stock_design_codes(threshold))
+
     context = {
         'item': item,
         'sale': sale,
         'other_pieces': other_pieces,
+        'movements': movements[:10],
+        'movement_count': movements.count(),
+        'is_low_stock': is_low_stock,
+        'low_stock_threshold': threshold,
+        'stock_value': stock.item_stock_value(item),
+        'stock_weight': item.net_weight * item.quantity,
     }
     return render(request, 'inventory/item_detail.html', context)
 
@@ -223,6 +400,131 @@ def inventory_delete(request, pk):
         'item': item,
     }
     return render(request, 'inventory/item_confirm_delete.html', context)
+
+
+# ==============================================================================
+# STOCK VIEWS
+# ==============================================================================
+
+STOCK_MOVEMENTS_PER_PAGE = 25
+
+
+def parse_movement_date(value):
+    """Return a `datetime.date` parsed from a YYYY-MM-DD string, or None."""
+    if not value:
+        return None
+    try:
+        return datetime.date.fromisoformat(value.strip())
+    except (ValueError, AttributeError):
+        return None
+
+
+@login_required
+def stock_adjust(request, pk):
+    """
+    Controlled manual stock adjustment (increase / decrease / stock take).
+
+    All validation, the negative-stock guard and the audit-trail entry are
+    handled by `inventory.stock.apply_stock_change`, so this view only wires the
+    form to that service.
+    """
+    item = get_object_or_404(JewelleryItem.objects.select_related('category'), pk=pk)
+    threshold = stock.get_low_stock_threshold()
+
+    if request.method == 'POST':
+        form = StockAdjustmentForm(request.POST, item=item)
+        if form.is_valid():
+            change, movement_type, reason = form.stock_change()
+            try:
+                movement = stock.apply_stock_change(
+                    item, change, movement_type,
+                    reason=reason,
+                    notes=form.cleaned_data.get('notes', ''),
+                    user=request.user)
+            except ValidationError as exc:
+                form.add_error(None, ' '.join(exc.messages))
+            else:
+                messages.success(
+                    request,
+                    f"Stock for '{item.item_code}' updated from "
+                    f"{movement.stock_before} to {movement.stock_after} piece(s).")
+                return redirect('inventory_detail', pk=item.pk)
+    else:
+        form = StockAdjustmentForm(item=item)
+
+    context = {
+        'form': form,
+        'item': item,
+        'page_title': f'Adjust Stock - {item.item_code}',
+        'stock_value': stock.item_stock_value(item),
+        'movements': item.stock_movements.select_related('created_by')[:5],
+        'movement_count': item.stock_movements.count(),
+        'low_stock_threshold': threshold,
+        'is_low_stock': (item.status == 'Available' and item.quantity > 0
+                         and item.design_code in stock.low_stock_design_codes(threshold)),
+    }
+    return render(request, 'inventory/stock_adjust.html', context)
+
+
+@login_required
+def stock_movement_list(request):
+    """Stock movement history for the whole inventory, with filters."""
+    movements = StockMovement.objects.select_related('item', 'created_by', 'sale')
+
+    # Search (tag number, piece ID, item name, design code or notes)
+    q = request.GET.get('q', '').strip()
+    if q:
+        movements = movements.filter(
+            Q(item__tag_number__icontains=q) |
+            Q(item__item_code__icontains=q) |
+            Q(item__name__icontains=q) |
+            Q(item__design_code__icontains=q) |
+            Q(notes__icontains=q)
+        )
+
+    # Single item filter (linked from the item detail page)
+    item_id = request.GET.get('item', '').strip()
+    if item_id.isdigit():
+        movements = movements.filter(item_id=item_id)
+
+    # Movement type filter
+    movement_type = request.GET.get('type', '').strip()
+    if movement_type:
+        movements = movements.filter(movement_type=movement_type)
+
+    # Date range filter
+    date_from = parse_movement_date(request.GET.get('from'))
+    if date_from:
+        movements = movements.filter(created_at__date__gte=date_from)
+    date_to = parse_movement_date(request.GET.get('to'))
+    if date_to:
+        movements = movements.filter(created_at__date__lte=date_to)
+
+    totals = movements.aggregate(
+        movement_count=Count('id'),
+        stock_in=Sum('quantity_change', filter=Q(quantity_change__gt=0)),
+        stock_out=Sum('quantity_change', filter=Q(quantity_change__lt=0)),
+    )
+    totals['stock_in'] = totals['stock_in'] or 0
+    totals['stock_out'] = totals['stock_out'] or 0
+
+    paginator = Paginator(movements, STOCK_MOVEMENTS_PER_PAGE)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    context = {
+        'page_title': 'Stock Movement History',
+        'movements': page_obj,
+        'page_obj': page_obj,
+        'totals': totals,
+        'movement_types': StockMovement.MOVEMENT_TYPES,
+        'selected_q': q,
+        'selected_type': movement_type,
+        'selected_item': item_id,
+        'selected_from': request.GET.get('from', '').strip(),
+        'selected_to': request.GET.get('to', '').strip(),
+        'is_item_filter': bool(item_id),
+    }
+    return render(request, 'inventory/stock_movement_list.html', context)
 
 
 # ==============================================================================
@@ -432,7 +734,7 @@ def confirm_inventory_import(request):
         return redirect('inventory_import')
 
     try:
-        imported_count = import_valid_rows(valid_rows)
+        imported_count = import_valid_rows(valid_rows, user=request.user)
     except (ValidationError, IntegrityError, InvalidOperation) as exc:
         clear_stored_import(request)
         messages.error(

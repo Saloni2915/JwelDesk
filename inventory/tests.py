@@ -4,15 +4,15 @@ from decimal import Decimal
 from unittest.mock import patch
 
 import openpyxl
-from django.test import TestCase, Client
+from django.test import TestCase, Client, override_settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError
 from django.urls import reverse
 from django.utils.html import escape
-from inventory import import_utils
-from inventory.models import Category, JewelleryItem
+from inventory import import_utils, stock
+from inventory.models import Category, JewelleryItem, StockMovement
 from customers.models import Customer
 from sales.models import Sale, Enquiry
 
@@ -35,6 +35,51 @@ class InventoryModelTests(TestCase):
         with self.assertRaises(ValidationError):
             item.clean()
 
+    def test_net_weight_defaults_to_gross_minus_stone_weight(self):
+        item = JewelleryItem(
+            item_code='NET-CALC-001',
+            name='Stone Set Ring',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('6.000'),
+            stone_weight=Decimal('0.750'),
+            selling_price=Decimal('50000.00'),
+        )
+        item.clean()
+        self.assertEqual(item.net_weight, Decimal('5.250'))
+
+    def test_stone_weight_cannot_exceed_gross_weight(self):
+        item = JewelleryItem(
+            item_code='STN-001',
+            name='Over Stone Weight Item',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('5.000'),
+            stone_weight=Decimal('5.500'),
+            selling_price=Decimal('50000.00'),
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            item.clean()
+        self.assertIn('stone_weight', ctx.exception.message_dict)
+
+    def test_net_and_stone_weight_together_cannot_exceed_gross_weight(self):
+        item = JewelleryItem(
+            item_code='STN-002',
+            name='Weight Mismatch Item',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('5.000'),
+            stone_weight=Decimal('1.000'),
+            net_weight=Decimal('4.500'),
+            selling_price=Decimal('50000.00'),
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            item.clean()
+        self.assertIn('stone_weight', ctx.exception.message_dict)
+
     def test_valid_item_creation(self):
         item = JewelleryItem.objects.create(
             item_code='GLD-001',
@@ -50,6 +95,49 @@ class InventoryModelTests(TestCase):
         self.assertEqual(item.status, 'Available')
         self.assertEqual(item.design_code, 'DSN-001')
         self.assertIn('DSN-001', str(item))
+
+    def test_tag_number_is_generated_when_left_blank(self):
+        piece = JewelleryItem.objects.create(
+            item_code='TAG-AUTO-001',
+            name='Auto Tag Ring',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('5.000'),
+            selling_price=Decimal('50000.00'),
+        )
+        self.assertTrue(piece.tag_number.startswith('JWL-'))
+        self.assertEqual(len(piece.tag_number.split('-')[-1]), 6)
+
+    def test_generated_tag_numbers_are_sequential_and_unique(self):
+        first = JewelleryItem.objects.create(
+            item_code='TAG-AUTO-010', name='Auto Tag Ring 1', category=self.category,
+            metal_type='Gold', purity='22K', gross_weight=Decimal('5.000'),
+            selling_price=Decimal('50000.00'),
+        )
+        second = JewelleryItem.objects.create(
+            item_code='TAG-AUTO-011', name='Auto Tag Ring 2', category=self.category,
+            metal_type='Gold', purity='22K', gross_weight=Decimal('5.100'),
+            selling_price=Decimal('51000.00'),
+        )
+        self.assertNotEqual(first.tag_number, second.tag_number)
+        self.assertEqual(
+            int(second.tag_number.split('-')[-1]),
+            int(first.tag_number.split('-')[-1]) + 1,
+        )
+
+    def test_manual_tag_number_is_kept_as_entered(self):
+        piece = JewelleryItem.objects.create(
+            item_code='TAG-MANUAL-001',
+            tag_number='TD-1412',
+            name='Tagged Ring',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('5.000'),
+            selling_price=Decimal('50000.00'),
+        )
+        self.assertEqual(piece.tag_number, 'TD-1412')
 
     def test_multiple_pieces_same_design_code(self):
         piece1 = JewelleryItem.objects.create(
@@ -246,18 +334,18 @@ class CategoryViewTests(TestCase):
 
 IMPORT_HEADERS = [
     'item_code', 'design_code', 'name', 'category', 'metal_type',
-    'purity', 'gross_weight', 'net_weight', 'making_charge', 'selling_price', 'status',
+    'purity', 'gross_weight', 'stone_weight', 'net_weight', 'making_charge', 'selling_price', 'status',
 ]
 
 
 def valid_import_row(item_code='IMP-RN-001', design_code='DSN-IMP-001', name='Imported Gold Ring',
                      category='Bulk Import Rings', metal_type='Gold', purity='22K (916)',
-                     gross_weight='5.500', net_weight='5.200', making_charge='2500.00',
-                     selling_price='48500.00', status='Available'):
+                     gross_weight='5.500', stone_weight='0.300', net_weight='5.200',
+                     making_charge='2500.00', selling_price='48500.00', status='Available'):
     """Return one data row (list of cell values) for the bulk import tests."""
     return [
         item_code, design_code, name, category, metal_type,
-        purity, gross_weight, net_weight, making_charge, selling_price, status,
+        purity, gross_weight, stone_weight, net_weight, making_charge, selling_price, status,
     ]
 
 
@@ -523,7 +611,8 @@ class BulkImportViewTests(TestCase):
             valid_import_row(
                 item_code='IMP-CH-002', design_code='DSN-IMP-002', name='Sterling Silver Chain',
                 category='Imported Chains', metal_type='silver', purity='925 Silver',
-                gross_weight='12.000', net_weight='12.000', making_charge='', status='reserved',
+                gross_weight='12.000', stone_weight='0.000', net_weight='12.000',
+                making_charge='', status='reserved',
             ),
         ], filename='march-stock.csv')
 
@@ -548,6 +637,65 @@ class BulkImportViewTests(TestCase):
         self.assertContains(inventory_page, '2 jewellery item(s)')
         self.assertContains(inventory_page, 'IMP-RN-001')
         self.assertContains(inventory_page, 'IMP-CH-002')
+
+    # ---------------------------------------------------------
+    # STONE / NET WEIGHT HANDLING
+    # ---------------------------------------------------------
+    def test_stone_weight_column_is_imported(self):
+        self.upload_csv([
+            valid_import_row(item_code='IMP-STN-001', name='Stone Studded Ring',
+                             gross_weight='6.000', stone_weight='0.750', net_weight='5.250'),
+        ])
+
+        preview = self.preview_page()
+        self.assertEqual(preview.context['summary']['valid_count'], 1)
+        self.assertContains(preview, '0.750')
+
+        self.post_confirm()
+        imported = JewelleryItem.objects.get(item_code='IMP-STN-001')
+        self.assertEqual(imported.stone_weight, Decimal('0.750'))
+        self.assertEqual(imported.net_weight, Decimal('5.250'))
+        self.assertEqual(imported.gross_weight, Decimal('6.000'))
+
+    def test_blank_net_weight_is_derived_from_gross_and_stone_weight(self):
+        self.upload_csv([
+            valid_import_row(item_code='IMP-NETCALC-001', name='Beaded Gold Chain',
+                             gross_weight='11.250', stone_weight='1.250', net_weight=''),
+        ])
+
+        preview = self.preview_page()
+        self.assertEqual(preview.context['summary']['valid_count'], 1)
+        self.assertEqual(preview.context['summary']['invalid_count'], 0)
+        self.assertTrue(preview.context['can_import'])
+
+        self.post_confirm()
+        imported = JewelleryItem.objects.get(item_code='IMP-NETCALC-001')
+        self.assertEqual(imported.stone_weight, Decimal('1.250'))
+        self.assertEqual(imported.net_weight, Decimal('10.000'))
+
+    def test_stone_weight_greater_than_gross_weight_is_reported(self):
+        self.upload_csv([
+            valid_import_row(item_code='IMP-STN-BAD-001', gross_weight='4.000',
+                             stone_weight='4.500', net_weight=''),
+        ])
+
+        preview = self.preview_page()
+        self.assertEqual(preview.context['summary']['valid_count'], 0)
+        self.assertEqual(preview.context['summary']['invalid_count'], 1)
+        self.assertContains(preview, 'Stone weight (4.500g) cannot exceed gross weight (4.000g).')
+
+    def test_net_plus_stone_weight_greater_than_gross_weight_is_reported(self):
+        self.upload_csv([
+            valid_import_row(item_code='IMP-STN-BAD-002', gross_weight='5.000',
+                             stone_weight='1.000', net_weight='4.500'),
+        ])
+
+        preview = self.preview_page()
+        self.assertEqual(preview.context['summary']['invalid_count'], 1)
+        self.assertContains(
+            preview,
+            'Net weight (4.500g) plus stone weight (1.000g) exceeds gross weight (5.000g).',
+        )
 
     def test_uploaded_file_is_forgotten_after_a_successful_import(self):
         self.upload_csv([valid_import_row(item_code='IMP-ONCE-001')])
@@ -655,6 +803,7 @@ class BulkImportViewTests(TestCase):
         content = response.content.decode('utf-8')
         lines = [line for line in content.strip().splitlines() if line]
         self.assertTrue(lines[0].startswith('item_code,design_code,name,category,metal_type'))
+        self.assertIn('gross_weight,stone_weight,net_weight', lines[0])
         self.assertEqual(len(lines), 7)  # heading row + 6 sample pieces
 
     def test_downloaded_sample_csv_validates_and_imports(self):
@@ -906,4 +1055,534 @@ class MetalPriceDashboardTests(TestCase):
                                         follow=True)
         self.assertContains(response, 'Price update failed')
         self.assertContains(response, 'Showing the last available prices.')
+
+
+
+# ==============================================================================
+# STOCK TRACKING (inventory management phase 1)
+# ==============================================================================
+
+def make_item(category, item_code, **overrides):
+    """Small helper: create a JewelleryItem with sensible defaults."""
+    defaults = {
+        'name': f'Item {item_code}',
+        'category': category,
+        'metal_type': 'Gold',
+        'purity': '22K',
+        'gross_weight': Decimal('5.000'),
+        'net_weight': Decimal('4.800'),
+        'selling_price': Decimal('50000.00'),
+        'status': 'Available',
+    }
+    defaults.update(overrides)
+    return JewelleryItem.objects.create(item_code=item_code, **defaults)
+
+
+class StockServiceTests(TestCase):
+    """Stock value, summary, low stock and the stock movement service."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='stockkeeper', password='Password123')
+        self.category = Category.objects.create(name='Rings')
+        self.item = make_item(self.category, 'STK-001')
+
+    # -------------------------------------------------------------- valuation
+    def test_item_stock_value_is_quantity_times_selling_price(self):
+        self.item.quantity = 3
+        self.item.save()
+        self.assertEqual(stock.item_stock_value(self.item), Decimal('150000.00'))
+        self.assertEqual(stock.inventory_value(), Decimal('150000.00'))
+
+    def test_inventory_value_excludes_sold_and_reserved_items(self):
+        make_item(self.category, 'STK-002', quantity=2)                       # 100000
+        make_item(self.category, 'STK-003', quantity=5, status='Reserved')    # excluded
+        make_item(self.category, 'STK-004', quantity=1, status='Sold')        # excluded
+        # 50000 (STK-001) + 100000 (STK-002)
+        self.assertEqual(stock.inventory_value(), Decimal('150000.00'))
+
+    # ---------------------------------------------------------------- summary
+    def test_inventory_summary_reports_stock_value_metals_and_low_stock(self):
+        make_item(self.category, 'STK-GOLD', quantity=2,
+                  gross_weight=Decimal('6.500'), net_weight=Decimal('6.000'))
+        make_item(self.category, 'STK-SILVER', metal_type='Silver', purity='925',
+                  quantity=4, gross_weight=Decimal('11.000'),
+                  net_weight=Decimal('10.000'), selling_price=Decimal('2000.00'))
+        make_item(self.category, 'STK-SOLD', status='Sold')
+
+        summary = stock.inventory_summary()
+
+        self.assertEqual(summary['total_items'], 4)
+        self.assertEqual(summary['available_stock'], 7)   # 1 + 2 + 4
+        self.assertEqual(summary['out_of_stock_items'], 1)
+        self.assertEqual(summary['gold_stock'], 3)        # 1 + 2
+        self.assertEqual(summary['silver_stock'], 4)
+        self.assertEqual(summary['gold_weight'], Decimal('16.800'))    # 4.8 + (2 * 6.0)
+        self.assertEqual(summary['silver_weight'], Decimal('40.000'))
+        self.assertEqual(summary['inventory_value'], Decimal('158000.00'))
+        self.assertEqual(summary['low_stock_threshold'], 1)
+
+    def test_inventory_summary_on_empty_inventory(self):
+        JewelleryItem.objects.all().delete()
+        summary = stock.inventory_summary()
+        self.assertEqual(summary['total_items'], 0)
+        self.assertEqual(summary['available_stock'], 0)
+        self.assertEqual(summary['inventory_value'], Decimal('0.00'))
+        self.assertEqual(summary['low_stock_design_count'], 0)
+
+    # -------------------------------------------------------------- low stock
+    def test_low_stock_detection_at_or_below_threshold(self):
+        make_item(self.category, 'LOW-001', quantity=1, design_code='DSN-LOW')
+        make_item(self.category, 'LOW-002', quantity=1, design_code='DSN-LOW')
+        make_item(self.category, 'OK-001', quantity=5, design_code='DSN-OK')
+
+        codes = stock.low_stock_design_codes()          # default threshold = 1
+        self.assertNotIn('DSN-LOW', codes)              # 2 available pieces > 1
+
+        codes = stock.low_stock_design_codes(2)
+        self.assertIn('DSN-LOW', codes)
+        self.assertNotIn('DSN-OK', codes)
+
+        low_items = {i.item_code for i in stock.low_stock_items(2)
+                     if i.design_code == 'DSN-LOW'}
+        self.assertEqual(low_items, {'LOW-001', 'LOW-002'})
+
+    def test_low_stock_ignores_designs_with_no_stock_left(self):
+        make_item(self.category, 'GONE-001', status='Sold', design_code='DSN-GONE')
+        self.assertNotIn('DSN-GONE', stock.low_stock_design_codes(5))
+        self.assertNotIn('GONE-001', {i.item_code for i in stock.low_stock_items(5)})
+
+    def test_low_stock_threshold_setting_and_override(self):
+        make_item(self.category, 'TH-001', quantity=3)
+        self.assertEqual(stock.get_low_stock_threshold(), 1)
+        self.assertEqual(stock.get_low_stock_threshold(''), 1)
+        self.assertEqual(stock.get_low_stock_threshold('4'), 4)
+        self.assertEqual(stock.get_low_stock_threshold('not-a-number'), 1)
+        self.assertEqual(stock.get_low_stock_threshold('-5'), 0)
+        self.assertEqual(stock.get_low_stock_threshold(99999), 1000)
+        with override_settings(INVENTORY_LOW_STOCK_THRESHOLD=3):
+            self.assertEqual(stock.get_low_stock_threshold(), 3)
+
+    def test_low_stock_designs_report_lists_pieces_left(self):
+        make_item(self.category, 'DSN-A-1', quantity=1, design_code='DSN-A')
+        report = {d['design_code']: d for d in stock.low_stock_designs(2)}
+        self.assertIn('DSN-A', report)
+        self.assertEqual(report['DSN-A']['available'], 1)
+        self.assertEqual(report['DSN-A']['item_count'], 1)
+
+
+
+    # ------------------------------------------------------------ adjustments
+    def test_stock_increase_creates_movement_and_updates_quantity(self):
+        movement = stock.apply_stock_change(
+            self.item, 4, StockMovement.ADDITION,
+            reason='New Stock Received', notes='Supplier invoice 42', user=self.user)
+
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.quantity, 5)
+        self.assertEqual(self.item.status, 'Available')
+        self.assertEqual(movement.stock_before, 1)
+        self.assertEqual(movement.stock_after, 5)
+        self.assertEqual(movement.quantity_change, 4)
+        self.assertEqual(movement.reason, 'New Stock Received')
+        self.assertEqual(movement.notes, 'Supplier invoice 42')
+        self.assertEqual(movement.created_by, self.user)
+        self.assertEqual(self.item.stock_movements.count(), 1)
+
+    def test_stock_decrease_creates_movement(self):
+        self.item.quantity = 4
+        self.item.save()
+        movement = stock.apply_stock_change(
+            self.item, -3, StockMovement.REDUCTION, reason='Damaged Item')
+
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.quantity, 1)
+        self.assertEqual(movement.quantity_change, -3)
+        self.assertEqual(movement.stock_before, 4)
+        self.assertEqual(movement.stock_after, 1)
+
+    def test_stock_reduction_to_zero_marks_the_item_sold(self):
+        movement = stock.apply_stock_change(
+            self.item, -1, StockMovement.REDUCTION, reason='Lost Item')
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.quantity, 0)
+        self.assertEqual(self.item.status, 'Sold')
+        self.assertTrue(self.item.is_out_of_stock)
+        self.assertEqual(movement.stock_after, 0)
+
+    def test_negative_stock_is_rejected(self):
+        with self.assertRaises(ValidationError):
+            stock.apply_stock_change(self.item, -2, StockMovement.REDUCTION)
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.quantity, 1)
+        self.assertEqual(self.item.status, 'Available')
+        self.assertEqual(self.item.stock_movements.count(), 0)
+
+    def test_zero_change_is_rejected(self):
+        with self.assertRaises(ValidationError):
+            stock.apply_stock_change(self.item, 0, StockMovement.ADJUSTMENT)
+        self.assertEqual(self.item.stock_movements.count(), 0)
+
+    def test_multiple_movements_keep_a_consistent_chain(self):
+        stock.apply_stock_change(self.item, 4, StockMovement.ADDITION)
+        stock.apply_stock_change(self.item, -2, StockMovement.REDUCTION)
+        stock.apply_stock_change(self.item, 3, StockMovement.ADJUSTMENT)
+
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.quantity, 6)
+
+        movements = list(self.item.stock_movements.order_by('id'))
+        self.assertEqual(len(movements), 3)
+        # Chronological chain: each movement starts where the previous one ended
+        # (the item starts with one piece in stock).
+        expected = [(1, 5), (5, 3), (3, 6)]
+        for movement, (before, after) in zip(movements, expected):
+            self.assertEqual((movement.stock_before, movement.stock_after), (before, after))
+        self.assertEqual(movements[-1].stock_after, self.item.quantity)
+
+    def test_restocking_a_sold_item_makes_it_available_again(self):
+        make_item(self.category, 'BACK-001', status='Sold')
+        sold = JewelleryItem.objects.get(item_code='BACK-001')
+        stock.apply_stock_change(sold, 2, StockMovement.ADDITION)
+        sold.refresh_from_db()
+        self.assertEqual(sold.quantity, 3)
+        self.assertEqual(sold.status, 'Available')
+
+    def test_movement_model_rejects_inconsistent_values(self):
+        movement = StockMovement(
+            item=self.item, movement_type=StockMovement.ADDITION,
+            quantity_change=2, stock_before=1, stock_after=99)
+        with self.assertRaises(ValidationError):
+            movement.clean()
+
+    def test_movement_constraints_block_a_zero_quantity_change(self):
+        with self.assertRaises((IntegrityError, ValidationError)):
+            StockMovement.objects.create(
+                item=self.item, movement_type=StockMovement.ADJUSTMENT,
+                quantity_change=0, stock_before=1, stock_after=1)
+
+
+class StockAdjustmentViewTests(TestCase):
+    """The controlled stock adjustment screen (increase / decrease / stock take)."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='adjuster', password='Password123')
+        self.client.login(username='adjuster', password='Password123')
+        self.category = Category.objects.create(name='Chains')
+        self.item = make_item(self.category, 'ADJ-001')
+
+    def _post(self, **data):
+        payload = {'adjustment_type': 'increase', 'reason': 'New Stock Received'}
+        payload.update(data)
+        return self.client.post(
+            reverse('stock_adjust', kwargs={'pk': self.item.pk}), payload, follow=True)
+
+    def test_adjust_view_requires_login(self):
+        self.client.logout()
+        response = self.client.get(reverse('stock_adjust', kwargs={'pk': self.item.pk}))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('login', response.url)
+
+    def test_adjust_page_renders_the_form(self):
+        response = self.client.get(reverse('stock_adjust', kwargs={'pk': self.item.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'inventory/stock_adjust.html')
+        self.assertContains(response, 'Stock Adjustment')
+        self.assertContains(response, self.item.item_code)
+
+    def test_stock_increase_via_view(self):
+        response = self._post(adjustment_type='increase', quantity='5',
+                              notes='New arrivals')
+        self.assertEqual(response.status_code, 200)
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.quantity, 6)
+
+        movement = self.item.stock_movements.get()
+        self.assertEqual(movement.movement_type, StockMovement.ADDITION)
+        self.assertEqual(movement.quantity_change, 5)
+        self.assertEqual(movement.stock_before, 1)
+        self.assertEqual(movement.stock_after, 6)
+        self.assertEqual(movement.reason, 'New Stock Received')
+        self.assertEqual(movement.notes, 'New arrivals')
+        self.assertEqual(movement.created_by, self.user)
+        self.assertIsNotNone(movement.created_at)
+
+    def test_stock_decrease_via_view(self):
+        self.item.quantity = 6
+        self.item.save()
+        self._post(adjustment_type='decrease', quantity='2', reason='Damaged Item')
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.quantity, 4)
+        self.assertEqual(self.item.stock_movements.get().movement_type, StockMovement.REDUCTION)
+
+    def test_negative_stock_is_rejected_via_view(self):
+        response = self._post(adjustment_type='decrease', quantity='5',
+                              reason='Lost Item')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Stock can never become negative')
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.quantity, 1)
+        self.assertEqual(self.item.stock_movements.count(), 0)
+
+    def test_stock_take_sets_the_exact_count(self):
+        self.item.quantity = 7
+        self.item.save()
+        self._post(adjustment_type='set', new_stock='4', reason='Stock Correction')
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.quantity, 4)
+        movement = self.item.stock_movements.get()
+        self.assertEqual(movement.movement_type, StockMovement.ADJUSTMENT)
+        self.assertEqual(movement.quantity_change, -3)
+        self.assertEqual(movement.stock_before, 7)
+        self.assertEqual(movement.stock_after, 4)
+
+    def test_stock_take_with_unchanged_count_is_rejected(self):
+        response = self._post(adjustment_type='set', new_stock='1',
+                              reason='Stock Correction')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'nothing to adjust')
+        self.assertEqual(self.item.stock_movements.count(), 0)
+
+    def test_reason_is_required(self):
+        response = self.client.post(
+            reverse('stock_adjust', kwargs={'pk': self.item.pk}),
+            {'adjustment_type': 'increase', 'quantity': '2', 'reason': ''})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.item.stock_movements.count(), 0)
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.quantity, 1)
+
+    def test_quantity_is_required_for_increase_and_decrease(self):
+        response = self._post(adjustment_type='increase', quantity='')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Enter the number of pieces')
+        self.assertEqual(self.item.stock_movements.count(), 0)
+
+
+
+class SaleStockIntegrationTests(TestCase):
+    """Completing a sale must reduce stock exactly once."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='cashier2', password='Password123')
+        self.client.login(username='cashier2', password='Password123')
+        self.category = Category.objects.create(name='Bangles')
+        self.customer = Customer.objects.create(name='Meera Shah', mobile='+91 9000000000')
+        self.item = make_item(self.category, 'SALE-001')
+
+    def _sell(self):
+        return self.client.post(reverse('sale_add'), {
+            'customer': self.customer.id,
+            'jewellery_item': self.item.id,
+            'sale_price': '50000.00',
+            'payment_method': 'Cash',
+        }, follow=True)
+
+    def test_sale_reduces_stock_and_records_a_sale_movement(self):
+        response = self._sell()
+        self.assertEqual(response.status_code, 200)
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.quantity, 0)
+        self.assertEqual(self.item.status, 'Sold')
+
+        sale = Sale.objects.get(jewellery_item=self.item)
+        movement = self.item.stock_movements.get()
+        self.assertEqual(movement.movement_type, StockMovement.SALE)
+        self.assertEqual(movement.quantity_change, -1)
+        self.assertEqual(movement.stock_before, 1)
+        self.assertEqual(movement.stock_after, 0)
+        self.assertEqual(movement.sale, sale)
+        self.assertEqual(movement.created_by, self.user)
+
+    def test_sale_of_extra_pieces_keeps_the_item_available(self):
+        self.item.quantity = 3
+        self.item.save()
+        self._sell()
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.quantity, 2)
+        self.assertEqual(self.item.status, 'Available')
+
+    def test_stock_is_not_reduced_twice_when_item_sells_out(self):
+        # Selling the last piece marks it as Sold. A second attempt must be
+        # rejected and not reduce stock further or log another movement.
+        self.item.quantity = 1
+        self.item.save()
+        first = self._sell()
+        self.assertEqual(first.status_code, 200)
+        second = self._sell()
+        self.assertContains(second, 'already SOLD')
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.quantity, 0)
+        self.assertEqual(self.item.status, 'Sold')
+        self.assertEqual(self.item.stock_movements.count(), 1)
+        self.assertEqual(Sale.objects.count(), 1)
+
+    def test_sale_is_blocked_when_no_stock_is_left(self):
+        self.item.quantity = 0
+        self.item.status = 'Available'
+        self.item.save()
+        response = self._sell()
+        self.assertContains(response, 'already SOLD')
+        self.assertEqual(Sale.objects.count(), 0)
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.quantity, 0)
+        self.assertEqual(self.item.stock_movements.count(), 0)
+
+    def test_invoice_pdf_still_works_after_the_stock_change(self):
+        self._sell()
+        sale = Sale.objects.get(jewellery_item=self.item)
+        response = self.client.get(reverse('sale_invoice_pdf', kwargs={'pk': sale.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+
+
+class InventoryStockPageTests(TestCase):
+    """Inventory list summary/filters, item detail stock block and movement history."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='viewer', password='Password123')
+        self.client.login(username='viewer', password='Password123')
+        self.category = Category.objects.create(name='Earrings')
+        self.silver_category = Category.objects.create(name='Silver Line')
+        self.item = make_item(self.category, 'PG-001', quantity=2, design_code='DSN-PG')
+        self.silver = make_item(
+            self.silver_category, 'PG-002', metal_type='Silver', purity='925',
+            quantity=6, design_code='DSN-AG', selling_price=Decimal('2000.00'))
+        self.sold = make_item(self.category, 'PG-003', status='Sold', quantity=0)
+        stock.apply_stock_change(self.item, 2, StockMovement.ADDITION,
+                                 reason='New Stock Received', user=self.user)
+        # item now has quantity=4 (low stock with default threshold 5)
+
+    # ------------------------------------------------------------------ list
+    def test_list_shows_the_inventory_summary(self):
+        response = self.client.get(reverse('inventory_list'))
+        self.assertEqual(response.status_code, 200)
+        summary = response.context['summary']
+        self.assertEqual(summary['total_items'], 3)
+        self.assertEqual(summary['available_stock'], 10)          # 4 + 6
+        self.assertEqual(summary['gold_stock'], 4)
+        self.assertEqual(summary['silver_stock'], 6)
+        self.assertEqual(summary['inventory_value'], Decimal('212000.00'))
+        self.assertContains(response, 'Available Stock')
+        self.assertContains(response, 'Stock Value')
+        self.assertContains(response, 'Low Stock')
+        self.assertContains(response, 'Stock Movements')
+
+    def test_list_low_stock_filter_and_badge(self):
+        # Set the threshold so PG-001 (quantity=4) is treated as low-stock
+        # under the default page view without an explicit ?threshold= param.
+        with self.settings(INVENTORY_LOW_STOCK_THRESHOLD=4):
+            response = self.client.get(reverse('inventory_list'), {'stock': 'low_stock'})
+            self.assertEqual(response.status_code, 200)
+            codes = [item.item_code for item in response.context['items']]
+            self.assertEqual(codes, ['PG-001'])
+
+        response = self.client.get(reverse('inventory_list'),
+                                   {'stock': 'low_stock', 'threshold': '7'})
+        codes = sorted(item.item_code for item in response.context['items'])
+        self.assertEqual(codes, ['PG-001', 'PG-002'])
+
+    def test_list_stock_status_out_of_stock_filter(self):
+        response = self.client.get(reverse('inventory_list'), {'stock': 'out_of_stock'})
+        codes = [item.item_code for item in response.context['items']]
+        self.assertEqual(codes, ['PG-003'])
+
+    def test_list_reserved_and_available_filters(self):
+        self.item.status = 'Reserved'
+        self.item.save()
+        reserved = self.client.get(reverse('inventory_list'), {'stock': 'reserved'})
+        self.assertEqual([i.item_code for i in reserved.context['items']], ['PG-001'])
+        available = self.client.get(reverse('inventory_list'), {'stock': 'available'})
+        self.assertEqual([i.item_code for i in available.context['items']], ['PG-002'])
+
+    def test_list_purity_filter_and_search(self):
+        response = self.client.get(reverse('inventory_list'), {'purity': '925'})
+        self.assertEqual([i.item_code for i in response.context['items']], ['PG-002'])
+        response = self.client.get(reverse('inventory_list'), {'q': 'PG-002'})
+        self.assertEqual([i.item_code for i in response.context['items']], ['PG-002'])
+
+    def test_list_threshold_query_param_is_reported(self):
+        response = self.client.get(reverse('inventory_list'), {'threshold': '3'})
+        self.assertEqual(response.context['low_stock_threshold'], 3)
+
+    # ---------------------------------------------------------------- detail
+    def test_detail_shows_stock_value_and_movements(self):
+        response = self.client.get(reverse('inventory_detail', kwargs={'pk': self.item.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['stock_value'], Decimal('200000.00'))
+        self.assertEqual(response.context['movement_count'], 1)
+        self.assertEqual(len(response.context['movements']), 1)
+        self.assertContains(response, 'Valuation')
+        self.assertContains(response, 'Recent Stock Movements')
+        self.assertContains(response, 'New Stock Received')
+        self.assertContains(response, 'Adjust Stock')
+
+    # -------------------------------------------------------------- history
+    def test_history_page_lists_movements_with_totals(self):
+        response = self.client.get(reverse('stock_movement_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['totals']['movement_count'], 1)
+        self.assertEqual(response.context['totals']['stock_in'], 2)
+        self.assertEqual(response.context['totals']['stock_out'], 0)
+        self.assertContains(response, 'PG-001')
+        self.assertContains(response, 'New Stock Received')
+
+    def test_history_page_filters(self):
+        stock.apply_stock_change(self.silver, -2, StockMovement.REDUCTION,
+                                 reason='Damaged Item', user=self.user)
+
+        by_type = self.client.get(reverse('stock_movement_list'), {'type': 'Reduction'})
+        self.assertEqual(by_type.context['totals']['movement_count'], 1)
+        self.assertEqual(by_type.context['totals']['stock_out'], -2)
+
+        by_item = self.client.get(reverse('stock_movement_list'),
+                                  {'item': str(self.item.pk)})
+        self.assertEqual(by_item.context['totals']['movement_count'], 1)
+        self.assertTrue(by_item.context['is_item_filter'])
+
+        by_search = self.client.get(reverse('stock_movement_list'), {'q': 'PG-002'})
+        self.assertEqual(by_search.context['totals']['movement_count'], 1)
+
+        by_date = self.client.get(reverse('stock_movement_list'), {'from': '2099-01-01'})
+        self.assertEqual(by_date.context['totals']['movement_count'], 0)
+
+    def test_history_page_requires_login(self):
+        self.client.logout()
+        response = self.client.get(reverse('stock_movement_list'))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('login', response.url)
+
+
+class OpeningStockTests(TestCase):
+    """New items start their stock ledger at zero."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='creator', password='Password123')
+        self.client.login(username='creator', password='Password123')
+        self.category = Category.objects.create(name='Pendants')
+
+    def test_new_item_records_its_opening_stock(self):
+        self.client.post(reverse('inventory_add'), {
+            'item_code': 'OPEN-001',
+            'name': 'Opening Balance Pendant',
+            'category': self.category.id,
+            'metal_type': 'Gold',
+            'purity': '22K',
+            'gross_weight': '4.000',
+            'net_weight': '3.800',
+            'making_charge': '500.00',
+            'selling_price': '25000.00',
+            'status': 'Available',
+        }, follow=True)
+
+        item = JewelleryItem.objects.get(item_code='OPEN-001')
+        self.assertEqual(item.quantity, 1)
+        movement = item.stock_movements.get()
+        self.assertEqual(movement.movement_type, StockMovement.ADDITION)
+        self.assertEqual(movement.stock_before, 0)
+        self.assertEqual(movement.stock_after, 1)
+        self.assertEqual(movement.created_by, self.user)
 

@@ -1,184 +1,297 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Dashboard — JewelDesk{% endblock %}
 
-{% block page_title %}Dashboard{% endblock %}
+{% block page_title %}Jewellery Business Cockpit{% endblock %}
 
 {% block page_actions %}
 <div class="d-flex gap-2">
     <a href="{% url 'inventory_add' %}" class="btn btn-dark btn-sm">
-        <i class="bi bi-plus-lg me-1"></i> Add Jewellery
+        <i class="bi bi-plus-lg me-1"></i> Add Inventory
     </a>
     <a href="{% url 'sale_add' %}" class="btn btn-gold btn-sm">
-        <i class="bi bi-cart-plus me-1"></i> Create Sale
+        <i class="bi bi-cart-plus me-1"></i> New Sale
     </a>
 </div>
 {% endblock %}
 
 {% block content %}
-<!-- Stat Cards -->
-<div class="row g-3 mb-4">
-    <!-- Total Items -->
-    <div class="col-xl-3 col-md-6">
-        <div class="card stat-card p-3">
+<!-- SECTION 1 — BUSINESS SUMMARY -->
+<div class="row g-3 mb-4 cockpit-stats">
+    <!-- Today's Sales -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="card stat-card cockpit-stat p-3 h-100">
             <div class="d-flex align-items-center">
-                <div class="stat-icon bg-primary bg-opacity-10 text-primary me-3">
+                <div class="cockpit-icon icon-gold me-3">
+                    <i class="bi bi-cash-stack"></i>
+                </div>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="stat-value">₹{{ today_sales_amount|floatformat:2 }}</div>
+                    <div class="stat-label">Today's Sales</div>
+                    <div class="cockpit-note">{{ today_sales_count }} transaction{{ today_sales_count|pluralize }} today</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Sales -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="card stat-card cockpit-stat p-3 h-100">
+            <div class="d-flex align-items-center">
+                <div class="cockpit-icon icon-green me-3">
+                    <i class="bi bi-graph-up-arrow"></i>
+                </div>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="stat-value">₹{{ total_sales_amount|floatformat:2 }}</div>
+                    <div class="stat-label">Total Revenue</div>
+                    <div class="cockpit-note">{{ total_sales_count }} lifetime sale{{ total_sales_count|pluralize }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Outstanding Amount -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="card stat-card cockpit-stat p-3 h-100">
+            <div class="d-flex align-items-center">
+                <div class="cockpit-icon icon-rose me-3">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="stat-value">₹{{ outstanding_amount|floatformat:2 }}</div>
+                    <div class="stat-label">Outstanding Due</div>
+                    <div class="cockpit-note">Pending customer receivables</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Value -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="card stat-card cockpit-stat p-3 h-100">
+            <div class="d-flex align-items-center">
+                <div class="cockpit-icon icon-amber me-3">
                     <i class="bi bi-gem"></i>
                 </div>
-                <div>
-                    <div class="stat-value">{{ total_items }}</div>
-                    <div class="stat-label">Total Items</div>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="stat-value">₹{{ inventory_value|floatformat:2 }}</div>
+                    <div class="stat-label">Inventory Value</div>
+                    <div class="cockpit-note">{{ available_items }} item{{ available_items|pluralize }} in stock</div>
                 </div>
             </div>
         </div>
     </div>
-    <!-- Available -->
-    <div class="col-xl-3 col-md-6">
-        <div class="card stat-card p-3">
+
+    <!-- Total Customers -->
+    <div class="col-xl-4 col-sm-6">
+        <div class="card stat-card cockpit-stat p-3 h-100">
             <div class="d-flex align-items-center">
-                <div class="stat-icon bg-success bg-opacity-10 text-success me-3">
-                    <i class="bi bi-check-circle"></i>
+                <div class="cockpit-icon icon-blue me-3">
+                    <i class="bi bi-people"></i>
                 </div>
-                <div>
-                    <div class="stat-value">{{ available_items }}</div>
-                    <div class="stat-label">Available</div>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="stat-value">{{ customer_count }}</div>
+                    <div class="stat-label">Registered Customers</div>
+                    <div class="cockpit-note"><a href="{% url 'customer_list' %}" class="text-decoration-none">View directory &rarr;</a></div>
                 </div>
             </div>
         </div>
     </div>
-    <!-- Sold -->
-    <div class="col-xl-3 col-md-6">
-        <div class="card stat-card p-3">
+
+    <!-- Low Stock Items -->
+    <div class="col-xl-4 col-sm-6">
+        <div class="card stat-card cockpit-stat p-3 h-100">
             <div class="d-flex align-items-center">
-                <div class="stat-icon bg-warning bg-opacity-10 text-warning me-3">
-                    <i class="bi bi-cart-check"></i>
+                <div class="cockpit-icon icon-amber me-3">
+                    <i class="bi bi-exclamation-triangle"></i>
                 </div>
-                <div>
-                    <div class="stat-value">{{ sold_items }}</div>
-                    <div class="stat-label">Sold Items</div>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="stat-value">{{ low_stock_design_count }}</div>
+                    <div class="stat-label">Low Stock Designs</div>
+                    <div class="cockpit-note">
+                        {% if low_stock_design_count > 0 %}
+                        <span class="text-warning">Needs replenishment</span>
+                        {% else %}
+                        <span class="text-success">Healthy stock levels</span>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    <!-- Today's Sales -->
-    <div class="col-xl-3 col-md-6">
-        <div class="card stat-card p-3">
+
+    <!-- Pending Custom Orders -->
+    <div class="col-xl-4 col-sm-12">
+        <div class="card stat-card cockpit-stat p-3 h-100">
             <div class="d-flex align-items-center">
-                <div class="stat-icon bg-info bg-opacity-10 text-info me-3">
-                    <i class="bi bi-currency-rupee"></i>
+                <div class="cockpit-icon icon-purple me-3">
+                    <i class="bi bi-hammer"></i>
                 </div>
-                <div>
-                    <div class="stat-value">₹{{ today_sales_amount }}</div>
-                    <div class="stat-label">Today's Sales</div>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="stat-value">{{ pending_custom_orders_count }}</div>
+                    <div class="stat-label">Pending Custom Orders</div>
+                    <div class="cockpit-note">
+                        {% if pending_custom_orders_count > 0 %}
+                        In production / estimate
+                        {% else %}
+                        No orders in progress
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Metal Prices (Gold & Silver) -->
-<div class="card mb-4">
-    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-semibold text-dark">
-            <i class="bi bi-cash-coin me-1"></i> Metal Prices
-        </h6>
-        <form method="post" action="{% url 'metal_price_refresh' %}" class="m-0">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-gold btn-sm py-0 px-2"
-                    title="Fetch the latest gold &amp; silver rates from the price service">
-                <i class="bi bi-arrow-clockwise me-1"></i> Refresh
-            </button>
-        </form>
-    </div>
-    <div class="card-body">
-        {% if metal_prices.available %}
-        <div class="row text-center">
-            <div class="col-md-6 border-end">
-                <div class="text-muted small mb-1">
-                    <i class="bi bi-coin me-1"></i> Gold (XAU)
-                </div>
-                {% if metal_prices.gold_price_per_gram %}
-                <div class="fs-4 fw-semibold text-dark">
-                    ₹{{ metal_prices.gold_price_per_gram|floatformat:2 }}
-                    <small class="text-muted fs-6">/ gram</small>
-                </div>
-                {% else %}
-                <div class="text-muted">Price unavailable</div>
-                {% endif %}
+<!-- SECTION 2 — QUICK ACTIONS -->
+<div class="mb-4">
+    <div class="cockpit-quick">
+        <a href="{% url 'sale_add' %}" class="cockpit-quick-link">
+            <div class="cockpit-icon icon-gold">
+                <i class="bi bi-cart-plus"></i>
             </div>
-            <div class="col-md-6">
-                <div class="text-muted small mb-1">
-                    <i class="bi bi-coin me-1"></i> Silver (XAG)
-                </div>
-                {% if metal_prices.silver_price_per_gram %}
-                <div class="fs-4 fw-semibold text-dark">
-                    ₹{{ metal_prices.silver_price_per_gram|floatformat:2 }}
-                    <small class="text-muted fs-6">/ gram</small>
-                </div>
-                {% else %}
-                <div class="text-muted">Price unavailable</div>
-                {% endif %}
+            <div>
+                <strong>New Sale</strong>
+                <small>Issue bill &amp; update stock</small>
             </div>
-        </div>
-        {% if metal_prices.last_updated %}
-        <div class="text-muted small text-center mt-3">
-            <i class="bi bi-clock-history me-1"></i>
-            Last updated: {{ metal_prices.last_updated|date:"M d, Y h:i A" }}
-            {% if metal_prices.age_minutes == 0 %}(just now){% else %}({{ metal_prices.age_minutes }} min ago){% endif %}
-        </div>
-        {% endif %}
-        {% else %}
-        <div class="text-center text-muted py-3">
-            <i class="bi bi-coin fs-4 d-block mb-2"></i>
-            <p class="mb-1 fw-medium">Price unavailable</p>
-            <p class="mb-0 small">Could not load gold &amp; silver prices. Use <strong>Refresh</strong> to try again.</p>
-            {% if not metal_prices.configured %}
-            <p class="mb-0 small">Set JEWELDESK_METAL_PRICE_API_URL and JEWELDESK_METAL_PRICE_API_KEY to enable live rates.</p>
-            {% endif %}
-        </div>
-        {% endif %}
+        </a>
+        <a href="{% url 'customer_add' %}" class="cockpit-quick-link">
+            <div class="cockpit-icon icon-blue">
+                <i class="bi bi-person-plus"></i>
+            </div>
+            <div>
+                <strong>Add Customer</strong>
+                <small>Register new contact</small>
+            </div>
+        </a>
+        <a href="{% url 'inventory_add' %}" class="cockpit-quick-link">
+            <div class="cockpit-icon icon-amber">
+                <i class="bi bi-gem"></i>
+            </div>
+            <div>
+                <strong>Add Inventory</strong>
+                <small>Add jewellery piece</small>
+            </div>
+        </a>
+        <a href="{% url 'custom_orders:custom_order_add' %}" class="cockpit-quick-link">
+            <div class="cockpit-icon icon-purple">
+                <i class="bi bi-hammer"></i>
+            </div>
+            <div>
+                <strong>New Custom Order</strong>
+                <small>Bespoke / crafted piece</small>
+            </div>
+        </a>
     </div>
 </div>
 
-<div class="row g-4">
-    <!-- Recent Sales -->
-    <div class="col-lg-7">
-        <div class="card h-100">
+<!-- MAIN COCKPIT GRID -->
+<div class="row g-4 cockpit-main">
+    <!-- Left Column: Sales Overview & Recent Sales -->
+    <div class="col-xl-8">
+        <!-- SECTION 3 — SALES OVERVIEW -->
+        <div class="card cockpit-panel mb-4">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-bar-chart-line me-1"></i> Sales Overview
+                    <small class="cockpit-head-sub ms-2">Last 7 days</small>
+                </h6>
+                <a href="{% url 'sales_report' %}" class="btn btn-link btn-sm text-decoration-none p-0">Full Report</a>
+            </div>
+            <div class="card-body">
+                {% if sales_chart_max %}
+                <div class="cockpit-chart" role="img" aria-label="Sales by day for the last 7 days">
+                    {% for row in sales_chart %}
+                    <div class="cockpit-bar-col" title="{{ row.date|date:'M d' }} — ₹{{ row.total|floatformat:2 }} ({{ row.count }} sale{{ row.count|pluralize }})">
+                        <div class="cockpit-bar-track">
+                            <div class="cockpit-bar-fill" style="height: {{ row.pct }}%;"></div>
+                        </div>
+                        <div class="cockpit-bar-label">{{ row.label }}</div>
+                        <div class="cockpit-bar-day">{{ row.day_num }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="cockpit-chart-foot">
+                    <span>{{ sales_chart_start|date:"M d" }} – {{ today|date:"M d, Y" }}</span>
+                    <span>Today: <strong>{{ today_sales_count }}</strong> sale{{ today_sales_count|pluralize }} &middot; <strong>₹{{ today_sales_amount|floatformat:2 }}</strong></span>
+                </div>
+                {% else %}
+                <div class="cockpit-empty">
+                    <i class="bi bi-bar-chart"></i>
+                    <p class="mb-1 fw-medium">No sales yet today or in the last 7 days</p>
+                    <p class="mb-2 small text-muted">Daily revenue will visualize automatically once bills are generated.</p>
+                    <a href="{% url 'sale_add' %}" class="btn btn-gold btn-sm">
+                        <i class="bi bi-cart-plus me-1"></i> Record a Sale
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- SECTION 4 — RECENT SALES -->
+        <div class="card cockpit-panel mb-4">
             <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-semibold text-dark">
                     <i class="bi bi-receipt me-1"></i> Recent Sales
                 </h6>
-                <a href="{% url 'sale_list' %}" class="btn btn-link text-decoration-none btn-sm p-0">View All</a>
+                <a href="{% url 'sale_list' %}" class="btn btn-link btn-sm text-decoration-none p-0">View All</a>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th>Item</th>
+                                <th>Invoice #</th>
                                 <th>Customer</th>
                                 <th>Amount</th>
+                                <th>Payment Status</th>
                                 <th>Date</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for sale in recent_sales %}
-                            <tr>
+                            <tr class="cockpit-row" onclick="window.location='{% url 'sale_detail' sale.id %}'" style="cursor: pointer;">
                                 <td>
                                     <a href="{% url 'sale_detail' sale.id %}" class="fw-semibold text-decoration-none text-dark">
-                                        {{ sale.jewellery_item.name }}
+                                        #{{ sale.id }}
                                     </a>
-                                    <small class="text-muted d-block">{{ sale.jewellery_item.item_code }}</small>
+                                    <small class="text-muted d-block">{{ sale.jewellery_item.name }}</small>
                                 </td>
-                                <td>{{ sale.customer.name }}</td>
-                                <td class="fw-bold text-success">₹{{ sale.sale_price }}</td>
-                                <td><small class="text-muted">{{ sale.sale_date|date:"M d, H:i" }}</small></td>
+                                <td>
+                                    <span class="fw-medium">{{ sale.customer.name }}</span>
+                                    <small class="text-muted d-block">{{ sale.customer.mobile }}</small>
+                                </td>
+                                <td class="fw-semibold text-dark">₹{{ sale.sale_price|floatformat:2 }}</td>
+                                <td>
+                                    {% if sale.payment_status == 'Paid' %}
+                                    <span class="badge cockpit-badge badge-paid">
+                                        <i class="bi bi-check-circle me-1"></i> Paid
+                                    </span>
+                                    {% elif sale.payment_status == 'Partially Paid' %}
+                                    <span class="badge cockpit-badge badge-partial">
+                                        <i class="bi bi-hourglass-split me-1"></i> Partially Paid
+                                    </span>
+                                    {% else %}
+                                    <span class="badge cockpit-badge badge-unpaid">
+                                        <i class="bi bi-x-circle me-1"></i> Unpaid
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ sale.sale_date|date:"M d, Y" }}</small>
+                                </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="4" class="text-center py-4 text-muted">
-                                    <i class="bi bi-cart-x fs-4 d-block mb-1"></i>
-                                    No sales recorded yet.
+                                <td colspan="5">
+                                    <div class="cockpit-empty">
+                                        <i class="bi bi-cart-x"></i>
+                                        <p class="mb-1 fw-medium">No sales yet today</p>
+                                        <p class="mb-2 small text-muted">Issue invoices to customers using the New Sale action.</p>
+                                        <a href="{% url 'sale_add' %}" class="btn btn-gold btn-sm">
+                                            <i class="bi bi-cart-plus me-1"></i> New Sale
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -187,76 +300,226 @@
                 </div>
             </div>
         </div>
+
+        <!-- Follow-ups & Recent Enquiries (Preserved existing modules) -->
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card cockpit-panel h-100">
+                    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 fw-semibold text-dark">
+                            <i class="bi bi-calendar-event me-1"></i> Upcoming Follow-ups
+                        </h6>
+                        <a href="{% url 'enquiry_list' %}?followup=upcoming" class="btn btn-link btn-sm text-decoration-none p-0">View All</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            {% for enq in upcoming_followups %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                                <div>
+                                    <div class="fw-medium">
+                                        <a href="{% url 'enquiry_detail' enq.id %}" class="text-decoration-none text-dark">
+                                            {{ enq.customer.name }}
+                                        </a>
+                                    </div>
+                                    <small class="text-muted">{{ enq.interested_item }}</small>
+                                </div>
+                                <span class="badge cockpit-badge badge-partial">
+                                    <i class="bi bi-clock me-1"></i> {{ enq.next_followup_date|date:"M d" }}
+                                </span>
+                            </div>
+                            {% empty %}
+                            <div class="cockpit-empty small">
+                                <i class="bi bi-calendar-check"></i>
+                                <p class="mb-0 fw-medium">No pending follow-ups scheduled.</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card cockpit-panel h-100">
+                    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 fw-semibold text-dark">
+                            <i class="bi bi-chat-left-text me-1"></i> Recent Enquiries
+                        </h6>
+                        <a href="{% url 'enquiry_list' %}" class="btn btn-link btn-sm text-decoration-none p-0">View All</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            {% for enq in recent_enquiries %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                                <div>
+                                    <div class="fw-medium">
+                                        <a href="{% url 'enquiry_detail' enq.id %}" class="text-decoration-none text-dark">
+                                            {{ enq.customer.name }}
+                                        </a>
+                                    </div>
+                                    <small class="text-muted">{{ enq.interested_item }}</small>
+                                </div>
+                                <span class="badge {% if enq.status == 'New' %}bg-primary{% elif enq.status == 'Contacted' %}bg-info text-dark{% elif enq.status == 'Interested' %}bg-warning text-dark{% elif enq.status == 'Purchased' %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {{ enq.status }}
+                                </span>
+                            </div>
+                            {% empty %}
+                            <div class="cockpit-empty small">
+                                <i class="bi bi-inbox"></i>
+                                <p class="mb-0 fw-medium">No enquiries recorded yet.</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Right Column: Recent Enquiries & Upcoming Follow-ups -->
-    <div class="col-lg-5">
-        <!-- Upcoming Follow-ups -->
-        <div class="card mb-4">
+    <!-- Right Column: Low Stock, Pending Custom Orders, Metal Prices -->
+    <div class="col-xl-4">
+        <!-- SECTION 5 — LOW STOCK -->
+        <div class="card cockpit-panel mb-4">
             <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-semibold text-dark">
-                    <i class="bi bi-calendar-event me-1"></i> Upcoming Follow-ups
+                    <i class="bi bi-exclamation-triangle me-1"></i> Low Stock
                 </h6>
-                <a href="{% url 'enquiry_list' %}?followup=upcoming" class="btn btn-link text-decoration-none btn-sm p-0">View All</a>
+                <a href="{% url 'inventory_list' %}" class="btn btn-link btn-sm text-decoration-none p-0">View Inventory</a>
             </div>
             <div class="card-body p-0">
                 <div class="list-group list-group-flush">
-                    {% for enq in upcoming_followups %}
-                    <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                    {% for d in low_stock_designs %}
+                    <a href="{% url 'inventory_list' %}?q={{ d.design_code }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 px-3">
                         <div>
-                            <div class="fw-medium">
-                                <a href="{% url 'enquiry_detail' enq.id %}" class="text-decoration-none text-dark">
-                                    {{ enq.customer.name }}
-                                </a>
-                            </div>
-                            <small class="text-muted">{{ enq.interested_item }}</small>
+                            <div class="fw-medium text-dark">{{ d.name }}</div>
+                            <small class="text-muted font-monospace">{{ d.design_code }}</small>
+                            <small class="text-muted d-block">
+                                {{ d.category }}{% if d.category and d.metal_type %} &middot; {% endif %}{{ d.metal_type }}
+                            </small>
                         </div>
-                        <span class="badge bg-warning text-dark">
-                            <i class="bi bi-clock me-1"></i> {{ enq.next_followup_date|date:"M d" }}
+                        <span class="badge cockpit-badge badge-partial">
+                            {{ d.available }} left
                         </span>
-                    </div>
+                    </a>
                     {% empty %}
-                    <div class="p-3 text-center text-muted small">
-                        No pending follow-ups scheduled.
+                    <div class="cockpit-empty">
+                        <i class="bi bi-check-circle"></i>
+                        <p class="mb-1 fw-medium">No low-stock items</p>
+                        <p class="mb-0 small text-muted">All active jewellery designs meet the minimum stock threshold.</p>
                     </div>
                     {% endfor %}
                 </div>
             </div>
         </div>
 
-        <!-- Recent Enquiries -->
-        <div class="card">
+        <!-- SECTION 6 — PENDING CUSTOM ORDERS -->
+        <div class="card cockpit-panel mb-4">
             <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-semibold text-dark">
-                    <i class="bi bi-chat-left-text me-1"></i> Recent Enquiries
+                    <i class="bi bi-hammer me-1"></i> Pending Custom Orders
                 </h6>
-                <a href="{% url 'enquiry_list' %}" class="btn btn-link text-decoration-none btn-sm p-0">View All</a>
+                <a href="{% url 'custom_orders:custom_order_list' %}" class="btn btn-link btn-sm text-decoration-none p-0">View All</a>
             </div>
             <div class="card-body p-0">
                 <div class="list-group list-group-flush">
-                    {% for enq in recent_enquiries %}
-                    <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
-                        <div>
-                            <div class="fw-medium">
-                                <a href="{% url 'enquiry_detail' enq.id %}" class="text-decoration-none text-dark">
-                                    {{ enq.customer.name }}
-                                </a>
-                            </div>
-                            <small class="text-muted">{{ enq.interested_item }}</small>
+                    {% for order in pending_custom_orders %}
+                    <a href="{% url 'custom_orders:custom_order_detail' order.id %}" class="list-group-item list-group-item-action py-2 px-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-medium font-monospace text-dark">{{ order.order_number }}</span>
+                            {% include 'custom_orders/includes/status_badge.html' with status=order.status %}
                         </div>
-                        <span class="badge {% if enq.status == 'New' %}bg-primary{% elif enq.status == 'Contacted' %}bg-info text-dark{% elif enq.status == 'Interested' %}bg-warning text-dark{% elif enq.status == 'Purchased' %}bg-success{% else %}bg-secondary{% endif %}">
-                            {{ enq.status }}
-                        </span>
-                    </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">{{ order.customer.name }}</small>
+                            <small class="text-muted"><i class="bi bi-clock me-1"></i>{{ order.expected_delivery_date|date:"M d, Y" }}</small>
+                        </div>
+                    </a>
                     {% empty %}
-                    <div class="p-3 text-center text-muted small">
-                        No enquiries recorded yet.
+                    <div class="cockpit-empty">
+                        <i class="bi bi-inbox"></i>
+                        <p class="mb-1 fw-medium">No pending custom orders</p>
+                        <p class="mb-2 small text-muted">Custom jewellery orders will appear here as they are commissioned.</p>
+                        <a href="{% url 'custom_orders:custom_order_add' %}" class="btn btn-outline-dark btn-sm">
+                            <i class="bi bi-plus-lg me-1"></i> New Custom Order
+                        </a>
                     </div>
                     {% endfor %}
                 </div>
+            </div>
+        </div>
+
+        <!-- Metal Prices (Preserved from existing JewelDesk feature) -->
+        <div class="card cockpit-panel">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-cash-coin me-1"></i> Metal Prices
+                </h6>
+                <form method="post" action="{% url 'metal_price_refresh' %}" class="m-0">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-gold btn-sm py-0 px-2"
+                            title="Fetch the latest gold &amp; silver rates from the price service">
+                        <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                    </button>
+                </form>
+            </div>
+            <div class="card-body">
+                {% if metal_prices.available %}
+                <div class="row text-center g-3">
+                    <div class="col-6 border-end">
+                        <div class="text-muted small mb-1">
+                            <i class="bi bi-coin me-1"></i> Gold (XAU)
+                        </div>
+                        {% if metal_prices.gold_price_per_gram %}
+                        <div class="fs-5 fw-semibold text-dark">
+                            ₹{{ metal_prices.gold_price_per_gram|floatformat:2 }}
+                            <small class="text-muted fs-6">/ gram</small>
+                        </div>
+                        {% else %}
+                        <div class="text-muted">Price unavailable</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small mb-1">
+                            <i class="bi bi-coin me-1"></i> Silver (XAG)
+                        </div>
+                        {% if metal_prices.silver_price_per_gram %}
+                        <div class="fs-5 fw-semibold text-dark">
+                            ₹{{ metal_prices.silver_price_per_gram|floatformat:2 }}
+                            <small class="text-muted fs-6">/ gram</small>
+                        </div>
+                        {% else %}
+                        <div class="text-muted">Price unavailable</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if metal_prices.last_updated %}
+                <div class="text-muted small text-center mt-3">
+                    <i class="bi bi-clock-history me-1"></i>
+                    Last updated: {{ metal_prices.last_updated|date:"M d, Y h:i A" }}
+                    {% if metal_prices.age_minutes is not None %}
+                        {% if metal_prices.age_minutes == 0 %}
+                            (just now)
+                        {% else %}
+                            ({{ metal_prices.age_minutes }} min ago)
+                        {% endif %}
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="cockpit-empty small">
+                    <i class="bi bi-coin"></i>
+                    <p class="mb-1 fw-medium">Price unavailable</p>
+                    <p class="mb-0 small text-muted">
+                        Could not load gold and silver prices. Use <strong>Refresh</strong> to try again.
+                    </p>
+                    {% if not metal_prices.configured %}
+                    <p class="mb-0 small text-muted">
+                        Set <code>JEWELDESK_METAL_PRICE_API_URL</code> and
+                        <code>JEWELDESK_METAL_PRICE_API_KEY</code> to enable live rates.
+                    </p>
+                    {% endif %}
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
-

@@ -6,7 +6,8 @@ from django.urls import reverse
 from django.utils import timezone
 from inventory.models import Category, JewelleryItem
 from customers.models import Customer
-from sales.models import Sale, Enquiry
+from django.core.exceptions import ValidationError
+from sales.models import Payment, Sale, Enquiry
 
 
 class SalesAndEnquiryTests(TestCase):
@@ -640,7 +641,7 @@ class InvoicePdfTests(TestCase):
         self.assertIn(b'PDF Customer', pdf_text)
         self.assertIn(b'PDF Gold Chain', pdf_text)
         self.assertIn(f'INV-{self.sale.pk:05d}'.encode(), pdf_text)
-        self.assertIn(b'55000.00', pdf_text)
+        self.assertIn(b'55,000.00', pdf_text)
         self.assertIn(b'TAX INVOICE', pdf_text)
         self.assertIn(b'12 MG Road, Mumbai', pdf_text)
 
@@ -667,6 +668,176 @@ class InvoicePdfTests(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 302)
         self.assertIn('login', response.url)
+class PaymentTests(TestCase):
+    """Payments & Outstanding Phase 1: statuses, validation, outstanding."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='paydesk', password='Password123')
+        self.client.login(username='paydesk', password='Password123')
+        self.customer = Customer.objects.create(name='Riya Shah', mobile='+91 9333344444')
+        cat = Category.objects.create(name='Rings')
+        self.item = JewelleryItem.objects.create(
+            item_code='RG-101', name='Diamond Ring', category=cat,
+            metal_type='Gold', purity='18K',
+            gross_weight=Decimal('6.500'), net_weight=Decimal('6.200'),
+            selling_price=Decimal('50000.00'))
+        self.sale = Sale.objects.create(
+            customer=self.customer, jewellery_item=self.item,
+            sale_price=Decimal('50000.00'))
+
+    def _pay(self, amount, method='Cash', reference='', payment_date=None):
+        kwargs = {'payment_date': payment_date} if payment_date else {}
+        return Payment.objects.create(
+            sale=self.sale, amount=Decimal(str(amount)),
+            payment_method=method, reference=reference, **kwargs)
+
+    def test_unpaid_sale(self):
+        self.assertEqual(self.sale.paid_amount, 0)
+        self.assertEqual(self.sale.due_amount, Decimal('50000.00'))
+        self.assertEqual(self.sale.payment_status, 'Unpaid')
+
+    def test_partially_paid_sale(self):
+        self._pay('20000', method='UPI', reference='UPI-20K')
+        self.assertEqual(self.sale.paid_amount, Decimal('20000'))
+        self.assertEqual(self.sale.due_amount, Decimal('30000'))
+        self.assertEqual(self.sale.payment_status, 'Partially Paid')
+
+    def test_fully_paid_sale(self):
+        self._pay('50000', method='UPI')
+        self.assertEqual(self.sale.due_amount, 0)
+        self.assertEqual(self.sale.payment_status, 'Paid')
+
+    def test_multiple_payments_correct_remaining(self):
+        self._pay('20000', method='UPI')
+        self._pay('30000', method='Bank Transfer')
+        self.assertEqual(Payment.objects.filter(sale=self.sale).count(), 2)
+        self.assertEqual(self.sale.paid_amount, Decimal('50000'))
+        self.assertEqual(self.sale.due_amount, 0)
+        self.assertEqual(self.sale.payment_status, 'Paid')
+
+    def test_reject_zero_and_negative_payment(self):
+        from django.core.exceptions import ValidationError
+        for bad in (Decimal('0'), Decimal('-100')):
+            with self.assertRaises(ValidationError):
+                Payment(sale=self.sale, amount=bad, payment_method='Cash').full_clean()
+
+    def test_reject_payment_above_remaining_due(self):
+        from django.core.exceptions import ValidationError
+        self._pay('20000')
+        with self.assertRaises(ValidationError):
+            Payment(sale=self.sale, amount=Decimal('30000.01'), payment_method='Cash').full_clean()
+        # Exactly the remaining due is allowed.
+        Payment(sale=self.sale, amount=Decimal('30000'), payment_method='UPI').full_clean()
+
+    def test_payment_form_validation(self):
+        from sales.forms import PaymentForm
+        zero = PaymentForm({'amount': '0', 'payment_method': 'Cash'}, sale=self.sale)
+        self.assertFalse(zero.is_valid())
+        self.assertIn('amount', zero.errors)
+        over = PaymentForm({'amount': '50000.01', 'payment_method': 'Cash'}, sale=self.sale)
+        self.assertFalse(over.is_valid())
+        ok = PaymentForm({'amount': '20000', 'payment_method': 'UPI'}, sale=self.sale)
+        self.assertTrue(ok.is_valid())
+        self._pay('40000')
+        over2 = PaymentForm({'amount': '15000', 'payment_method': 'Cash'}, sale=self.sale)
+        self.assertFalse(over2.is_valid())
+
+    def test_payment_method_choices(self):
+        methods = dict(Payment.PAYMENT_METHODS)
+        for m in ('Cash', 'UPI', 'Card', 'Bank Transfer', 'Cheque'):
+            self.assertIn(m, methods)
+        Payment(sale=self.sale, amount=Decimal('1000'), payment_method='Cheque').full_clean()
+
+    def test_payment_history_newest_first(self):
+        import datetime as dt
+        from django.utils import timezone
+        self._pay('1000', reference='OLD-REF', payment_date=timezone.now() - dt.timedelta(days=2))
+        self._pay('2000', reference='NEW-REF', payment_date=timezone.now())
+        refs = [p.reference for p in self.sale.payments.all()]
+        self.assertEqual(refs, ['NEW-REF', 'OLD-REF'])
+
+    def test_customer_outstanding_calculation(self):
+        self._pay('20000')
+        self.assertEqual(self.customer.total_purchases_amount, Decimal('50000'))
+        self.assertEqual(self.customer.total_paid_amount, Decimal('20000'))
+        self.assertEqual(self.customer.outstanding_amount, Decimal('30000'))
+        self._pay('30000')
+        self.assertEqual(self.customer.outstanding_amount, 0)
+
+    # ---- View / template integration ----
+
+    def test_sale_detail_shows_payment_summary_and_history(self):
+        self._pay('20000', method='UPI', reference='UPI-REF-1', payment_date=None)
+        response = self.client.get(
+            reverse('sale_detail', kwargs={'pk': self.sale.pk}))
+        self.assertEqual(response.status_code, 200)
+        # Summary labels
+        self.assertContains(response, 'Total Amount')
+        self.assertContains(response, 'Paid Amount')
+        self.assertContains(response, 'Due Amount')
+        # Status after partial payment
+        self.assertContains(response, 'Partially Paid')
+        # Payment history row (reference visible, newest easy to find)
+        self.assertContains(response, 'UPI-REF-1')
+        # Add Payment action available while due > 0
+        self.assertContains(response, 'Add Payment')
+        self.assertContains(response, 'Payment History')
+
+    def test_sale_detail_hides_add_payment_when_fully_paid(self):
+        self._pay('50000', method='UPI')
+        response = self.client.get(
+            reverse('sale_detail', kwargs={'pk': self.sale.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['sale'].payment_status, 'Paid')
+        # Button + modal only render when there is a due amount.
+        self.assertNotContains(response, 'Add Payment')
+
+    def test_add_payment_via_view_success(self):
+        response = self.client.post(
+            reverse('payment_add', kwargs={'pk': self.sale.pk}),
+            {'amount': '20000', 'payment_method': 'UPI',
+             'reference': 'UPI-VIEW-1', 'notes': 'Part payment'})
+        self.assertRedirects(
+            response, reverse('sale_detail', kwargs={'pk': self.sale.pk}))
+        self.assertEqual(Payment.objects.filter(sale=self.sale).count(), 1)
+        self.assertEqual(self.sale.paid_amount, Decimal('20000'))
+        self.assertEqual(self.sale.payment_status, 'Partially Paid')
+
+    def test_add_payment_rejects_overpayment_via_view(self):
+        self._pay('20000')
+        response = self.client.post(
+            reverse('payment_add', kwargs={'pk': self.sale.pk}),
+            {'amount': '40000', 'payment_method': 'Cash'})
+        # View redirects back with an error message; nothing is saved.
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Payment.objects.filter(sale=self.sale).count(), 1)
+        self.assertEqual(self.sale.paid_amount, Decimal('20000'))
+
+    def test_add_payment_requires_login(self):
+        self.client.logout()
+        response = self.client.post(
+            reverse('payment_add', kwargs={'pk': self.sale.pk}),
+            {'amount': '1000', 'payment_method': 'Cash'})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('login', response.url)
+
+    def test_sales_list_shows_payment_status_badge(self):
+        response = self.client.get(reverse('sale_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Unpaid')
+        self._pay('50000', method='UPI')
+        response = self.client.get(reverse('sale_list'))
+        self.assertContains(response, 'Paid')
+
+    def test_invoice_pdf_shows_paid_and_due(self):
+        self._pay('20000', method='UPI')
+        response = self.client.get(
+            reverse('sale_invoice_pdf', kwargs={'pk': self.sale.pk}))
+        self.assertEqual(response.status_code, 200)
+        body = response.content
+        self.assertIn(b'Paid', body)
+        self.assertIn(b'Due', body)
+
 
 
 

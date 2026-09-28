@@ -61,6 +61,9 @@ def customer_detail(request, pk):
         'customer': customer,
         'sales': sales,
         'enquiries': enquiries,
+        'total_purchase': customer.total_purchases_amount,
+        'total_paid': customer.total_paid_amount,
+        'outstanding': customer.outstanding_amount,
     }
     return render(request, 'customers/customer_detail.html', context)
 

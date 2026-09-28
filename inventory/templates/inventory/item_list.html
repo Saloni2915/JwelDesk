@@ -6,6 +6,9 @@
 
 {% block page_actions %}
 <div class="d-flex gap-2">
+    <a href="{% url 'stock_movement_list' %}" class="btn btn-outline-dark btn-sm">
+        <i class="bi bi-arrow-left-right me-1"></i> Stock Movements
+    </a>
     <a href="{% url 'inventory_import' %}" class="btn btn-outline-dark btn-sm">
         <i class="bi bi-upload me-1"></i> Import Inventory
     </a>
@@ -19,57 +22,187 @@
 {% endblock %}
 
 {% block content %}
+<!-- Inventory Summary -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card h-100">
+            <div class="card-body py-3">
+                <div class="text-muted small text-uppercase">Items</div>
+                <div class="fs-4 fw-semibold text-dark">{{ summary.total_items }}</div>
+                <div class="text-muted small">{{ summary.total_designs }} design(s)</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card h-100">
+            <div class="card-body py-3">
+                <div class="text-muted small text-uppercase">Available Stock</div>
+                <div class="fs-4 fw-semibold text-dark">{{ summary.available_stock }}</div>
+                <div class="text-muted small">
+                    piece(s){% if summary.reserved_stock %} &middot; {{ summary.reserved_stock }} reserved{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card h-100">
+            <div class="card-body py-3">
+                <div class="text-muted small text-uppercase">Stock Value</div>
+                <div class="fs-5 fw-semibold text-dark">₹{{ summary.inventory_value|floatformat:2 }}</div>
+                <div class="text-muted small">selling price &times; pieces in stock</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card h-100">
+            <div class="card-body py-3">
+                <div class="text-muted small text-uppercase">Gold Stock</div>
+                <div class="fs-4 fw-semibold text-dark">{{ summary.gold_stock }}</div>
+                <div class="text-muted small">{{ summary.gold_weight|floatformat:3 }} g net</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card h-100">
+            <div class="card-body py-3">
+                <div class="text-muted small text-uppercase">Silver Stock</div>
+                <div class="fs-4 fw-semibold text-dark">{{ summary.silver_stock }}</div>
+                <div class="text-muted small">{{ summary.silver_weight|floatformat:3 }} g net</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card h-100 {% if summary.low_stock_design_count %}border-warning{% endif %}">
+            <div class="card-body py-3">
+                <div class="text-muted small text-uppercase">Low Stock</div>
+                <div class="fs-4 fw-semibold {% if summary.low_stock_design_count %}text-warning-emphasis{% else %}text-dark{% endif %}">
+                    {{ summary.low_stock_design_count }}
+                </div>
+                <div class="text-muted small">
+                    {% if summary.low_stock_design_count %}
+                    <a href="{% url 'inventory_list' %}?stock=low_stock&amp;threshold={{ low_stock_threshold }}"
+                       class="text-decoration-none">{{ summary.low_stock_items }} item(s) &le; {{ low_stock_threshold }}</a>
+                    {% else %}
+                    no design at or below {{ low_stock_threshold }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if summary.low_stock_design_count %}
+<div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center gap-2 py-2" role="alert">
+    <span>
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        <strong>Low stock:</strong>
+        {{ summary.low_stock_design_count }} design(s) down to {{ low_stock_threshold }} piece(s) or fewer.
+    </span>
+    <a href="{% url 'inventory_list' %}?stock=low_stock&amp;threshold={{ low_stock_threshold }}"
+       class="btn btn-outline-dark btn-sm">
+        <i class="bi bi-funnel me-1"></i> Show low stock only
+    </a>
+</div>
+{% endif %}
+
 <!-- Search & Filter Card -->
 <div class="card mb-4">
     <div class="card-body">
-        <form method="get" class="row g-2 align-items-center">
-            <div class="col-md-3">
-                <input type="text" name="q" value="{{ selected_q }}" class="form-control form-control-sm"
-                       placeholder="Search by piece ID, design, or name...">
+        <form method="get">
+            <div class="row g-2 align-items-center">
+                <div class="col-12 col-md-3">
+                    <input type="text" name="q" value="{{ selected_q }}" class="form-control form-control-sm"
+                           placeholder="Search tag, piece ID, design, HUID, or name...">
+                </div>
+                <div class="col-6 col-md-2">
+                    <select name="category" class="form-select form-select-sm">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:"s" %}selected{% endif %}>
+                            {{ cat.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <select name="metal" class="form-select form-select-sm">
+                        <option value="">All Metals</option>
+                        {% for key, val in metal_choices %}
+                        <option value="{{ key }}" {% if selected_metal == key %}selected{% endif %}>{{ val }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <select name="huid_status" class="form-select form-select-sm" title="HUID Status">
+                        <option value="">All HUID</option>
+                        {% for key, val in huid_status_choices %}
+                        <option value="{{ key }}" {% if selected_huid_status == key %}selected{% endif %}>{{ val }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-md-3">
+                    <select name="stock" class="form-select form-select-sm" title="Stock status">
+                        <option value="">All Stock Status</option>
+                        {% for key, val in stock_filter_choices %}
+                        <option value="{{ key }}" {% if selected_stock == key %}selected{% endif %}>{{ val }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
-            <div class="col-md-2">
-                <select name="category" class="form-select form-select-sm">
-                    <option value="">All Categories</option>
-                    {% for cat in categories %}
-                    <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:"s" %}selected{% endif %}>
-                        {{ cat.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-2">
-                <select name="metal" class="form-select form-select-sm">
-                    <option value="">All Metals</option>
-                    {% for key, val in metal_choices %}
-                    <option value="{{ key }}" {% if selected_metal == key %}selected{% endif %}>{{ val }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-2">
-                <select name="status" class="form-select form-select-sm">
-                    <option value="">All Statuses</option>
-                    {% for key, val in status_choices %}
-                    <option value="{{ key }}" {% if selected_status == key %}selected{% endif %}>{{ val }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-2">
-                <select name="sort" class="form-select form-select-sm">
-                    <option value="-created_at" {% if selected_sort == '-created_at' %}selected{% endif %}>Newest First</option>
-                    <option value="created_at" {% if selected_sort == 'created_at' %}selected{% endif %}>Oldest First</option>
-                    <option value="selling_price" {% if selected_sort == 'selling_price' %}selected{% endif %}>Price: Low to High</option>
-                    <option value="-selling_price" {% if selected_sort == '-selling_price' %}selected{% endif %}>Price: High to Low</option>
-                    <option value="name" {% if selected_sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
-                    <option value="design_code" {% if selected_sort == 'design_code' %}selected{% endif %}>Design Code</option>
-                </select>
-            </div>
-            <div class="col-md-1 d-flex gap-1">
-                <button type="submit" class="btn btn-outline-dark btn-sm w-100" title="Apply Filters">
-                    <i class="bi bi-funnel"></i>
-                </button>
-                <a href="{% url 'inventory_list' %}" class="btn btn-outline-secondary btn-sm" title="Clear Filters">
-                    <i class="bi bi-x-lg"></i>
-                </a>
+            <div class="row g-2 align-items-center mt-2">
+                <div class="col-6 col-md-2">
+                    <select name="purity" class="form-select form-select-sm">
+                        <option value="">All Purity</option>
+                        {% for purity in purity_choices %}
+                        <option value="{{ purity }}" {% if selected_purity == purity %}selected{% endif %}>{{ purity }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">All Statuses</option>
+                        {% for key, val in status_choices %}
+                        <option value="{{ key }}" {% if selected_status == key %}selected{% endif %}>{{ val }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <select name="hallmark_status" class="form-select form-select-sm" title="Hallmark Status">
+                        <option value="">All Hallmark</option>
+                        {% for key, val in hallmark_status_choices %}
+                        <option value="{{ key }}" {% if selected_hallmark_status == key %}selected{% endif %}>{{ val }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-md-3">
+                    <select name="sort" class="form-select form-select-sm">
+                        <option value="-created_at" {% if selected_sort == '-created_at' %}selected{% endif %}>Newest First</option>
+                        <option value="created_at" {% if selected_sort == 'created_at' %}selected{% endif %}>Oldest First</option>
+                        <option value="selling_price" {% if selected_sort == 'selling_price' %}selected{% endif %}>Price: Low to High</option>
+                        <option value="-selling_price" {% if selected_sort == '-selling_price' %}selected{% endif %}>Price: High to Low</option>
+                        <option value="quantity" {% if selected_sort == 'quantity' %}selected{% endif %}>Stock: Low to High</option>
+                        <option value="-quantity" {% if selected_sort == '-quantity' %}selected{% endif %}>Stock: High to Low</option>
+                        <option value="tag_number" {% if selected_sort == 'tag_number' %}selected{% endif %}>Tag Number</option>
+                        <option value="name" {% if selected_sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
+                        <option value="design_code" {% if selected_sort == 'design_code' %}selected{% endif %}>Design Code</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-1">
+                    <input type="number" name="threshold" value="{{ low_stock_threshold }}" min="0" max="1000"
+                           class="form-control form-control-sm" title="Low-stock threshold (pieces)"
+                           aria-label="Low-stock threshold in pieces">
+                </div>
+                <div class="col-6 col-md-2 d-flex gap-1">
+                    <button type="submit" class="btn btn-outline-dark btn-sm w-100" title="Apply Filters">
+                        <i class="bi bi-funnel"></i>
+                    </button>
+                    <a href="{% url 'inventory_list' %}" class="btn btn-outline-secondary btn-sm" title="Clear Filters">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                </div>
+                <div class="col-12 col-md-3 text-md-end text-muted small">
+                    Low stock = design with &le; {{ low_stock_threshold }} piece(s) available
+                </div>
             </div>
         </form>
     </div>
@@ -82,13 +215,14 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
+                        <th>Tag No.</th>
                         <th>Piece ID</th>
                         <th>Design Code</th>
                         <th>Name</th>
-                        <th>Category</th>
-                        <th>Metal</th>
-                        <th>Purity</th>
-                        <th>Net Wt. (g)</th>
+                        <th>Metal / Purity</th>
+                        <th>HUID / Hallmark</th>
+                        <th>Weights (g)</th>
+                        <th>Stock</th>
                         <th>Selling Price</th>
                         <th>Status</th>
                         <th class="text-end pe-3">Actions</th>
@@ -98,31 +232,75 @@
                     {% for item in items %}
                     <tr>
                         <td>
-                            <a href="{% url 'inventory_detail' item.id %}" class="fw-semibold text-decoration-none text-dark">
-                                {{ item.item_code }}
+                            <a href="{% url 'inventory_detail' item.id %}" class="fw-bold font-monospace text-decoration-none text-dark">
+                                {{ item.tag_number }}
                             </a>
+                        </td>
+                        <td>
+                            <span class="text-secondary small">{{ item.item_code }}</span>
                         </td>
                         <td>
                             <span class="badge bg-light text-secondary border font-monospace">
                                 {{ item.design_code|default:item.item_code }}
                             </span>
                         </td>
-                        <td>{{ item.name }}</td>
-                        <td><span class="badge bg-light text-dark border">{{ item.category.name }}</span></td>
                         <td>
-                            {% if item.metal_type == 'Gold' %}
-                            <span class="badge badge-gold">{{ item.metal_type }}</span>
-                            {% elif item.metal_type == 'Silver' %}
-                            <span class="badge badge-silver">{{ item.metal_type }}</span>
-                            {% elif item.metal_type == 'Diamond' %}
-                            <span class="badge badge-diamond">{{ item.metal_type }}</span>
+                            <div class="fw-medium text-dark">{{ item.name }}</div>
+                            <small class="text-muted">{{ item.category.name }}</small>
+                        </td>
+                        <td>
+                            <div>
+                                {% if item.metal_type == 'Gold' %}
+                                <span class="badge badge-gold">{{ item.metal_type }}</span>
+                                {% elif item.metal_type == 'Silver' %}
+                                <span class="badge badge-silver">{{ item.metal_type }}</span>
+                                {% elif item.metal_type == 'Diamond' %}
+                                <span class="badge badge-diamond">{{ item.metal_type }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ item.metal_type }}</span>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted">{{ item.purity }}</small>
+                        </td>
+                        <td>
+                            {% if item.huid %}
+                            <div class="font-monospace small fw-bold">{{ item.huid }}</div>
+                            {% endif %}
+                            <div>
+                                {% if item.hallmark_status == 'Hallmarked' %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.7rem;">HM</span>
+                                {% endif %}
+                                {% if item.huid_status == 'Verified' %}
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.7rem;">HUID Verified</span>
+                                {% elif item.huid_status == 'Pending' %}
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" style="font-size: 0.7rem;">HUID Pend.</span>
+                                {% elif not item.huid and item.hallmark_status != 'Hallmarked' %}
+                                <span class="text-muted small">—</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="text-nowrap">
+                            <span class="fw-semibold">{{ item.net_weight }}g</span> <span class="text-muted small">net</span>
+                            <div class="text-muted small">Gross {{ item.gross_weight }}g{% if item.stone_weight %} &middot; Stone {{ item.stone_weight }}g{% endif %}</div>
+                        </td>
+                        <td>
+                            <span class="fw-semibold">{{ item.quantity }}</span>
+                            {% if item.status == 'Sold' or item.quantity <= 0 %}
+                            <span class="badge bg-danger">Out of Stock</span>
+                            {% elif item.status == 'Reserved' %}
+                            <span class="badge bg-warning text-dark">Reserved</span>
+                            {% elif item.is_low_stock %}
+                            <span class="badge bg-warning text-dark">Low Stock</span>
                             {% else %}
-                            <span class="badge bg-secondary">{{ item.metal_type }}</span>
+                            <span class="badge bg-success">In Stock</span>
                             {% endif %}
                         </td>
-                        <td>{{ item.purity }}</td>
-                        <td>{{ item.net_weight }}g</td>
-                        <td class="fw-semibold">₹{{ item.selling_price }}</td>
+                        <td class="fw-semibold">
+                            ₹{{ item.selling_price }}
+                            {% if item.quantity > 1 and item.status != 'Sold' %}
+                            <div class="text-muted small fw-normal">Stock value ₹{{ item.estimated_value|floatformat:2 }}</div>
+                            {% endif %}
+                        </td>
                         <td>
                             {% if item.status == 'Available' %}
                             <span class="badge bg-success">Available</span>
@@ -146,7 +324,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="10" class="text-center py-4 text-muted">
+                        <td colspan="11" class="text-center py-4 text-muted">
                             <i class="bi bi-inbox fs-3 d-block mb-2"></i>
                             No jewellery items found. Click "+ Add Jewellery" to create your first item.
                         </td>

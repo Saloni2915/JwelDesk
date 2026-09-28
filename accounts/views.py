@@ -63,3 +63,39 @@ def company_settings(request):
         'settings_obj': settings_obj,
     })
 
+
+THEME_OPTIONS = (
+    {
+        'key': 'light',
+        'name': 'Light',
+        'desc': 'Clean, bright business UI with white surfaces, subtle borders and dark text. '
+                'Ideal for everyday counter and back-office use.',
+    },
+    {
+        'key': 'dark',
+        'name': 'Dark',
+        'desc': 'Genuinely dark interface with dark chrome, cards, tables and forms. '
+                'Comfortable in low-light showrooms.',
+    },
+    {
+        'key': 'gold',
+        'name': 'Gold / Premium',
+        'desc': 'Warm cream surfaces with a sophisticated gold accent used sparingly. '
+                'An elegant, premium jewellery-brand look.',
+    },
+)
+
+
+@staff_required
+def themes(request):
+    """Display the Themes settings page (authenticated back-office)."""
+    current_theme = request.COOKIES.get('jd-theme', 'light')
+    if current_theme not in ('light', 'dark', 'gold'):
+        current_theme = 'light'
+    if current_theme not in ('light', 'dark', 'gold'):
+        current_theme = 'light'
+    return render(request, 'accounts/themes.html', {
+        'current_theme': current_theme,
+        'theme_options': THEME_OPTIONS,
+    })
+
