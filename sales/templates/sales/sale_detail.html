@@ -127,6 +127,9 @@
                                 {% if sale.jewellery_item.design_code and sale.jewellery_item.design_code != sale.jewellery_item.item_code %}
                                 <small class="text-muted d-block font-monospace">Design: {{ sale.jewellery_item.design_code }}</small>
                                 {% endif %}
+                                {% if sale.jewellery_item.huid %}
+                                <small class="text-muted d-block font-monospace">HUID: {{ sale.jewellery_item.huid }}</small>
+                                {% endif %}
                             </td>
                             <td>
                                 <strong>{{ sale.jewellery_item.name }}</strong>

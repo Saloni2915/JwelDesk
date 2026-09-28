@@ -129,10 +129,17 @@ def build_invoice_pdf(sale):
     c.drawString(col_x[3], y, f'{sale.sale_price:,.2f}')
     c.drawRightString(col_x[4], y, f'{sale.sale_price:,.2f}')
     y -= 6 * mm
+    extra_details = []
+    if item.tag_number and item.tag_number != item.item_code:
+        extra_details.append(f'Tag: {item.tag_number}')
     if item.design_code and item.design_code != item.item_code:
+        extra_details.append(f'Design: {item.design_code}')
+    if item.huid:
+        extra_details.append(f'HUID: {item.huid}')
+    if extra_details:
         c.setFont('Helvetica', 8)
         c.setFillColor(BRAND_MUTED)
-        c.drawString(col_x[0], y, f'Design code: {item.design_code}')
+        c.drawString(col_x[0], y, ' | '.join(extra_details))
         c.setFont('Helvetica', 10)
         c.setFillColor(BRAND_DARK)
         y -= 6 * mm

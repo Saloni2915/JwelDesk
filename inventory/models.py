@@ -147,6 +147,9 @@ class JewelleryItem(models.Model):
 
     def clean(self):
         super().clean()
+        if self.tag_number:
+            self.tag_number = self.tag_number.strip()
+
         # Normalise HUID to uppercase if present
         if self.huid:
             self.huid = self.huid.strip().upper()
@@ -228,10 +231,16 @@ class JewelleryItem(models.Model):
             return tag_candidate
 
     def save(self, *args, **kwargs):
-        if not self.design_code:
-            self.design_code = self.item_code
+        if self.tag_number:
+            self.tag_number = self.tag_number.strip()
         if not self.tag_number:
             self.tag_number = self.generate_next_tag_number()
+        if not self.design_code:
+            self.design_code = self.item_code
+        if self.huid:
+            self.huid = self.huid.strip().upper()
+        else:
+            self.huid = ''
         self.full_clean()
         super().save(*args, **kwargs)
 

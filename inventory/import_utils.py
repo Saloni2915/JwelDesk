@@ -9,7 +9,12 @@ from inventory.models import JewelleryItem, Category
 from inventory.stock import record_initial_stock
 
 HEADER_MAPPING = {
-    'item_code': ['item_code', 'item code', 'piece_id', 'piece id', 'item_id', 'item id', 'tag', 'tag_number', 'barcode', 'code'],
+    'item_code': ['item_code', 'item code', 'piece_id', 'piece id', 'item_id', 'item id', 'tag', 'barcode', 'code'],
+    'tag_number': ['tag_number', 'tag number', 'tag_no', 'tag no'],
+    'huid': ['huid', 'huid_code', 'huid code', 'huid_number', 'huid number', 'bis_huid', 'bis huid'],
+    'huid_status': ['huid_status', 'huid status'],
+    'hallmark_status': ['hallmark_status', 'hallmark status', 'hallmarked'],
+    'hallmark_details': ['hallmark_details', 'hallmark details', 'hallmark_center', 'hallmark center'],
     'design_code': ['design_code', 'design code', 'model_code', 'model code', 'design', 'model', 'design_id', 'sku'],
     'name': ['name', 'item_name', 'item name', 'product_name', 'product name', 'title', 'description'],
     'category': ['category', 'category_name', 'category name', 'cat'],
@@ -36,11 +41,25 @@ VALID_STATUSES = {
     'reserved': 'Reserved',
 }
 
-# Fragments of the error messages produced by `validate_import_rows` when a Piece ID
+VALID_HUID_STATUSES = {
+    'not applicable': 'Not Applicable',
+    'pending': 'Pending',
+    'verified': 'Verified',
+}
+
+VALID_HALLMARK_STATUSES = {
+    'not applicable': 'Not Applicable',
+    'pending': 'Pending',
+    'hallmarked': 'Hallmarked',
+}
+
+# Fragments of the error messages produced by `validate_import_rows` when an identifier
 # is duplicated (either inside the uploaded file or already present in the database).
 DUPLICATE_ERROR_MARKERS = (
     'Duplicate Piece ID',
     'already exists in database',
+    'Duplicate Tag Number',
+    'Duplicate HUID',
 )
 
 
@@ -133,6 +152,14 @@ def validate_import_rows(data_rows):
     seen_file_codes = set()
     existing_db_codes = set(
         JewelleryItem.objects.values_list('item_code', flat=True)
+    )
+    seen_file_tags = set()
+    existing_db_tags = set(
+        JewelleryItem.objects.exclude(tag_number='').values_list('tag_number', flat=True)
+    )
+    seen_file_huids = set()
+    existing_db_huids = set(
+        JewelleryItem.objects.exclude(huid='').values_list('huid', flat=True)
     )
 
     for row in data_rows:
@@ -267,9 +294,60 @@ def validate_import_rows(data_rows):
             errors.append(f"Invalid status '{row.get('status')}'. Must be Available, Sold, or Reserved.")
             status = 'Available'
 
+        # 11. Tag number (optional)
+        tag_number = row.get('tag_number', '').strip()
+        if tag_number:
+            if tag_number in seen_file_tags:
+                errors.append(f"Duplicate Tag Number '{tag_number}' found within uploaded file.")
+            elif tag_number in existing_db_tags:
+                errors.append(f"Tag Number '{tag_number}' already exists in database.")
+            else:
+                seen_file_tags.add(tag_number)
+
+        # 12. HUID (optional)
+        raw_huid = row.get('huid', '').strip().upper()
+        huid = ''
+        if raw_huid:
+            if len(raw_huid) != 6 or not raw_huid.isalnum():
+                errors.append(f"Invalid HUID '{raw_huid}'. Must be a 6-character alphanumeric code.")
+            elif raw_huid in seen_file_huids:
+                errors.append(f"Duplicate HUID '{raw_huid}' found within uploaded file.")
+            elif raw_huid in existing_db_huids:
+                errors.append(f"HUID '{raw_huid}' already exists in database.")
+            else:
+                seen_file_huids.add(raw_huid)
+                huid = raw_huid
+
+        # 13. HUID status
+        raw_huid_status = row.get('huid_status', '').strip().lower()
+        if not raw_huid_status:
+            huid_status = 'Verified' if huid else 'Not Applicable'
+        elif raw_huid_status in VALID_HUID_STATUSES:
+            huid_status = VALID_HUID_STATUSES[raw_huid_status]
+        else:
+            errors.append(f"Invalid HUID status '{row.get('huid_status')}'. Must be Not Applicable, Pending, or Verified.")
+            huid_status = 'Not Applicable'
+
+        # 14. Hallmark status
+        raw_hm_status = row.get('hallmark_status', '').strip().lower()
+        if not raw_hm_status:
+            hallmark_status = 'Hallmarked' if huid else 'Not Applicable'
+        elif raw_hm_status in VALID_HALLMARK_STATUSES:
+            hallmark_status = VALID_HALLMARK_STATUSES[raw_hm_status]
+        else:
+            errors.append(f"Invalid Hallmark status '{row.get('hallmark_status')}'. Must be Not Applicable, Pending, or Hallmarked.")
+            hallmark_status = 'Not Applicable'
+
+        hallmark_details = row.get('hallmark_details', '').strip()
+
         processed_row = {
             'row_num': row_num,
             'item_code': item_code,
+            'tag_number': tag_number,
+            'huid': huid,
+            'huid_status': huid_status,
+            'hallmark_status': hallmark_status,
+            'hallmark_details': hallmark_details,
             'design_code': design_code,
             'name': name,
             'category_name': category_name,
@@ -350,20 +428,31 @@ def create_jewellery_item_from_row(row, category):
     (re-raised here with the spreadsheet row number for an actionable error message).
     """
     try:
-        return JewelleryItem.objects.create(
-            item_code=row['item_code'],
-            design_code=row['design_code'] or row['item_code'],
-            name=row['name'],
-            category=category,
-            metal_type=row['metal_type'],
-            purity=row['purity'],
-            gross_weight=Decimal(row['gross_weight']),
-            stone_weight=Decimal(row.get('stone_weight') or '0.000'),
-            net_weight=Decimal(row['net_weight']),
-            making_charge=Decimal(row['making_charge']),
-            selling_price=Decimal(row['selling_price']),
-            status=row['status'],
-        )
+        kwargs = {
+            'item_code': row['item_code'],
+            'design_code': row['design_code'] or row['item_code'],
+            'name': row['name'],
+            'category': category,
+            'metal_type': row['metal_type'],
+            'purity': row['purity'],
+            'gross_weight': Decimal(row['gross_weight']),
+            'stone_weight': Decimal(row.get('stone_weight') or '0.000'),
+            'net_weight': Decimal(row['net_weight']),
+            'making_charge': Decimal(row['making_charge']),
+            'selling_price': Decimal(row['selling_price']),
+            'status': row['status'],
+        }
+        if row.get('tag_number'):
+            kwargs['tag_number'] = row['tag_number']
+        if row.get('huid'):
+            kwargs['huid'] = row['huid']
+        if row.get('huid_status'):
+            kwargs['huid_status'] = row['huid_status']
+        if row.get('hallmark_status'):
+            kwargs['hallmark_status'] = row['hallmark_status']
+        if row.get('hallmark_details'):
+            kwargs['hallmark_details'] = row['hallmark_details']
+        return JewelleryItem.objects.create(**kwargs)
     except ValidationError as exc:
         raise ValidationError(
             f"Row {row.get('row_num', '?')} ('{row.get('item_code', '')}'): "

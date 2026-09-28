@@ -186,6 +186,16 @@ def inventory_list(request):
             Q(huid__icontains=q)
         )
 
+    # Specific tag filter
+    tag = (request.GET.get('tag_number') or request.GET.get('tag', '')).strip()
+    if tag:
+        items = items.filter(tag_number__icontains=tag)
+
+    # Specific HUID filter
+    huid = request.GET.get('huid', '').strip()
+    if huid:
+        items = items.filter(huid__icontains=huid)
+
     # Category filter
     category_id = request.GET.get('category', '').strip()
     if category_id:
@@ -235,8 +245,8 @@ def inventory_list(request):
     # Sorting
     sort = request.GET.get('sort', '-created_at')
     valid_sorts = ['selling_price', '-selling_price', 'created_at', '-created_at', 'name', 'item_code',
-                   'tag_number', 'design_code', 'quantity', '-quantity', 'net_weight', '-net_weight',
-                   'gross_weight', '-gross_weight', 'stone_weight', '-stone_weight']
+                   'tag_number', '-tag_number', 'design_code', 'quantity', '-quantity', 'net_weight', '-net_weight',
+                   'gross_weight', '-gross_weight', 'stone_weight', '-stone_weight', 'huid', '-huid']
     if sort in valid_sorts:
         items = items.order_by(sort)
 
@@ -266,6 +276,8 @@ def inventory_list(request):
                            .distinct()),
         'stock_filter_choices': stock.STOCK_STATUS_FILTERS,
         'selected_q': q,
+        'selected_tag': tag,
+        'selected_huid': huid,
         'selected_category': category_id,
         'selected_metal': metal,
         'selected_purity': purity,

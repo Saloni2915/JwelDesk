@@ -22,7 +22,11 @@ class JewelleryItemAdmin(admin.ModelAdmin):
     ]
     list_filter = ['category', 'metal_type', 'huid_status', 'hallmark_status', 'status', 'created_at']
     search_fields = ['tag_number', 'item_code', 'design_code', 'name', 'huid']
-    readonly_fields = ['tag_number', 'created_at', 'updated_at']
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            return ['tag_number', 'created_at', 'updated_at']
+        return ['created_at', 'updated_at']
 
 
 @admin.register(StockMovement)

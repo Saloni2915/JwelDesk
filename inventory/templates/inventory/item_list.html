@@ -182,7 +182,9 @@
                         <option value="-selling_price" {% if selected_sort == '-selling_price' %}selected{% endif %}>Price: High to Low</option>
                         <option value="quantity" {% if selected_sort == 'quantity' %}selected{% endif %}>Stock: Low to High</option>
                         <option value="-quantity" {% if selected_sort == '-quantity' %}selected{% endif %}>Stock: High to Low</option>
-                        <option value="tag_number" {% if selected_sort == 'tag_number' %}selected{% endif %}>Tag Number</option>
+                        <option value="tag_number" {% if selected_sort == 'tag_number' %}selected{% endif %}>Tag Number (A-Z)</option>
+                        <option value="-tag_number" {% if selected_sort == '-tag_number' %}selected{% endif %}>Tag Number (Z-A)</option>
+                        <option value="huid" {% if selected_sort == 'huid' %}selected{% endif %}>HUID</option>
                         <option value="name" {% if selected_sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
                         <option value="design_code" {% if selected_sort == 'design_code' %}selected{% endif %}>Design Code</option>
                     </select>
@@ -269,12 +271,14 @@
                             <div>
                                 {% if item.hallmark_status == 'Hallmarked' %}
                                 <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.7rem;">HM</span>
+                                {% elif item.hallmark_status == 'Pending' %}
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" style="font-size: 0.7rem;">HM Pend.</span>
                                 {% endif %}
                                 {% if item.huid_status == 'Verified' %}
                                 <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.7rem;">HUID Verified</span>
                                 {% elif item.huid_status == 'Pending' %}
                                 <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" style="font-size: 0.7rem;">HUID Pend.</span>
-                                {% elif not item.huid and item.hallmark_status != 'Hallmarked' %}
+                                {% elif not item.huid and item.hallmark_status == 'Not Applicable' and item.huid_status == 'Not Applicable' %}
                                 <span class="text-muted small">—</span>
                                 {% endif %}
                             </div>

@@ -36,6 +36,7 @@ class JewelleryItemForm(forms.ModelForm):
         self.fields['design_code'].required = False
         self.fields['stone_weight'].required = False
         self.fields['net_weight'].required = False
+        self.fields['making_charge'].required = False
         self.fields['huid'].required = False
         self.fields['hallmark_details'].required = False
         # New Phase-1 dropdowns default to 'Not Applicable' so legacy POSTs
@@ -52,12 +53,39 @@ class JewelleryItemForm(forms.ModelForm):
                     if not self.is_bound:
                         self.initial.setdefault(fname, default)
 
+    def clean_tag_number(self):
+        tag = self.cleaned_data.get('tag_number', '')
+        if tag:
+            tag = tag.strip()
+            qs = JewelleryItem.objects.filter(tag_number__iexact=tag)
+            if self.instance and self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError("This tag number is already assigned to another item.")
+        else:
+            tag = ''
+        return tag
+
     def clean_huid(self):
-        huid = self.cleaned_data.get('huid', '').strip().upper()
+        huid = self.cleaned_data.get('huid', '')
         if huid:
+            huid = huid.strip().upper()
             if len(huid) != 6 or not huid.isalnum():
                 raise forms.ValidationError("HUID must be exactly 6 alphanumeric characters.")
+            qs = JewelleryItem.objects.filter(huid=huid)
+            if self.instance and self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError("This HUID is already assigned to another item.")
+        else:
+            huid = ''
         return huid
+
+    def clean_making_charge(self):
+        mc = self.cleaned_data.get('making_charge')
+        if mc is None:
+            return 0.00
+        return mc
 
     def clean(self):
         cleaned_data = super().clean()

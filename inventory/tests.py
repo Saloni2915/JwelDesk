@@ -1586,3 +1586,521 @@ class OpeningStockTests(TestCase):
         self.assertEqual(movement.stock_after, 1)
         self.assertEqual(movement.created_by, self.user)
 
+
+class JewelleryTagAndHallmarkTests(TestCase):
+    """
+    Phase 1: Jewellery Tag + HUID / Hallmark tests.
+    Tests internal tag generation, uniqueness, HUID optionality, HUID format/uniqueness,
+    hallmark status, search/filter by tag and HUID, and admin/form/import integration.
+    """
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='hallmark_staff', password='Password123')
+        self.client.login(username='hallmark_staff', password='Password123')
+        self.category = Category.objects.create(name='Pendants & Lockets')
+
+    # ---- 1. Jewellery Tag ----------------------------------------------------
+    def test_tag_number_auto_generation(self):
+        item = JewelleryItem.objects.create(
+            item_code='TAG-TEST-001',
+            name='Gold Locket',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('4.500'),
+            selling_price=Decimal('35000.00'),
+        )
+        self.assertTrue(item.tag_number.startswith('JWL-'))
+        self.assertEqual(len(item.tag_number), 10)  # 'JWL-' + 6 digits
+        suffix = item.tag_number.split('-')[-1]
+        self.assertTrue(suffix.isdigit())
+
+    def test_tag_number_uniqueness_on_auto_generation(self):
+        item1 = JewelleryItem.objects.create(
+            item_code='TAG-UNIQ-001', name='Item 1', category=self.category,
+            metal_type='Gold', purity='22K', gross_weight=Decimal('4.000'),
+            selling_price=Decimal('30000.00'),
+        )
+        item2 = JewelleryItem.objects.create(
+            item_code='TAG-UNIQ-002', name='Item 2', category=self.category,
+            metal_type='Gold', purity='22K', gross_weight=Decimal('4.000'),
+            selling_price=Decimal('30000.00'),
+        )
+        self.assertNotEqual(item1.tag_number, item2.tag_number)
+        num1 = int(item1.tag_number.split('-')[-1])
+        num2 = int(item2.tag_number.split('-')[-1])
+        self.assertEqual(num2, num1 + 1)
+
+    def test_manual_tag_number_preserved(self):
+        custom_tag = 'CUST-TAG-999'
+        item = JewelleryItem.objects.create(
+            item_code='TAG-MANUAL-999',
+            tag_number=custom_tag,
+            name='Custom Tagged Piece',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('5.000'),
+            selling_price=Decimal('40000.00'),
+        )
+        self.assertEqual(item.tag_number, custom_tag)
+
+    def test_manual_duplicate_tag_rejected(self):
+        JewelleryItem.objects.create(
+            item_code='TAG-DUP-001',
+            tag_number='DUP-TAG-001',
+            name='First Tagged',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('5.000'),
+            selling_price=Decimal('40000.00'),
+        )
+        with self.assertRaises((ValidationError, IntegrityError)):
+            second = JewelleryItem(
+                item_code='TAG-DUP-002',
+                tag_number='DUP-TAG-001',
+                name='Second Tagged',
+                category=self.category,
+                metal_type='Gold',
+                purity='22K',
+                gross_weight=Decimal('5.000'),
+                selling_price=Decimal('40000.00'),
+            )
+            second.save()
+
+    def test_tag_generation_skips_existing_numbers_safely(self):
+        # Manually create JWL-000002 before sequence reaches it
+        manual = JewelleryItem.objects.create(
+            item_code='TAG-SKIP-MANUAL',
+            tag_number='JWL-000002',
+            name='Pre-existing Tag',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('5.000'),
+            selling_price=Decimal('40000.00'),
+        )
+        # Next auto-generated item should not collide
+        first_auto = JewelleryItem.objects.create(
+            item_code='TAG-SKIP-AUTO-1',
+            name='Auto Piece 1',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('5.000'),
+            selling_price=Decimal('40000.00'),
+        )
+        second_auto = JewelleryItem.objects.create(
+            item_code='TAG-SKIP-AUTO-2',
+            name='Auto Piece 2',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('5.000'),
+            selling_price=Decimal('40000.00'),
+        )
+        self.assertNotEqual(first_auto.tag_number, manual.tag_number)
+        self.assertNotEqual(second_auto.tag_number, manual.tag_number)
+        self.assertNotEqual(first_auto.tag_number, second_auto.tag_number)
+
+    # ---- 2. HUID & Hallmark --------------------------------------------------
+    def test_huid_can_be_blank_for_multiple_items(self):
+        item1 = JewelleryItem.objects.create(
+            item_code='BLANK-HUID-001',
+            huid='',
+            name='Non-hallmarked 1',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('3.000'),
+            selling_price=Decimal('20000.00'),
+        )
+        item2 = JewelleryItem.objects.create(
+            item_code='BLANK-HUID-002',
+            huid='',
+            name='Non-hallmarked 2',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('3.500'),
+            selling_price=Decimal('25000.00'),
+        )
+        self.assertEqual(item1.huid, '')
+        self.assertEqual(item2.huid, '')
+        self.assertEqual(item1.huid_status, 'Not Applicable')
+        self.assertEqual(item2.huid_status, 'Not Applicable')
+
+    def test_duplicate_huid_is_rejected_on_clean(self):
+        JewelleryItem.objects.create(
+            item_code='HUID-DUP-001',
+            huid='AB1234',
+            name='Hallmarked Piece 1',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('5.000'),
+            selling_price=Decimal('45000.00'),
+        )
+        duplicate_item = JewelleryItem(
+            item_code='HUID-DUP-002',
+            huid='AB1234',
+            name='Hallmarked Piece 2',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('5.000'),
+            selling_price=Decimal('45000.00'),
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            duplicate_item.clean()
+        self.assertIn('huid', ctx.exception.message_dict)
+
+    def test_duplicate_huid_rejected_by_db_constraint(self):
+        JewelleryItem.objects.create(
+            item_code='HUID-DB-001',
+            huid='XY9876',
+            name='DB Piece 1',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('5.000'),
+            selling_price=Decimal('45000.00'),
+        )
+        with self.assertRaises((IntegrityError, ValidationError)):
+            JewelleryItem.objects.create(
+                item_code='HUID-DB-002',
+                huid='XY9876',
+                name='DB Piece 2',
+                category=self.category,
+                metal_type='Gold',
+                purity='22K',
+                gross_weight=Decimal('5.000'),
+                selling_price=Decimal('45000.00'),
+            )
+
+    def test_different_huids_work(self):
+        item1 = JewelleryItem.objects.create(
+            item_code='HUID-DIFF-001',
+            huid='AB1234',
+            huid_status='Verified',
+            hallmark_status='Hallmarked',
+            name='Piece AB',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('5.000'),
+            selling_price=Decimal('45000.00'),
+        )
+        item2 = JewelleryItem.objects.create(
+            item_code='HUID-DIFF-002',
+            huid='CD5678',
+            huid_status='Verified',
+            hallmark_status='Hallmarked',
+            name='Piece CD',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('5.000'),
+            selling_price=Decimal('45000.00'),
+        )
+        self.assertEqual(item1.huid, 'AB1234')
+        self.assertEqual(item2.huid, 'CD5678')
+        self.assertEqual(JewelleryItem.objects.filter(huid__in=['AB1234', 'CD5678']).count(), 2)
+
+    def test_huid_normalized_to_uppercase_and_trimmed(self):
+        item = JewelleryItem.objects.create(
+            item_code='HUID-NORM-001',
+            huid='  ab1234  ',
+            name='Lowercase HUID Piece',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('5.000'),
+            selling_price=Decimal('45000.00'),
+        )
+        self.assertEqual(item.huid, 'AB1234')
+
+    def test_invalid_huid_length_or_characters_rejected(self):
+        for invalid in ['12345', '1234567', 'AB-123', 'AB 123']:
+            item = JewelleryItem(
+                item_code=f'INV-HUID-{invalid}',
+                huid=invalid,
+                name='Invalid HUID Piece',
+                category=self.category,
+                metal_type='Gold',
+                purity='22K',
+                gross_weight=Decimal('5.000'),
+                selling_price=Decimal('45000.00'),
+            )
+            with self.assertRaises(ValidationError):
+                item.clean()
+
+    def test_existing_jewellery_items_without_huid_remain_valid(self):
+        item = JewelleryItem.objects.create(
+            item_code='EXISTING-001',
+            name='Existing Plain Ring',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('6.000'),
+            selling_price=Decimal('55000.00'),
+        )
+        self.assertEqual(item.huid, '')
+        item.name = 'Updated Plain Ring'
+        item.selling_price = Decimal('57000.00')
+        item.save()
+        item.refresh_from_db()
+        self.assertEqual(item.name, 'Updated Plain Ring')
+        self.assertEqual(item.huid, '')
+
+    def test_hallmark_status_and_details_fields(self):
+        item = JewelleryItem.objects.create(
+            item_code='HM-DETAIL-001',
+            huid='HM1234',
+            huid_status='Verified',
+            hallmark_status='Hallmarked',
+            hallmark_details='Assayed at BIS Center Mum-4001, Cert #9921',
+            name='Certified Gold Chain',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K (916)',
+            gross_weight=Decimal('12.000'),
+            selling_price=Decimal('95000.00'),
+        )
+        self.assertEqual(item.hallmark_status, 'Hallmarked')
+        self.assertEqual(item.huid_status, 'Verified')
+        self.assertEqual(item.hallmark_details, 'Assayed at BIS Center Mum-4001, Cert #9921')
+
+    # ---- 3. Search and Filters UI --------------------------------------------
+    def test_search_by_tag_number(self):
+        target = JewelleryItem.objects.create(
+            item_code='SRCH-TAG-TARGET',
+            tag_number='JWL-990001',
+            name='Unique Tagged Necklace',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('15.000'),
+            selling_price=Decimal('110000.00'),
+        )
+        other = JewelleryItem.objects.create(
+            item_code='SRCH-TAG-OTHER',
+            name='Other Necklace',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('10.000'),
+            selling_price=Decimal('80000.00'),
+        )
+        # Search via ?q=
+        resp = self.client.get(reverse('inventory_list'), {'q': 'JWL-990001'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Unique Tagged Necklace')
+        self.assertNotContains(resp, 'Other Necklace')
+
+        # Filter via ?tag_number=
+        resp_tag = self.client.get(reverse('inventory_list'), {'tag_number': 'JWL-990001'})
+        self.assertEqual(resp_tag.status_code, 200)
+        self.assertContains(resp_tag, 'Unique Tagged Necklace')
+        self.assertNotContains(resp_tag, 'Other Necklace')
+
+    def test_search_by_huid(self):
+        target = JewelleryItem.objects.create(
+            item_code='SRCH-HUID-TARGET',
+            huid='ZX9988',
+            name='Unique HUID Bangle',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('20.000'),
+            selling_price=Decimal('150000.00'),
+        )
+        other = JewelleryItem.objects.create(
+            item_code='SRCH-HUID-OTHER',
+            name='Unmarked Bangle',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('18.000'),
+            selling_price=Decimal('130000.00'),
+        )
+        # Search via ?q=
+        resp = self.client.get(reverse('inventory_list'), {'q': 'ZX9988'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Unique HUID Bangle')
+        self.assertNotContains(resp, 'Unmarked Bangle')
+
+        # Filter via ?huid=
+        resp_huid = self.client.get(reverse('inventory_list'), {'huid': 'ZX9988'})
+        self.assertEqual(resp_huid.status_code, 200)
+        self.assertContains(resp_huid, 'Unique HUID Bangle')
+        self.assertNotContains(resp_huid, 'Unmarked Bangle')
+
+    def test_filter_by_huid_and_hallmark_status(self):
+        verified_item = JewelleryItem.objects.create(
+            item_code='STATUS-HM-001',
+            huid='VR1111',
+            huid_status='Verified',
+            hallmark_status='Hallmarked',
+            name='Fully Hallmarked Piece',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('8.000'),
+            selling_price=Decimal('60000.00'),
+        )
+        pending_item = JewelleryItem.objects.create(
+            item_code='STATUS-HM-002',
+            huid='PN2222',
+            huid_status='Pending',
+            hallmark_status='Pending',
+            name='Assay Pending Piece',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('8.000'),
+            selling_price=Decimal('60000.00'),
+        )
+        resp_verified = self.client.get(reverse('inventory_list'), {'huid_status': 'Verified'})
+        self.assertContains(resp_verified, 'Fully Hallmarked Piece')
+        self.assertNotContains(resp_verified, 'Assay Pending Piece')
+
+        resp_hallmarked = self.client.get(reverse('inventory_list'), {'hallmark_status': 'Hallmarked'})
+        self.assertContains(resp_hallmarked, 'Fully Hallmarked Piece')
+        self.assertNotContains(resp_hallmarked, 'Assay Pending Piece')
+
+        resp_pending = self.client.get(reverse('inventory_list'), {'hallmark_status': 'Pending'})
+        self.assertContains(resp_pending, 'Assay Pending Piece')
+        self.assertNotContains(resp_pending, 'Fully Hallmarked Piece')
+
+    def test_detail_view_shows_tag_number_and_huid_details(self):
+        item = JewelleryItem.objects.create(
+            item_code='DET-TAG-001',
+            tag_number='JWL-123456',
+            huid='HM8899',
+            huid_status='Verified',
+            hallmark_status='Hallmarked',
+            hallmark_details='Mumbai Hallmarking Assay Centre',
+            name='Royal Navratna Pendant',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('10.000'),
+            net_weight=Decimal('9.500'),
+            selling_price=Decimal('75000.00'),
+        )
+        resp = self.client.get(reverse('inventory_detail', kwargs={'pk': item.pk}))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'JWL-123456')
+        self.assertContains(resp, 'HM8899')
+        self.assertContains(resp, 'Verified')
+        self.assertContains(resp, 'Hallmarked')
+        self.assertContains(resp, 'Mumbai Hallmarking Assay Centre')
+
+    # ---- 4. Form & UI Add/Edit -----------------------------------------------
+    def test_form_auto_assigns_tag_when_left_blank(self):
+        resp = self.client.post(reverse('inventory_add'), {
+            'item_code': 'FORM-ADD-AUTO-01',
+            'tag_number': '',
+            'name': 'Form Added Ring',
+            'category': self.category.id,
+            'metal_type': 'Gold',
+            'purity': '22K',
+            'gross_weight': '5.000',
+            'net_weight': '4.800',
+            'selling_price': '40000.00',
+            'status': 'Available',
+            'huid': '',
+            'huid_status': 'Not Applicable',
+            'hallmark_status': 'Not Applicable',
+        }, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        item = JewelleryItem.objects.get(item_code='FORM-ADD-AUTO-01')
+        self.assertTrue(item.tag_number.startswith('JWL-'))
+
+    def test_form_rejects_duplicate_huid(self):
+        JewelleryItem.objects.create(
+            item_code='FORM-EXIST-HUID',
+            huid='UN5555',
+            name='Existing HUID Item',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('5.000'),
+            selling_price=Decimal('40000.00'),
+        )
+        resp = self.client.post(reverse('inventory_add'), {
+            'item_code': 'FORM-NEW-HUID',
+            'name': 'New Item With Duplicate HUID',
+            'category': self.category.id,
+            'metal_type': 'Gold',
+            'purity': '22K',
+            'gross_weight': '5.000',
+            'net_weight': '4.800',
+            'selling_price': '40000.00',
+            'status': 'Available',
+            'huid': 'UN5555',
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertFormError(resp.context['form'], 'huid', 'This HUID is already assigned to another item.')
+
+    def test_form_rejects_invalid_huid(self):
+        resp = self.client.post(reverse('inventory_add'), {
+            'item_code': 'FORM-INV-HUID',
+            'name': 'Invalid HUID Item',
+            'category': self.category.id,
+            'metal_type': 'Gold',
+            'purity': '22K',
+            'gross_weight': '5.000',
+            'net_weight': '4.800',
+            'selling_price': '40000.00',
+            'status': 'Available',
+            'huid': '12345',  # only 5 chars
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertFormError(resp.context['form'], 'huid', 'HUID must be exactly 6 alphanumeric characters.')
+
+    # ---- 5. Bulk Import with Tag & HUID --------------------------------------
+    def test_bulk_import_with_tag_number_and_huid(self):
+        csv_content = (
+            "item_code,tag_number,huid,name,category,metal_type,purity,gross_weight,stone_weight,net_weight,making_charge,selling_price,status\n"
+            "IMP-TAG-01,JWL-777001,AB1122,Imported Tagged Pendant,Pendants,Gold,22K,6.000,0.200,5.800,2000.00,48000.00,Available\n"
+        ).encode('utf-8')
+        upload = self.client.post(reverse('inventory_import'), {
+            'action': 'upload',
+            'import_file': SimpleUploadedFile('test_huid.csv', csv_content, content_type='text/csv'),
+        })
+        self.assertRedirects(upload, reverse('inventory_import'), fetch_redirect_response=False)
+        preview = self.client.get(reverse('inventory_import'))
+        self.assertEqual(preview.context['summary']['valid_count'], 1)
+        self.client.post(reverse('inventory_import'), {'action': 'confirm'})
+        imported = JewelleryItem.objects.get(item_code='IMP-TAG-01')
+        self.assertEqual(imported.tag_number, 'JWL-777001')
+        self.assertEqual(imported.huid, 'AB1122')
+
+    def test_bulk_import_rejects_duplicate_huid(self):
+        JewelleryItem.objects.create(
+            item_code='PRE-EXIST-HUID',
+            huid='KL9999',
+            name='Existing HUID Item',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('5.000'),
+            selling_price=Decimal('40000.00'),
+        )
+        csv_content = (
+            "item_code,huid,name,category,metal_type,purity,gross_weight,stone_weight,net_weight,making_charge,selling_price,status\n"
+            "IMP-HUID-DUP,KL9999,Import Duplicate HUID,Pendants,Gold,22K,6.000,0.000,6.000,2000.00,48000.00,Available\n"
+        ).encode('utf-8')
+        upload = self.client.post(reverse('inventory_import'), {
+            'action': 'upload',
+            'import_file': SimpleUploadedFile('dup_huid.csv', csv_content, content_type='text/csv'),
+        })
+        self.assertRedirects(upload, reverse('inventory_import'), fetch_redirect_response=False)
+        preview = self.client.get(reverse('inventory_import'))
+        self.assertEqual(preview.context['summary']['invalid_count'], 1)
+        self.assertFalse(preview.context['can_import'])
+
