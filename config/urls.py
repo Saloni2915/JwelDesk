@@ -35,6 +35,7 @@ urlpatterns = [
     path('customers/', include('customers.urls')),
     path('custom-orders/', include('custom_orders.urls')),
     path('', include('sales.urls')),
+    path('team/', include('team.urls')),
 
     # Direct URL aliases for compatibility with Django auth defaults
     path('accounts/signup/', signup_view, name='signup'),

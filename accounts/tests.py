@@ -849,5 +849,201 @@ class SignUpTests(TestCase):
 
 
 
+class AuthCSRFTests(TestCase):
+    """
+    Focused tests for the login CSRF fix and signup DB creation.
+
+    Requirement checklist (per task):
+      a. successful signup creates a database user
+      b. signup password is hashed (never plain text)
+      c. successful login
+      d. CSRF-protected login POST (rejected without token)
+      e. invalid signup / invalid login show errors
+    """
+
+    def setUp(self):
+        self.client = Client()
+        self.login_url = reverse('accounts:login')
+        self.signup_url = reverse('accounts:signup')
+
+    # ------------------------------------------------------------------
+    # d. CSRF-protected login POST
+    # ------------------------------------------------------------------
+
+    def test_login_form_contains_csrf_token(self):
+        """GET /accounts/login/ must render csrfmiddlewaretoken in the form."""
+        response = self.client.get(self.login_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'csrfmiddlewaretoken',
+                            msg_prefix='Login form is missing {% csrf_token %}')
+
+    def test_login_post_without_csrf_token_is_rejected(self):
+        """A POST that omits the CSRF token must be rejected (403) when
+        CSRF enforcement is active.  This verifies the middleware is
+        working and the view is NOT decorated with @csrf_exempt."""
+        # Create an enforcement-on client
+        csrf_client = Client(enforce_csrf_checks=True)
+        User.objects.create_user(username='csrfuser', password='CsrfPassword123!')
+
+        # POST without obtaining a CSRF cookie / token first
+        response = csrf_client.post(self.login_url, {
+            'username': 'csrfuser',
+            'password': 'CsrfPassword123!',
+        })
+        # Must be 403 Forbidden, not 200 or redirect
+        self.assertEqual(response.status_code, 403,
+                         'Login POST without CSRF token should return 403')
+
+    def test_login_post_with_valid_csrf_token_succeeds(self):
+        """A POST that includes the correct CSRF token must succeed."""
+        csrf_client = Client(enforce_csrf_checks=True)
+        user = User.objects.create_user(
+            username='goodcsrfuser', password='CsrfGoodPass123!')
+
+        # Step 1: GET the login page to receive the CSRF cookie
+        get_response = csrf_client.get(self.login_url)
+        self.assertEqual(get_response.status_code, 200)
+
+        # Step 2: Extract the CSRF token from the cookie
+        csrf_token = csrf_client.cookies.get('csrftoken')
+        self.assertIsNotNone(csrf_token,
+                             'No csrftoken cookie after GET /accounts/login/')
+
+        # Step 3: POST with the token in both the form and the header
+        response = csrf_client.post(
+            self.login_url,
+            {
+                'username': 'goodcsrfuser',
+                'password': 'CsrfGoodPass123!',
+                'csrfmiddlewaretoken': csrf_token.value,
+            },
+            HTTP_X_CSRFTOKEN=csrf_token.value,
+            follow=True,
+        )
+        self.assertTrue(
+            response.context['user'].is_authenticated,
+            'Login with valid CSRF token should succeed',
+        )
+
+    # ------------------------------------------------------------------
+    # a. Successful signup creates a database user
+    # ------------------------------------------------------------------
+
+    def test_successful_signup_creates_database_user(self):
+        """Valid signup data must create exactly one new User row in the DB."""
+        initial_count = User.objects.count()
+        self.client.post(self.signup_url, {
+            'first_name': 'Priya Singh',
+            'username': 'priya_singh',
+            'email': 'priya@jeweldesk.test',
+            'password1': 'SecureShow@2026',
+            'password2': 'SecureShow@2026',
+        })
+        self.assertEqual(User.objects.count(), initial_count + 1,
+                         'Signup should create exactly one new user in the DB')
+        user = User.objects.get(username='priya_singh')
+        self.assertEqual(user.first_name, 'Priya Singh')
+        self.assertEqual(user.email, 'priya@jeweldesk.test')
+        self.assertTrue(user.is_active)
+
+    # ------------------------------------------------------------------
+    # b. Signup password is hashed
+    # ------------------------------------------------------------------
+
+    def test_signup_password_is_hashed_not_plain_text(self):
+        """After signup the stored password must be a hash, not the raw string."""
+        raw = 'PlainTextIsEvilPassword1!'
+        self.client.post(self.signup_url, {
+            'first_name': 'Hash Test',
+            'username': 'hashtest',
+            'email': 'hash@jeweldesk.test',
+            'password1': raw,
+            'password2': raw,
+        })
+        user = User.objects.get(username='hashtest')
+        self.assertNotEqual(user.password, raw,
+                            'Password must not be stored as plain text')
+        self.assertTrue(user.password.startswith('pbkdf2_sha256$') or
+                        user.password.startswith('argon2') or
+                        user.password.startswith('bcrypt'),
+                        'Password must use a recognised Django hash algorithm')
+        self.assertTrue(user.check_password(raw),
+                        'check_password() must validate the raw password against the hash')
+
+    # ------------------------------------------------------------------
+    # c. Successful login
+    # ------------------------------------------------------------------
+
+    def test_login_with_valid_credentials_redirects_to_dashboard(self):
+        """POST /accounts/login/ with correct credentials redirects to /."""
+        User.objects.create_user(username='validlogin', password='ValidPass@123')
+        response = self.client.post(self.login_url, {
+            'username': 'validlogin',
+            'password': 'ValidPass@123',
+        }, follow=True)
+        self.assertTrue(response.context['user'].is_authenticated)
+
+    def test_full_flow_signup_then_login(self):
+        """End-to-end: signup → DB user created → login succeeds → authenticated."""
+        password = 'EndToEnd@Flow2026'
+        self.client.post(self.signup_url, {
+            'first_name': 'Flow Test',
+            'username': 'flowtest',
+            'email': 'flow@jeweldesk.test',
+            'password1': password,
+            'password2': password,
+        })
+        # Verify DB record
+        self.assertTrue(User.objects.filter(username='flowtest').exists(),
+                        'User must exist in DB after signup')
+        # Now login
+        login_response = self.client.post(self.login_url, {
+            'username': 'flowtest',
+            'password': password,
+        }, follow=True)
+        self.assertTrue(login_response.context['user'].is_authenticated,
+                        'User must be authenticated after signup + login')
+        self.assertEqual(login_response.context['user'].username, 'flowtest')
+
+    # ------------------------------------------------------------------
+    # e. Invalid signup / invalid login show errors
+    # ------------------------------------------------------------------
+
+    def test_invalid_login_returns_200_with_error(self):
+        """Wrong credentials must return 200 and display an error — not crash."""
+        User.objects.create_user(username='erroruser', password='RealPass@123')
+        response = self.client.post(self.login_url, {
+            'username': 'erroruser',
+            'password': 'WrongPass!',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Invalid username or password')
+
+    def test_invalid_signup_missing_required_fields_shows_errors(self):
+        """Submitting an empty signup form must return 200 with form errors."""
+        response = self.client.post(self.signup_url, {
+            'first_name': '',
+            'username': '',
+            'email': 'not-an-email',
+            'password1': '',
+            'password2': '',
+        })
+        self.assertEqual(response.status_code, 200)
+        form = response.context['form']
+        self.assertFalse(form.is_valid())
+        self.assertIn('username', form.errors)
+        self.assertIn('first_name', form.errors)
+        self.assertFalse(User.objects.filter(email='not-an-email').exists())
+
+    def test_existing_users_continue_to_work_after_changes(self):
+        """Pre-existing users must still be able to log in unchanged."""
+        existing = User.objects.create_user(
+            username='preexisting', password='PreExisting@123')
+        response = self.client.post(self.login_url, {
+            'username': 'preexisting',
+            'password': 'PreExisting@123',
+        }, follow=True)
+        self.assertTrue(response.context['user'].is_authenticated)
+        self.assertEqual(response.context['user'].pk, existing.pk)
 
 

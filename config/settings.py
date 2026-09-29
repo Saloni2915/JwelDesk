@@ -55,6 +55,12 @@ if vercel_url and vercel_url not in ALLOWED_HOSTS:
 CSRF_TRUSTED_ORIGINS = [
     'https://jwel-desk.vercel.app',
     'https://*.vercel.app',
+    # Local development origins – required by Django 4.0+ when the browser
+    # sends an Origin or Referer header with HTTP requests.
+    'http://localhost',
+    'http://localhost:8000',
+    'http://127.0.0.1',
+    'http://127.0.0.1:8000',
 ]
 
 extra_csrf = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
@@ -95,6 +101,7 @@ INSTALLED_APPS = [
     'customers',
     'sales',
     'custom_orders',
+    'team',
 ]
 
 MIDDLEWARE = [

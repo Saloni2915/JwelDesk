@@ -1,7 +1,8 @@
 from django.contrib import messages
-from django.contrib.auth import logout as auth_logout, login as auth_login
+from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.views import (
+    LoginView,
     PasswordResetView,
     PasswordResetDoneView,
     PasswordResetConfirmView,
@@ -69,23 +70,20 @@ password_reset_complete_view = JewelDeskPasswordResetCompleteView.as_view()
 
 
 
-def _login_view(request):
-    """Render the branded login card and handle sign-in.
+class JewelDeskLoginView(LoginView):
+    """Branded login view for JewelDesk.
 
-    (Function-based replacement for auth_views.LoginView so the whole
-    accounts app follows the project's function-based view convention.)
+    Subclasses Django's LoginView so it participates correctly in the
+    class-based view dispatch chain, including CSRF middleware, session
+    handling and the ``redirect_authenticated_user`` shortcut.
     """
-    if request.user.is_authenticated:
-        return redirect('dashboard')
-    from django.contrib.auth.views import LoginView
-    return LoginView.as_view(
-        template_name='accounts/login.html',
-        redirect_authenticated_user=True,
-    )(request)
+    template_name = 'accounts/login.html'
+    redirect_authenticated_user = True
 
 
-# Exposed under the name the URLconf expects.
-login_view = _login_view
+# Function alias so the URLconf entry ``views.login_view`` keeps working
+# without any URL changes.
+login_view = JewelDeskLoginView.as_view()
 
 
 def signup_view(request):

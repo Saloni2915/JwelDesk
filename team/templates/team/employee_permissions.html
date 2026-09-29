@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Manage Permissions — {{ employee.full_name }} — JewelDesk{% endblock %}
+{% block page_title %}Permissions: {{ employee.full_name }}{% endblock %}
+
+{% block page_actions %}
+  <a href="{% url 'team:employee_detail' employee.pk %}" class="btn btn-outline-secondary btn-sm" id="btn-back-detail">
+    <i class="bi bi-arrow-left me-1"></i> Back to Profile
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-10">
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h5 class="mb-0 fw-semibold">
+            <i class="bi bi-shield-lock me-2 text-primary"></i>Fine-Grained Permissions
+          </h5>
+          <small class="text-muted">
+            Role: <strong>{{ employee.role.name }}</strong> | Employee ID: <strong>{{ employee.employee_id }}</strong>
+          </small>
+        </div>
+        <div>
+          <form method="post" action="{% url 'team:employee_reset_permissions' employee.pk %}" class="d-inline"
+                onsubmit="return confirm('Reset all permissions to defaults for {{ employee.role.name }}? Any customizations will be overridden.');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-warning btn-sm" id="btn-reset-perms">
+              <i class="bi bi-arrow-counterclockwise me-1"></i> Reset to Role Defaults
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <p class="text-muted small mb-4">
+          Customize module-level access for <strong>{{ employee.full_name }}</strong>. Checked items allow the action, unchecked items restrict it.
+        </p>
+
+        <form method="post" id="permissions-form">
+          {% csrf_token %}
+
+          {% if form.errors %}
+          <div class="alert alert-danger">
+            Please correct the errors below.
+          </div>
+          {% endif %}
+
+          <div class="table-responsive">
+            <table class="table table-bordered align-middle text-center">
+              <thead class="table-light">
+                <tr>
+                  <th class="text-start ps-3" style="min-width: 180px;">Module</th>
+                  <th>View</th>
+                  <th>Add</th>
+                  <th>Edit</th>
+                  <th>Delete</th>
+                  <th>Export</th>
+                  <th>Approve</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in rows %}
+                <tr>
+                  <td class="text-start ps-3 fw-semibold bg-light">
+                    {{ row.label }}
+                  </td>
+                  {% for act in row.actions %}
+                  <td>
+                    <div class="form-check d-flex justify-content-center m-0">
+                      {{ act.field }}
+                    </div>
+                  </td>
+                  {% endfor %}
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mt-4">
+            <a href="{% url 'team:employee_detail' employee.pk %}" class="btn btn-secondary">
+              Cancel
+            </a>
+            <button type="submit" class="btn btn-primary px-4" id="btn-save-perms">
+              <i class="bi bi-check2 me-1"></i> Save Permissions
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

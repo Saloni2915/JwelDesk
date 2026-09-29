@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ form_title }} — JewelDesk{% endblock %}
+{% block page_title %}{{ form_title }}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'team:employee_list' %}" class="btn btn-outline-secondary btn-sm">
+  <i class="bi bi-arrow-left me-1"></i> Back to Team
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-person-lines-fill me-2"></i>{{ form_title }}</h5>
+      </div>
+      <div class="card-body">
+        <form method="post" id="employee-form" novalidate>
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+          <div class="alert alert-danger">
+            {% for err in form.non_field_errors %}<div>{{ err }}</div>{% endfor %}
+          </div>
+          {% endif %}
+
+          <!-- Account credentials (create only) -->
+          {% if is_create %}
+          <h6 class="fw-semibold text-muted mb-3 mt-1">
+            <i class="bi bi-key me-1"></i> Login Credentials
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label for="{{ form.username.id_for_label }}" class="form-label">Username <span class="text-danger">*</span></label>
+              {{ form.username }}
+              {% if form.username.errors %}<div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>{% endif %}
+              <small class="text-muted">Employee will use this to log in.</small>
+            </div>
+            <div class="col-md-4">
+              <label for="{{ form.password1.id_for_label }}" class="form-label">Password <span class="text-danger">*</span></label>
+              {{ form.password1 }}
+              {% if form.password1.errors %}<div class="text-danger small mt-1">{{ form.password1.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-4">
+              <label for="{{ form.password2.id_for_label }}" class="form-label">Confirm Password <span class="text-danger">*</span></label>
+              {{ form.password2 }}
+              {% if form.password2.errors %}<div class="text-danger small mt-1">{{ form.password2.errors.0 }}</div>{% endif %}
+            </div>
+          </div>
+          <hr class="my-4">
+          {% endif %}
+
+          <!-- Personal info -->
+          <h6 class="fw-semibold text-muted mb-3">
+            <i class="bi bi-person me-1"></i> Personal Information
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label for="{{ form.full_name.id_for_label }}" class="form-label">Full Name <span class="text-danger">*</span></label>
+              {{ form.full_name }}
+              {% if form.full_name.errors %}<div class="text-danger small mt-1">{{ form.full_name.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+              <label for="{{ form.email.id_for_label }}" class="form-label">Email <span class="text-danger">*</span></label>
+              {{ form.email }}
+              {% if form.email.errors %}<div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-4">
+              <label for="{{ form.mobile.id_for_label }}" class="form-label">Mobile</label>
+              {{ form.mobile }}
+            </div>
+            <div class="col-md-4">
+              <label for="{{ form.joining_date.id_for_label }}" class="form-label">Joining Date</label>
+              {{ form.joining_date }}
+            </div>
+            <div class="col-md-4">
+              <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
+              {{ form.status }}
+            </div>
+          </div>
+          <hr class="my-4">
+
+          <!-- Organisation -->
+          <h6 class="fw-semibold text-muted mb-3">
+            <i class="bi bi-building me-1"></i> Organisation
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label for="{{ form.department.id_for_label }}" class="form-label">Department</label>
+              {{ form.department }}
+            </div>
+            <div class="col-md-6">
+              <label for="{{ form.role.id_for_label }}" class="form-label">Role <span class="text-danger">*</span></label>
+              {{ form.role }}
+              {% if form.role.errors %}<div class="text-danger small mt-1">{{ form.role.errors.0 }}</div>{% endif %}
+              <small class="text-muted">Default permissions will be applied for the chosen role.</small>
+            </div>
+          </div>
+          <hr class="my-4">
+
+          <!-- Branch access -->
+          <h6 class="fw-semibold text-muted mb-3">
+            <i class="bi bi-geo-alt me-1"></i> Branch Access
+          </h6>
+          <div class="mb-4">
+            <label class="form-label d-block">Branches (leave all unchecked = access to all)</label>
+            <div class="row">
+              {% for checkbox in form.branches %}
+              <div class="col-md-4 col-6 mb-1">
+                <div class="form-check">
+                  {{ checkbox.tag }}
+                  <label class="form-check-label" for="{{ checkbox.id_for_label }}">
+                    {{ checkbox.choice_label }}
+                  </label>
+                </div>
+              </div>
+              {% empty %}
+              <div class="col-12 text-muted small">
+                No branches configured yet.
+                <a href="{% url 'team:branch_create' %}" target="_blank">Add a branch</a> first.
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary px-4" id="btn-save-employee">
+              <i class="bi bi-check-lg me-1"></i>
+              {% if is_create %}Create Employee{% else %}Save Changes{% endif %}
+            </button>
+            <a href="{% url 'team:employee_list' %}" class="btn btn-outline-secondary">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
