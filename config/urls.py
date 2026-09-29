@@ -19,6 +19,13 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+from accounts.views import (
+    password_reset_view,
+    password_reset_done_view,
+    password_reset_confirm_view,
+    password_reset_complete_view,
+)
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('inventory.urls')),
@@ -26,7 +33,14 @@ urlpatterns = [
     path('customers/', include('customers.urls')),
     path('custom-orders/', include('custom_orders.urls')),
     path('', include('sales.urls')),
+
+    # Direct URL aliases for compatibility with Django auth defaults
+    path('accounts/password-reset/', password_reset_view, name='password_reset'),
+    path('accounts/password-reset/done/', password_reset_done_view, name='password_reset_done'),
+    path('accounts/password-reset/confirm/<uidb64>/<token>/', password_reset_confirm_view, name='password_reset_confirm'),
+    path('accounts/password-reset/complete/', password_reset_complete_view, name='password_reset_complete'),
 ]
+
 
 if settings.DEBUG:
     # Serve uploaded media files in development only.

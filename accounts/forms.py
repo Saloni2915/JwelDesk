@@ -1,7 +1,34 @@
 from django import forms
+from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
 import re
 
 from .models import CompanySettings
+
+
+class JewelDeskPasswordResetForm(PasswordResetForm):
+    """Custom password reset form styled for JewelDesk auth panels."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['email'].widget.attrs.update({
+            'class': 'jd-auth__control',
+            'placeholder': 'Enter your registered email',
+            'autocomplete': 'email',
+            'autofocus': True,
+        })
+
+
+class JewelDeskSetPasswordForm(SetPasswordForm):
+    """Custom password confirmation form styled for JewelDesk auth panels."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in ('new_password1', 'new_password2'):
+            if field in self.fields:
+                self.fields[field].widget.attrs.update({
+                    'class': 'jd-auth__control jd-auth__control--password',
+                })
+
 
 COMPANY_NAME_MAX = 200
 COMPANY_GSTIN_RE = re.compile(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]{3}$')

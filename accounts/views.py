@@ -1,11 +1,71 @@
 from django.contrib import messages
 from django.contrib.auth import logout as auth_logout, login as auth_login
 from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth.views import (
+    PasswordResetView,
+    PasswordResetDoneView,
+    PasswordResetConfirmView,
+    PasswordResetCompleteView,
+)
 from django.shortcuts import redirect, render
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 
-from .forms import CompanySettingsForm
+from .forms import (
+    CompanySettingsForm,
+    JewelDeskPasswordResetForm,
+    JewelDeskSetPasswordForm,
+)
 from .models import CompanySettings
+
+
+class JewelDeskPasswordResetView(PasswordResetView):
+    """View to request a password reset email."""
+    template_name = 'accounts/password_reset_form.html'
+    email_template_name = 'accounts/password_reset_email.txt'
+    html_email_template_name = 'accounts/password_reset_email.html'
+    subject_template_name = 'accounts/password_reset_subject.txt'
+    success_url = reverse_lazy('accounts:password_reset_done')
+    form_class = JewelDeskPasswordResetForm
+
+    def get_extra_email_context(self):
+        try:
+            settings_obj = CompanySettings.load()
+            name = settings_obj.name
+        except Exception:
+            name = 'JewelDesk'
+        return {
+            'site_name': name,
+            'company_name': name,
+        }
+
+    def form_valid(self, form):
+        self.extra_email_context = self.get_extra_email_context()
+        return super().form_valid(form)
+
+
+class JewelDeskPasswordResetDoneView(PasswordResetDoneView):
+    """Confirmation page shown after requesting a password reset."""
+    template_name = 'accounts/password_reset_done.html'
+
+
+class JewelDeskPasswordResetConfirmView(PasswordResetConfirmView):
+    """View allowing the user to set a new password via secure token."""
+    template_name = 'accounts/password_reset_confirm.html'
+    success_url = reverse_lazy('accounts:password_reset_complete')
+    form_class = JewelDeskSetPasswordForm
+
+
+class JewelDeskPasswordResetCompleteView(PasswordResetCompleteView):
+    """Success page shown after successfully setting a new password."""
+    template_name = 'accounts/password_reset_complete.html'
+
+
+# View aliases exposed for URLconfs
+password_reset_view = JewelDeskPasswordResetView.as_view()
+password_reset_done_view = JewelDeskPasswordResetDoneView.as_view()
+password_reset_confirm_view = JewelDeskPasswordResetConfirmView.as_view()
+password_reset_complete_view = JewelDeskPasswordResetCompleteView.as_view()
+
 
 
 def _login_view(request):

@@ -1,6 +1,11 @@
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
+from django.contrib.auth.tokens import default_token_generator, PasswordResetTokenGenerator
+from django.core import mail
 from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+
 
 
 class AccountsTests(TestCase):
@@ -467,6 +472,184 @@ class CompanySettingsTests(TestCase):
         content = self.client.get(
             reverse('accounts:themes')).content.decode()
         self.assertIn('Themes Branding Test Co', content)
+
+
+class PasswordResetTests(TestCase):
+    """Test suite for Forgot Password / Reset Password workflow."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='resetuser',
+            email='resetuser@jeweldesk.test',
+            password='OldSecurePassword123!',
+        )
+        self.reset_url = reverse('accounts:password_reset')
+        self.done_url = reverse('accounts:password_reset_done')
+
+    def test_login_page_has_forgot_password_link(self):
+        """The login page must include a visible 'Forgot Password?' link."""
+        response = self.client.get(reverse('accounts:login'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Forgot Password?')
+        self.assertContains(response, self.reset_url)
+
+    def test_forgot_password_page_loads(self):
+        """Forgot password page should render successfully with form elements."""
+        response = self.client.get(self.reset_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'accounts/password_reset_form.html')
+        self.assertContains(response, 'Send Reset Link')
+        self.assertContains(response, 'id_email')
+        self.assertContains(response, 'csrfmiddlewaretoken')
+        self.assertContains(response, reverse('accounts:login'))
+
+    def test_registered_user_reset_request_works_and_sends_email(self):
+        """Requesting a reset for a registered email must send a reset email with token."""
+        response = self.client.post(self.reset_url, {'email': self.user.email})
+        self.assertRedirects(response, self.done_url)
+
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+        self.assertEqual(email.to, [self.user.email])
+        self.assertIn('JewelDesk', email.subject)
+
+        # Verify email contains reset link with uidb64 and token
+        uidb64 = urlsafe_base64_encode(force_bytes(self.user.pk))
+        self.assertIn(f'/accounts/password-reset/confirm/{uidb64}/', email.body)
+        token_part = email.body.split(f'/accounts/password-reset/confirm/{uidb64}/')[1].split('/')[0]
+        self.assertTrue(default_token_generator.check_token(self.user, token_part))
+
+    def test_reset_done_page_loads(self):
+        """The confirmation page after submitting reset request loads properly."""
+        response = self.client.get(self.done_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'accounts/password_reset_done.html')
+        self.assertContains(response, 'Check Your Email')
+        self.assertContains(response, reverse('accounts:login'))
+
+    def test_valid_reset_token_allows_password_change(self):
+        """A valid token allows navigating to the form and setting a new password."""
+        uidb64 = urlsafe_base64_encode(force_bytes(self.user.pk))
+        token = default_token_generator.make_token(self.user)
+        confirm_url = reverse(
+            'accounts:password_reset_confirm',
+            kwargs={'uidb64': uidb64, 'token': token}
+        )
+
+        # GET request initiates session token and displays form at set-password URL
+        response = self.client.get(confirm_url, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'accounts/password_reset_confirm.html')
+        self.assertTrue(response.context.get('validlink'))
+        set_password_url = response.redirect_chain[-1][0]
+
+        # POST new password to the set-password form URL
+        post_response = self.client.post(set_password_url, {
+            'new_password1': 'BrandNewPassword789!',
+            'new_password2': 'BrandNewPassword789!',
+        })
+        self.assertRedirects(
+            post_response,
+            reverse('accounts:password_reset_complete')
+        )
+
+        # Complete page loads
+        complete_response = self.client.get(reverse('accounts:password_reset_complete'))
+        self.assertEqual(complete_response.status_code, 200)
+        self.assertTemplateUsed(complete_response, 'accounts/password_reset_complete.html')
+
+    def test_old_password_no_longer_works_and_new_password_works(self):
+        """After password reset, old password fails and new password authenticates."""
+        uidb64 = urlsafe_base64_encode(force_bytes(self.user.pk))
+        token = default_token_generator.make_token(self.user)
+        confirm_url = reverse(
+            'accounts:password_reset_confirm',
+            kwargs={'uidb64': uidb64, 'token': token}
+        )
+
+        # Step 1: Initialize session via GET
+        get_response = self.client.get(confirm_url, follow=True)
+        set_password_url = get_response.redirect_chain[-1][0]
+
+        # Step 2: POST new password
+        self.client.post(set_password_url, {
+            'new_password1': 'BrandNewPassword789!',
+            'new_password2': 'BrandNewPassword789!',
+        })
+
+        # Step 3: Attempt login with old password - must FAIL
+        login_old = self.client.post(reverse('accounts:login'), {
+            'username': self.user.username,
+            'password': 'OldSecurePassword123!',
+        })
+        self.assertEqual(login_old.status_code, 200)
+        self.assertContains(login_old, 'Invalid username or password')
+
+        # Step 4: Attempt login with new password - must SUCCEED
+        login_new = self.client.post(reverse('accounts:login'), {
+            'username': self.user.username,
+            'password': 'BrandNewPassword789!',
+        }, follow=True)
+        self.assertTrue(login_new.context['user'].is_authenticated)
+
+    def test_invalid_token_is_rejected(self):
+        """An invalid reset token is rejected with validlink=False and friendly message."""
+        uidb64 = urlsafe_base64_encode(force_bytes(self.user.pk))
+        bad_token = 'completely-invalid-token'
+        confirm_url = reverse(
+            'accounts:password_reset_confirm',
+            kwargs={'uidb64': uidb64, 'token': bad_token}
+        )
+
+        response = self.client.get(confirm_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'accounts/password_reset_confirm.html')
+        self.assertFalse(response.context.get('validlink'))
+        self.assertContains(response, 'Reset Link Invalid or Expired')
+
+    def test_expired_token_is_rejected(self):
+        """A token that has expired is rejected."""
+        class ExpiredTokenGenerator(PasswordResetTokenGenerator):
+            def _num_seconds(self, dt):
+                return super()._num_seconds(dt) - 1000000
+
+        expired_gen = ExpiredTokenGenerator()
+        token = expired_gen.make_token(self.user)
+        uidb64 = urlsafe_base64_encode(force_bytes(self.user.pk))
+        confirm_url = reverse(
+            'accounts:password_reset_confirm',
+            kwargs={'uidb64': uidb64, 'token': token}
+        )
+
+        response = self.client.get(confirm_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context.get('validlink'))
+
+    def test_unknown_email_does_not_reveal_account_existence(self):
+        """Submitting an unknown email redirects to done without sending mail or revealing existence."""
+        response = self.client.post(self.reset_url, {
+            'email': 'nonexistent_jeweller_email@example.com'
+        })
+        # Must redirect to the exact same 'done' page
+        self.assertRedirects(response, self.done_url)
+        # Must not send any email
+        self.assertEqual(len(mail.outbox), 0)
+
+        # Checking the done page content does not reveal account existence
+        done_page = self.client.get(self.done_url)
+        self.assertEqual(done_page.status_code, 200)
+        self.assertNotContains(done_page, 'not found')
+        self.assertNotContains(done_page, 'does not exist')
+
+    def test_existing_normal_login_still_works(self):
+        """Normal login behavior is completely preserved."""
+        response = self.client.post(reverse('accounts:login'), {
+            'username': self.user.username,
+            'password': 'OldSecurePassword123!',
+        }, follow=True)
+        self.assertTrue(response.context['user'].is_authenticated)
+
 
 
 

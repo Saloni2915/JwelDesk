@@ -216,14 +216,78 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = 'accounts:login'
 
 
-# Email
+# Email Configuration
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
+#
+# By default, emails are written to the console during local development and testing
+# when SMTP environment variables are not set.
+# For production email delivery, set the following environment variables:
+#   EMAIL_HOST            - SMTP host (e.g., smtp.sendgrid.net, smtp.gmail.com)
+#   EMAIL_PORT            - SMTP port (e.g., 587 for TLS, 465 for SSL, default: 587)
+#   EMAIL_HOST_USER       - SMTP username / API key identity
+#   EMAIL_HOST_PASSWORD   - SMTP password / API secret key
+#   EMAIL_USE_TLS         - True/False (default: True when port != 465)
+#   EMAIL_USE_SSL         - True/False (default: True when port == 465)
+#   DEFAULT_FROM_EMAIL    - Sender email address (e.g., 'JewelDesk <no-reply@jeweldesk.com>')
+#   EMAIL_BACKEND         - Optional override for custom email backend
+
+_email_host = os.environ.get('EMAIL_HOST', '')
+_email_port = int(os.environ.get(
+    'EMAIL_PORT',
+    '465' if os.environ.get('EMAIL_USE_SSL', '').lower() in ('1', 'true', 'yes') else '587'
+))
+_email_user = os.environ.get('EMAIL_HOST_USER', '')
+_email_password = os.environ.get('EMAIL_HOST_PASSWORD', '')
+
+_use_ssl_env = os.environ.get('EMAIL_USE_SSL')
+if _use_ssl_env is not None:
+    _email_use_ssl = _use_ssl_env.lower() in ('1', 'true', 'yes')
+else:
+    _email_use_ssl = (_email_port == 465)
+
+_use_tls_env = os.environ.get('EMAIL_USE_TLS')
+if _use_tls_env is not None:
+    _email_use_tls = _use_tls_env.lower() in ('1', 'true', 'yes')
+else:
+    _email_use_tls = not _email_use_ssl
+
+DEFAULT_FROM_EMAIL = os.environ.get(
+    'DEFAULT_FROM_EMAIL',
+    os.environ.get('SERVER_EMAIL', 'JewelDesk <no-reply@jeweldesk.com>')
+)
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+_custom_email_backend = os.environ.get('EMAIL_BACKEND')
+if _custom_email_backend:
+    _active_email_backend = _custom_email_backend
+elif _email_host:
+    _active_email_backend = 'django.core.mail.backends.smtp.EmailBackend'
+else:
+    _active_email_backend = 'django.core.mail.backends.console.EmailBackend'
+
+# Django 6.0+ MAILERS configuration
+_mailer_options = {}
+if _active_email_backend == 'django.core.mail.backends.smtp.EmailBackend':
+    _mailer_options = {
+        'host': _email_host,
+        'port': _email_port,
+        'username': _email_user,
+        'password': _email_password,
+        'use_tls': _email_use_tls,
+        'use_ssl': _email_use_ssl,
+    }
 
 MAILERS = {
     'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
+        'BACKEND': _active_email_backend,
+        'OPTIONS': _mailer_options,
     },
 }
+
+# Password reset token expiry (in seconds, default 3 days = 259200)
+PASSWORD_RESET_TIMEOUT = int(os.environ.get('PASSWORD_RESET_TIMEOUT', '259200'))
+
+
 # Inventory ------------------------------------------------------------------
 #
 # Low-stock threshold, in pieces. A design (all physical pieces sharing a

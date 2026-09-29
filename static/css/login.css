@@ -291,6 +291,59 @@ body.jd-auth {
     outline-offset: 1px;
 }
 
+.jd-auth__link {
+    display: inline-flex;
+    align-items: center;
+    color: var(--accent);
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.15s ease, text-decoration 0.15s ease;
+}
+
+.jd-auth__link:hover,
+.jd-auth__link:focus-visible {
+    color: var(--accent-hover);
+    text-decoration: underline;
+}
+
+.jd-auth__help-text {
+    margin-top: 0.35rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.jd-auth__help-text ul {
+    margin: 0.35rem 0 0;
+    padding-left: 1.25rem;
+}
+
+.jd-auth__status-icon {
+    display: grid;
+    place-items: center;
+    width: 3.8rem;
+    height: 3.8rem;
+    margin: 0 auto 1.25rem;
+    border-radius: 50%;
+    font-size: 1.85rem;
+}
+
+.jd-auth__status-icon--success {
+    background-color: rgba(46, 204, 113, 0.14);
+    color: #2ecc71;
+}
+
+.jd-auth__status-icon--info {
+    background-color: rgba(52, 152, 219, 0.14);
+    color: #3498db;
+}
+
+.jd-auth__status-icon--warning {
+    background-color: rgba(231, 76, 60, 0.14);
+    color: var(--danger);
+}
+
 /* Primary action -------------------------------------------------------- */
 .jd-auth__submit {
     display: inline-flex;
