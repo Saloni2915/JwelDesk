@@ -20,6 +20,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from accounts.views import (
+    login_view,
+    signup_view,
     password_reset_view,
     password_reset_done_view,
     password_reset_confirm_view,
@@ -35,11 +37,13 @@ urlpatterns = [
     path('', include('sales.urls')),
 
     # Direct URL aliases for compatibility with Django auth defaults
+    path('accounts/signup/', signup_view, name='signup'),
     path('accounts/password-reset/', password_reset_view, name='password_reset'),
     path('accounts/password-reset/done/', password_reset_done_view, name='password_reset_done'),
     path('accounts/password-reset/confirm/<uidb64>/<token>/', password_reset_confirm_view, name='password_reset_confirm'),
     path('accounts/password-reset/complete/', password_reset_complete_view, name='password_reset_complete'),
 ]
+
 
 
 if settings.DEBUG:

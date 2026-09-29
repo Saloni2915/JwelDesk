@@ -651,6 +651,201 @@ class PasswordResetTests(TestCase):
         self.assertTrue(response.context['user'].is_authenticated)
 
 
+class SignUpTests(TestCase):
+    """Test suite for Sign Up / User Registration workflow."""
+
+    def setUp(self):
+        self.client = Client()
+        self.signup_url = reverse('accounts:signup')
+        self.login_url = reverse('accounts:login')
+
+    def test_signup_page_loads(self):
+        """Sign up page should render successfully with form controls."""
+        response = self.client.get(self.signup_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'accounts/signup.html')
+        self.assertContains(response, 'Create Account')
+        self.assertContains(response, 'id_first_name')
+        self.assertContains(response, 'id_username')
+        self.assertContains(response, 'id_email')
+        self.assertContains(response, 'id_password1')
+        self.assertContains(response, 'id_password2')
+        self.assertContains(response, 'csrfmiddlewaretoken')
+        self.assertContains(response, self.login_url)
+
+    def test_login_page_has_signup_link(self):
+        """Login page must display clearly visible 'Don't have an account? Sign Up' link."""
+        response = self.client.get(self.login_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Don't have an account?")
+        self.assertContains(response, 'Sign Up')
+        self.assertContains(response, self.signup_url)
+
+    def test_valid_user_can_register(self):
+        """A new user can submit valid registration data and be created in DB."""
+        data = {
+            'first_name': 'Rohit Sharma',
+            'username': 'rohit_jewels',
+            'email': 'rohit@jeweldesk.test',
+            'password1': 'ComplexP@ssw0rd2026!',
+            'password2': 'ComplexP@ssw0rd2026!',
+        }
+        response = self.client.post(self.signup_url, data)
+        self.assertRedirects(response, self.login_url)
+
+        # Verify user was created in the database
+        user = User.objects.get(username='rohit_jewels')
+        self.assertEqual(user.first_name, 'Rohit Sharma')
+        self.assertEqual(user.email, 'rohit@jeweldesk.test')
+        self.assertTrue(user.is_active)
+
+    def test_password_is_not_stored_in_plain_text(self):
+        """Password must be securely hashed and never stored in plain text."""
+        raw_password = 'SuperSecretPassword2026!'
+        data = {
+            'first_name': 'Meera Patel',
+            'username': 'meera_patel',
+            'email': 'meera@jeweldesk.test',
+            'password1': raw_password,
+            'password2': raw_password,
+        }
+        self.client.post(self.signup_url, data)
+        user = User.objects.get(username='meera_patel')
+
+        self.assertNotEqual(user.password, raw_password)
+        self.assertTrue(user.password.startswith('pbkdf2_sha256$'))
+        self.assertTrue(user.check_password(raw_password))
+
+    def test_new_user_can_login_after_registration(self):
+        """A freshly registered user can sign in normally through the login system."""
+        password = 'MyShowroomPass123#'
+        data = {
+            'first_name': 'Aditi Rao',
+            'username': 'aditirao',
+            'email': 'aditi@jeweldesk.test',
+            'password1': password,
+            'password2': password,
+        }
+        self.client.post(self.signup_url, data)
+
+        # Login with newly registered credentials
+        login_response = self.client.post(self.login_url, {
+            'username': 'aditirao',
+            'password': password,
+        }, follow=True)
+        self.assertTrue(login_response.context['user'].is_authenticated)
+        self.assertEqual(login_response.context['user'].username, 'aditirao')
+
+    def test_duplicate_username_is_rejected(self):
+        """Attempting to register with an already existing username is rejected."""
+        User.objects.create_user(
+            username='existinguser',
+            email='existing@jeweldesk.test',
+            password='InitialPassword123!',
+        )
+        data = {
+            'first_name': 'Another User',
+            'username': 'existinguser',
+            'email': 'newunique@jeweldesk.test',
+            'password1': 'AnotherPassword123!',
+            'password2': 'AnotherPassword123!',
+        }
+        response = self.client.post(self.signup_url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'accounts/signup.html')
+        self.assertIn('username', response.context['form'].errors)
+
+    def test_duplicate_email_is_rejected(self):
+        """Attempting to register with an already existing email is rejected."""
+        User.objects.create_user(
+            username='userone',
+            email='shared@jeweldesk.test',
+            password='InitialPassword123!',
+        )
+        data = {
+            'first_name': 'Second User',
+            'username': 'usertwo',
+            'email': 'shared@jeweldesk.test',
+            'password1': 'AnotherPassword123!',
+            'password2': 'AnotherPassword123!',
+        }
+        response = self.client.post(self.signup_url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'accounts/signup.html')
+        self.assertIn('email', response.context['form'].errors)
+        self.assertFalse(User.objects.filter(username='usertwo').exists())
+
+    def test_password_confirmation_mismatch_is_rejected(self):
+        """When password and confirm password do not match, form errors are shown."""
+        data = {
+            'first_name': 'Mismatch Test',
+            'username': 'mismatchuser',
+            'email': 'mismatch@jeweldesk.test',
+            'password1': 'ValidPassword123!',
+            'password2': 'DifferentPassword456!',
+        }
+        response = self.client.post(self.signup_url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'accounts/signup.html')
+        self.assertIn('password2', response.context['form'].errors)
+        self.assertFalse(User.objects.filter(username='mismatchuser').exists())
+
+    def test_invalid_form_data_handled_correctly(self):
+        """Invalid or missing fields return errors without creating records."""
+        data = {
+            'first_name': '',
+            'username': '',
+            'email': 'not-an-email',
+            'password1': '',
+            'password2': '',
+        }
+        response = self.client.post(self.signup_url, data)
+        self.assertEqual(response.status_code, 200)
+        form = response.context['form']
+        self.assertFalse(form.is_valid())
+        self.assertIn('username', form.errors)
+        self.assertIn('email', form.errors)
+        self.assertIn('first_name', form.errors)
+
+    def test_authenticated_user_redirected_from_signup(self):
+        """Already logged in users are redirected to dashboard upon visiting signup."""
+        user = User.objects.create_user(
+            username='authuser',
+            password='ValidPassword123!'
+        )
+        self.client.login(username='authuser', password='ValidPassword123!')
+        response = self.client.get(self.signup_url)
+        self.assertRedirects(response, reverse('dashboard'))
+
+    def test_existing_login_still_works(self):
+        """Existing user login functionality continues to operate identically."""
+        user = User.objects.create_user(
+            username='existingloginuser',
+            password='MyPassword123!',
+        )
+        response = self.client.post(self.login_url, {
+            'username': 'existingloginuser',
+            'password': 'MyPassword123!',
+        }, follow=True)
+        self.assertTrue(response.context['user'].is_authenticated)
+
+    def test_existing_forgot_password_still_works(self):
+        """Existing forgot password link and form load successfully."""
+        user = User.objects.create_user(
+            username='forgotpwuser',
+            email='forgotpw@jeweldesk.test',
+            password='OriginalPassword123!',
+        )
+        reset_response = self.client.post(
+            reverse('accounts:password_reset'),
+            {'email': user.email}
+        )
+        self.assertRedirects(reset_response, reverse('accounts:password_reset_done'))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn(user.email, mail.outbox[0].to)
+
+
+
 
 
 

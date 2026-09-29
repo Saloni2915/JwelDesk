@@ -14,6 +14,7 @@ from .forms import (
     CompanySettingsForm,
     JewelDeskPasswordResetForm,
     JewelDeskSetPasswordForm,
+    JewelDeskSignUpForm,
 )
 from .models import CompanySettings
 
@@ -85,6 +86,26 @@ def _login_view(request):
 
 # Exposed under the name the URLconf expects.
 login_view = _login_view
+
+
+def signup_view(request):
+    """Render the registration card and handle user account creation."""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        form = JewelDeskSignUpForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(
+                request,
+                'Your account has been created successfully! You can now sign in with your credentials.'
+            )
+            return redirect('accounts:login')
+    else:
+        form = JewelDeskSignUpForm()
+
+    return render(request, 'accounts/signup.html', {'form': form})
 
 
 def logout_view(request):

@@ -115,6 +115,11 @@
                     </button>
                 </form>
 
+                <div class="text-center mt-3" id="jd-signup-prompt">
+                    <span class="text-secondary small">Don't have an account?</span>
+                    <a href="{% url 'accounts:signup' %}" class="jd-auth__link ms-1" id="jd-signup-link">Sign Up</a>
+                </div>
+
                 <p class="jd-auth__foot">
                     <i class="bi bi-shield-lock" aria-hidden="true"></i>
                     <span>Secure sign-in. Access is limited to your shop's staff accounts.</span>

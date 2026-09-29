@@ -1,5 +1,10 @@
 from django import forms
-from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
+from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import (
+    PasswordResetForm,
+    SetPasswordForm,
+    UserCreationForm,
+)
 import re
 
 from .models import CompanySettings
@@ -28,6 +33,86 @@ class JewelDeskSetPasswordForm(SetPasswordForm):
                 self.fields[field].widget.attrs.update({
                     'class': 'jd-auth__control jd-auth__control--password',
                 })
+
+
+class JewelDeskSignUpForm(UserCreationForm):
+    """User registration form styled for JewelDesk auth panels."""
+
+    first_name = forms.CharField(
+        label='Full Name',
+        max_length=150,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'jd-auth__control',
+            'placeholder': 'Enter your full name',
+            'autocomplete': 'name',
+            'autofocus': True,
+        }),
+    )
+    email = forms.EmailField(
+        label='Email Address',
+        max_length=254,
+        required=True,
+        widget=forms.EmailInput(attrs={
+            'class': 'jd-auth__control',
+            'placeholder': 'name@jewelleryshop.com',
+            'autocomplete': 'email',
+        }),
+    )
+
+    class Meta(UserCreationForm.Meta):
+        model = get_user_model()
+        fields = ('first_name', 'username', 'email')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'username' in self.fields:
+            self.fields['username'].label = 'Username'
+            self.fields['username'].widget.attrs.update({
+                'class': 'jd-auth__control',
+                'placeholder': 'Choose a username',
+                'autocomplete': 'username',
+                'autocapitalize': 'none',
+                'autocorrect': 'off',
+                'spellcheck': 'false',
+            })
+            self.fields['username'].help_text = (
+                'Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.'
+            )
+        if 'password1' in self.fields:
+            self.fields['password1'].label = 'Password'
+            self.fields['password1'].widget.attrs.update({
+                'class': 'jd-auth__control jd-auth__control--password',
+                'placeholder': 'Create a secure password',
+                'autocomplete': 'new-password',
+            })
+        if 'password2' in self.fields:
+            self.fields['password2'].label = 'Confirm Password'
+            self.fields['password2'].widget.attrs.update({
+                'class': 'jd-auth__control jd-auth__control--password',
+                'placeholder': 'Confirm your password',
+                'autocomplete': 'new-password',
+            })
+
+    def clean_email(self):
+        email = (self.cleaned_data.get('email') or '').strip().lower()
+        if not email:
+            raise forms.ValidationError('Email address is required.')
+        User = get_user_model()
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError(
+                'An account with this email address already exists. Please sign in or reset your password.'
+            )
+        return email
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.first_name = (self.cleaned_data.get('first_name') or '').strip()
+        user.email = (self.cleaned_data.get('email') or '').strip().lower()
+        if commit:
+            user.save()
+        return user
+
 
 
 COMPANY_NAME_MAX = 200
