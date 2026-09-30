@@ -1249,5 +1249,79 @@ class SignUpFlowInspectionTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'accounts/signup.html')
 
+    def test_authenticated_client_posting_signup_creates_new_user(self):
+        """Even if an existing session is active (e.g. admin testing in same browser),
+        submitting signup via POST must NOT be dropped or redirected to dashboard.
+        It must clear the old session and create the new user record."""
+        admin_user = User.objects.create_user(
+            username='tempadmin', password='AdminPassword123!', is_staff=True
+        )
+        self.client.login(username='tempadmin', password='AdminPassword123!')
+
+        raw_password = 'SaloniSecure@2026'
+        response = self.client.post(self.signup_url, {
+            'first_name': 'Saloni Soni',
+            'username': 'saloni_new_account',
+            'email': 'saloni_new@jeweldesk.test',
+            'password1': raw_password,
+            'password2': raw_password,
+        })
+        self.assertRedirects(response, self.login_url)
+        self.assertTrue(
+            User.objects.filter(username='saloni_new_account', email='saloni_new@jeweldesk.test').exists(),
+            'New User record must be created in the database'
+        )
+        created_user = User.objects.get(username='saloni_new_account')
+        self.assertTrue(created_user.check_password(raw_password))
+
+    def test_login_creates_session_and_grants_access(self):
+        """Newly created user credentials can log in, establish session, and view dashboard."""
+        password = 'UserLoginPass@2026'
+        user = User.objects.create_user(
+            username='sessionuser', email='session@jeweldesk.test', password=password
+        )
+        response = self.client.post(self.login_url, {
+            'username': 'session@jeweldesk.test',
+            'password': password,
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['user'].is_authenticated)
+        self.assertEqual(response.context['user'].pk, user.pk)
+        self.assertEqual(int(self.client.session.get('_auth_user_id')), user.pk)
+
+    def test_logout_terminates_session(self):
+        """Logging out terminates the session and unauthenticates the user."""
+        password = 'LogoutUserPass@2026'
+        User.objects.create_user(
+            username='logouttestuser', email='logouttest@jeweldesk.test', password=password
+        )
+        self.client.login(username='logouttestuser', password=password)
+        self.assertIn('_auth_user_id', self.client.session)
+
+        response = self.client.post(reverse('accounts:logout'), follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['user'].is_authenticated)
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_wrong_password_fails_authentication_and_login(self):
+        """Invalid credentials fail authenticate() and reject login with error."""
+        from django.contrib.auth import authenticate
+        User.objects.create_user(
+            username='wrongpassuser', email='wrongpass@jeweldesk.test', password='CorrectPassword@123'
+        )
+        # authenticate() fails
+        auth_result = authenticate(None, username='wrongpassuser', password='IncorrectPassword!')
+        self.assertIsNone(auth_result)
+
+        # Login POST fails with 200 and error message
+        response = self.client.post(self.login_url, {
+            'username': 'wrongpassuser',
+            'password': 'IncorrectPassword!',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Invalid username or password')
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+
 
 
