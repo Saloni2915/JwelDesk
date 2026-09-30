@@ -140,26 +140,65 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
-if os.environ.get('VERCEL'):
-    # On Vercel serverless functions, the source repository filesystem is read-only.
-    # /tmp is the only writable directory on AWS Lambda/Vercel runtime.
-    default_db_path = Path('/tmp') / 'db.sqlite3'
-    seed_db = BASE_DIR / 'db.sqlite3'
-    if seed_db.exists() and not default_db_path.exists():
-        import shutil
-        try:
-            shutil.copy2(seed_db, default_db_path)
-        except Exception:
-            pass
-else:
-    default_db_path = BASE_DIR / 'db.sqlite3'
+default_sqlite_path = BASE_DIR / 'db.sqlite3'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': default_db_path,
+# Production database URL (e.g. Neon, Supabase, Vercel Postgres, Railway)
+# Supports DATABASE_URL, POSTGRES_URL, or POSTGRES_PRISMA_URL
+_database_url = (
+    os.environ.get('DATABASE_URL')
+    or os.environ.get('POSTGRES_URL')
+    or os.environ.get('POSTGRES_PRISMA_URL')
+)
+
+if _database_url:
+    try:
+        import dj_database_url
+        DATABASES = {
+            'default': dj_database_url.parse(
+                _database_url,
+                conn_max_age=600,
+                conn_health_checks=True,
+                ssl_require=True if 'localhost' not in _database_url and '127.0.0.1' not in _database_url else False,
+            )
+        }
+    except ImportError:
+        from urllib.parse import urlparse, unquote
+        parsed = urlparse(_database_url)
+        engine = 'django.db.backends.postgresql'
+        if 'sqlite' in parsed.scheme:
+            engine = 'django.db.backends.sqlite3'
+        elif 'mysql' in parsed.scheme:
+            engine = 'django.db.backends.mysql'
+
+        DATABASES = {
+            'default': {
+                'ENGINE': engine,
+                'NAME': unquote(parsed.path.lstrip('/')),
+                'USER': unquote(parsed.username or ''),
+                'PASSWORD': unquote(parsed.password or ''),
+                'HOST': parsed.hostname or '',
+                'PORT': parsed.port or '',
+            }
+        }
+elif os.environ.get('VERCEL'):
+    # Ephemeral fallback for Vercel if DATABASE_URL is not yet configured.
+    # Note: A hosted PostgreSQL (Neon/Supabase/Vercel Postgres) DATABASE_URL
+    # must be provided for persistent data across serverless invocations.
+    default_db_path = Path('/tmp') / 'db.sqlite3'
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': default_db_path,
+        }
     }
-}
+else:
+    # Local development: persist to local SQLite database file
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': default_sqlite_path,
+        }
+    }
 
 
 # Password validation

@@ -16,7 +16,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 application = get_wsgi_application()
 app = application
 
-# On Vercel serverless functions, ensure database tables exist in /tmp/db.sqlite3
+# On Vercel serverless functions, ensure database tables exist in the configured database
 if os.environ.get('VERCEL'):
     try:
         from django.core.management import call_command
