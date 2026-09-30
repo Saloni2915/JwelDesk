@@ -4,7 +4,7 @@ team/tests.py
 Comprehensive test suite for JewelDesk Team / Employee Management module.
 """
 
-from django.contrib.auth import get_user_model
+from django.contrib.auth import authenticate, get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
 
@@ -79,12 +79,44 @@ class TeamModuleTests(TestCase):
         self.assertTrue(emp.employee_id.startswith('EMP-'))
         self.assertEqual(emp.user.username, 'johnsales')
         self.assertEqual(emp.user.email, 'john@jeweldesk.test')
+        self.assertEqual(emp.user.first_name, 'John')
+        self.assertEqual(emp.user.last_name, 'Sales')
         self.assertTrue(emp.user.is_staff)  # Back-office access
+        self.assertTrue(emp.user.is_active)
+
+        # Password must be hashed, never stored in plain text
+        self.assertNotEqual(emp.user.password, 'Secret@123')
+        self.assertTrue(emp.user.password.startswith('pbkdf2_sha256$') or
+                        emp.user.password.startswith('argon2') or
+                        emp.user.password.startswith('bcrypt'))
         self.assertTrue(emp.user.check_password('Secret@123'))
 
-        # Verify employee is able to login
-        login_success = self.client.login(username='johnsales', password='Secret@123')
-        self.assertTrue(login_success)
+        # authenticate() must succeed with username credentials
+        user_by_username = authenticate(username='johnsales', password='Secret@123')
+        self.assertIsNotNone(user_by_username)
+        self.assertEqual(user_by_username.pk, emp.user.pk)
+
+        # authenticate() must succeed with email credentials
+        user_by_email = authenticate(username='john@jeweldesk.test', password='Secret@123')
+        self.assertIsNotNone(user_by_email)
+        self.assertEqual(user_by_email.pk, emp.user.pk)
+
+        # Login view POST succeeds with username
+        resp_user = self.client.post(reverse('accounts:login'), {
+            'username': 'johnsales',
+            'password': 'Secret@123',
+        }, follow=True)
+        self.assertTrue(resp_user.context['user'].is_authenticated)
+        self.assertEqual(resp_user.context['user'].pk, emp.user.pk)
+        self.client.logout()
+
+        # Login view POST succeeds with email
+        resp_email = self.client.post(reverse('accounts:login'), {
+            'username': 'john@jeweldesk.test',
+            'password': 'Secret@123',
+        }, follow=True)
+        self.assertTrue(resp_email.context['user'].is_authenticated)
+        self.assertEqual(resp_email.context['user'].pk, emp.user.pk)
         self.client.logout()
 
         # Verify default permissions were auto-applied for Sales role
@@ -95,6 +127,64 @@ class TeamModuleTests(TestCase):
 
         # Verify branch link
         self.assertIn(self.main_branch, emp.branches.all())
+
+    def test_wrong_password_rejected_for_employee(self):
+        """Wrong password must be rejected by authenticate() and login view."""
+        form_data = {
+            'username': 'wrongpwuser',
+            'password1': 'CorrectPass123!',
+            'password2': 'CorrectPass123!',
+            'full_name': 'Wrong Pass Test',
+            'email': 'wrongpw@jeweldesk.test',
+            'role': self.sales_role.pk,
+            'department': 'Sales',
+            'status': Employee.STATUS_ACTIVE,
+        }
+        form = EmployeeCreateForm(data=form_data)
+        self.assertTrue(form.is_valid())
+        emp = form.save(created_by=self.admin_user)
+
+        # authenticate() returns None for wrong password
+        self.assertIsNone(authenticate(username='wrongpwuser', password='BadPassword!'))
+        self.assertIsNone(authenticate(username='wrongpw@jeweldesk.test', password='BadPassword!'))
+
+        # Login view returns 200 with error
+        resp = self.client.post(reverse('accounts:login'), {
+            'username': 'wrongpwuser',
+            'password': 'BadPassword!',
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Invalid username or password')
+
+    def test_inactive_employee_cannot_authenticate_or_login(self):
+        """Inactive employees and their users must not be allowed to log in."""
+        form_data = {
+            'username': 'inactiveemp',
+            'password1': 'SecretPass123!',
+            'password2': 'SecretPass123!',
+            'full_name': 'Inactive Person',
+            'email': 'inactive@jeweldesk.test',
+            'role': self.sales_role.pk,
+            'department': 'Sales',
+            'status': Employee.STATUS_INACTIVE,
+        }
+        form = EmployeeCreateForm(data=form_data)
+        self.assertTrue(form.is_valid(), form.errors)
+        emp = form.save(created_by=self.admin_user)
+
+        self.assertFalse(emp.user.is_active)
+
+        # authenticate() must return None for inactive user
+        self.assertIsNone(authenticate(username='inactiveemp', password='SecretPass123!'))
+        self.assertIsNone(authenticate(username='inactive@jeweldesk.test', password='SecretPass123!'))
+
+        # Login view must reject inactive employee
+        resp = self.client.post(reverse('accounts:login'), {
+            'username': 'inactiveemp',
+            'password': 'SecretPass123!',
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Invalid username or password')
 
     def test_employee_deactivation_disables_login(self):
         """Deactivating an employee sets employee status and user is_active to False."""
@@ -119,9 +209,51 @@ class TeamModuleTests(TestCase):
         self.assertEqual(emp.status, Employee.STATUS_INACTIVE)
         self.assertFalse(user.is_active)
 
-        # Deactivated user cannot log in
-        login_success = self.client.login(username='empdeact', password='Password123!')
-        self.assertFalse(login_success)
+        # Deactivated user cannot authenticate or log in
+        self.assertIsNone(authenticate(username='empdeact', password='Password123!'))
+        self.assertIsNone(authenticate(username='empdeact@test.com', password='Password123!'))
+
+        resp = self.client.post(reverse('accounts:login'), {
+            'username': 'empdeact',
+            'password': 'Password123!',
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Invalid username or password')
+
+    def test_employee_edit_syncs_user_active_and_email(self):
+        """Editing employee status via EmployeeEditForm syncs user.is_active and email."""
+        form_data = {
+            'username': 'editsync',
+            'password1': 'SyncPass123!',
+            'password2': 'SyncPass123!',
+            'full_name': 'Edit Sync',
+            'email': 'editsync@jeweldesk.test',
+            'role': self.sales_role.pk,
+            'department': 'Sales',
+            'status': Employee.STATUS_ACTIVE,
+        }
+        form = EmployeeCreateForm(data=form_data)
+        self.assertTrue(form.is_valid(), form.errors)
+        emp = form.save(created_by=self.admin_user)
+        self.assertTrue(emp.user.is_active)
+
+        # Edit to Inactive
+        edit_data = {
+            'full_name': 'Edit Sync Updated',
+            'email': 'newemail@jeweldesk.test',
+            'mobile': '9876543210',
+            'role': self.sales_role.pk,
+            'department': 'Sales',
+            'status': Employee.STATUS_INACTIVE,
+        }
+        edit_form = EmployeeEditForm(data=edit_data, instance=emp)
+        self.assertTrue(edit_form.is_valid(), edit_form.errors)
+        emp = edit_form.save()
+
+        emp.user.refresh_from_db()
+        self.assertFalse(emp.user.is_active)
+        self.assertEqual(emp.user.email, 'newemail@jeweldesk.test')
+        self.assertIsNone(authenticate(username='editsync', password='SyncPass123!'))
 
     def test_admin_employee_list_view(self):
         """Admin can access employee list view."""

@@ -90,7 +90,7 @@ class EmployeeCreateForm(forms.ModelForm):
 
     def clean_username(self):
         username = self.cleaned_data['username'].strip()
-        if User.objects.filter(username=username).exists():
+        if User.objects.filter(username__iexact=username).exists():
             raise forms.ValidationError(
                 'A user with this username already exists.')
         return username
@@ -123,23 +123,34 @@ class EmployeeCreateForm(forms.ModelForm):
 
         with transaction.atomic():
             # 1. Create User
+            username = self.cleaned_data['username'].strip()
+            email = (self.cleaned_data.get('email') or '').strip().lower()
+            raw_password = self.cleaned_data['password1']
+            full_name = (self.cleaned_data.get('full_name') or '').strip()
+            name_parts = full_name.split()
+            first_name = name_parts[0] if name_parts else ''
+            last_name = ' '.join(name_parts[1:]) if len(name_parts) > 1 else ''
+
+            status = self.cleaned_data.get('status') or Employee.STATUS_ACTIVE
+            is_active = (status == Employee.STATUS_ACTIVE)
+
             user = User.objects.create_user(
-                username=self.cleaned_data['username'],
-                password=self.cleaned_data['password1'],
-                email=self.cleaned_data['email'],
-                first_name=self.cleaned_data.get('full_name', '').split()[0],
+                username=username,
+                password=raw_password,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
             )
-            user.is_active = (
-                self.cleaned_data.get('status') == Employee.STATUS_ACTIVE
-            )
+            user.is_active = is_active
             user.is_staff = True
-            user.save(update_fields=['is_active', 'is_staff'])
+            user.save(update_fields=['is_active', 'is_staff', 'last_name'])
 
             # 2. Create Employee
             employee = super().save(commit=False)
             employee.user       = user
-            employee.email      = self.cleaned_data['email']
-            employee.full_name  = self.cleaned_data['full_name']
+            employee.email      = email
+            employee.full_name  = full_name
+            employee.status     = status
             if created_by:
                 employee.created_by = created_by
             employee.save()
@@ -205,10 +216,15 @@ class EmployeeEditForm(forms.ModelForm):
         if commit:
             employee.save()
             self.save_m2m()
-            # Sync email + is_active on linked user
-            employee.user.email = employee.email
-            employee.user.is_active = (employee.status == Employee.STATUS_ACTIVE)
-            employee.user.save(update_fields=['email', 'is_active'])
+            # Sync email, is_active, first_name and last_name on linked user
+            if hasattr(employee, 'user') and employee.user:
+                employee.user.email = employee.email.strip().lower()
+                employee.user.is_active = (employee.status == Employee.STATUS_ACTIVE)
+                parts = (employee.full_name or '').strip().split()
+                if parts:
+                    employee.user.first_name = parts[0]
+                    employee.user.last_name = ' '.join(parts[1:])
+                employee.user.save(update_fields=['email', 'is_active', 'first_name', 'last_name'])
         return employee
 
 

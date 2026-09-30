@@ -78,11 +78,11 @@
                     {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
 
                     <div class="jd-auth__field">
-                        <label class="jd-auth__label" for="id_username">Username</label>
+                        <label class="jd-auth__label" for="id_username">Username or Email</label>
                         <div class="jd-auth__input">
                             <i class="bi bi-person jd-auth__icon" aria-hidden="true"></i>
                             <input type="text" name="username" id="id_username"
-                                   class="jd-auth__control" placeholder="Enter your username"
+                                   class="jd-auth__control" placeholder="Enter your username or email"
                                    autocomplete="username" autocapitalize="none"
                                    autocorrect="off" spellcheck="false" autofocus required
                                    {% if form.errors %}aria-invalid="true" aria-describedby="jd-login-error"{% endif %}>

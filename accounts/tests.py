@@ -1046,4 +1046,62 @@ class AuthCSRFTests(TestCase):
         self.assertTrue(response.context['user'].is_authenticated)
         self.assertEqual(response.context['user'].pk, existing.pk)
 
+    def test_login_with_email_address_succeeds(self):
+        """Users can log in using their email address as the identifier."""
+        from django.contrib.auth import authenticate
+        user = User.objects.create_user(
+            username='emailjeweller',
+            email='jeweller@shop.test',
+            password='JewellerPass@123'
+        )
+        # authenticate() directly with email
+        auth_user = authenticate(username='jeweller@shop.test', password='JewellerPass@123')
+        self.assertIsNotNone(auth_user)
+        self.assertEqual(auth_user.pk, user.pk)
+
+        # Login view POST with email
+        response = self.client.post(self.login_url, {
+            'username': 'jeweller@shop.test',
+            'password': 'JewellerPass@123',
+        }, follow=True)
+        self.assertTrue(response.context['user'].is_authenticated)
+        self.assertEqual(response.context['user'].pk, user.pk)
+
+    def test_login_case_insensitivity(self):
+        """Authentication works case-insensitively for both username and email."""
+        from django.contrib.auth import authenticate
+        User.objects.create_user(
+            username='casetest',
+            email='case@test.com',
+            password='CasePassword123!'
+        )
+        self.assertIsNotNone(authenticate(username='CASETEST', password='CasePassword123!'))
+        self.assertIsNotNone(authenticate(username='CASE@TEST.COM', password='CasePassword123!'))
+
+    def test_inactive_user_cannot_login_with_username_or_email(self):
+        """Inactive user cannot authenticate or log in with username or email."""
+        from django.contrib.auth import authenticate
+        User.objects.create_user(
+            username='inactiveuser',
+            email='inactive@test.com',
+            password='Password123!',
+            is_active=False
+        )
+        self.assertIsNone(authenticate(username='inactiveuser', password='Password123!'))
+        self.assertIsNone(authenticate(username='inactive@test.com', password='Password123!'))
+
+        resp1 = self.client.post(self.login_url, {
+            'username': 'inactiveuser',
+            'password': 'Password123!',
+        })
+        self.assertEqual(resp1.status_code, 200)
+        self.assertContains(resp1, 'Invalid username or password')
+
+        resp2 = self.client.post(self.login_url, {
+            'username': 'inactive@test.com',
+            'password': 'Password123!',
+        })
+        self.assertEqual(resp2.status_code, 200)
+        self.assertContains(resp2, 'Invalid username or password')
+
 
