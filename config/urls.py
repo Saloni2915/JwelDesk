@@ -38,6 +38,7 @@ urlpatterns = [
     path('team/', include('team.urls')),
 
     # Direct URL aliases for compatibility with Django auth defaults
+    path('signup/', signup_view, name='signup_root'),
     path('accounts/signup/', signup_view, name='signup'),
     path('accounts/password-reset/', password_reset_view, name='password_reset'),
     path('accounts/password-reset/done/', password_reset_done_view, name='password_reset_done'),

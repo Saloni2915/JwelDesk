@@ -1105,3 +1105,149 @@ class AuthCSRFTests(TestCase):
         self.assertContains(resp2, 'Invalid username or password')
 
 
+class SignUpFlowInspectionTests(TestCase):
+    """
+    Verification tests for the JewelDesk public Signup flow:
+    - User record creation in Django's configured User model
+    - Submitted username and email accuracy
+    - Password hashing (set_password / pbkdf2)
+    - Authentication via authenticate() with both username and email
+    - Handling and rejection of duplicate username / duplicate email
+    - Invalid signups rejected without creating any User record
+    - Direct access via both /accounts/signup/ and /signup/
+    - Feedback messages and error rendering
+    """
+
+    def setUp(self):
+        self.client = Client()
+        self.signup_url = reverse('accounts:signup')
+        self.login_url = reverse('accounts:login')
+
+    def test_signup_creates_exactly_one_user_with_submitted_username_email(self):
+        """Signup creates exactly one user with the submitted username and email."""
+        initial_count = User.objects.count()
+        response = self.client.post(self.signup_url, {
+            'first_name': 'Meera Verma',
+            'username': 'meera_verma',
+            'email': 'meera@jeweldesk.test',
+            'password1': 'MeeraPass@2026!',
+            'password2': 'MeeraPass@2026!',
+        })
+        self.assertRedirects(response, self.login_url)
+        self.assertEqual(User.objects.count(), initial_count + 1)
+        user = User.objects.get(username='meera_verma')
+        self.assertEqual(user.username, 'meera_verma')
+        self.assertEqual(user.email, 'meera@jeweldesk.test')
+        self.assertEqual(user.first_name, 'Meera Verma')
+        self.assertTrue(user.is_active)
+
+    def test_signup_password_is_hashed_not_plain_text(self):
+        """Password is securely hashed and not stored in plain text."""
+        raw_password = 'PlainSecret#9988'
+        self.client.post(self.signup_url, {
+            'first_name': 'Hashed User',
+            'username': 'hasheduser',
+            'email': 'hashed@jeweldesk.test',
+            'password1': raw_password,
+            'password2': raw_password,
+        })
+        user = User.objects.get(username='hasheduser')
+        self.assertNotEqual(user.password, raw_password)
+        self.assertTrue(user.password.startswith('pbkdf2_') or user.password.startswith('argon2') or user.password.startswith('bcrypt'))
+        self.assertTrue(user.check_password(raw_password))
+
+    def test_authenticate_succeeds_with_submitted_credentials(self):
+        """authenticate() succeeds with both username and email (case-insensitive)."""
+        from django.contrib.auth import authenticate
+        raw_password = 'AuthUserPass@123'
+        self.client.post(self.signup_url, {
+            'first_name': 'Auth Tester',
+            'username': 'authtester',
+            'email': 'authtester@jeweldesk.test',
+            'password1': raw_password,
+            'password2': raw_password,
+        })
+        user = User.objects.get(username='authtester')
+
+        # By exact username
+        auth_by_user = authenticate(None, username='authtester', password=raw_password)
+        self.assertEqual(auth_by_user, user)
+
+        # By uppercase username
+        auth_by_user_upper = authenticate(None, username='AUTHTESTER', password=raw_password)
+        self.assertEqual(auth_by_user_upper, user)
+
+        # By exact email
+        auth_by_email = authenticate(None, username='authtester@jeweldesk.test', password=raw_password)
+        self.assertEqual(auth_by_email, user)
+
+        # By uppercase email
+        auth_by_email_upper = authenticate(None, username='AUTHTESTER@JEWELDESK.TEST', password=raw_password)
+        self.assertEqual(auth_by_email_upper, user)
+
+        # Login via Client post
+        login_resp = self.client.post(self.login_url, {
+            'username': 'authtester@jeweldesk.test',
+            'password': raw_password,
+        }, follow=True)
+        self.assertTrue(login_resp.context['user'].is_authenticated)
+
+    def test_duplicate_username_is_rejected_appropriately(self):
+        """Duplicate username (case-insensitive) is rejected and does not create duplicate user."""
+        User.objects.create_user(username='existinguser', email='existing1@test.com', password='Password123!')
+        count_before = User.objects.count()
+
+        response = self.client.post(self.signup_url, {
+            'first_name': 'Dup User',
+            'username': 'EXISTINGUSER',
+            'email': 'different@test.com',
+            'password1': 'NewPass@12345!',
+            'password2': 'NewPass@12345!',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(User.objects.count(), count_before)
+        form = response.context['form']
+        self.assertFalse(form.is_valid())
+        self.assertIn('username', form.errors)
+
+    def test_duplicate_email_is_rejected_appropriately(self):
+        """Duplicate email (case-insensitive) is rejected and does not create duplicate user."""
+        User.objects.create_user(username='origuser', email='duplicate@test.com', password='Password123!')
+        count_before = User.objects.count()
+
+        response = self.client.post(self.signup_url, {
+            'first_name': 'Dup Email',
+            'username': 'newuniqueuser',
+            'email': 'DUPLICATE@TEST.COM',
+            'password1': 'NewPass@12345!',
+            'password2': 'NewPass@12345!',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(User.objects.count(), count_before)
+        form = response.context['form']
+        self.assertFalse(form.is_valid())
+        self.assertIn('email', form.errors)
+
+    def test_invalid_signup_mismatched_passwords_does_not_create_user(self):
+        """Mismatched passwords reject form submission and create no DB record."""
+        count_before = User.objects.count()
+        response = self.client.post(self.signup_url, {
+            'first_name': 'Mismatch Test',
+            'username': 'mismatchuser',
+            'email': 'mismatch@test.com',
+            'password1': 'PassOne@12345',
+            'password2': 'PassTwo@99999',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(User.objects.count(), count_before)
+        self.assertFalse(User.objects.filter(username='mismatchuser').exists())
+        self.assertContains(response, 'Unable to create account')
+
+    def test_direct_root_signup_url_works(self):
+        """Direct /signup/ route renders and processes signup correctly."""
+        response = self.client.get('/signup/')
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'accounts/signup.html')
+
+
+

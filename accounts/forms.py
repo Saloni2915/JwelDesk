@@ -94,6 +94,23 @@ class JewelDeskSignUpForm(UserCreationForm):
                 'autocomplete': 'new-password',
             })
 
+    def clean_first_name(self):
+        name = (self.cleaned_data.get('first_name') or '').strip()
+        if not name:
+            raise forms.ValidationError('Full name is required.')
+        return name
+
+    def clean_username(self):
+        username = (self.cleaned_data.get('username') or '').strip()
+        if not username:
+            raise forms.ValidationError('Username is required.')
+        User = get_user_model()
+        if User.objects.filter(username__iexact=username).exists():
+            raise forms.ValidationError('A user with that username already exists.')
+        if User.objects.filter(email__iexact=username).exists():
+            raise forms.ValidationError('This username is already registered as an email address.')
+        return username
+
     def clean_email(self):
         email = (self.cleaned_data.get('email') or '').strip().lower()
         if not email:
@@ -103,12 +120,17 @@ class JewelDeskSignUpForm(UserCreationForm):
             raise forms.ValidationError(
                 'An account with this email address already exists. Please sign in or reset your password.'
             )
+        if User.objects.filter(username__iexact=email).exists():
+            raise forms.ValidationError(
+                'An account with this identifier already exists. Please sign in or reset your password.'
+            )
         return email
 
     def save(self, commit=True):
         user = super().save(commit=False)
         user.first_name = (self.cleaned_data.get('first_name') or '').strip()
         user.email = (self.cleaned_data.get('email') or '').strip().lower()
+        user.is_active = True
         if commit:
             user.save()
         return user

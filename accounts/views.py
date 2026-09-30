@@ -89,6 +89,10 @@ login_view = JewelDeskLoginView.as_view()
 def signup_view(request):
     """Render the registration card and handle user account creation."""
     if request.user.is_authenticated:
+        messages.info(
+            request,
+            'You are already signed in. Please log out first if you wish to create a new account.'
+        )
         return redirect('dashboard')
 
     if request.method == 'POST':
@@ -100,6 +104,11 @@ def signup_view(request):
                 'Your account has been created successfully! You can now sign in with your credentials.'
             )
             return redirect('accounts:login')
+        else:
+            messages.error(
+                request,
+                'Unable to create account. Please check the errors highlighted below and try again.'
+            )
     else:
         form = JewelDeskSignUpForm()
 
