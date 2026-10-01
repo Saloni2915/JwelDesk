@@ -773,7 +773,48 @@ class SignUpTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'accounts/signup.html')
         self.assertIn('email', response.context['form'].errors)
+        self.assertIn('An account with this email already exists.', response.context['form'].errors['email'])
         self.assertFalse(User.objects.filter(username='usertwo').exists())
+
+    def test_duplicate_email_as_username_is_rejected(self):
+        """When an existing user has email as username, registering with that email is rejected gracefully."""
+        User.objects.create_user(
+            username='existing@jeweldesk.test',
+            email='existing@jeweldesk.test',
+            password='InitialPassword123!',
+        )
+        # Attempt to register with that email in both username and email fields
+        data = {
+            'first_name': 'Duplicate User',
+            'username': 'existing@jeweldesk.test',
+            'email': 'existing@jeweldesk.test',
+            'password1': 'AnotherPassword123!',
+            'password2': 'AnotherPassword123!',
+        }
+        response = self.client.post(self.signup_url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'accounts/signup.html')
+        self.assertIn('email', response.context['form'].errors)
+        self.assertIn('An account with this email already exists.', response.context['form'].errors['email'])
+
+    def test_signup_integrity_error_handled_gracefully(self):
+        """When database IntegrityError occurs during save (e.g. race condition), signup does not return 500."""
+        from unittest.mock import patch
+        from django.db import IntegrityError
+
+        data = {
+            'first_name': 'Race User',
+            'username': 'raceuser',
+            'email': 'race@jeweldesk.test',
+            'password1': 'AnotherPassword123!',
+            'password2': 'AnotherPassword123!',
+        }
+        with patch('accounts.forms.JewelDeskSignUpForm.save', side_effect=IntegrityError('duplicate key value')):
+            response = self.client.post(self.signup_url, data)
+            self.assertEqual(response.status_code, 200)
+            self.assertTemplateUsed(response, 'accounts/signup.html')
+            self.assertIn('email', response.context['form'].errors)
+            self.assertIn('An account with this email already exists.', response.context['form'].errors['email'])
 
     def test_password_confirmation_mismatch_is_rejected(self):
         """When password and confirm password do not match, form errors are shown."""

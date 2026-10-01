@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.contrib.auth import logout as auth_logout
+from django.contrib.auth import get_user_model, logout as auth_logout
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.views import (
     LoginView,
@@ -8,6 +8,8 @@ from django.contrib.auth.views import (
     PasswordResetConfirmView,
     PasswordResetCompleteView,
 )
+from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.shortcuts import redirect, render
 from django.urls import reverse, reverse_lazy
 
@@ -96,7 +98,29 @@ def signup_view(request):
 
         form = JewelDeskSignUpForm(request.POST)
         if form.is_valid():
-            form.save()
+            try:
+                with transaction.atomic():
+                    form.save()
+            except IntegrityError:
+                # Handle database-level unique constraint violations (e.g. auth_user_username_key
+                # or concurrent double-submit race conditions) safely without raising HTTP 500.
+                email = (form.cleaned_data.get('email') or '').strip().lower()
+                username = (form.cleaned_data.get('username') or '').strip()
+                User = get_user_model()
+
+                if email and User.objects.filter(Q(email__iexact=email) | Q(username__iexact=email)).exists():
+                    form.add_error('email', 'An account with this email already exists.')
+                elif username and User.objects.filter(Q(username__iexact=username) | Q(email__iexact=username)).exists():
+                    form.add_error('username', 'A user with that username already exists.')
+                else:
+                    form.add_error('email', 'An account with this email already exists.')
+
+                messages.error(
+                    request,
+                    'Unable to create account. Please check the errors highlighted below and try again.'
+                )
+                return render(request, 'accounts/signup.html', {'form': form})
+
             messages.success(
                 request,
                 'Your account has been created successfully! You can now sign in with your credentials.'

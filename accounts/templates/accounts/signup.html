@@ -82,7 +82,7 @@
                 </div>
                 {% endif %}
 
-                <form method="post" action="{% url 'accounts:signup' %}" novalidate>
+                <form method="post" action="{% url 'accounts:signup' %}" novalidate id="jd-signup-form">
                     {% csrf_token %}
 
                     <div class="jd-auth__field">
@@ -229,6 +229,19 @@
                 }
             });
         });
+
+        // Prevent rapid double-clicks from submitting duplicate registration requests
+        var signupForm = document.getElementById('jd-signup-form');
+        if (signupForm) {
+            signupForm.addEventListener('submit', function() {
+                var btn = this.querySelector('button[type="submit"]');
+                if (btn && !btn.disabled) {
+                    setTimeout(function() {
+                        btn.disabled = true;
+                    }, 0);
+                }
+            });
+        }
     </script>
 </body>
 </html>

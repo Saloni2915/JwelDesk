@@ -5,6 +5,7 @@ from django.contrib.auth.forms import (
     SetPasswordForm,
     UserCreationForm,
 )
+from django.db.models import Q
 import re
 
 from .models import CompanySettings
@@ -108,7 +109,7 @@ class JewelDeskSignUpForm(UserCreationForm):
         if User.objects.filter(username__iexact=username).exists():
             raise forms.ValidationError('A user with that username already exists.')
         if User.objects.filter(email__iexact=username).exists():
-            raise forms.ValidationError('This username is already registered as an email address.')
+            raise forms.ValidationError('An account with this email already exists.')
         return username
 
     def clean_email(self):
@@ -117,14 +118,21 @@ class JewelDeskSignUpForm(UserCreationForm):
             raise forms.ValidationError('Email address is required.')
         User = get_user_model()
         if User.objects.filter(email__iexact=email).exists():
-            raise forms.ValidationError(
-                'An account with this email address already exists. Please sign in or reset your password.'
-            )
+            raise forms.ValidationError('An account with this email already exists.')
         if User.objects.filter(username__iexact=email).exists():
-            raise forms.ValidationError(
-                'An account with this identifier already exists. Please sign in or reset your password.'
-            )
+            raise forms.ValidationError('An account with this email already exists.')
         return email
+
+    def clean(self):
+        cleaned_data = super().clean()
+        username = (cleaned_data.get('username') or '').strip()
+        email = (cleaned_data.get('email') or '').strip().lower()
+        User = get_user_model()
+        if email and User.objects.filter(Q(email__iexact=email) | Q(username__iexact=email)).exists():
+            self.add_error('email', 'An account with this email already exists.')
+        if username and User.objects.filter(Q(username__iexact=username) | Q(email__iexact=username)).exists():
+            self.add_error('username', 'A user with that username already exists.')
+        return cleaned_data
 
     def save(self, commit=True):
         user = super().save(commit=False)
