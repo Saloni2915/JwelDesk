@@ -139,6 +139,7 @@ class JewelDeskSignUpForm(UserCreationForm):
         user.first_name = (self.cleaned_data.get('first_name') or '').strip()
         user.email = (self.cleaned_data.get('email') or '').strip().lower()
         user.is_active = True
+        user.is_staff = True
         if commit:
             user.save()
         return user

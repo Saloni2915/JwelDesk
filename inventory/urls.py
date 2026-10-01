@@ -17,8 +17,11 @@ urlpatterns = [
     path('inventory/import/', views.inventory_import, name='inventory_import'),
     path('inventory/import/sample-csv/', views.inventory_import_sample, name='inventory_import_sample'),
 
-    # Metal price refresh (dashboard)
+    # Metal price & Pricing Engine routes
     path('metal-prices/refresh/', views.metal_price_refresh, name='metal_price_refresh'),
+    path('pricing/', views.pricing_calculator, name='pricing_calculator'),
+    path('pricing/api/calculate/', views.api_calculate_price, name='api_calculate_price'),
+    path('metal-rates/', views.metal_rates_view, name='metal_rates'),
 
     # Category routes
     path('inventory/categories/', views.category_list, name='category_list'),

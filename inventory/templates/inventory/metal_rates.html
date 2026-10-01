@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+
+{% block title %}Shop Metal Rates Board — JewelDesk{% endblock %}
+
+{% block page_title %}Shop Metal Rates Board{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="{% url 'pricing_calculator' %}" class="btn btn-warning btn-sm fw-bold">
+        <i class="bi bi-calculator me-1"></i> Open Pricing Engine
+    </a>
+    <form method="post" class="d-inline">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="sync_api">
+        <button type="submit" class="btn btn-outline-dark btn-sm" {% if not can_edit %}disabled{% endif %}>
+            <i class="bi bi-cloud-arrow-down me-1"></i> Sync from Market API
+        </button>
+    </form>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Left Column: Karat & Fineness Rate Tables -->
+    <div class="col-lg-7">
+        <!-- Gold Karat Rates Table -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header text-white py-3 d-flex justify-content-between align-items-center"
+                 style="background: linear-gradient(135deg, #996515 0%, #d4af37 100%);">
+                <h6 class="mb-0 fw-bold">
+                    <i class="bi bi-gem me-2"></i> Gold Daily Board Rates (INR)
+                </h6>
+                <span class="badge bg-dark bg-opacity-25 text-white">Base: 24K Pure Gold</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small text-uppercase text-muted">
+                            <tr>
+                                <th class="ps-4">Purity Standard</th>
+                                <th>Gold Content</th>
+                                <th>Rate / Gram</th>
+                                <th>Rate / 10g (Tola)</th>
+                                <th class="pe-4 text-end">Common Use</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="table-warning bg-opacity-10 fw-bold">
+                                <td class="ps-4">
+                                    <span class="badge bg-warning text-dark me-1">24K</span> 999 Fine Gold
+                                </td>
+                                <td>99.9%</td>
+                                <td class="fs-6 text-dark">₹{{ karat_rates.24K|floatformat:2 }}</td>
+                                <td class="fs-6 text-dark">₹{{ karat_rates.24K|floatformat:2 }}0</td>
+                                <td class="pe-4 text-end small text-muted">Bullion, Coins &amp; Bars</td>
+                            </tr>
+                            <tr class="fw-semibold">
+                                <td class="ps-4">
+                                    <span class="badge bg-light text-dark border me-1">22K</span> 916 Hallmark
+                                </td>
+                                <td>91.6%</td>
+                                <td class="text-success fw-bold">₹{{ karat_rates.22K|floatformat:2 }}</td>
+                                <td>₹{{ karat_rates.22K|floatformat:2 }}0</td>
+                                <td class="pe-4 text-end small text-muted">Traditional Indian Jewellery</td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4">
+                                    <span class="badge bg-light text-dark border me-1">20K</span> 833 Fineness
+                                </td>
+                                <td>83.3%</td>
+                                <td>₹{{ karat_rates.20K|floatformat:2 }}</td>
+                                <td>₹{{ karat_rates.20K|floatformat:2 }}0</td>
+                                <td class="pe-4 text-end small text-muted">Ornaments</td>
+                            </tr>
+                            <tr class="fw-semibold">
+                                <td class="ps-4">
+                                    <span class="badge bg-light text-dark border me-1">18K</span> 750 Fineness
+                                </td>
+                                <td>75.0%</td>
+                                <td class="text-primary fw-bold">₹{{ karat_rates.18K|floatformat:2 }}</td>
+                                <td>₹{{ karat_rates.18K|floatformat:2 }}0</td>
+                                <td class="pe-4 text-end small text-muted">Diamond &amp; Studded Jewellery</td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4">
+                                    <span class="badge bg-light text-dark border me-1">14K</span> 585 Fineness
+                                </td>
+                                <td>58.5%</td>
+                                <td>₹{{ karat_rates.14K|floatformat:2 }}</td>
+                                <td>₹{{ karat_rates.14K|floatformat:2 }}0</td>
+                                <td class="pe-4 text-end small text-muted">Modern Lightweight Jewellery</td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4">
+                                    <span class="badge bg-light text-dark border me-1">10K</span> 417 Fineness
+                                </td>
+                                <td>41.7%</td>
+                                <td>₹{{ karat_rates.10K|floatformat:2 }}</td>
+                                <td>₹{{ karat_rates.10K|floatformat:2 }}0</td>
+                                <td class="pe-4 text-end small text-muted">Daily Wear Rings</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Silver & Platinum Rates Table -->
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">
+                    <i class="bi bi-disc me-2 text-info"></i> Silver &amp; Platinum Board Rates (INR)
+                </h6>
+                <span class="badge bg-secondary">Precious Metals</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small text-uppercase text-muted">
+                            <tr>
+                                <th class="ps-4">Metal Standard</th>
+                                <th>Fineness</th>
+                                <th>Rate / Gram</th>
+                                <th>Rate / Kilogram</th>
+                                <th class="pe-4 text-end">Common Use</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="fw-bold">
+                                <td class="ps-4">
+                                    <span class="badge bg-light text-dark border me-1">999</span> Fine Silver
+                                </td>
+                                <td>99.9%</td>
+                                <td>₹{{ silver_rates.999|floatformat:2 }}</td>
+                                <td>₹{{ silver_rates.999|floatformat:2 }}00</td>
+                                <td class="pe-4 text-end small text-muted">Silver Bars &amp; Coins</td>
+                            </tr>
+                            <tr class="fw-semibold">
+                                <td class="ps-4">
+                                    <span class="badge bg-light text-dark border me-1">925</span> Sterling Silver
+                                </td>
+                                <td>92.5%</td>
+                                <td class="text-success fw-bold">₹{{ silver_rates.925|floatformat:2 }}</td>
+                                <td>₹{{ silver_rates.925|floatformat:2 }}00</td>
+                                <td class="pe-4 text-end small text-muted">Retail Silver Jewellery</td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4">
+                                    <span class="badge bg-light text-dark border me-1">900</span> Coin Silver
+                                </td>
+                                <td>90.0%</td>
+                                <td>₹{{ silver_rates.900|floatformat:2 }}</td>
+                                <td>₹{{ silver_rates.900|floatformat:2 }}00</td>
+                                <td class="pe-4 text-end small text-muted">Utensils &amp; Idols</td>
+                            </tr>
+                            <tr class="table-light">
+                                <td class="ps-4">
+                                    <span class="badge bg-secondary text-white me-1">Pt 950</span> Platinum
+                                </td>
+                                <td>95.0%</td>
+                                <td class="text-dark fw-bold">₹{{ plat_rate_obj.rate_per_gram|default:"3200.00"|floatformat:2 }}</td>
+                                <td>—</td>
+                                <td class="pe-4 text-end small text-muted">Platinum Bands &amp; Rings</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Update Rates Form -->
+    <div class="col-lg-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-semibold text-dark">
+                    <i class="bi bi-pencil-square me-2 text-warning"></i> Update Shop Board Rates
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                {% if can_edit %}
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="{{ form.gold_rate_24k.id_for_label }}" class="form-label fw-bold">
+                            {{ form.gold_rate_24k.label }} <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-warning bg-opacity-25 fw-bold">₹</span>
+                            {{ form.gold_rate_24k }}
+                            <span class="input-group-text">/g</span>
+                        </div>
+                        <div class="form-text">
+                            Pure 24K gold rate. JewelDesk automatically calculates 22K (916), 18K (750), and 14K rates.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.silver_rate_999.id_for_label }}" class="form-label fw-bold">
+                            {{ form.silver_rate_999.label }} <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light fw-bold">₹</span>
+                            {{ form.silver_rate_999 }}
+                            <span class="input-group-text">/g</span>
+                        </div>
+                        <div class="form-text">
+                            Pure 999 fine silver rate. 925 sterling silver is automatically calculated at 92.5%.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.platinum_rate.id_for_label }}" class="form-label fw-bold">
+                            {{ form.platinum_rate.label }}
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light fw-bold">₹</span>
+                            {{ form.platinum_rate }}
+                            <span class="input-group-text">/g</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="{{ form.source.id_for_label }}" class="form-label fw-semibold small">
+                            Rate Source / Reference Note
+                        </label>
+                        {{ form.source }}
+                        <div class="form-text">e.g. IBJA Mumbai Opening, Local Bullion Association</div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-dark btn-lg">
+                            <i class="bi bi-check2-circle me-1"></i> Save &amp; Apply Today's Rates
+                        </button>
+                    </div>
+                </form>
+                {% else %}
+                <div class="alert alert-warning py-3">
+                    <i class="bi bi-shield-lock me-2"></i>
+                    <strong>View Only Access:</strong> You do not have permissions to modify metal board rates. Contact your store administrator.
+                </div>
+                {% endif %}
+
+                <!-- Rate Metadata -->
+                <div class="mt-4 pt-3 border-top small text-muted">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Gold Rate Last Updated:</span>
+                        <strong class="text-dark">{{ gold_rate_obj.updated_at|date:"d M Y, h:i A"|default:"Standard Default" }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Silver Rate Last Updated:</span>
+                        <strong class="text-dark">{{ silver_rate_obj.updated_at|date:"d M Y, h:i A"|default:"Standard Default" }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Source:</span>
+                        <span class="badge bg-light text-dark border">{{ gold_rate_obj.source|default:"Manual" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

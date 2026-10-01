@@ -222,10 +222,21 @@
                         </div>
 
 
+                        <!-- Making Charge Type -->
+                        <div class="col-md-3">
+                            <label for="{{ form.making_charge_type.id_for_label }}" class="form-label">
+                                Making Charge Type
+                            </label>
+                            {{ form.making_charge_type }}
+                            {% if form.making_charge_type.errors %}
+                            <div class="text-danger small mt-1">{{ form.making_charge_type.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
                         <!-- Making Charge -->
                         <div class="col-md-3">
                             <label for="{{ form.making_charge.id_for_label }}" class="form-label">
-                                Making Charge (₹)
+                                Making Charge Value (₹ or %)
                             </label>
                             {{ form.making_charge }}
                             {% if form.making_charge.errors %}
@@ -233,15 +244,52 @@
                             {% endif %}
                         </div>
 
-                        <!-- Selling Price -->
+                        <!-- Wastage -->
                         <div class="col-md-3">
-                            <label for="{{ form.selling_price.id_for_label }}" class="form-label">
-                                Selling Price (₹) <span class="text-danger">*</span>
+                            <label for="{{ form.wastage_percent.id_for_label }}" class="form-label">
+                                Wastage (%)
+                            </label>
+                            {{ form.wastage_percent }}
+                            {% if form.wastage_percent.errors %}
+                            <div class="text-danger small mt-1">{{ form.wastage_percent.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Stone Charges -->
+                        <div class="col-md-3">
+                            <label for="{{ form.stone_charges.id_for_label }}" class="form-label">
+                                Stone / Diamond Charges (₹)
+                            </label>
+                            {{ form.stone_charges }}
+                            {% if form.stone_charges.errors %}
+                            <div class="text-danger small mt-1">{{ form.stone_charges.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Other Charges -->
+                        <div class="col-md-3">
+                            <label for="{{ form.other_charges.id_for_label }}" class="form-label">
+                                Other Charges (₹)
+                            </label>
+                            {{ form.other_charges }}
+                            {% if form.other_charges.errors %}
+                            <div class="text-danger small mt-1">{{ form.other_charges.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Selling Price with Auto-Calculate -->
+                        <div class="col-md-5">
+                            <label for="{{ form.selling_price.id_for_label }}" class="form-label d-flex justify-content-between align-items-center">
+                                <span>Tag Selling Price (₹) <span class="text-danger">*</span></span>
+                                <button type="button" class="btn btn-sm btn-link p-0 text-warning text-decoration-none fw-bold" onclick="calculateLiveSellingPrice()">
+                                    <i class="bi bi-magic me-1"></i> Auto-Calculate Price
+                                </button>
                             </label>
                             {{ form.selling_price }}
                             {% if form.selling_price.errors %}
                             <div class="text-danger small mt-1">{{ form.selling_price.errors.0 }}</div>
                             {% endif %}
+                            <div class="form-text small" id="pricing-hint">Total inclusive of metal, wastage, making, stones &amp; GST.</div>
                         </div>
 
                         <!-- Status -->
@@ -267,4 +315,50 @@
         </div>
     </div>
 </div>
+</div>
+
+<script>
+function calculateLiveSellingPrice() {
+    const payload = {
+        metal_type: document.getElementById('id_metal_type') ? document.getElementById('id_metal_type').value : 'Gold',
+        purity: document.getElementById('id_purity') ? document.getElementById('id_purity').value : '22K',
+        gross_weight: document.getElementById('id_gross_weight') ? document.getElementById('id_gross_weight').value : '0',
+        stone_weight: document.getElementById('id_stone_weight') ? document.getElementById('id_stone_weight').value : '0',
+        net_weight: document.getElementById('id_net_weight') ? document.getElementById('id_net_weight').value : '',
+        making_charge: document.getElementById('id_making_charge') ? document.getElementById('id_making_charge').value : '0',
+        making_charge_type: document.getElementById('id_making_charge_type') ? document.getElementById('id_making_charge_type').value : 'Fixed Amount',
+        wastage_percent: document.getElementById('id_wastage_percent') ? document.getElementById('id_wastage_percent').value : '0',
+        stone_charges: document.getElementById('id_stone_charges') ? document.getElementById('id_stone_charges').value : '0',
+        other_charges: document.getElementById('id_other_charges') ? document.getElementById('id_other_charges').value : '0',
+        tax_percent: 3.0
+    };
+
+    const hint = document.getElementById('pricing-hint');
+    if (hint) hint.innerHTML = '<span class="text-primary"><i class="bi bi-hourglass-split"></i> Calculating price at today board rate...</span>';
+
+    fetch("{% url 'api_calculate_price' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.ok && data.breakdown) {
+            document.getElementById('id_selling_price').value = data.breakdown.final_price.toFixed(2);
+            if (hint) {
+                hint.innerHTML = `<span class="text-success"><i class="bi bi-check-circle"></i> Auto-calculated: Metal ₹${data.breakdown.metal_value.toFixed(2)} + MC ₹${data.breakdown.making_charge_amount.toFixed(2)} + Wastage ₹${data.breakdown.wastage_amount.toFixed(2)} + GST ₹${data.breakdown.tax_amount.toFixed(2)} = <strong>₹${data.breakdown.final_price.toFixed(2)}</strong></span>`;
+            }
+        } else {
+            if (hint) hint.innerHTML = '<span class="text-danger">Unable to calculate price. Please verify weights and purity.</span>';
+        }
+    })
+    .catch(err => {
+        console.error('Pricing calc error:', err);
+        if (hint) hint.innerHTML = '<span class="text-danger">Calculation request failed.</span>';
+    });
+}
+</script>
 {% endblock %}

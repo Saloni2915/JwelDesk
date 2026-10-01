@@ -75,6 +75,18 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'pricing_calculator' %}active{% endif %}"
+                           href="{% url 'pricing_calculator' %}">
+                            <i class="bi bi-calculator me-2"></i> Pricing Engine
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'metal_rates' %}active{% endif %}"
+                           href="{% url 'metal_rates' %}">
+                            <i class="bi bi-coin me-2"></i> Metal Rates
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link {% if 'customer' in request.resolver_match.url_name %}active{% endif %}"
                            href="{% url 'customer_list' %}">
                             <i class="bi bi-people me-2"></i> Customers
@@ -105,26 +117,26 @@
                             <i class="bi bi-plus-circle me-2"></i> New Custom Order
                         </a>
                     </li>
-                    <li class="nav-item sidebar-section">Team</li>
-                    {% if user_perms.team.can_view or user.is_staff %}
+                    <li class="nav-item sidebar-section">Team &amp; HR</li>
+                    {% if user.is_superuser or user.is_staff or user_perms.team.can_view %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.app_name == 'team' and request.resolver_match.url_name == 'employee_list' %}active{% endif %}"
                            href="{% url 'team:employee_list' %}">
-                            <i class="bi bi-people me-2"></i> Employees
+                            <i class="bi bi-people-fill me-2"></i> Employees
                         </a>
                     </li>
-                    {% if user_perms.team.can_add or user.is_staff %}
+                    {% if user.is_superuser or user.is_staff or user_perms.team.can_add %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.app_name == 'team' and request.resolver_match.url_name == 'employee_create' %}active{% endif %}"
                            href="{% url 'team:employee_create' %}">
-                            <i class="bi bi-person-plus me-2"></i> Add Employee
+                            <i class="bi bi-person-plus-fill me-2"></i> Add Employee
                         </a>
                     </li>
                     {% endif %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.app_name == 'team' and 'role' in request.resolver_match.url_name %}active{% endif %}"
                            href="{% url 'team:role_list' %}">
-                            <i class="bi bi-shield-check me-2"></i> Roles &amp; Permissions
+                            <i class="bi bi-shield-lock-fill me-2"></i> Roles &amp; Permissions
                         </a>
                     </li>
                     <li class="nav-item">
@@ -137,7 +149,7 @@
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.app_name == 'team' %}active{% endif %}"
                            href="{% url 'team:employee_detail' user.employee_profile.pk %}">
-                            <i class="bi bi-person-badge me-2"></i> My Profile
+                            <i class="bi bi-person-badge-fill me-2"></i> My Profile
                         </a>
                     </li>
                     {% endif %}

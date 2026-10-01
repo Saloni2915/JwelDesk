@@ -1,5 +1,5 @@
 import datetime
-from decimal import InvalidOperation
+from decimal import Decimal, InvalidOperation
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
@@ -10,7 +10,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Q, Sum, Count, ProtectedError
 from django.http import HttpResponse
 from django.utils import timezone
-from .models import JewelleryItem, Category, StockMovement
+from .models import JewelleryItem, Category, StockMovement, MetalRate
 from .forms import JewelleryItemForm, CategoryForm, StockAdjustmentForm
 from . import stock
 from .import_utils import (
@@ -839,10 +839,401 @@ def metal_price_refresh(request):
     result = metal_prices.refresh_prices()
     if result['ok']:
         messages.success(request, 'Metal prices updated.')
+        # Sync fetched prices into MetalRate model if available
+        snapshot = result.get('snapshot') or {}
+        if snapshot.get('gold_price_per_gram'):
+            MetalRate.objects.update_or_create(
+                metal_type='Gold',
+                defaults={'rate_per_gram': snapshot['gold_price_per_gram'], 'source': 'Live API'}
+            )
+        if snapshot.get('silver_price_per_gram'):
+            MetalRate.objects.update_or_create(
+                metal_type='Silver',
+                defaults={'rate_per_gram': snapshot['silver_price_per_gram'], 'source': 'Live API'}
+            )
     else:
         messages.error(request, f'Price update failed: {result["message"]}')
         if result['snapshot'] and result['snapshot'].get('available'):
             messages.info(request, 'Showing the last available prices.')
     return redirect('dashboard')
+
+
+# ==============================================================================
+# PRICING ENGINE VIEWS
+# ==============================================================================
+
+@login_required
+def pricing_calculator(request):
+    """
+    Interactive Jewellery Pricing Engine and Live Valuation Cockpit.
+    Supports real-time price breakdowns, purity conversion, wastage,
+    making charges, stones, GST and direct inventory item prefill / price updating.
+    """
+    from . import pricing
+    from team.permissions import has_module_perm, is_admin_user
+    from django.core.exceptions import PermissionDenied
+
+    # Check permission (viewing pricing requires inventory:view or metal_prices:view or admin/staff)
+    user = request.user
+    can_view = (
+        user.is_superuser or user.is_staff or
+        has_module_perm(user, 'inventory', 'view') or
+        has_module_perm(user, 'metal_prices', 'view') or
+        not hasattr(user, 'employee_profile')
+    )
+    if not can_view:
+        raise PermissionDenied("You do not have permission to access the Pricing Engine.")
+
+    can_edit_items = (
+        user.is_superuser or user.is_staff or
+        has_module_perm(user, 'inventory', 'edit') or
+        not hasattr(user, 'employee_profile')
+    )
+
+    can_edit_rates = (
+        user.is_superuser or user.is_staff or
+        has_module_perm(user, 'metal_prices', 'edit') or
+        not hasattr(user, 'employee_profile')
+    )
+
+    # Available items for dropdown selector
+    available_items = JewelleryItem.objects.filter(status='Available').select_related('category').order_by('name')
+
+    selected_item = None
+    item_id = request.GET.get('item') or request.POST.get('selected_item_id')
+    if item_id:
+        try:
+            selected_item = JewelleryItem.objects.get(pk=item_id)
+        except (JewelleryItem.DoesNotExist, ValueError):
+            selected_item = None
+
+    # Base rates
+    active_gold_rate = pricing.get_current_metal_rate('Gold')
+    active_silver_rate = pricing.get_current_metal_rate('Silver')
+
+    # Initial form values
+    if request.method == 'POST':
+        action = request.POST.get('action', 'calculate')
+        metal_type = request.POST.get('metal_type', 'Gold').strip()
+        purity = request.POST.get('purity', '22K').strip()
+        gross_weight = pricing.to_decimal(request.POST.get('gross_weight'), '10.000')
+        stone_weight = pricing.to_decimal(request.POST.get('stone_weight'), '0.000')
+        net_weight = pricing.to_decimal(request.POST.get('net_weight'), '') if request.POST.get('net_weight') else None
+        base_rate_input = pricing.to_decimal(request.POST.get('base_metal_rate'), '') if request.POST.get('base_metal_rate') else None
+        wastage_percent = pricing.to_decimal(request.POST.get('wastage_percent'), '0.00')
+        making_charge = pricing.to_decimal(request.POST.get('making_charge'), '0.00')
+        making_charge_type = request.POST.get('making_charge_type', 'Fixed Amount').strip()
+        stone_charges = pricing.to_decimal(request.POST.get('stone_charges'), '0.00')
+        other_charges = pricing.to_decimal(request.POST.get('other_charges'), '0.00')
+        other_charges_desc = request.POST.get('other_charges_description', '').strip()
+        tax_percent = pricing.to_decimal(request.POST.get('tax_percent'), '3.00')
+
+        # Run calculation
+        breakdown = pricing.calculate_jewellery_price(
+            metal_type=metal_type,
+            purity=purity,
+            gross_weight=gross_weight,
+            stone_weight=stone_weight,
+            net_weight=net_weight,
+            base_metal_rate=base_rate_input,
+            wastage_percent=wastage_percent,
+            making_charge=making_charge,
+            making_charge_type=making_charge_type,
+            stone_charges=stone_charges,
+            other_charges=other_charges,
+            other_charges_description=other_charges_desc,
+            tax_percent=tax_percent,
+        )
+
+        # Action: Apply calculated price to existing inventory piece
+        if action == 'save_to_item' and selected_item:
+            if not can_edit_items:
+                raise PermissionDenied("You do not have permission to update inventory item prices.")
+            selected_item.selling_price = breakdown.final_price
+            selected_item.making_charge = breakdown.making_charge_rate
+            selected_item.making_charge_type = breakdown.making_charge_type
+            selected_item.wastage_percent = breakdown.wastage_percent
+            selected_item.stone_charges = breakdown.stone_charges
+            selected_item.other_charges = breakdown.other_charges
+            selected_item.save()
+            messages.success(
+                request,
+                f"Successfully updated selling price of '{selected_item.name}' ({selected_item.item_code}) to ₹{breakdown.final_price:,.2f}."
+            )
+
+    else:
+        # GET request
+        if selected_item:
+            metal_type = selected_item.metal_type
+            purity = selected_item.purity
+            gross_weight = selected_item.gross_weight
+            stone_weight = selected_item.stone_weight
+            net_weight = selected_item.net_weight
+            base_rate_input = None
+            wastage_percent = selected_item.wastage_percent
+            making_charge = selected_item.making_charge
+            making_charge_type = selected_item.making_charge_type
+            stone_charges = selected_item.stone_charges
+            other_charges = selected_item.other_charges
+            other_charges_desc = ''
+            tax_percent = pricing.DEFAULT_GST_RATE
+        else:
+            metal_type = 'Gold'
+            purity = '22K (916)'
+            gross_weight = Decimal('10.000')
+            stone_weight = Decimal('0.000')
+            net_weight = Decimal('10.000')
+            base_rate_input = active_gold_rate
+            wastage_percent = Decimal('3.00')
+            making_charge = Decimal('450.00')
+            making_charge_type = 'Per Gram'
+            stone_charges = Decimal('0.00')
+            other_charges = Decimal('0.00')
+            other_charges_desc = ''
+            tax_percent = pricing.DEFAULT_GST_RATE
+
+        breakdown = pricing.calculate_jewellery_price(
+            metal_type=metal_type,
+            purity=purity,
+            gross_weight=gross_weight,
+            stone_weight=stone_weight,
+            net_weight=net_weight,
+            base_metal_rate=base_rate_input,
+            wastage_percent=wastage_percent,
+            making_charge=making_charge,
+            making_charge_type=making_charge_type,
+            stone_charges=stone_charges,
+            other_charges=other_charges,
+            other_charges_description=other_charges_desc,
+            tax_percent=tax_percent,
+        )
+
+    # Derived rates for display bar
+    rate_24k = active_gold_rate
+    rate_22k = pricing.round_curr(active_gold_rate * (Decimal('22') / Decimal('24')))
+    rate_18k = pricing.round_curr(active_gold_rate * (Decimal('18') / Decimal('24')))
+    rate_silver_999 = active_silver_rate
+    rate_silver_925 = pricing.round_curr(active_silver_rate * Decimal('0.925'))
+
+    context = {
+        'page_title': 'Jewellery Pricing Engine',
+        'breakdown': breakdown,
+        'breakdown_json': breakdown.to_dict(),
+        'available_items': available_items,
+        'selected_item': selected_item,
+        'selected_item_id': str(selected_item.pk) if selected_item else '',
+        'can_edit_items': can_edit_items,
+        'can_edit_rates': can_edit_rates,
+        # Board rates
+        'rate_24k': rate_24k,
+        'rate_22k': rate_22k,
+        'rate_18k': rate_18k,
+        'rate_silver_999': rate_silver_999,
+        'rate_silver_925': rate_silver_925,
+        # Current form inputs
+        'form_data': {
+            'metal_type': metal_type,
+            'purity': purity,
+            'gross_weight': gross_weight,
+            'stone_weight': stone_weight,
+            'net_weight': net_weight if net_weight is not None else '',
+            'base_metal_rate': base_rate_input if base_rate_input is not None else '',
+            'wastage_percent': wastage_percent,
+            'making_charge': making_charge,
+            'making_charge_type': making_charge_type,
+            'stone_charges': stone_charges,
+            'other_charges': other_charges,
+            'other_charges_description': other_charges_desc,
+            'tax_percent': tax_percent,
+        }
+    }
+    return render(request, 'inventory/pricing_calculator.html', context)
+
+
+@login_required
+def api_calculate_price(request):
+    """
+    JSON API endpoint for real-time frontend calculations.
+    Accepts GET or POST with pricing inputs and returns full PriceBreakdown dict.
+    """
+    from . import pricing
+    from django.http import JsonResponse
+    import json
+
+    params = {}
+    if request.method == 'POST':
+        if request.content_type == 'application/json':
+            try:
+                params = json.loads(request.body.decode('utf-8'))
+            except Exception:
+                params = {}
+        else:
+            params = request.POST.dict()
+    else:
+        params = request.GET.dict()
+
+    try:
+        metal_type = params.get('metal_type', 'Gold')
+        purity = params.get('purity', '22K')
+        gross_weight = pricing.to_decimal(params.get('gross_weight'), '0.000')
+        stone_weight = pricing.to_decimal(params.get('stone_weight'), '0.000')
+        net_weight = pricing.to_decimal(params.get('net_weight')) if params.get('net_weight') else None
+        base_rate = pricing.to_decimal(params.get('base_metal_rate')) if params.get('base_metal_rate') else None
+        wastage_pct = pricing.to_decimal(params.get('wastage_percent'), '0.00')
+        wastage_amt = pricing.to_decimal(params.get('wastage_amount'), '0.00') if params.get('wastage_amount') else None
+        making_charge = pricing.to_decimal(params.get('making_charge'), '0.00')
+        making_charge_type = params.get('making_charge_type', 'Fixed Amount')
+        stone_charges = pricing.to_decimal(params.get('stone_charges'), '0.00')
+        other_charges = pricing.to_decimal(params.get('other_charges'), '0.00')
+        tax_pct = pricing.to_decimal(params.get('tax_percent'), '3.00')
+
+        breakdown = pricing.calculate_jewellery_price(
+            metal_type=metal_type,
+            purity=purity,
+            gross_weight=gross_weight,
+            stone_weight=stone_weight,
+            net_weight=net_weight,
+            base_metal_rate=base_rate,
+            wastage_percent=wastage_pct,
+            wastage_amount=wastage_amt,
+            making_charge=making_charge,
+            making_charge_type=making_charge_type,
+            stone_charges=stone_charges,
+            other_charges=other_charges,
+            tax_percent=tax_pct,
+        )
+        return JsonResponse({'ok': True, 'breakdown': breakdown.to_dict()})
+    except Exception as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
+
+
+@login_required
+def metal_rates_view(request):
+    """
+    Shop Metal Rates Management view.
+    Displays current board rates (24K Gold, 22K Gold, 18K Gold, 999 Silver, 925 Silver).
+    Allows authorized staff to update the daily board rates or sync from live market API.
+    """
+    from . import pricing
+    from .forms import MetalRatesUpdateForm
+    from team.permissions import has_module_perm, is_admin_user
+    from django.core.exceptions import PermissionDenied
+
+    user = request.user
+    can_view = (
+        user.is_superuser or user.is_staff or
+        has_module_perm(user, 'metal_prices', 'view') or
+        not hasattr(user, 'employee_profile')
+    )
+    if not can_view:
+        raise PermissionDenied("You do not have permission to view metal prices.")
+
+    can_edit = (
+        user.is_superuser or user.is_staff or
+        has_module_perm(user, 'metal_prices', 'edit') or
+        not hasattr(user, 'employee_profile')
+    )
+
+    # Fetch DB records
+    gold_rate_obj = MetalRate.objects.filter(metal_type='Gold').first()
+    silver_rate_obj = MetalRate.objects.filter(metal_type='Silver').first()
+    plat_rate_obj = MetalRate.objects.filter(metal_type='Platinum').first()
+
+    gold_24k = gold_rate_obj.rate_per_gram if gold_rate_obj else pricing.FALLBACK_GOLD_24K_RATE
+    silver_999 = silver_rate_obj.rate_per_gram if silver_rate_obj else pricing.FALLBACK_SILVER_999_RATE
+    plat_rate = plat_rate_obj.rate_per_gram if plat_rate_obj else pricing.FALLBACK_PLATINUM_RATE
+
+    if request.method == 'POST':
+        if not can_edit:
+            raise PermissionDenied("You do not have permission to edit metal board rates.")
+
+        action = request.POST.get('action')
+        if action == 'sync_api':
+            result = metal_prices.refresh_prices()
+            if result['ok']:
+                snapshot = result.get('snapshot') or {}
+                if snapshot.get('gold_price_per_gram'):
+                    MetalRate.objects.update_or_create(
+                        metal_type='Gold',
+                        defaults={'rate_per_gram': snapshot['gold_price_per_gram'], 'source': 'Live API', 'updated_by': user}
+                    )
+                if snapshot.get('silver_price_per_gram'):
+                    MetalRate.objects.update_or_create(
+                        metal_type='Silver',
+                        defaults={'rate_per_gram': snapshot['silver_price_per_gram'], 'source': 'Live API', 'updated_by': user}
+                    )
+                messages.success(request, 'Successfully synchronized metal rates from live market API.')
+            else:
+                messages.error(request, f'Failed to fetch API prices: {result["message"]}')
+            return redirect('metal_rates')
+
+        else:
+            # Manual update
+            form = MetalRatesUpdateForm(request.POST)
+            if form.is_valid():
+                g_rate = form.cleaned_data['gold_rate_24k']
+                s_rate = form.cleaned_data['silver_rate_999']
+                p_rate = form.cleaned_data.get('platinum_rate')
+                source = form.cleaned_data.get('source') or 'Shop Board Rate'
+
+                MetalRate.objects.update_or_create(
+                    metal_type='Gold',
+                    defaults={'rate_per_gram': g_rate, 'source': source, 'updated_by': user}
+                )
+                MetalRate.objects.update_or_create(
+                    metal_type='Silver',
+                    defaults={'rate_per_gram': s_rate, 'source': source, 'updated_by': user}
+                )
+                if p_rate:
+                    MetalRate.objects.update_or_create(
+                        metal_type='Platinum',
+                        defaults={'rate_per_gram': p_rate, 'source': source, 'updated_by': user}
+                    )
+                messages.success(request, 'Daily shop metal rates updated successfully!')
+                return redirect('metal_rates')
+            else:
+                messages.error(request, 'Please check the values entered in the form.')
+    else:
+        form = MetalRatesUpdateForm(initial={
+            'gold_rate_24k': gold_24k,
+            'silver_rate_999': silver_999,
+            'platinum_rate': plat_rate,
+            'source': gold_rate_obj.source if gold_rate_obj else 'Shop Board Rate',
+        })
+
+    # Calculations for Karat board
+    gold_decimal = pricing.to_decimal(gold_24k)
+    silver_decimal = pricing.to_decimal(silver_999)
+
+    karat_rates = {
+        '24K': gold_decimal,
+        '22K': pricing.round_curr(gold_decimal * (Decimal('22') / Decimal('24'))),
+        '20K': pricing.round_curr(gold_decimal * (Decimal('20') / Decimal('24'))),
+        '18K': pricing.round_curr(gold_decimal * (Decimal('18') / Decimal('24'))),
+        '14K': pricing.round_curr(gold_decimal * (Decimal('14') / Decimal('24'))),
+        '10K': pricing.round_curr(gold_decimal * (Decimal('10') / Decimal('24'))),
+    }
+
+    silver_rates = {
+        '999': silver_decimal,
+        '925': pricing.round_curr(silver_decimal * Decimal('0.925')),
+        '900': pricing.round_curr(silver_decimal * Decimal('0.900')),
+        '800': pricing.round_curr(silver_decimal * Decimal('0.800')),
+    }
+
+    context = {
+        'page_title': 'Shop Metal Rates Board',
+        'form': form,
+        'can_edit': can_edit,
+        'gold_rate_obj': gold_rate_obj,
+        'silver_rate_obj': silver_rate_obj,
+        'plat_rate_obj': plat_rate_obj,
+        'gold_24k': gold_24k,
+        'silver_999': silver_999,
+        'karat_rates': karat_rates,
+        'silver_rates': silver_rates,
+    }
+    return render(request, 'inventory/metal_rates.html', context)
+
 
 

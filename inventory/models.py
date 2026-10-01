@@ -123,7 +123,40 @@ class JewelleryItem(models.Model):
         null=True,
         help_text="Net precious metal weight in grams (gross weight minus stone weight; auto = gross - stone)"
     )
+    MAKING_CHARGE_TYPE_CHOICES = [
+        ('Fixed Amount', 'Fixed Amount (₹)'),
+        ('Per Gram', 'Per Gram (₹/g)'),
+        ('Percentage', 'Percentage (%)'),
+    ]
+
     making_charge = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    making_charge_type = models.CharField(
+        max_length=20,
+        choices=MAKING_CHARGE_TYPE_CHOICES,
+        default='Fixed Amount',
+        help_text="How making charges are calculated (Fixed ₹, Per gram, or %)"
+    )
+    wastage_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        blank=True,
+        help_text="Manufacturing wastage percentage (e.g. 3.00%)"
+    )
+    stone_charges = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        blank=True,
+        help_text="Stone / diamond / bead charges in ₹"
+    )
+    other_charges = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        blank=True,
+        help_text="Hallmarking, certification or other charges in ₹"
+    )
     selling_price = models.DecimalField(max_digits=12, decimal_places=2)
     quantity = models.PositiveIntegerField(
         default=1,
@@ -271,6 +304,33 @@ class JewelleryItem(models.Model):
     def is_out_of_stock(self):
         return self.stock_status == 'Out of Stock'
 
+    # ---- Live Pricing Helpers ------------------------------------------
+    def calculate_live_price(self, base_rate=None, tax_percent=None):
+        """Calculate the live market price breakdown using active metal rates."""
+        from . import pricing
+        kwargs = {}
+        if base_rate is not None:
+            kwargs['base_rate'] = base_rate
+        if tax_percent is not None:
+            kwargs['tax_percent'] = tax_percent
+        return pricing.calculate_item_price(self, **kwargs)
+
+    @property
+    def current_market_price(self):
+        """Current calculated retail price based on today's active metal rates."""
+        try:
+            return self.calculate_live_price().final_price
+        except Exception:
+            return self.selling_price
+
+    @property
+    def live_price_breakdown(self):
+        """Full PriceBreakdown object for template rendering."""
+        try:
+            return self.calculate_live_price()
+        except Exception:
+            return None
+
     def __str__(self):
         display_tag = self.tag_number or self.item_code
         if self.design_code and self.design_code != self.item_code:
@@ -379,4 +439,54 @@ class StockMovement(models.Model):
 
         if errors:
             raise ValidationError(errors)
+
+
+class MetalRate(models.Model):
+    """
+    Shop daily board rates for precious metals in INR per gram.
+    Used by the Jewellery Pricing Engine to calculate live prices.
+    Can be updated manually by authorized staff or synced from the external metal price API.
+    """
+    METAL_GOLD = 'Gold'
+    METAL_SILVER = 'Silver'
+    METAL_PLATINUM = 'Platinum'
+    METAL_CHOICES = [
+        (METAL_GOLD, 'Gold'),
+        (METAL_SILVER, 'Silver'),
+        (METAL_PLATINUM, 'Platinum'),
+    ]
+
+    metal_type = models.CharField(max_length=20, choices=METAL_CHOICES, unique=True)
+    rate_per_gram = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        help_text="Standard rate per gram in INR (24K for Gold, 999 for Silver, 950 for Platinum)"
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='updated_metal_rates'
+    )
+    source = models.CharField(
+        max_length=50,
+        default='Manual',
+        help_text="Rate source (e.g. Manual, Live API, IBJA)"
+    )
+
+    class Meta:
+        ordering = ['metal_type']
+        verbose_name = 'Metal Rate'
+        verbose_name_plural = 'Metal Rates'
+
+    def __str__(self):
+        return f"{self.metal_type}: ₹{self.rate_per_gram}/g"
+
+    @classmethod
+    def get_rate(cls, metal_type):
+        rate_obj = cls.objects.filter(metal_type=metal_type).first()
+        return rate_obj.rate_per_gram if rate_obj else None
+
 

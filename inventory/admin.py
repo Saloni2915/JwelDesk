@@ -1,5 +1,11 @@
 from django.contrib import admin
-from .models import Category, JewelleryItem, StockMovement, ItemSequence
+from .models import Category, JewelleryItem, StockMovement, ItemSequence, MetalRate
+
+
+@admin.register(MetalRate)
+class MetalRateAdmin(admin.ModelAdmin):
+    list_display = ['metal_type', 'rate_per_gram', 'source', 'updated_at', 'updated_by']
+
 
 
 @admin.register(ItemSequence)

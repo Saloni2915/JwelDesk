@@ -479,6 +479,15 @@ class PermissionForm(forms.Form):
             p.module: p
             for p in employee.permissions.all()
         }
+        # Build form-level initial dict so Django pre-fills unbound form correctly
+        if not self.data:  # Only set initial when not bound (GET)
+            for module_key, module_label in EmployeePermission.MODULE_CHOICES:
+                perm = existing.get(module_key)
+                for action in self.ACTIONS:
+                    field_name = f'{module_key}__{action}'
+                    current = getattr(perm, f'can_{action}', False) if perm else False
+                    self.initial[field_name] = current
+
         for module_key, module_label in EmployeePermission.MODULE_CHOICES:
             perm = existing.get(module_key)
             for action in self.ACTIONS:

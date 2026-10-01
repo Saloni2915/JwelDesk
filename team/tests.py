@@ -537,3 +537,267 @@ class TeamModuleTests(TestCase):
         del_res = self.client.post(delete_url)
         self.assertEqual(del_res.status_code, 302)
         self.assertFalse(EmployeeDocument.objects.filter(pk=doc.pk).exists())
+
+    # -----------------------------------------------------------------------
+    # Additional tests added to increase coverage
+    # -----------------------------------------------------------------------
+
+    def test_permission_matrix_save_and_reload_via_view(self):
+        """Saving permissions via the permissions view correctly persists them."""
+        hr_user = User.objects.create_user(
+            username='hrpermtest',
+            email='hrperm@jeweldesk.test',
+            password='Password123!',
+            is_staff=True,
+        )
+        target_user = User.objects.create_user(
+            username='permbulk',
+            email='permbulk@jeweldesk.test',
+            password='Password123!',
+            is_staff=True,
+        )
+        hr_emp = Employee.objects.create(
+            user=hr_user,
+            full_name='HR Perm Manager',
+            email=hr_user.email,
+            role=self.hr_role,
+            status=Employee.STATUS_ACTIVE,
+        )
+        hr_emp.apply_default_permissions()
+
+        target_emp = Employee.objects.create(
+            user=target_user,
+            full_name='Perm Target',
+            email=target_user.email,
+            role=self.sales_role,
+            status=Employee.STATUS_ACTIVE,
+        )
+        target_emp.apply_default_permissions()
+
+        self.client.force_login(hr_user)
+        url = reverse('team:employee_permissions', kwargs={'pk': target_emp.pk})
+
+        # Post: grant full inventory access
+        post_data = {}
+        for module_key, _ in EmployeePermission.MODULE_CHOICES:
+            for action in PermissionForm.ACTIONS:
+                field_name = f'{module_key}__{action}'
+                # Grant all access to inventory module only
+                post_data[field_name] = True if module_key == 'inventory' else False
+
+        resp = self.client.post(url, post_data)
+        self.assertEqual(resp.status_code, 302)
+
+        # Verify inventory permissions saved
+        inv_perm = EmployeePermission.objects.get(employee=target_emp, module='inventory')
+        self.assertTrue(inv_perm.can_view)
+        self.assertTrue(inv_perm.can_add)
+        self.assertTrue(inv_perm.can_edit)
+        self.assertTrue(inv_perm.can_delete)
+        self.assertTrue(inv_perm.can_export)
+
+        # Verify dashboard (not granted) is false
+        dash_perm = EmployeePermission.objects.get(employee=target_emp, module='dashboard')
+        self.assertFalse(dash_perm.can_view)
+
+    def test_role_assignment_creates_correct_default_permissions(self):
+        """Default permissions are applied correctly for each of the major roles."""
+        roles_to_check = [
+            (self.hr_role,        'team',      'view',   True),
+            (self.hr_role,        'team',      'add',    True),
+            (self.hr_role,        'inventory', 'view',   False),
+            (self.manager_role,   'customers', 'view',   True),
+            (self.manager_role,   'sales',     'delete', True),
+            (self.inventory_role, 'inventory', 'view',   True),
+            (self.inventory_role, 'sales',     'view',   False),
+            (self.support_role,   'customers', 'add',    True),
+            (self.support_role,   'team',      'add',    False),
+        ]
+
+        for role, module, action, expected in roles_to_check:
+            defaults = EmployeePermission.default_permissions_for_role(role.name)
+            actual = defaults.get(module, {}).get(f'can_{action}', False)
+            self.assertEqual(
+                actual, expected,
+                f'Role {role.name}: expected {action} on {module} = {expected}, got {actual}'
+            )
+
+    def test_has_module_perm_for_admin_role(self):
+        """An employee with Admin role has permission to all modules and actions."""
+        admin_user = User.objects.create_user(
+            username='adminemp2',
+            email='adminemp2@jeweldesk.test',
+            password='Password123!',
+            is_staff=True,
+        )
+        admin_emp = Employee.objects.create(
+            user=admin_user,
+            full_name='Admin Employee',
+            email=admin_user.email,
+            role=self.admin_role,
+            status=Employee.STATUS_ACTIVE,
+        )
+        admin_emp.apply_default_permissions()
+
+        for module_key, _ in EmployeePermission.MODULE_CHOICES:
+            for action in ['view', 'add', 'edit', 'delete', 'export']:
+                self.assertTrue(
+                    has_module_perm(admin_user, module_key, action),
+                    f'Admin should have {action} on {module_key}'
+                )
+
+    def test_has_module_perm_inactive_employee_denied(self):
+        """An inactive employee's user gets no module permissions."""
+        user = User.objects.create_user(
+            username='inactiveperm',
+            email='inactiveperm@jeweldesk.test',
+            password='Password123!',
+            is_staff=True,
+        )
+        emp = Employee.objects.create(
+            user=user,
+            full_name='Inactive Perm',
+            email=user.email,
+            role=self.hr_role,
+            status=Employee.STATUS_INACTIVE,  # Inactive
+        )
+        emp.apply_default_permissions()
+
+        self.assertFalse(has_module_perm(user, 'team', 'view'))
+        self.assertFalse(has_module_perm(user, 'dashboard', 'view'))
+
+    def test_role_edit_view_updates_role_description(self):
+        """Admin can edit a custom role description via role_edit view."""
+        custom_role = Role.objects.create(
+            name='Gemologist',
+            description='Original description.',
+            is_builtin=False,
+        )
+        self.client.force_login(self.admin_user)
+        url = reverse('team:role_edit', kwargs={'pk': custom_role.pk})
+        resp = self.client.post(url, {
+            'name': 'Gemologist',
+            'description': 'Expert in gem identification and grading.',
+        })
+        self.assertEqual(resp.status_code, 302)
+        custom_role.refresh_from_db()
+        self.assertEqual(custom_role.description, 'Expert in gem identification and grading.')
+
+    def test_builtin_role_cannot_be_renamed(self):
+        """Built-in roles must not have their name changed via RoleForm."""
+        form = RoleForm(
+            data={'name': 'SuperAdmin', 'description': 'Renamed built-in.'},
+            instance=self.admin_role,
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn('name', form.errors)
+
+    def test_employee_detail_view_accessible_by_self(self):
+        """An employee can view their own profile without team:view permission."""
+        user = User.objects.create_user(
+            username='selfview',
+            email='selfview@jeweldesk.test',
+            password='Password123!',
+            is_staff=True,
+        )
+        emp = Employee.objects.create(
+            user=user,
+            full_name='Self View Emp',
+            email=user.email,
+            role=self.sales_role,
+            status=Employee.STATUS_ACTIVE,
+        )
+        # No permissions applied → cannot normally view team
+        self.client.force_login(user)
+        url = reverse('team:employee_detail', kwargs={'pk': emp.pk})
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+
+    def test_employee_detail_view_blocked_for_other_employee(self):
+        """An employee cannot view another employee's profile without team:view."""
+        user_a = User.objects.create_user(
+            username='empA',
+            email='empa@jeweldesk.test',
+            password='Password123!',
+            is_staff=True,
+        )
+        emp_a = Employee.objects.create(
+            user=user_a,
+            full_name='Emp A',
+            email=user_a.email,
+            role=self.sales_role,
+            status=Employee.STATUS_ACTIVE,
+        )
+        emp_b = Employee.objects.create(
+            user=None,
+            full_name='Emp B',
+            email='empb@jeweldesk.test',
+            role=self.sales_role,
+            status=Employee.STATUS_ACTIVE,
+        )
+        # No permissions applied
+        self.client.force_login(user_a)
+        url = reverse('team:employee_detail', kwargs={'pk': emp_b.pk})
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 403)
+
+    def test_employee_id_auto_generated_sequentially(self):
+        """Employee IDs are generated sequentially starting from EMP-0001."""
+        emp1 = Employee.objects.create(
+            full_name='First Emp',
+            email='first@jeweldesk.test',
+            role=self.sales_role,
+        )
+        emp2 = Employee.objects.create(
+            full_name='Second Emp',
+            email='second@jeweldesk.test',
+            role=self.sales_role,
+        )
+        self.assertTrue(emp1.employee_id.startswith('EMP-'))
+        self.assertTrue(emp2.employee_id.startswith('EMP-'))
+        # IDs should be different (auto-incremented)
+        self.assertNotEqual(emp1.employee_id, emp2.employee_id)
+        # The second ID should be numerically greater
+        num1 = int(emp1.employee_id.split('-')[1])
+        num2 = int(emp2.employee_id.split('-')[1])
+        self.assertGreater(num2, num1)
+
+    def test_seed_roles_management_command(self):
+        """seed_roles management command creates roles idempotently."""
+        from django.core.management import call_command
+        from io import StringIO
+
+        # Delete a built-in role to simulate a clean state
+        Role.objects.filter(name='Cashier').delete()
+        self.assertFalse(Role.objects.filter(name='Cashier').exists())
+
+        out = StringIO()
+        call_command('seed_roles', stdout=out)
+
+        # Role should be recreated
+        self.assertTrue(Role.objects.filter(name='Cashier').exists())
+        cashier = Role.objects.get(name='Cashier')
+        self.assertTrue(cashier.is_builtin)
+
+        # Running a second time should be safe (idempotent)
+        call_command('seed_roles', stdout=StringIO())
+        self.assertEqual(Role.objects.filter(name='Cashier').count(), 1)
+
+    def test_branch_list_and_create_view(self):
+        """Admin can access branch list and create a new branch."""
+        self.client.force_login(self.admin_user)
+
+        # Branch list
+        list_resp = self.client.get(reverse('team:branch_list'))
+        self.assertEqual(list_resp.status_code, 200)
+
+        # Create branch
+        create_resp = self.client.post(reverse('team:branch_create'), {
+            'name': 'Downtown Branch',
+            'address': '202 Gold Street',
+            'phone': '9090909090',
+            'is_active': True,
+        })
+        self.assertEqual(create_resp.status_code, 302)
+        self.assertTrue(Branch.objects.filter(name='Downtown Branch').exists())
+

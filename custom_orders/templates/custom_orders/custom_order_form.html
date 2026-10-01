@@ -136,13 +136,17 @@
                             {% endif %}
                         </div>
                         <div class="col-md-6">
-                            <label for="{{ form.estimated_price.id_for_label }}" class="form-label">
-                                Estimated Total Price (₹) <span class="text-danger">*</span>
+                            <label for="{{ form.estimated_price.id_for_label }}" class="form-label d-flex justify-content-between align-items-center">
+                                <span>Estimated Total Price (₹) <span class="text-danger">*</span></span>
+                                <button type="button" class="btn btn-sm btn-link p-0 text-warning text-decoration-none fw-bold" onclick="calculateCustomOrderEstimate()">
+                                    <i class="bi bi-magic me-1"></i> Calculate Estimate
+                                </button>
                             </label>
                             {{ form.estimated_price }}
                             {% if form.estimated_price.errors %}
                             <div class="text-danger small mt-1">{{ form.estimated_price.errors.0 }}</div>
                             {% endif %}
+                            <div class="form-text small" id="co-estimate-hint">Inclusive of metal, making &amp; 3% GST.</div>
                         </div>
                         <div class="col-md-6">
                             <label for="{{ form.customer_budget.id_for_label }}" class="form-label">
@@ -208,4 +212,46 @@
         </div>
     </div>
 </div>
+</div>
+
+<script>
+function calculateCustomOrderEstimate() {
+    const payload = {
+        metal_type: document.getElementById('id_metal_type') ? document.getElementById('id_metal_type').value : 'Gold',
+        purity: document.getElementById('id_purity') ? document.getElementById('id_purity').value : '22K',
+        gross_weight: document.getElementById('id_approx_gross_weight') ? document.getElementById('id_approx_gross_weight').value : '0',
+        net_weight: document.getElementById('id_approx_net_weight') ? document.getElementById('id_approx_net_weight').value : '',
+        making_charge: document.getElementById('id_making_charge') ? document.getElementById('id_making_charge').value : '0',
+        making_charge_type: 'Fixed Amount',
+        tax_percent: 3.0
+    };
+
+    const hint = document.getElementById('co-estimate-hint');
+    if (hint) hint.innerHTML = '<span class="text-primary"><i class="bi bi-hourglass-split"></i> Calculating live estimate...</span>';
+
+    fetch("{% url 'api_calculate_price' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.ok && data.breakdown) {
+            document.getElementById('id_estimated_price').value = data.breakdown.final_price.toFixed(2);
+            if (hint) {
+                hint.innerHTML = `<span class="text-success"><i class="bi bi-check-circle"></i> Estimated at today board rate: Metal ₹${data.breakdown.metal_value.toFixed(2)} + Making ₹${data.breakdown.making_charge_amount.toFixed(2)} + GST ₹${data.breakdown.tax_amount.toFixed(2)} = <strong>₹${data.breakdown.final_price.toFixed(2)}</strong></span>`;
+            }
+        } else {
+            if (hint) hint.innerHTML = '<span class="text-danger">Unable to calculate estimate. Please check weights and purity.</span>';
+        }
+    })
+    .catch(err => {
+        console.error('Estimate calc error:', err);
+        if (hint) hint.innerHTML = '<span class="text-danger">Failed to calculate estimate.</span>';
+    });
+}
+</script>
 {% endblock %}

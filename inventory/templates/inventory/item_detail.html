@@ -163,21 +163,89 @@
                         <div class="text-muted small">Net Weight</div>
                         <div class="fs-6 fw-bold text-primary">{{ item.net_weight }} g</div>
                     </div>
-                    <div class="col-sm-4">
+                    <div class="col-sm-3">
                         <div class="text-muted small">Making Charge</div>
-                        <div class="fs-6">₹{{ item.making_charge }}</div>
+                        <div class="fs-6 fw-semibold">₹{{ item.making_charge }} <small class="text-muted">({{ item.making_charge_type }})</small></div>
                     </div>
-                    <div class="col-sm-4">
-                        <div class="text-muted small">Selling Price</div>
+                    <div class="col-sm-3">
+                        <div class="text-muted small">Wastage</div>
+                        <div class="fs-6 fw-semibold">{{ item.wastage_percent }}%</div>
+                    </div>
+                    <div class="col-sm-3">
+                        <div class="text-muted small">Stone Charges</div>
+                        <div class="fs-6 fw-semibold">₹{{ item.stone_charges }}</div>
+                    </div>
+                    <div class="col-sm-3">
+                        <div class="text-muted small">Fixed Selling Price</div>
                         <div class="fs-5 fw-bold text-success">₹{{ item.selling_price }}</div>
-                    </div>
-                    <div class="col-sm-4">
-                        <div class="text-muted small">Created Date</div>
-                        <div class="fs-6">{{ item.created_at|date:"M d, Y, h:i A" }}</div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Live Market Valuation & Pricing Engine Breakdown -->
+        {% with b=item.live_price_breakdown %}
+        {% if b %}
+        <div class="card mt-4 border-0 shadow-sm" style="background: linear-gradient(180deg, #fffdf8 0%, #ffffff 100%); border-left: 4px solid #d4af37 !important;">
+            <div class="card-header bg-transparent border-bottom py-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="bi bi-calculator me-2 text-warning"></i> Today's Live Pricing Breakdown
+                    </h6>
+                    <small class="text-muted">Calculated using today's active bullion board rate (24K Gold: ₹{{ b.base_rate_per_gram }}/g)</small>
+                </div>
+                <a href="{% url 'pricing_calculator' %}?item={{ item.pk }}" class="btn btn-warning btn-sm fw-bold">
+                    <i class="bi bi-sliders me-1"></i> Open in Pricing Engine
+                </a>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3 text-center mb-3">
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 bg-white rounded border">
+                            <div class="text-muted small text-uppercase">Metal Value</div>
+                            <div class="fs-6 fw-bold text-dark">₹{{ b.metal_value|floatformat:2 }}</div>
+                            <small class="text-muted" style="font-size: 0.72rem;">{{ b.metal_weight }}g @ ₹{{ b.effective_rate_per_gram|floatformat:2 }}/g</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 bg-white rounded border">
+                            <div class="text-muted small text-uppercase">Making + Wastage</div>
+                            <div class="fs-6 fw-bold text-dark">₹{{ b.making_charge_amount|add:b.wastage_amount|floatformat:2 }}</div>
+                            <small class="text-muted" style="font-size: 0.72rem;">MC: ₹{{ b.making_charge_amount|floatformat:2 }} | Wastage: ₹{{ b.wastage_amount|floatformat:2 }}</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 bg-white rounded border">
+                            <div class="text-muted small text-uppercase">Stones / Other</div>
+                            <div class="fs-6 fw-bold text-dark">₹{{ b.stone_charges|add:b.other_charges|floatformat:2 }}</div>
+                            <small class="text-muted" style="font-size: 0.72rem;">Stones: ₹{{ b.stone_charges|floatformat:2 }}</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 bg-white rounded border border-warning">
+                            <div class="text-muted small text-uppercase">Live Calculated Price</div>
+                            <div class="fs-5 fw-bold text-dark text-success">₹{{ b.final_price|floatformat:2 }}</div>
+                            <small class="text-muted" style="font-size: 0.72rem;">Incl. {{ b.tax_percent }}% GST (₹{{ b.tax_amount|floatformat:2 }})</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center small text-muted pt-2 border-top">
+                    <span>
+                        Stored Tag Price: <strong>₹{{ item.selling_price|floatformat:2 }}</strong> &nbsp;|&nbsp;
+                        Today's Market Value: <strong class="text-success">₹{{ b.final_price|floatformat:2 }}</strong>
+                        {% if b.final_price > item.selling_price %}
+                        <span class="badge bg-warning text-dark ms-1">Market is ₹{{ b.final_price|floatformat:2 }} (+₹{{ b.final_price|add:"-item.selling_price"|floatformat:2 }})</span>
+                        {% endif %}
+                    </span>
+                    <a href="{% url 'pricing_calculator' %}?item={{ item.pk }}" class="text-decoration-none">
+                        Recalculate or Update Tag Price <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% endwith %}
 
         <!-- Stock Position -->
         <div class="card mt-4">

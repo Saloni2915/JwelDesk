@@ -112,6 +112,24 @@ class CustomOrder(models.Model):
         remaining = estimated - advance
         return remaining if remaining > 0 else Decimal('0.00')
 
+    def calculate_estimated_price(self, base_rate=None, tax_percent=None):
+        """Calculate live estimate using the Jewellery Pricing Engine."""
+        from inventory import pricing
+        kwargs = {}
+        if base_rate is not None:
+            kwargs['base_metal_rate'] = base_rate
+        if tax_percent is not None:
+            kwargs['tax_percent'] = tax_percent
+        return pricing.calculate_jewellery_price(
+            metal_type=self.metal_type,
+            purity=self.purity,
+            gross_weight=self.approx_gross_weight,
+            net_weight=self.approx_net_weight,
+            making_charge=self.making_charge,
+            making_charge_type='Fixed Amount',
+            **kwargs
+        )
+
     def get_allowed_statuses(self):
         """Statuses this order may move to from its current status."""
         return sorted(self.ALLOWED_STATUS_TRANSITIONS.get(self.status, set()))

@@ -8,7 +8,9 @@ class JewelleryItemForm(forms.ModelForm):
         fields = [
             'tag_number', 'item_code', 'design_code', 'name', 'category', 'metal_type', 'purity',
             'huid', 'huid_status', 'hallmark_status', 'hallmark_details',
-            'gross_weight', 'stone_weight', 'net_weight', 'making_charge', 'selling_price', 'status'
+            'gross_weight', 'stone_weight', 'net_weight',
+            'making_charge_type', 'making_charge', 'wastage_percent', 'stone_charges', 'other_charges',
+            'selling_price', 'status'
         ]
         widgets = {
             'tag_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Auto-assigned if left blank (e.g. JWL-000001)'}),
@@ -25,7 +27,11 @@ class JewelleryItemForm(forms.ModelForm):
             'gross_weight': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001', 'placeholder': '0.000'}),
             'stone_weight': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001', 'placeholder': '0.000'}),
             'net_weight': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001', 'placeholder': 'Auto = Gross - Stone'}),
+            'making_charge_type': forms.Select(attrs={'class': 'form-select'}),
             'making_charge': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}),
+            'wastage_percent': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}),
+            'stone_charges': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}),
+            'other_charges': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}),
             'selling_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
         }
@@ -36,7 +42,11 @@ class JewelleryItemForm(forms.ModelForm):
         self.fields['design_code'].required = False
         self.fields['stone_weight'].required = False
         self.fields['net_weight'].required = False
+        self.fields['making_charge_type'].required = False
         self.fields['making_charge'].required = False
+        self.fields['wastage_percent'].required = False
+        self.fields['stone_charges'].required = False
+        self.fields['other_charges'].required = False
         self.fields['huid'].required = False
         self.fields['hallmark_details'].required = False
         # New Phase-1 dropdowns default to 'Not Applicable' so legacy POSTs
@@ -214,4 +224,41 @@ class StockAdjustmentForm(forms.Form):
             return -self.cleaned_data['quantity'], StockMovement.REDUCTION, reason
         return (self.cleaned_data['new_stock'] - self.item.quantity,
                 StockMovement.ADJUSTMENT, reason)
+
+
+class MetalRateForm(forms.ModelForm):
+    """Form to update single metal board rate."""
+    class Meta:
+        from .models import MetalRate
+        model = MetalRate
+        fields = ['rate_per_gram', 'source']
+        widgets = {
+            'rate_per_gram': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01', 'placeholder': '0.00'}),
+            'source': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. IBJA / Shop Board Rate'}),
+        }
+
+
+class MetalRatesUpdateForm(forms.Form):
+    """Form to update all daily shop rates simultaneously (Gold 24K, Silver 999, Platinum 950)."""
+    gold_rate_24k = forms.DecimalField(
+        label='24K Pure Gold Rate (₹/g)',
+        max_digits=10, decimal_places=2,
+        widget=forms.NumberInput(attrs={'class': 'form-control form-control-lg fw-bold', 'step': '0.01', 'min': '1.00', 'placeholder': '7500.00'})
+    )
+    silver_rate_999 = forms.DecimalField(
+        label='999 Fine Silver Rate (₹/g)',
+        max_digits=10, decimal_places=2,
+        widget=forms.NumberInput(attrs={'class': 'form-control form-control-lg fw-bold', 'step': '0.01', 'min': '0.10', 'placeholder': '95.00'})
+    )
+    platinum_rate = forms.DecimalField(
+        label='Platinum Pt950 Rate (₹/g)',
+        max_digits=10, decimal_places=2, required=False,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '1.00', 'placeholder': '3200.00'})
+    )
+    source = forms.CharField(
+        label='Rate Source / Reference',
+        max_length=50, required=False, initial='Shop Board Rate',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. IBJA, Mumbai Bullion, Shop Opening Rate'})
+    )
+
 

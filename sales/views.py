@@ -68,7 +68,7 @@ def sale_add(request):
         initial_data['jewellery_item'] = request.GET.get('item')
         try:
             item_obj = JewelleryItem.objects.get(pk=request.GET.get('item'))
-            initial_data['sale_price'] = item_obj.selling_price
+            initial_data['sale_price'] = request.GET.get('price') or item_obj.selling_price
         except JewelleryItem.DoesNotExist:
             pass
 
