@@ -106,11 +106,25 @@
                         </a>
                     </li>
                     <li class="nav-item sidebar-section">Team</li>
-                    {% if user.is_staff %}
+                    {% if user_perms.team.can_view or user.is_staff %}
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.app_name == 'team' and 'branch' not in request.resolver_match.url_name %}active{% endif %}"
+                        <a class="nav-link {% if request.resolver_match.app_name == 'team' and request.resolver_match.url_name == 'employee_list' %}active{% endif %}"
                            href="{% url 'team:employee_list' %}">
                             <i class="bi bi-people me-2"></i> Employees
+                        </a>
+                    </li>
+                    {% if user_perms.team.can_add or user.is_staff %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.app_name == 'team' and request.resolver_match.url_name == 'employee_create' %}active{% endif %}"
+                           href="{% url 'team:employee_create' %}">
+                            <i class="bi bi-person-plus me-2"></i> Add Employee
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.app_name == 'team' and 'role' in request.resolver_match.url_name %}active{% endif %}"
+                           href="{% url 'team:role_list' %}">
+                            <i class="bi bi-shield-check me-2"></i> Roles &amp; Permissions
                         </a>
                     </li>
                     <li class="nav-item">

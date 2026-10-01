@@ -8,10 +8,20 @@
   <a href="{% url 'team:employee_list' %}" class="btn btn-outline-secondary btn-sm" id="btn-back-team">
     <i class="bi bi-arrow-left me-1"></i> Back to Team
   </a>
-  {% if user.is_staff %}
+  {% if can_edit %}
   <a href="{% url 'team:employee_edit' employee.pk %}" class="btn btn-primary btn-sm ms-2" id="btn-edit-emp">
     <i class="bi bi-pencil me-1"></i> Edit Profile
   </a>
+  {% if employee.user %}
+  <a href="{% url 'team:employee_password_reset' employee.pk %}" class="btn btn-outline-warning btn-sm ms-2" id="btn-reset-pw">
+    <i class="bi bi-key me-1"></i> Reset Password
+  </a>
+  {% else %}
+  <a href="{% url 'team:employee_link_account' employee.pk %}" class="btn btn-outline-success btn-sm ms-2" id="btn-link-acc">
+    <i class="bi bi-person-check me-1"></i> Enable Login Access
+  </a>
+  {% endif %}
+  {% if can_manage_perms %}
   <a href="{% url 'team:employee_permissions' employee.pk %}" class="btn btn-outline-dark btn-sm ms-2" id="btn-permissions">
     <i class="bi bi-shield-lock me-1"></i> Permissions
   </a>
@@ -19,146 +29,273 @@
     <i class="bi bi-shop me-1"></i> Branch Access
   </a>
   {% endif %}
+  {% endif %}
 {% endblock %}
 
 {% block content %}
 <div class="row g-4">
-  <!-- Left Column: Summary Card -->
+  <!-- Left Column: Summary & Account Card -->
   <div class="col-lg-4">
-    <div class="card shadow-sm mb-4">
+    <!-- Profile Card -->
+    <div class="card shadow-sm border-0 mb-4">
       <div class="card-body text-center py-4">
-        <div class="avatar-placeholder rounded-circle bg-light d-inline-flex align-items-center justify-content-center text-primary mb-3 shadow-sm" style="width: 80px; height: 80px; font-size: 2rem;">
-          <i class="bi bi-person"></i>
-        </div>
+        {% if employee.photo %}
+          <img src="{{ employee.photo.url }}" alt="{{ employee.full_name }}" class="rounded-circle object-fit-cover shadow mb-3 border border-3 border-light" style="width: 100px; height: 100px;">
+        {% else %}
+          <div class="avatar-placeholder rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center fw-bold mb-3 shadow-sm" style="width: 100px; height: 100px; font-size: 2.5rem;">
+            {{ employee.full_name|slice:":1"|upper }}
+          </div>
+        {% endif %}
+
         <h5 class="fw-bold mb-1">{{ employee.full_name }}</h5>
-        <p class="text-muted mb-2">{{ employee.designation|default:"Staff Member" }} &bull; {{ employee.department|default:"Jewellery Operations" }}</p>
-        <div>
-          <span class="badge bg-primary px-3 py-2 fs-6 mb-2">{{ employee.role.name }}</span>
+        <p class="text-secondary mb-2 fw-medium">
+          {{ employee.designation|default:"Staff Member" }} &bull; {{ employee.department|default:"Jewellery Operations" }}
+        </p>
+
+        <div class="mb-2">
+          <span class="badge px-3 py-2 fs-6
+            {% if employee.role.name == 'Admin' %}bg-danger
+            {% elif employee.role.name == 'HR' %}bg-primary
+            {% elif employee.role.name == 'Manager' %}bg-warning text-dark
+            {% elif employee.role.name == 'Sales' or employee.role.name == 'Sales Executive' %}bg-success
+            {% elif employee.role.name == 'Inventory' or employee.role.name == 'Inventory Manager' %}bg-info text-dark
+            {% elif employee.role.name == 'Accountant' %}bg-dark
+            {% elif employee.role.name == 'Support' %}bg-info
+            {% else %}bg-secondary{% endif %}">
+            {{ employee.role.name }}
+          </span>
         </div>
+
         <div>
-          {% if employee.status == 'ACTIVE' %}
+          {% if employee.status == 'Active' %}
             <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1">Active</span>
-          {% elif employee.status == 'INACTIVE' %}
+          {% elif employee.status == 'Inactive' %}
             <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-1">Inactive</span>
-          {% elif employee.status == 'ON_LEAVE' %}
-            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-1">On Leave</span>
           {% else %}
-            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1">Terminated</span>
+            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-1">{{ employee.status }}</span>
           {% endif %}
         </div>
       </div>
+
       <ul class="list-group list-group-flush small">
-        <li class="list-group-item d-flex justify-content-between align-items-center">
+        <li class="list-group-item d-flex justify-content-between align-items-center py-2">
           <span class="text-muted">Employee ID</span>
-          <span class="fw-semibold font-monospace">{{ employee.employee_id }}</span>
+          <span class="fw-bold font-monospace bg-light px-2 py-1 rounded border">{{ employee.employee_id }}</span>
         </li>
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span class="text-muted">Username</span>
-          <span class="fw-semibold">{{ employee.user.username }}</span>
-        </li>
-        <li class="list-group-item d-flex justify-content-between align-items-center">
+        <li class="list-group-item d-flex justify-content-between align-items-center py-2">
           <span class="text-muted">Email</span>
-          <span>{{ employee.email|default:employee.user.email }}</span>
+          <span class="fw-medium">{{ employee.email }}</span>
         </li>
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span class="text-muted">Mobile</span>
+        <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+          <span class="text-muted">Mobile / Phone</span>
           <span>{{ employee.mobile|default:"—" }}</span>
         </li>
-        <li class="list-group-item d-flex justify-content-between align-items-center">
+        <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+          <span class="text-muted">Department</span>
+          <span>{{ employee.department }}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center py-2">
           <span class="text-muted">Joining Date</span>
           <span>{{ employee.joining_date|date:"d M Y"|default:"—" }}</span>
         </li>
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span class="text-muted">Last Login</span>
-          <span>{{ employee.user.last_login|date:"d M Y, H:i"|default:"Never logged in" }}</span>
-        </li>
       </ul>
-      {% if user.is_staff and user.pk != employee.user.pk %}
-      <div class="card-footer bg-light p-3">
-        <form method="post" action="{% url 'team:employee_toggle_status' employee.pk %}" onsubmit="return confirm('Are you sure you want to change this employee status?');">
-          {% csrf_token %}
-          {% if employee.status == 'Active' %}
-            <button type="submit" class="btn btn-outline-danger btn-sm w-100" id="btn-toggle-deactivate">
-              <i class="bi bi-person-x me-1"></i> Deactivate Employee Account
-            </button>
-          {% else %}
-            <button type="submit" class="btn btn-outline-success btn-sm w-100" id="btn-toggle-activate">
-              <i class="bi bi-person-check me-1"></i> Activate Employee Account
-            </button>
+
+      <!-- Account Status Block -->
+      <div class="card-footer bg-light p-3 border-top">
+        <h6 class="fw-bold text-dark small mb-2"><i class="bi bi-key me-1 text-primary"></i>Django Login Access</h6>
+        {% if employee.user %}
+          <div class="d-flex justify-content-between align-items-center mb-2 small">
+            <span class="text-muted">Username:</span>
+            <span class="fw-bold">{{ employee.user.username }}</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-3 small">
+            <span class="text-muted">Login Status:</span>
+            {% if employee.user.is_active %}
+              <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Active</span>
+            {% else %}
+              <span class="badge bg-danger"><i class="bi bi-lock me-1"></i>Suspended</span>
+            {% endif %}
+          </div>
+          {% if can_edit and not is_self %}
+          <form method="post" action="{% url 'team:employee_toggle_status' employee.pk %}" onsubmit="return confirm('Toggle active/inactive status for this employee?');">
+            {% csrf_token %}
+            {% if employee.status == 'Active' %}
+              <button type="submit" class="btn btn-outline-danger btn-sm w-100" id="btn-toggle-deactivate">
+                <i class="bi bi-person-x me-1"></i> Deactivate Employee &amp; Suspend Login
+              </button>
+            {% else %}
+              <button type="submit" class="btn btn-outline-success btn-sm w-100" id="btn-toggle-activate">
+                <i class="bi bi-person-check me-1"></i> Activate Employee &amp; Restore Login
+              </button>
+            {% endif %}
+          </form>
           {% endif %}
-        </form>
+        {% else %}
+          <p class="text-muted small mb-2">No user authentication account is linked to this employee.</p>
+          {% if can_edit %}
+          <a href="{% url 'team:employee_link_account' employee.pk %}" class="btn btn-outline-success btn-sm w-100">
+            <i class="bi bi-person-plus me-1"></i> Create or Link Login Account
+          </a>
+          {% endif %}
+        {% endif %}
       </div>
-      {% endif %}
     </div>
 
     <!-- Assigned Branches -->
-    <div class="card shadow-sm mb-4">
-      <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-semibold"><i class="bi bi-shop me-2 text-primary"></i>Assigned Branches</h6>
-        {% if user.is_staff %}
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-shop me-2 text-primary"></i>Assigned Branches</h6>
+        {% if can_edit %}
         <a href="{% url 'team:employee_branches' employee.pk %}" class="btn btn-link btn-sm p-0">Manage</a>
         {% endif %}
       </div>
       <div class="card-body">
-        {% if employee.role.can_access_all_branches %}
+        {% if employee.role.name == 'Admin' %}
           <div class="alert alert-info py-2 px-3 small mb-0">
-            <i class="bi bi-info-circle me-1"></i> Role <strong>{{ employee.role.name }}</strong> has access to <strong>all branches</strong> by default.
+            <i class="bi bi-info-circle me-1"></i> Role <strong>Admin</strong> has access to all branches.
           </div>
         {% else %}
           {% if employee.branches.all %}
             <div class="d-flex flex-wrap gap-2">
               {% for b in employee.branches.all %}
                 <span class="badge bg-light text-dark border p-2">
-                  <i class="bi bi-geo-alt me-1 text-danger"></i> {{ b.name }} {% if b.city %}({{ b.city }}){% endif %}
+                  <i class="bi bi-geo-alt me-1 text-danger"></i> {{ b.name }}
                 </span>
               {% endfor %}
             </div>
           {% else %}
-            <p class="text-muted small mb-0">No specific branch assigned. Access may be restricted.</p>
+            <p class="text-muted small mb-0"><i class="bi bi-check2-all text-success me-1"></i>Access to all branches (no restriction).</p>
           {% endif %}
         {% endif %}
       </div>
     </div>
   </div>
 
-  <!-- Right Column: Details & Module Permissions -->
+  <!-- Right Column: HR Documents & Module Permissions -->
   <div class="col-lg-8">
-    <!-- Role & Department Info -->
-    <div class="card shadow-sm mb-4">
-      <div class="card-header bg-white">
-        <h6 class="mb-0 fw-semibold"><i class="bi bi-info-circle me-2 text-primary"></i>Role &amp; Notes</h6>
+    <!-- Role Details -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-white border-bottom">
+        <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-info-circle me-2 text-primary"></i>Role &amp; Responsibilities</h6>
       </div>
       <div class="card-body">
         <div class="row g-3">
-          <div class="col-md-6">
+          <div class="col-md-8">
             <label class="form-label text-muted small mb-0">Role Description</label>
-            <p class="fw-medium mb-2">{{ employee.role.description|default:"Standard organizational role." }}</p>
+            <p class="fw-medium mb-0">{{ employee.role.description|default:"Standard organizational role." }}</p>
           </div>
-          <div class="col-md-6">
-            <label class="form-label text-muted small mb-0">Admin Privileges</label>
-            <p class="fw-medium mb-2">
-              {% if employee.role.is_admin_role %}
-                <span class="text-danger fw-bold"><i class="bi bi-shield-fill-check me-1"></i>Administrator Role</span>
+          <div class="col-md-4">
+            <label class="form-label text-muted small mb-0">System Privilege</label>
+            <p class="mb-0">
+              {% if employee.role.name == 'Admin' %}
+                <span class="badge bg-danger"><i class="bi bi-shield-fill-check me-1"></i>Full Administrator</span>
               {% else %}
-                <span class="text-secondary">Standard Staff</span>
+                <span class="badge bg-secondary">Modular Staff</span>
               {% endif %}
             </p>
           </div>
-          {% if employee.notes %}
-          <div class="col-12">
-            <label class="form-label text-muted small mb-0">Administrative Notes</label>
-            <div class="p-2 bg-light rounded text-secondary small">{{ employee.notes|linebreaksbr }}</div>
-          </div>
-          {% endif %}
         </div>
       </div>
     </div>
 
+    <!-- HR Foundation: Employee Documents -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+        <div>
+          <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-folder2-open me-2 text-primary"></i>Employee Documents</h6>
+          <small class="text-muted">HR Foundation: ID proofs, contracts, certifications</small>
+        </div>
+        {% if can_edit %}
+        <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#uploadDocCollapse">
+          <i class="bi bi-cloud-arrow-up me-1"></i> Upload Document
+        </button>
+        {% endif %}
+      </div>
+
+      {% if can_edit %}
+      <!-- Document Upload Form (Collapsible) -->
+      <div class="collapse border-bottom bg-light p-3" id="uploadDocCollapse">
+        <form method="post" action="{% url 'team:employee_document_upload' employee.pk %}" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="row g-2">
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">Document Type</label>
+              {{ doc_form.document_type }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">Title</label>
+              {{ doc_form.title }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">File</label>
+              {{ doc_form.file }}
+            </div>
+            <div class="col-12 mt-2">
+              {{ doc_form.notes }}
+            </div>
+            <div class="col-12 text-end mt-2">
+              <button type="submit" class="btn btn-primary btn-sm px-3">Upload</button>
+            </div>
+          </div>
+        </form>
+      </div>
+      {% endif %}
+
+      <div class="card-body p-0">
+        {% if documents %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0 small">
+            <thead class="table-light text-muted">
+              <tr>
+                <th class="ps-3">Title</th>
+                <th>Type</th>
+                <th>Uploaded</th>
+                <th class="text-end pe-3">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for doc in documents %}
+              <tr>
+                <td class="ps-3 fw-semibold">
+                  <i class="bi bi-file-earmark-text text-secondary me-2"></i>{{ doc.title }}
+                </td>
+                <td><span class="badge bg-light text-dark border">{{ doc.get_document_type_display }}</span></td>
+                <td>{{ doc.uploaded_at|date:"d M Y" }}</td>
+                <td class="text-end pe-3">
+                  <a href="{{ doc.file.url }}" target="_blank" class="btn btn-outline-secondary btn-sm py-0 px-2" title="Download / View">
+                    <i class="bi bi-download"></i>
+                  </a>
+                  {% if can_edit %}
+                  <form method="post" action="{% url 'team:employee_document_delete' employee.pk doc.pk %}" class="d-inline" onsubmit="return confirm('Delete document?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2" title="Delete">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="p-4 text-center text-muted small">
+          <i class="bi bi-folder-x display-6 d-block mb-2 text-secondary opacity-50"></i>
+          No documents uploaded yet.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
     <!-- Module Permissions Matrix -->
-    <div class="card shadow-sm">
-      <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-semibold"><i class="bi bi-shield-lock me-2 text-primary"></i>Module Permissions Matrix</h6>
-        {% if user.is_staff %}
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+        <div>
+          <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-shield-lock me-2 text-primary"></i>Granular Permissions Matrix</h6>
+          <small class="text-muted">Per-module action authorization</small>
+        </div>
+        {% if can_manage_perms %}
         <a href="{% url 'team:employee_permissions' employee.pk %}" class="btn btn-outline-primary btn-sm" id="btn-manage-perms">
           <i class="bi bi-sliders me-1"></i> Configure Permissions
         </a>
@@ -167,15 +304,14 @@
       <div class="card-body p-0">
         <div class="table-responsive">
           <table class="table table-hover align-middle mb-0 text-center small">
-            <thead class="table-light">
+            <thead class="table-light text-uppercase text-muted">
               <tr>
                 <th class="text-start ps-3">Module</th>
                 <th>View</th>
-                <th>Add</th>
-                <th>Edit</th>
+                <th>Create / Add</th>
+                <th>Edit / Change</th>
                 <th>Delete</th>
                 <th>Export</th>
-                <th>Approve</th>
               </tr>
             </thead>
             <tbody>
@@ -183,28 +319,45 @@
               <tr>
                 <td class="text-start ps-3 fw-semibold">{{ perm.get_module_display }}</td>
                 <td>
-                  {% if perm.can_view %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle text-muted opacity-50"></i>{% endif %}
+                  {% if perm.can_view %}
+                    <i class="bi bi-check-circle-fill text-success" title="Allowed"></i>
+                  {% else %}
+                    <i class="bi bi-dash-circle text-muted opacity-50" title="Denied"></i>
+                  {% endif %}
                 </td>
                 <td>
-                  {% if perm.can_add %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle text-muted opacity-50"></i>{% endif %}
+                  {% if perm.can_add %}
+                    <i class="bi bi-check-circle-fill text-success" title="Allowed"></i>
+                  {% else %}
+                    <i class="bi bi-dash-circle text-muted opacity-50" title="Denied"></i>
+                  {% endif %}
                 </td>
                 <td>
-                  {% if perm.can_change %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle text-muted opacity-50"></i>{% endif %}
+                  {% if perm.can_edit %}
+                    <i class="bi bi-check-circle-fill text-success" title="Allowed"></i>
+                  {% else %}
+                    <i class="bi bi-dash-circle text-muted opacity-50" title="Denied"></i>
+                  {% endif %}
                 </td>
                 <td>
-                  {% if perm.can_delete %}<i class="bi bi-check-circle-fill text-danger"></i>{% else %}<i class="bi bi-x-circle text-muted opacity-50"></i>{% endif %}
+                  {% if perm.can_delete %}
+                    <i class="bi bi-check-circle-fill text-danger" title="Allowed"></i>
+                  {% else %}
+                    <i class="bi bi-dash-circle text-muted opacity-50" title="Denied"></i>
+                  {% endif %}
                 </td>
                 <td>
-                  {% if perm.can_export %}<i class="bi bi-check-circle-fill text-primary"></i>{% else %}<i class="bi bi-x-circle text-muted opacity-50"></i>{% endif %}
-                </td>
-                <td>
-                  {% if perm.can_approve %}<i class="bi bi-check-circle-fill text-warning"></i>{% else %}<i class="bi bi-x-circle text-muted opacity-50"></i>{% endif %}
+                  {% if perm.can_export %}
+                    <i class="bi bi-check-circle-fill text-primary" title="Allowed"></i>
+                  {% else %}
+                    <i class="bi bi-dash-circle text-muted opacity-50" title="Denied"></i>
+                  {% endif %}
                 </td>
               </tr>
               {% empty %}
               <tr>
-                <td colspan="7" class="text-center py-4 text-muted">
-                  No explicit permissions configured yet. Permissions default to role capabilities.
+                <td colspan="6" class="text-center py-4 text-muted">
+                  No individual permissions set. Defaults for role "{{ employee.role.name }}" apply.
                 </td>
               </tr>
               {% endfor %}

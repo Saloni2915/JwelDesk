@@ -11,12 +11,28 @@ Design decisions:
   - Employee ID auto-generated as EMP-0001, EMP-0002, ...
 """
 
+import os
 import re
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
+
+
+ALLOWED_IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.webp', '.svg', '.gif')
+
+
+def validate_image_extension(value):
+    """Validate allowed image extensions for employee photos."""
+    if not value:
+        return
+    ext = os.path.splitext(value.name or '')[1].lower()
+    if ext not in ALLOWED_IMAGE_EXTENSIONS:
+        raise ValidationError(
+            'Unsupported image format. Allowed: ' + ', '.join(ALLOWED_IMAGE_EXTENSIONS)
+        )
+
 
 
 # ---------------------------------------------------------------------------
@@ -55,18 +71,26 @@ class Role(models.Model):
     """
 
     ROLE_ADMIN             = 'Admin'
+    ROLE_HR                = 'HR'
     ROLE_MANAGER           = 'Manager'
+    ROLE_SALES             = 'Sales'
     ROLE_SALES_EXECUTIVE   = 'Sales Executive'
+    ROLE_INVENTORY         = 'Inventory'
     ROLE_INVENTORY_MANAGER = 'Inventory Manager'
     ROLE_ACCOUNTANT        = 'Accountant'
+    ROLE_SUPPORT           = 'Support'
     ROLE_CASHIER           = 'Cashier'
 
     DEFAULT_ROLES = [
         ROLE_ADMIN,
+        ROLE_HR,
         ROLE_MANAGER,
+        ROLE_SALES,
         ROLE_SALES_EXECUTIVE,
+        ROLE_INVENTORY,
         ROLE_INVENTORY_MANAGER,
         ROLE_ACCOUNTANT,
+        ROLE_SUPPORT,
         ROLE_CASHIER,
     ]
 
@@ -179,6 +203,14 @@ class EmployeePermission(models.Model):
             for m in cls.MODULES:
                 perms[m] = full
 
+        elif role_name == Role.ROLE_HR:
+            perms = {
+                cls.MODULE_DASHBOARD: view_only,
+                cls.MODULE_TEAM:      full,
+                cls.MODULE_REPORTS:   view_only,
+                cls.MODULE_SETTINGS:  view_only,
+            }
+
         elif role_name == Role.ROLE_MANAGER:
             perms = {
                 cls.MODULE_DASHBOARD:     view_only,
@@ -193,7 +225,7 @@ class EmployeePermission(models.Model):
                 cls.MODULE_SETTINGS:      view_only,
             }
 
-        elif role_name == Role.ROLE_SALES_EXECUTIVE:
+        elif role_name in (Role.ROLE_SALES, Role.ROLE_SALES_EXECUTIVE):
             perms = {
                 cls.MODULE_DASHBOARD:     view_only,
                 cls.MODULE_CUSTOMERS:     view_add,
@@ -203,10 +235,10 @@ class EmployeePermission(models.Model):
                 cls.MODULE_METAL_PRICES:  view_only,
             }
 
-        elif role_name == Role.ROLE_INVENTORY_MANAGER:
+        elif role_name in (Role.ROLE_INVENTORY, Role.ROLE_INVENTORY_MANAGER):
             perms = {
-                cls.MODULE_DASHBOARD:  view_only,
-                cls.MODULE_INVENTORY:  full,
+                cls.MODULE_DASHBOARD:    view_only,
+                cls.MODULE_INVENTORY:    full,
                 cls.MODULE_METAL_PRICES: view_only,
             }
 
@@ -216,6 +248,15 @@ class EmployeePermission(models.Model):
                 cls.MODULE_SALES:     view_exp,
                 cls.MODULE_REPORTS:   view_exp,
                 cls.MODULE_CUSTOMERS: view_only,
+            }
+
+        elif role_name == Role.ROLE_SUPPORT:
+            perms = {
+                cls.MODULE_DASHBOARD:     view_only,
+                cls.MODULE_CUSTOMERS:     view_add,
+                cls.MODULE_INVENTORY:     view_only,
+                cls.MODULE_CUSTOM_ORDERS: view_only,
+                cls.MODULE_SALES:         view_only,
             }
 
         elif role_name == Role.ROLE_CASHIER:
@@ -292,9 +333,11 @@ class Employee(models.Model):
     # --- Account link -------------------------------------------------------
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='employee_profile',
-        help_text='Django user account for this employee.'
+        help_text='Django user account for this employee (optional).'
     )
 
     # --- Identity -----------------------------------------------------------
@@ -305,6 +348,15 @@ class Employee(models.Model):
     full_name   = models.CharField(max_length=150)
     email       = models.EmailField(unique=True)
     mobile      = models.CharField(max_length=20, blank=True)
+    designation = models.CharField(
+        max_length=100, blank=True,
+        help_text='Job title or designation, e.g. Senior Gemologist, Sales Head'
+    )
+    photo       = models.FileField(
+        upload_to='employees/', null=True, blank=True,
+        validators=[validate_image_extension],
+        help_text='Profile photo (PNG/JPG/WEBP).'
+    )
 
     # --- Organisation -------------------------------------------------------
     department  = models.CharField(
@@ -350,25 +402,31 @@ class Employee(models.Model):
         super().save(*args, **kwargs)
 
     def activate(self):
-        """Activate both the employee record and the linked User."""
+        """Activate both the employee record and the linked User if present."""
         self.status = self.STATUS_ACTIVE
-        self.user.is_active = True
-        self.user.save(update_fields=['is_active'])
+        if self.user:
+            self.user.is_active = True
+            self.user.save(update_fields=['is_active'])
         self.save(update_fields=['status'])
 
     def deactivate(self):
         """Deactivate both records so the user cannot log in."""
         self.status = self.STATUS_INACTIVE
-        self.user.is_active = False
-        self.user.save(update_fields=['is_active'])
+        if self.user:
+            self.user.is_active = False
+            self.user.save(update_fields=['is_active'])
         self.save(update_fields=['status'])
 
     def has_module_permission(self, module, action='view'):
         """Check if this employee has a specific action on a module.
 
-        Admins (is_staff + Admin role) always return True.
+        Superusers and Admin role always return True.
         """
-        if self.user.is_staff:
+        if self.status != self.STATUS_ACTIVE:
+            return False
+        if self.user and self.user.is_superuser:
+            return True
+        if self.role and self.role.name == Role.ROLE_ADMIN:
             return True
         try:
             perm = self.permissions.get(module=module)
@@ -394,3 +452,46 @@ class Employee(models.Model):
                 module=module,
                 defaults=flags,
             )
+
+
+# ---------------------------------------------------------------------------
+# HR Foundation: Employee Document
+# ---------------------------------------------------------------------------
+
+class EmployeeDocument(models.Model):
+    """Foundation for HR documents: ID proofs, contracts, resumes, certificates."""
+    DOC_ID_PROOF    = 'id_proof'
+    DOC_CONTRACT    = 'contract'
+    DOC_RESUME      = 'resume'
+    DOC_CERTIFICATE = 'certificate'
+    DOC_OTHER       = 'other'
+
+    DOC_TYPE_CHOICES = [
+        (DOC_ID_PROOF,    'Identity Proof (Govt ID / Passport / PAN)'),
+        (DOC_CONTRACT,    'Employment Contract / Agreement'),
+        (DOC_RESUME,      'Resume / CV'),
+        (DOC_CERTIFICATE, 'Certificate / Qualification'),
+        (DOC_OTHER,       'Other Document'),
+    ]
+
+    employee    = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, related_name='documents'
+    )
+    document_type = models.CharField(
+        max_length=30, choices=DOC_TYPE_CHOICES, default=DOC_OTHER
+    )
+    title       = models.CharField(max_length=150)
+    file        = models.FileField(upload_to='employee_docs/')
+    notes       = models.TextField(blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='employee_docs_uploaded'
+    )
+
+    class Meta:
+        ordering = ['-uploaded_at']
+
+    def __str__(self):
+        return f"{self.employee.employee_id} – {self.title}"
+

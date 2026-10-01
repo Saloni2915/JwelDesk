@@ -12,130 +12,256 @@
 
 {% block content %}
 <div class="row justify-content-center">
-  <div class="col-lg-9">
-    <div class="card">
-      <div class="card-header">
-        <h5 class="mb-0"><i class="bi bi-person-lines-fill me-2"></i>{{ form_title }}</h5>
+  <div class="col-lg-10">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white border-bottom py-3">
+        <h5 class="mb-0 fw-bold text-dark">
+          <i class="bi bi-person-lines-fill text-primary me-2"></i>{{ form_title }}
+        </h5>
       </div>
-      <div class="card-body">
-        <form method="post" id="employee-form" novalidate>
+      <div class="card-body p-4">
+        <form method="post" enctype="multipart/form-data" id="employee-form" novalidate>
           {% csrf_token %}
 
           {% if form.non_field_errors %}
-          <div class="alert alert-danger">
-            {% for err in form.non_field_errors %}<div>{{ err }}</div>{% endfor %}
+          <div class="alert alert-danger mb-4">
+            {% for err in form.non_field_errors %}<div><i class="bi bi-exclamation-triangle me-1"></i>{{ err }}</div>{% endfor %}
           </div>
           {% endif %}
 
-          <!-- Account credentials (create only) -->
-          {% if is_create %}
-          <h6 class="fw-semibold text-muted mb-3 mt-1">
-            <i class="bi bi-key me-1"></i> Login Credentials
-          </h6>
-          <div class="row g-3 mb-4">
-            <div class="col-md-4">
-              <label for="{{ form.username.id_for_label }}" class="form-label">Username <span class="text-danger">*</span></label>
-              {{ form.username }}
-              {% if form.username.errors %}<div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>{% endif %}
-              <small class="text-muted">Employee will use this to log in.</small>
-            </div>
-            <div class="col-md-4">
-              <label for="{{ form.password1.id_for_label }}" class="form-label">Password <span class="text-danger">*</span></label>
-              {{ form.password1 }}
-              {% if form.password1.errors %}<div class="text-danger small mt-1">{{ form.password1.errors.0 }}</div>{% endif %}
-            </div>
-            <div class="col-md-4">
-              <label for="{{ form.password2.id_for_label }}" class="form-label">Confirm Password <span class="text-danger">*</span></label>
-              {{ form.password2 }}
-              {% if form.password2.errors %}<div class="text-danger small mt-1">{{ form.password2.errors.0 }}</div>{% endif %}
-            </div>
-          </div>
-          <hr class="my-4">
-          {% endif %}
-
-          <!-- Personal info -->
-          <h6 class="fw-semibold text-muted mb-3">
-            <i class="bi bi-person me-1"></i> Personal Information
-          </h6>
-          <div class="row g-3 mb-4">
-            <div class="col-md-6">
-              <label for="{{ form.full_name.id_for_label }}" class="form-label">Full Name <span class="text-danger">*</span></label>
-              {{ form.full_name }}
-              {% if form.full_name.errors %}<div class="text-danger small mt-1">{{ form.full_name.errors.0 }}</div>{% endif %}
-            </div>
-            <div class="col-md-6">
-              <label for="{{ form.email.id_for_label }}" class="form-label">Email <span class="text-danger">*</span></label>
-              {{ form.email }}
-              {% if form.email.errors %}<div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>{% endif %}
-            </div>
-            <div class="col-md-4">
-              <label for="{{ form.mobile.id_for_label }}" class="form-label">Mobile</label>
-              {{ form.mobile }}
-            </div>
-            <div class="col-md-4">
-              <label for="{{ form.joining_date.id_for_label }}" class="form-label">Joining Date</label>
-              {{ form.joining_date }}
-            </div>
-            <div class="col-md-4">
-              <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
-              {{ form.status }}
-            </div>
-          </div>
-          <hr class="my-4">
-
-          <!-- Organisation -->
-          <h6 class="fw-semibold text-muted mb-3">
-            <i class="bi bi-building me-1"></i> Organisation
-          </h6>
-          <div class="row g-3 mb-4">
-            <div class="col-md-6">
-              <label for="{{ form.department.id_for_label }}" class="form-label">Department</label>
-              {{ form.department }}
-            </div>
-            <div class="col-md-6">
-              <label for="{{ form.role.id_for_label }}" class="form-label">Role <span class="text-danger">*</span></label>
-              {{ form.role }}
-              {% if form.role.errors %}<div class="text-danger small mt-1">{{ form.role.errors.0 }}</div>{% endif %}
-              <small class="text-muted">Default permissions will be applied for the chosen role.</small>
-            </div>
-          </div>
-          <hr class="my-4">
-
-          <!-- Branch access -->
-          <h6 class="fw-semibold text-muted mb-3">
-            <i class="bi bi-geo-alt me-1"></i> Branch Access
-          </h6>
+          <!-- Section 1: Personal & Professional Identity -->
           <div class="mb-4">
-            <label class="form-label d-block">Branches (leave all unchecked = access to all)</label>
-            <div class="row">
-              {% for checkbox in form.branches %}
-              <div class="col-md-4 col-6 mb-1">
-                <div class="form-check">
-                  {{ checkbox.tag }}
-                  <label class="form-check-label" for="{{ checkbox.id_for_label }}">
-                    {{ checkbox.choice_label }}
-                  </label>
+            <h6 class="fw-bold text-uppercase text-secondary small tracking-wider mb-3">
+              <i class="bi bi-person-badge text-primary me-1"></i> 1. Personal &amp; Professional Details
+            </h6>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="{{ form.full_name.id_for_label }}" class="form-label fw-semibold">
+                  Full Name <span class="text-danger">*</span>
+                </label>
+                {{ form.full_name }}
+                {% if form.full_name.errors %}
+                  <div class="text-danger small mt-1">{{ form.full_name.errors.0 }}</div>
+                {% endif %}
+              </div>
+              <div class="col-md-6">
+                <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">
+                  Email Address <span class="text-danger">*</span>
+                </label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                  <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
+                {% endif %}
+                <small class="text-muted">Used for correspondence and account notifications.</small>
+              </div>
+
+              <div class="col-md-4">
+                <label for="{{ form.mobile.id_for_label }}" class="form-label fw-semibold">Phone / Mobile</label>
+                {{ form.mobile }}
+                {% if form.mobile.errors %}
+                  <div class="text-danger small mt-1">{{ form.mobile.errors.0 }}</div>
+                {% endif %}
+              </div>
+              <div class="col-md-4">
+                <label for="{{ form.designation.id_for_label }}" class="form-label fw-semibold">Designation / Title</label>
+                {{ form.designation }}
+                {% if form.designation.errors %}
+                  <div class="text-danger small mt-1">{{ form.designation.errors.0 }}</div>
+                {% endif %}
+              </div>
+              <div class="col-md-4">
+                <label for="{{ form.photo.id_for_label }}" class="form-label fw-semibold">Profile Photo</label>
+                {{ form.photo }}
+                {% if form.photo.errors %}
+                  <div class="text-danger small mt-1">{{ form.photo.errors.0 }}</div>
+                {% endif %}
+                <small class="text-muted">PNG, JPG, WEBP formats.</small>
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <!-- Section 2: Organisation, Role & Branches -->
+          <div class="mb-4">
+            <h6 class="fw-bold text-uppercase text-secondary small tracking-wider mb-3">
+              <i class="bi bi-building text-primary me-1"></i> 2. Department &amp; Role Assignment
+            </h6>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label for="{{ form.department.id_for_label }}" class="form-label fw-semibold">Department</label>
+                {{ form.department }}
+                {% if form.department.errors %}
+                  <div class="text-danger small mt-1">{{ form.department.errors.0 }}</div>
+                {% endif %}
+              </div>
+              <div class="col-md-4">
+                <label for="{{ form.role.id_for_label }}" class="form-label fw-semibold">
+                  Role <span class="text-danger">*</span>
+                </label>
+                {{ form.role }}
+                {% if form.role.errors %}
+                  <div class="text-danger small mt-1">{{ form.role.errors.0 }}</div>
+                {% endif %}
+                <small class="text-muted">Determines baseline permissions across JewelDesk.</small>
+              </div>
+              <div class="col-md-4">
+                <label for="{{ form.status.id_for_label }}" class="form-label fw-semibold">Employment Status</label>
+                {{ form.status }}
+                {% if form.status.errors %}
+                  <div class="text-danger small mt-1">{{ form.status.errors.0 }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-4">
+                <label for="{{ form.joining_date.id_for_label }}" class="form-label fw-semibold">Joining Date</label>
+                {{ form.joining_date }}
+                {% if form.joining_date.errors %}
+                  <div class="text-danger small mt-1">{{ form.joining_date.errors.0 }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-8">
+                <label class="form-label fw-semibold d-block">Branch Access</label>
+                <div class="p-3 bg-light rounded border">
+                  <div class="row">
+                    {% for checkbox in form.branches %}
+                    <div class="col-md-6 mb-1">
+                      <div class="form-check">
+                        {{ checkbox.tag }}
+                        <label class="form-check-label small" for="{{ checkbox.id_for_label }}">
+                          {{ checkbox.choice_label }}
+                        </label>
+                      </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12 text-muted small">
+                      No branches defined. Leave blank for all-branches access.
+                    </div>
+                    {% endfor %}
+                  </div>
+                  <small class="text-muted d-block mt-2">Unchecked = employee has access to all branches.</small>
                 </div>
               </div>
-              {% empty %}
-              <div class="col-12 text-muted small">
-                No branches configured yet.
-                <a href="{% url 'team:branch_create' %}" target="_blank">Add a branch</a> first.
-              </div>
-              {% endfor %}
             </div>
           </div>
 
-          <div class="d-flex gap-2 mt-4">
-            <button type="submit" class="btn btn-primary px-4" id="btn-save-employee">
+          <hr class="my-4">
+
+          <!-- Section 3: Authentication & Login Account (Create only) -->
+          {% if is_create %}
+          <div class="mb-4">
+            <h6 class="fw-bold text-uppercase text-secondary small tracking-wider mb-3">
+              <i class="bi bi-shield-lock text-primary me-1"></i> 3. Login Account Configuration
+            </h6>
+
+            <!-- Account Mode Selector -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Login Access Setup</label>
+              <div class="d-flex flex-wrap gap-4 p-3 bg-light rounded border">
+                {% for radio in form.account_mode %}
+                <div class="form-check">
+                  {{ radio.tag }}
+                  <label class="form-check-label fw-medium" for="{{ radio.id_for_label }}">
+                    {{ radio.choice_label }}
+                  </label>
+                </div>
+                {% endfor %}
+              </div>
+              {% if form.account_mode.errors %}
+                <div class="text-danger small mt-1">{{ form.account_mode.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <!-- New Account Fields -->
+            <div id="section-new-account" class="p-3 border rounded bg-white mt-3">
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label for="{{ form.username.id_for_label }}" class="form-label fw-semibold">Login Username</label>
+                  {{ form.username }}
+                  {% if form.username.errors %}
+                    <div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>
+                  {% endif %}
+                  <small class="text-muted">Leave empty to use email as username.</small>
+                </div>
+                <div class="col-md-4">
+                  <label for="{{ form.password1.id_for_label }}" class="form-label fw-semibold">
+                    Password <span class="text-danger">*</span>
+                  </label>
+                  {{ form.password1 }}
+                  {% if form.password1.errors %}
+                    <div class="text-danger small mt-1">{{ form.password1.errors.0 }}</div>
+                  {% endif %}
+                  <small class="text-muted">Minimum 8 characters.</small>
+                </div>
+                <div class="col-md-4">
+                  <label for="{{ form.password2.id_for_label }}" class="form-label fw-semibold">
+                    Confirm Password <span class="text-danger">*</span>
+                  </label>
+                  {{ form.password2 }}
+                  {% if form.password2.errors %}
+                    <div class="text-danger small mt-1">{{ form.password2.errors.0 }}</div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <!-- Link Existing User Field -->
+            <div id="section-link-existing" class="p-3 border rounded bg-white mt-3" style="display:none;">
+              <div class="col-md-8">
+                <label for="{{ form.existing_user.id_for_label }}" class="form-label fw-semibold">
+                  Select Existing Django User
+                </label>
+                {{ form.existing_user }}
+                {% if form.existing_user.errors %}
+                  <div class="text-danger small mt-1">{{ form.existing_user.errors.0 }}</div>
+                {% endif %}
+                <small class="text-muted">Only unlinked user accounts appear in this list.</small>
+              </div>
+            </div>
+
+            <!-- No Account Notice -->
+            <div id="section-no-account" class="alert alert-secondary mt-3 mb-0" style="display:none;">
+              <i class="bi bi-info-circle me-1"></i> This employee will be stored as a staff record without system login credentials. You can enable login access anytime later from the employee profile.
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="d-flex gap-2 pt-3 border-top">
+            <button type="submit" class="btn btn-primary px-4 shadow-sm" id="btn-save-employee">
               <i class="bi bi-check-lg me-1"></i>
               {% if is_create %}Create Employee{% else %}Save Changes{% endif %}
             </button>
-            <a href="{% url 'team:employee_list' %}" class="btn btn-outline-secondary">Cancel</a>
+            <a href="{% url 'team:employee_list' %}" class="btn btn-outline-secondary px-4">Cancel</a>
           </div>
         </form>
       </div>
     </div>
   </div>
 </div>
+
+{% if is_create %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const modeRadios = document.querySelectorAll('input[name="account_mode"]');
+    const secNew = document.getElementById('section-new-account');
+    const secLink = document.getElementById('section-link-existing');
+    const secNone = document.getElementById('section-no-account');
+
+    function updateSections() {
+      let selectedMode = 'create_new';
+      modeRadios.forEach(r => {
+        if (r.checked) selectedMode = r.value;
+      });
+
+      if (secNew) secNew.style.display = (selectedMode === 'create_new') ? 'block' : 'none';
+      if (secLink) secLink.style.display = (selectedMode === 'link_existing') ? 'block' : 'none';
+      if (secNone) secNone.style.display = (selectedMode === 'no_account') ? 'block' : 'none';
+    }
+
+    modeRadios.forEach(r => r.addEventListener('change', updateSections));
+    updateSections();
+  });
+</script>
+{% endif %}
 {% endblock %}

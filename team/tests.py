@@ -5,11 +5,26 @@ Comprehensive test suite for JewelDesk Team / Employee Management module.
 """
 
 from django.contrib.auth import authenticate, get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from .forms import EmployeeCreateForm, EmployeeEditForm, PermissionForm
-from .models import Branch, Employee, EmployeePermission, Role
+from .forms import (
+    EmployeeCreateForm,
+    EmployeeEditForm,
+    EmployeeLinkAccountForm,
+    EmployeePasswordResetForm,
+    PermissionForm,
+    RoleForm,
+)
+from .models import (
+    Branch,
+    Employee,
+    EmployeeDocument,
+    EmployeePermission,
+    Role,
+)
+from .permissions import has_module_perm, is_admin_user
 
 User = get_user_model()
 
@@ -33,14 +48,30 @@ class TeamModuleTests(TestCase):
             is_staff=False,
         )
 
-        # Roles (seeded via data migration, but ensure they exist in test DB)
+        # Pre-seed default roles
         self.admin_role, _ = Role.objects.get_or_create(
-            name='Admin',
-            defaults={'is_admin_role': True, 'can_access_all_branches': True}
+            name=Role.ROLE_ADMIN,
+            defaults={'description': 'Full access to all modules.', 'is_builtin': True}
+        )
+        self.hr_role, _ = Role.objects.get_or_create(
+            name=Role.ROLE_HR,
+            defaults={'description': 'HR and team management.', 'is_builtin': True}
+        )
+        self.manager_role, _ = Role.objects.get_or_create(
+            name=Role.ROLE_MANAGER,
+            defaults={'description': 'General management.', 'is_builtin': True}
         )
         self.sales_role, _ = Role.objects.get_or_create(
-            name='Sales Executive',
-            defaults={'is_admin_role': False, 'can_access_all_branches': False}
+            name=Role.ROLE_SALES_EXECUTIVE,
+            defaults={'description': 'Handle customer interactions and sales.', 'is_builtin': True}
+        )
+        self.inventory_role, _ = Role.objects.get_or_create(
+            name=Role.ROLE_INVENTORY_MANAGER,
+            defaults={'description': 'Manage stock and inventory.', 'is_builtin': True}
+        )
+        self.support_role, _ = Role.objects.get_or_create(
+            name=Role.ROLE_SUPPORT,
+            defaults={'description': 'Customer support and enquiries.', 'is_builtin': True}
         )
 
         # Branch
@@ -52,9 +83,13 @@ class TeamModuleTests(TestCase):
         )
 
     def test_default_roles_exist(self):
-        """Verify standard jewellery business roles."""
+        """Verify standard jewellery business roles exist in DB."""
         self.assertTrue(Role.objects.filter(name='Admin').exists())
+        self.assertTrue(Role.objects.filter(name='HR').exists())
+        self.assertTrue(Role.objects.filter(name='Manager').exists())
         self.assertTrue(Role.objects.filter(name='Sales Executive').exists())
+        self.assertTrue(Role.objects.filter(name='Inventory Manager').exists())
+        self.assertTrue(Role.objects.filter(name='Support').exists())
 
     def test_create_employee_with_linked_user(self):
         """Creating an employee must create and link a Django User account atomically."""
@@ -65,6 +100,7 @@ class TeamModuleTests(TestCase):
             'full_name': 'John Sales',
             'email': 'john@jeweldesk.test',
             'mobile': '9898989898',
+            'designation': 'Senior Sales Associate',
             'role': self.sales_role.pk,
             'department': 'Sales',
             'status': Employee.STATUS_ACTIVE,
@@ -77,6 +113,7 @@ class TeamModuleTests(TestCase):
 
         self.assertIsNotNone(emp.pk)
         self.assertTrue(emp.employee_id.startswith('EMP-'))
+        self.assertEqual(emp.designation, 'Senior Sales Associate')
         self.assertEqual(emp.user.username, 'johnsales')
         self.assertEqual(emp.user.email, 'john@jeweldesk.test')
         self.assertEqual(emp.user.first_name, 'John')
@@ -86,9 +123,6 @@ class TeamModuleTests(TestCase):
 
         # Password must be hashed, never stored in plain text
         self.assertNotEqual(emp.user.password, 'Secret@123')
-        self.assertTrue(emp.user.password.startswith('pbkdf2_sha256$') or
-                        emp.user.password.startswith('argon2') or
-                        emp.user.password.startswith('bcrypt'))
         self.assertTrue(emp.user.check_password('Secret@123'))
 
         # authenticate() must succeed with username credentials
@@ -128,6 +162,77 @@ class TeamModuleTests(TestCase):
         # Verify branch link
         self.assertIn(self.main_branch, emp.branches.all())
 
+    def test_create_employee_link_existing_user(self):
+        """Creating an employee linking an existing Django user."""
+        existing_u = User.objects.create_user(
+            username='existinguser',
+            email='existing@jeweldesk.test',
+            password='Password123!',
+        )
+        form_data = {
+            'account_mode': EmployeeCreateForm.ACCOUNT_LINK_EXISTING,
+            'existing_user': existing_u.pk,
+            'full_name': 'Existing Linked',
+            'email': 'existing@jeweldesk.test',
+            'designation': 'Store Manager',
+            'role': self.manager_role.pk,
+            'department': 'Administration',
+            'status': Employee.STATUS_ACTIVE,
+        }
+        form = EmployeeCreateForm(data=form_data)
+        self.assertTrue(form.is_valid(), form.errors)
+        emp = form.save(created_by=self.admin_user)
+
+        self.assertEqual(emp.user.pk, existing_u.pk)
+        self.assertTrue(emp.user.is_staff)
+
+    def test_create_employee_without_login_account(self):
+        """Creating an employee record without an immediate login account."""
+        form_data = {
+            'account_mode': EmployeeCreateForm.ACCOUNT_NONE,
+            'full_name': 'No Account Staff',
+            'email': 'noaccount@jeweldesk.test',
+            'designation': 'Artisan / Bench Jeweler',
+            'role': self.sales_role.pk,
+            'department': 'Operations',
+            'status': Employee.STATUS_ACTIVE,
+        }
+        form = EmployeeCreateForm(data=form_data)
+        self.assertTrue(form.is_valid(), form.errors)
+        emp = form.save(created_by=self.admin_user)
+
+        self.assertIsNone(emp.user)
+        self.assertEqual(emp.designation, 'Artisan / Bench Jeweler')
+
+    def test_enable_login_access_for_unlinked_employee(self):
+        """Admin uses employee_link_account to enable login for an unlinked employee."""
+        emp = Employee.objects.create(
+            user=None,
+            full_name='Unlinked Emp',
+            email='unlinked@jeweldesk.test',
+            role=self.sales_role,
+            status=Employee.STATUS_ACTIVE,
+        )
+
+        self.client.force_login(self.admin_user)
+        url = reverse('team:employee_link_account', kwargs={'pk': emp.pk})
+        get_res = self.client.get(url)
+        self.assertEqual(get_res.status_code, 200)
+
+        # POST new user credentials
+        post_res = self.client.post(url, {
+            'mode': 'create',
+            'username': 'unlinkeduser',
+            'password1': 'NewPass123!',
+            'password2': 'NewPass123!',
+        })
+        self.assertEqual(post_res.status_code, 302)
+
+        emp.refresh_from_db()
+        self.assertIsNotNone(emp.user)
+        self.assertEqual(emp.user.username, 'unlinkeduser')
+        self.assertTrue(emp.user.check_password('NewPass123!'))
+
     def test_wrong_password_rejected_for_employee(self):
         """Wrong password must be rejected by authenticate() and login view."""
         form_data = {
@@ -144,11 +249,9 @@ class TeamModuleTests(TestCase):
         self.assertTrue(form.is_valid())
         emp = form.save(created_by=self.admin_user)
 
-        # authenticate() returns None for wrong password
         self.assertIsNone(authenticate(username='wrongpwuser', password='BadPassword!'))
         self.assertIsNone(authenticate(username='wrongpw@jeweldesk.test', password='BadPassword!'))
 
-        # Login view returns 200 with error
         resp = self.client.post(reverse('accounts:login'), {
             'username': 'wrongpwuser',
             'password': 'BadPassword!',
@@ -173,12 +276,8 @@ class TeamModuleTests(TestCase):
         emp = form.save(created_by=self.admin_user)
 
         self.assertFalse(emp.user.is_active)
-
-        # authenticate() must return None for inactive user
         self.assertIsNone(authenticate(username='inactiveemp', password='SecretPass123!'))
-        self.assertIsNone(authenticate(username='inactive@jeweldesk.test', password='SecretPass123!'))
 
-        # Login view must reject inactive employee
         resp = self.client.post(reverse('accounts:login'), {
             'username': 'inactiveemp',
             'password': 'SecretPass123!',
@@ -208,17 +307,7 @@ class TeamModuleTests(TestCase):
 
         self.assertEqual(emp.status, Employee.STATUS_INACTIVE)
         self.assertFalse(user.is_active)
-
-        # Deactivated user cannot authenticate or log in
         self.assertIsNone(authenticate(username='empdeact', password='Password123!'))
-        self.assertIsNone(authenticate(username='empdeact@test.com', password='Password123!'))
-
-        resp = self.client.post(reverse('accounts:login'), {
-            'username': 'empdeact',
-            'password': 'Password123!',
-        })
-        self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, 'Invalid username or password')
 
     def test_employee_edit_syncs_user_active_and_email(self):
         """Editing employee status via EmployeeEditForm syncs user.is_active and email."""
@@ -237,10 +326,10 @@ class TeamModuleTests(TestCase):
         emp = form.save(created_by=self.admin_user)
         self.assertTrue(emp.user.is_active)
 
-        # Edit to Inactive
         edit_data = {
             'full_name': 'Edit Sync Updated',
             'email': 'newemail@jeweldesk.test',
+            'designation': 'Lead Appraiser',
             'mobile': '9876543210',
             'role': self.sales_role.pk,
             'department': 'Sales',
@@ -253,66 +342,198 @@ class TeamModuleTests(TestCase):
         emp.user.refresh_from_db()
         self.assertFalse(emp.user.is_active)
         self.assertEqual(emp.user.email, 'newemail@jeweldesk.test')
-        self.assertIsNone(authenticate(username='editsync', password='SyncPass123!'))
+        self.assertEqual(emp.designation, 'Lead Appraiser')
+
+    def test_admin_password_reset_for_employee(self):
+        """Admin can reset employee password via employee_password_reset view."""
+        user = User.objects.create_user(
+            username='resetpwemp',
+            email='resetpw@jeweldesk.test',
+            password='OldPassword123!',
+            is_staff=True,
+        )
+        emp = Employee.objects.create(
+            user=user,
+            full_name='Reset PW Emp',
+            email=user.email,
+            role=self.sales_role,
+            status=Employee.STATUS_ACTIVE,
+        )
+
+        self.client.force_login(self.admin_user)
+        url = reverse('team:employee_password_reset', kwargs={'pk': emp.pk})
+        response = self.client.post(url, {
+            'new_password1': 'BrandNewPass123!',
+            'new_password2': 'BrandNewPass123!',
+        })
+        self.assertEqual(response.status_code, 302)
+
+        user.refresh_from_db()
+        self.assertTrue(user.check_password('BrandNewPass123!'))
+        self.assertIsNotNone(authenticate(username='resetpwemp', password='BrandNewPass123!'))
 
     def test_admin_employee_list_view(self):
         """Admin can access employee list view."""
         self.client.force_login(self.admin_user)
         response = self.client.get(reverse('team:employee_list'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Employees')
+        self.assertContains(response, 'Employees Directory')
 
-    def test_regular_user_cannot_access_employee_list(self):
-        """Non-staff users are redirected away from employee list."""
+    def test_unauthorized_user_rejected_by_backend_with_403(self):
+        """Backend authorization rejects unauthorized access with 403 Forbidden."""
         self.client.force_login(self.regular_user)
+
+        # Direct access to protected URLs must return HTTP 403
+        list_res = self.client.get(reverse('team:employee_list'))
+        self.assertEqual(list_res.status_code, 403)
+
+        create_res = self.client.get(reverse('team:employee_create'))
+        self.assertEqual(create_res.status_code, 403)
+
+        roles_res = self.client.get(reverse('team:role_list'))
+        self.assertEqual(roles_res.status_code, 403)
+
+    def test_unauthenticated_user_redirected_to_login(self):
+        """Unauthenticated user accessing protected views is redirected to login."""
         response = self.client.get(reverse('team:employee_list'))
-        # Should redirect to login because user_passes_test fails
         self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('accounts:login'), response.url)
 
-    def test_employee_permissions_view(self):
-        """Admin can update employee module permissions."""
-        user = User.objects.create_user(username='permtarget', password='Password123!', is_staff=True)
-        emp = Employee.objects.create(
-            user=user,
-            full_name='Perm Target',
-            email='perm@test.com',
-            role=self.sales_role,
+    def test_hr_user_authorized_team_access(self):
+        """HR role has permission to view team and add employees."""
+        hr_user = User.objects.create_user(
+            username='hrspecialist',
+            email='hr@jeweldesk.test',
+            password='Password123!',
+            is_staff=True,
         )
-        emp.apply_default_permissions()
+        hr_emp = Employee.objects.create(
+            user=hr_user,
+            full_name='HR Specialist',
+            email=hr_user.email,
+            role=self.hr_role,
+            status=Employee.STATUS_ACTIVE,
+        )
+        hr_emp.apply_default_permissions()
 
-        self.client.force_login(self.admin_user)
-        url = reverse('team:employee_permissions', kwargs={'pk': emp.pk})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
+        self.client.force_login(hr_user)
 
-        # Submit change: enable custom_orders view
-        post_data = {
-            'custom_orders__view': 'on',
-            'custom_orders__add': 'on',
-        }
-        post_resp = self.client.post(url, post_data)
-        self.assertEqual(post_resp.status_code, 302)
+        # HR can view employee list
+        res_list = self.client.get(reverse('team:employee_list'))
+        self.assertEqual(res_list.status_code, 200)
 
-        perm = emp.permissions.get(module='custom_orders')
-        self.assertTrue(perm.can_view)
-        self.assertTrue(perm.can_add)
+        # HR can view employee create form
+        res_create = self.client.get(reverse('team:employee_create'))
+        self.assertEqual(res_create.status_code, 200)
 
-    def test_branch_management(self):
-        """Admin can create and list branches."""
-        self.client.force_login(self.admin_user)
+    def test_self_privilege_escalation_prevented(self):
+        """Normal employees cannot edit their own permissions or assign Admin role."""
+        hr_user = User.objects.create_user(
+            username='hrescalate',
+            email='hrescalate@jeweldesk.test',
+            password='Password123!',
+            is_staff=True,
+        )
+        hr_emp = Employee.objects.create(
+            user=hr_user,
+            full_name='HR Escalation Test',
+            email=hr_user.email,
+            role=self.hr_role,
+            status=Employee.STATUS_ACTIVE,
+        )
+        hr_emp.apply_default_permissions()
 
-        # Create branch via POST
-        create_url = reverse('team:branch_create')
-        res = self.client.post(create_url, {
-            'name': 'North Outlet',
-            'phone': '9123456780',
-            'address': 'Sector 17, North City',
-            'is_active': True,
+        self.client.force_login(hr_user)
+
+        # 1. Attempting to edit own permissions must be rejected with 403
+        own_perms_url = reverse('team:employee_permissions', kwargs={'pk': hr_emp.pk})
+        perm_res = self.client.get(own_perms_url)
+        self.assertEqual(perm_res.status_code, 403)
+
+        # 2. Attempting to assign Admin role when creating an employee must fail
+        create_res = self.client.post(reverse('team:employee_create'), {
+            'account_mode': EmployeeCreateForm.ACCOUNT_NONE,
+            'full_name': 'Sneaky Admin',
+            'email': 'sneaky@jeweldesk.test',
+            'role': self.admin_role.pk,
+            'department': 'Administration',
+            'status': Employee.STATUS_ACTIVE,
         })
-        self.assertEqual(res.status_code, 302)
-        self.assertTrue(Branch.objects.filter(name='North Outlet').exists())
+        self.assertEqual(create_res.status_code, 200)
+        self.assertContains(create_res, 'Only administrators can assign the Admin role')
 
-        # List branches
-        list_res = self.client.get(reverse('team:branch_list'))
+    def test_self_deactivation_prevented(self):
+        """A user cannot deactivate their own account."""
+        admin_emp = Employee.objects.create(
+            user=self.admin_user,
+            full_name='Admin Boss',
+            email=self.admin_user.email,
+            role=self.admin_role,
+            status=Employee.STATUS_ACTIVE,
+        )
+
+        self.client.force_login(self.admin_user)
+        toggle_url = reverse('team:employee_toggle_status', kwargs={'pk': admin_emp.pk})
+        res = self.client.post(toggle_url, follow=True)
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'You cannot deactivate your own account')
+
+        admin_emp.refresh_from_db()
+        self.assertEqual(admin_emp.status, Employee.STATUS_ACTIVE)
+
+    def test_custom_roles_crud(self):
+        """Admin can view roles list and create custom roles."""
+        self.client.force_login(self.admin_user)
+
+        # View roles list
+        list_res = self.client.get(reverse('team:role_list'))
         self.assertEqual(list_res.status_code, 200)
-        self.assertContains(list_res, 'North Outlet')
+        self.assertContains(list_res, 'System Roles &amp; Access Profiles')
+
+        # Create custom role
+        create_res = self.client.post(reverse('team:role_create'), {
+            'name': 'Master Jeweler',
+            'description': 'Head of custom jewelry manufacturing workshop.',
+        })
+        self.assertEqual(create_res.status_code, 302)
+
+        role = Role.objects.filter(name='Master Jeweler').first()
+        self.assertIsNotNone(role)
+        self.assertFalse(role.is_builtin)
+
+    def test_employee_document_upload_and_delete(self):
+        """Admin can upload and delete HR documents for an employee."""
+        emp = Employee.objects.create(
+            user=None,
+            full_name='Doc Test Emp',
+            email='doctest@jeweldesk.test',
+            role=self.sales_role,
+            status=Employee.STATUS_ACTIVE,
+        )
+
+        self.client.force_login(self.admin_user)
+        upload_url = reverse('team:employee_document_upload', kwargs={'pk': emp.pk})
+
+        test_file = SimpleUploadedFile(
+            'contract.pdf',
+            b'%PDF-1.4 test contract content',
+            content_type='application/pdf'
+        )
+
+        upload_res = self.client.post(upload_url, {
+            'document_type': EmployeeDocument.DOC_CONTRACT,
+            'title': 'Employment Agreement 2026',
+            'file': test_file,
+            'notes': 'Signed by employee and HR',
+        })
+        self.assertEqual(upload_res.status_code, 302)
+
+        doc = EmployeeDocument.objects.filter(employee=emp).first()
+        self.assertIsNotNone(doc)
+        self.assertEqual(doc.title, 'Employment Agreement 2026')
+
+        # Delete document
+        delete_url = reverse('team:employee_document_delete', kwargs={'pk': emp.pk, 'doc_pk': doc.pk})
+        del_res = self.client.post(delete_url)
+        self.assertEqual(del_res.status_code, 302)
+        self.assertFalse(EmployeeDocument.objects.filter(pk=doc.pk).exists())

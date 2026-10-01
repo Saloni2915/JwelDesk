@@ -1,13 +1,18 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Team — JewelDesk{% endblock %}
-{% block page_title %}Team{% endblock %}
+{% block title %}Employees — Team — JewelDesk{% endblock %}
+{% block page_title %}Team Management{% endblock %}
 
 {% block page_actions %}
-  {% if user.is_staff %}
-  <a href="{% url 'team:employee_create' %}" class="btn btn-primary btn-sm" id="btn-add-employee">
+  {% if can_add_employee or user_perms.team.can_add %}
+  <a href="{% url 'team:employee_create' %}" class="btn btn-primary btn-sm shadow-sm" id="btn-add-employee">
     <i class="bi bi-person-plus me-1"></i> Add Employee
+  </a>
+  {% endif %}
+  {% if user_perms.team.can_view %}
+  <a href="{% url 'team:role_list' %}" class="btn btn-outline-dark btn-sm ms-2" id="btn-roles">
+    <i class="bi bi-shield-check me-1"></i> Roles &amp; Permissions
   </a>
   <a href="{% url 'team:branch_list' %}" class="btn btn-outline-secondary btn-sm ms-2" id="btn-branches">
     <i class="bi bi-building me-1"></i> Branches
@@ -16,120 +21,171 @@
 {% endblock %}
 
 {% block content %}
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-    <h5 class="mb-0">
-      <i class="bi bi-people me-2"></i>Employees
-      <span class="badge bg-secondary ms-2">{{ total_count }}</span>
-    </h5>
-    <form method="get" class="d-flex gap-2 flex-wrap align-items-center" id="employee-filter-form">
-      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm"
-             style="width:200px" placeholder="Search name, ID, email…" id="employee-search">
-      <select name="role" class="form-select form-select-sm" style="width:160px" id="filter-role">
-        <option value="">All Roles</option>
-        {% for role in roles %}
-          <option value="{{ role.pk }}" {% if sel_role == role.pk|stringformat:"s" %}selected{% endif %}>
-            {{ role.name }}
-          </option>
-        {% endfor %}
-      </select>
-      <select name="status" class="form-select form-select-sm" style="width:130px" id="filter-status">
-        <option value="">All Status</option>
-        {% for key, label in statuses %}
-          <option value="{{ key }}" {% if sel_status == key %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-      <select name="branch" class="form-select form-select-sm" style="width:150px" id="filter-branch">
-        <option value="">All Branches</option>
-        {% for branch in branches %}
-          <option value="{{ branch.pk }}" {% if sel_branch == branch.pk|stringformat:"s" %}selected{% endif %}>
-            {{ branch.name }}
-          </option>
-        {% endfor %}
-      </select>
-      <button type="submit" class="btn btn-outline-primary btn-sm">Filter</button>
-      {% if q or sel_role or sel_status or sel_branch %}
-        <a href="{% url 'team:employee_list' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
-      {% endif %}
-    </form>
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white border-bottom py-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div class="d-flex align-items-center gap-2">
+        <h5 class="mb-0 fw-bold text-dark">
+          <i class="bi bi-people text-primary me-2"></i>Employees Directory
+        </h5>
+        <span class="badge bg-secondary rounded-pill">{{ total_count }}</span>
+      </div>
+
+      <!-- Filters & Search Form -->
+      <form method="get" class="d-flex gap-2 flex-wrap align-items-center" id="employee-filter-form">
+        <div class="input-group input-group-sm" style="width: 220px;">
+          <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+          <input type="text" name="q" value="{{ q }}" class="form-control"
+                 placeholder="Search name, ID, title…" id="employee-search">
+        </div>
+
+        <select name="role" class="form-select form-select-sm" style="width: 140px;" id="filter-role">
+          <option value="">All Roles</option>
+          {% for role in roles %}
+            <option value="{{ role.pk }}" {% if sel_role == role.pk|stringformat:"s" %}selected{% endif %}>
+              {{ role.name }}
+            </option>
+          {% endfor %}
+        </select>
+
+        <select name="department" class="form-select form-select-sm" style="width: 140px;" id="filter-dept">
+          <option value="">All Depts</option>
+          {% for d in departments %}
+            <option value="{{ d }}" {% if sel_dept == d %}selected{% endif %}>{{ d }}</option>
+          {% endfor %}
+        </select>
+
+        <select name="status" class="form-select form-select-sm" style="width: 120px;" id="filter-status">
+          <option value="">All Status</option>
+          {% for key, label in statuses %}
+            <option value="{{ key }}" {% if sel_status == key %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+
+        <select name="branch" class="form-select form-select-sm" style="width: 140px;" id="filter-branch">
+          <option value="">All Branches</option>
+          {% for branch in branches %}
+            <option value="{{ branch.pk }}" {% if sel_branch == branch.pk|stringformat:"s" %}selected{% endif %}>
+              {{ branch.name }}
+            </option>
+          {% endfor %}
+        </select>
+
+        <button type="submit" class="btn btn-outline-primary btn-sm">Filter</button>
+        {% if q or sel_role or sel_dept or sel_status or sel_branch %}
+          <a href="{% url 'team:employee_list' %}" class="btn btn-outline-secondary btn-sm" title="Clear Filters">Clear</a>
+        {% endif %}
+      </form>
+    </div>
   </div>
 
   <div class="card-body p-0">
     {% if employees %}
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0" id="employee-table">
-        <thead class="table-light">
+        <thead class="table-light text-uppercase small text-muted">
           <tr>
-            <th>Employee ID</th>
-            <th>Name</th>
-            <th>Email</th>
+            <th class="ps-3">Employee</th>
+            <th>Designation</th>
             <th>Role</th>
             <th>Department</th>
-            <th>Branches</th>
+            <th>Branch</th>
             <th>Status</th>
-            <th>Account</th>
-            <th class="text-end">Actions</th>
+            <th>Login</th>
+            <th class="text-end pe-3">Actions</th>
           </tr>
         </thead>
         <tbody>
           {% for emp in employees %}
           <tr>
-            <td><code>{{ emp.employee_id }}</code></td>
-            <td>
-              <div class="fw-semibold">{{ emp.full_name }}</div>
-              {% if emp.mobile %}<small class="text-muted">{{ emp.mobile }}</small>{% endif %}
+            <td class="ps-3 py-3">
+              <div class="d-flex align-items-center gap-3">
+                {% if emp.photo %}
+                  <img src="{{ emp.photo.url }}" alt="{{ emp.full_name }}" class="rounded-circle object-fit-cover shadow-sm" style="width: 40px; height: 40px;">
+                {% else %}
+                  <div class="rounded-circle bg-primary bg-opacity-10 text-primary fw-bold d-flex align-items-center justify-content-center shadow-sm" style="width: 40px; height: 40px; font-size: 0.95rem;">
+                    {{ emp.full_name|slice:":1"|upper }}
+                  </div>
+                {% endif %}
+                <div>
+                  <a href="{% url 'team:employee_detail' emp.pk %}" class="fw-bold text-dark text-decoration-none">
+                    {{ emp.full_name }}
+                  </a>
+                  <div class="text-muted small">
+                    <span class="badge bg-light text-dark border font-monospace">{{ emp.employee_id }}</span>
+                    {% if emp.email %}&bull; {{ emp.email }}{% endif %}
+                  </div>
+                </div>
+              </div>
             </td>
-            <td><small>{{ emp.email }}</small></td>
+            <td>
+              <span class="text-secondary fw-medium">{{ emp.designation|default:"Staff" }}</span>
+            </td>
             <td>
               <span class="badge
                 {% if emp.role.name == 'Admin' %}bg-danger
+                {% elif emp.role.name == 'HR' %}bg-primary
                 {% elif emp.role.name == 'Manager' %}bg-warning text-dark
-                {% elif emp.role.name == 'Sales Executive' %}bg-success
-                {% elif emp.role.name == 'Inventory Manager' %}bg-info text-dark
+                {% elif emp.role.name == 'Sales' or emp.role.name == 'Sales Executive' %}bg-success
+                {% elif emp.role.name == 'Inventory' or emp.role.name == 'Inventory Manager' %}bg-info text-dark
+                {% elif emp.role.name == 'Accountant' %}bg-dark
+                {% elif emp.role.name == 'Support' %}bg-info
                 {% else %}bg-secondary{% endif %}">
                 {{ emp.role.name }}
               </span>
             </td>
-            <td><small>{{ emp.department }}</small></td>
+            <td>
+              <span class="text-muted small">{{ emp.department }}</span>
+            </td>
             <td>
               {% for b in emp.branches.all %}
-                <span class="badge bg-light text-dark border">{{ b.name }}</span>
+                <span class="badge bg-light text-dark border small">{{ b.name }}</span>
               {% empty %}
-                <span class="text-muted small">All</span>
+                <span class="text-muted small">All Branches</span>
               {% endfor %}
             </td>
             <td>
               {% if emp.status == 'Active' %}
-                <span class="badge bg-success">Active</span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">Active</span>
               {% elif emp.status == 'Inactive' %}
-                <span class="badge bg-danger">Inactive</span>
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1">Inactive</span>
               {% else %}
-                <span class="badge bg-warning text-dark">{{ emp.status }}</span>
+                <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1">{{ emp.status }}</span>
               {% endif %}
             </td>
             <td>
-              {% if emp.user.is_active %}
-                <i class="bi bi-check-circle-fill text-success" title="Login enabled"></i>
+              {% if emp.user %}
+                {% if emp.user.is_active %}
+                  <span class="badge bg-success text-white" title="Active login (Username: {{ emp.user.username }})">
+                    <i class="bi bi-check-circle me-1"></i>Active
+                  </span>
+                {% else %}
+                  <span class="badge bg-danger text-white" title="Login suspended">
+                    <i class="bi bi-lock me-1"></i>Locked
+                  </span>
+                {% endif %}
               {% else %}
-                <i class="bi bi-x-circle-fill text-danger" title="Login disabled"></i>
+                <span class="badge bg-light text-muted border" title="No system login account">
+                  No Login
+                </span>
               {% endif %}
             </td>
-            <td class="text-end">
+            <td class="text-end pe-3">
               <div class="btn-group btn-group-sm">
-                <a href="{% url 'team:employee_detail' emp.pk %}" class="btn btn-outline-primary" title="View">
+                <a href="{% url 'team:employee_detail' emp.pk %}" class="btn btn-outline-primary" title="View Profile">
                   <i class="bi bi-eye"></i>
                 </a>
-                {% if user.is_staff %}
+                {% if user_perms.team.can_edit %}
                 <a href="{% url 'team:employee_edit' emp.pk %}" class="btn btn-outline-secondary" title="Edit">
                   <i class="bi bi-pencil"></i>
                 </a>
-                <a href="{% url 'team:employee_permissions' emp.pk %}" class="btn btn-outline-info" title="Permissions">
-                  <i class="bi bi-shield-check"></i>
+                <a href="{% url 'team:employee_permissions' emp.pk %}" class="btn btn-outline-dark" title="Permissions">
+                  <i class="bi bi-shield-lock"></i>
                 </a>
                 <form method="post" action="{% url 'team:employee_toggle_status' emp.pk %}" class="d-inline"
-                      onsubmit="return confirm('Toggle status for {{ emp.full_name }}?')">
+                      onsubmit="return confirm('Toggle active status for {{ emp.full_name }}?')">
                   {% csrf_token %}
-                  <button type="submit" title="{% if emp.status == 'Active' %}Deactivate{% else %}Activate{% endif %}"
+                  <button type="submit" title="{% if emp.status == 'Active' %}Deactivate Account{% else %}Activate Account{% endif %}"
                           class="btn {% if emp.status == 'Active' %}btn-outline-warning{% else %}btn-outline-success{% endif %}">
                     <i class="bi {% if emp.status == 'Active' %}bi-toggle-on{% else %}bi-toggle-off{% endif %}"></i>
                   </button>
@@ -145,19 +201,29 @@
 
     <!-- Pagination -->
     {% if page_obj.has_other_pages %}
-    <div class="d-flex justify-content-center py-3">
+    <div class="d-flex justify-content-center py-3 border-top">
       <nav>
         <ul class="pagination pagination-sm mb-0">
           {% if page_obj.has_previous %}
-            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&role={{ sel_role }}&status={{ sel_status }}&branch={{ sel_branch }}">‹</a></li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&role={{ sel_role }}&department={{ sel_dept }}&status={{ sel_status }}&branch={{ sel_branch }}">Previous</a>
+            </li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">Previous</span></li>
           {% endif %}
-          {% for num in page_obj.paginator.page_range %}
-            <li class="page-item {% if num == page_obj.number %}active{% endif %}">
-              <a class="page-link" href="?page={{ num }}&q={{ q }}&role={{ sel_role }}&status={{ sel_status }}&branch={{ sel_branch }}">{{ num }}</a>
+
+          {% for p in page_obj.paginator.page_range %}
+            <li class="page-item {% if page_obj.number == p %}active{% endif %}">
+              <a class="page-link" href="?page={{ p }}&q={{ q }}&role={{ sel_role }}&department={{ sel_dept }}&status={{ sel_status }}&branch={{ sel_branch }}">{{ p }}</a>
             </li>
           {% endfor %}
+
           {% if page_obj.has_next %}
-            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&role={{ sel_role }}&status={{ sel_status }}&branch={{ sel_branch }}">›</a></li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&role={{ sel_role }}&department={{ sel_dept }}&status={{ sel_status }}&branch={{ sel_branch }}">Next</a>
+            </li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">Next</span></li>
           {% endif %}
         </ul>
       </nav>
@@ -166,10 +232,13 @@
 
     {% else %}
     <div class="text-center py-5">
-      <i class="bi bi-people display-4 text-muted"></i>
-      <p class="mt-3 text-muted">No employees found.</p>
-      {% if user.is_staff %}
-        <a href="{% url 'team:employee_create' %}" class="btn btn-primary mt-2">Add First Employee</a>
+      <i class="bi bi-people display-4 text-muted mb-3 d-block"></i>
+      <h6 class="fw-semibold">No Employees Found</h6>
+      <p class="text-muted small">No employee records match the active search or filter criteria.</p>
+      {% if can_add_employee or user_perms.team.can_add %}
+      <a href="{% url 'team:employee_create' %}" class="btn btn-primary btn-sm mt-2">
+        <i class="bi bi-person-plus me-1"></i> Add First Employee
+      </a>
       {% endif %}
     </div>
     {% endif %}

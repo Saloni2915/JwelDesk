@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Roles &amp; Permissions — Team — JewelDesk{% endblock %}
+{% block page_title %}Roles &amp; Permissions{% endblock %}
+
+{% block page_actions %}
+  <a href="{% url 'team:employee_list' %}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i> Back to Employees
+  </a>
+  {% if can_manage_roles %}
+  <a href="{% url 'team:role_create' %}" class="btn btn-primary btn-sm ms-2" id="btn-add-role">
+    <i class="bi bi-shield-plus me-1"></i> Add Custom Role
+  </a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white border-bottom py-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <h5 class="mb-0 fw-bold text-dark">
+          <i class="bi bi-shield-check text-primary me-2"></i>System Roles &amp; Access Profiles
+        </h5>
+        <small class="text-muted">Standard business roles and custom access groups for jewellery store staff</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" id="roles-table">
+        <thead class="table-light text-uppercase small text-muted">
+          <tr>
+            <th class="ps-3">Role Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Active Employees</th>
+            <th>Default Accessible Modules</th>
+            <th class="text-end pe-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in role_data %}
+          <tr>
+            <td class="ps-3 py-3 fw-bold">
+              <span class="badge px-3 py-2 fs-6
+                {% if item.role.name == 'Admin' %}bg-danger
+                {% elif item.role.name == 'HR' %}bg-primary
+                {% elif item.role.name == 'Manager' %}bg-warning text-dark
+                {% elif item.role.name == 'Sales' or item.role.name == 'Sales Executive' %}bg-success
+                {% elif item.role.name == 'Inventory' or item.role.name == 'Inventory Manager' %}bg-info text-dark
+                {% elif item.role.name == 'Accountant' %}bg-dark
+                {% elif item.role.name == 'Support' %}bg-info
+                {% else %}bg-secondary{% endif %}">
+                {{ item.role.name }}
+              </span>
+            </td>
+            <td>
+              {% if item.role.is_builtin %}
+                <span class="badge bg-light text-dark border"><i class="bi bi-lock me-1"></i>Built-in</span>
+              {% else %}
+                <span class="badge bg-info-subtle text-info border border-info-subtle"><i class="bi bi-stars me-1"></i>Custom</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="text-secondary small">{{ item.role.description|default:"—" }}</span>
+            </td>
+            <td>
+              <span class="badge bg-light text-dark border font-monospace">{{ item.employee_count }} member{{ item.employee_count|pluralize }}</span>
+            </td>
+            <td>
+              <div class="d-flex flex-wrap gap-1">
+                {% for mod in item.active_modules %}
+                  <span class="badge bg-light text-dark border small text-capitalize">{{ mod|cut:"_" }}</span>
+                {% empty %}
+                  <span class="text-muted small">None by default</span>
+                {% endfor %}
+              </div>
+            </td>
+            <td class="text-end pe-3">
+              {% if can_manage_roles %}
+              <a href="{% url 'team:role_edit' item.role.pk %}" class="btn btn-outline-secondary btn-sm" title="Edit Role">
+                <i class="bi bi-pencil"></i>
+              </a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
