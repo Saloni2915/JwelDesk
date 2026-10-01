@@ -70,7 +70,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='jewelleryitem',
             name='tag_number',
-            field=models.CharField(blank=True, db_index=True, help_text='Unique physical jewellery piece tag number (e.g. JWL-000001)', max_length=50, null=True),
+            field=models.CharField(blank=True, help_text='Unique physical jewellery piece tag number (e.g. JWL-000001)', max_length=50, null=True),
         ),
         migrations.AlterField(
             model_name='jewelleryitem',

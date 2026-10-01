@@ -151,14 +151,22 @@ _database_url = (
 )
 
 if _database_url:
+    # When deployed on Vercel or using Supabase Transaction Pooler (port 6543 / PgBouncer):
+    # - conn_max_age is set to 0 (connections are short-lived per serverless request, avoiding stale pooler connections)
+    # - DISABLE_SERVER_SIDE_CURSORS is set to True (PgBouncer in transaction mode does not support PostgreSQL named cursors)
+    # - SSL is required for remote database connections
+    conn_max_age_val = int(os.environ.get('CONN_MAX_AGE', '0'))
+    ssl_required = 'localhost' not in _database_url and '127.0.0.1' not in _database_url
+
     try:
         import dj_database_url
         DATABASES = {
             'default': dj_database_url.parse(
                 _database_url,
-                conn_max_age=600,
+                conn_max_age=conn_max_age_val,
                 conn_health_checks=True,
-                ssl_require=True if 'localhost' not in _database_url and '127.0.0.1' not in _database_url else False,
+                ssl_require=ssl_required,
+                disable_server_side_cursors=True,
             )
         }
     except ImportError:
@@ -178,11 +186,22 @@ if _database_url:
                 'PASSWORD': unquote(parsed.password or ''),
                 'HOST': parsed.hostname or '',
                 'PORT': parsed.port or '',
+                'CONN_MAX_AGE': conn_max_age_val,
             }
         }
+
+    # Ensure Supabase Transaction Pooler compatibility:
+    # 1. Transaction mode does not support server-side cursors
+    DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = True
+
+    # 2. Enforce SSL require for remote PostgreSQL hosts
+    if ssl_required:
+        options = DATABASES['default'].setdefault('OPTIONS', {})
+        options.setdefault('sslmode', 'require')
+
 elif os.environ.get('VERCEL'):
     # Ephemeral fallback for Vercel if DATABASE_URL is not yet configured.
-    # Note: A hosted PostgreSQL (Neon/Supabase/Vercel Postgres) DATABASE_URL
+    # Note: A hosted PostgreSQL (Supabase/Neon) DATABASE_URL
     # must be provided for persistent data across serverless invocations.
     default_db_path = Path('/tmp') / 'db.sqlite3'
     DATABASES = {
@@ -192,7 +211,7 @@ elif os.environ.get('VERCEL'):
         }
     }
 else:
-    # Local development: persist to local SQLite database file
+    # Local development: persist to local SQLite database file (existing data intact)
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
