@@ -118,14 +118,14 @@
                         </a>
                     </li>
                     <li class="nav-item sidebar-section">Team &amp; HR</li>
-                    {% if user.is_superuser or user.is_staff or user_perms.team.can_view %}
+                    {% if user.is_superuser or user.is_staff or user_perms.team.can_view or not user.employee_profile %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.app_name == 'team' and request.resolver_match.url_name == 'employee_list' %}active{% endif %}"
                            href="{% url 'team:employee_list' %}">
                             <i class="bi bi-people-fill me-2"></i> Employees
                         </a>
                     </li>
-                    {% if user.is_superuser or user.is_staff or user_perms.team.can_add %}
+                    {% if user.is_superuser or user.is_staff or user_perms.team.can_add or not user.employee_profile %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.app_name == 'team' and request.resolver_match.url_name == 'employee_create' %}active{% endif %}"
                            href="{% url 'team:employee_create' %}">

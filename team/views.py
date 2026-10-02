@@ -111,6 +111,9 @@ def employee_list(request):
 @require_permission('team', 'add')
 def employee_create(request):
     """Create a new employee, optionally creating or linking a Django User."""
+    if not Role.objects.exists():
+        Role.ensure_builtin_roles()
+
     if request.method == 'POST':
         form = EmployeeCreateForm(request.POST, request.FILES)
         if form.is_valid():
@@ -416,6 +419,9 @@ def employee_branches(request, pk):
 @require_permission('team', 'view')
 def role_list(request):
     """Overview of all built-in and custom roles with employee counts and defaults."""
+    if not Role.objects.exists():
+        Role.ensure_builtin_roles()
+
     roles = Role.objects.all().prefetch_related('employees')
 
     role_data = []
@@ -435,6 +441,18 @@ def role_list(request):
         'role_data': role_data,
         'can_manage_roles': has_module_perm(request.user, 'team', 'edit'),
     })
+
+
+@login_required
+@require_permission('team', 'edit')
+def role_seed(request):
+    """Seed or restore default standard roles with one click from the UI."""
+    created = Role.ensure_builtin_roles()
+    if created > 0:
+        messages.success(request, f'Successfully initialized {created} standard role(s).')
+    else:
+        messages.info(request, 'All standard roles are already initialized.')
+    return redirect('team:role_list')
 
 
 @login_required

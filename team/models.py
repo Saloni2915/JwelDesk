@@ -113,6 +113,31 @@ class Role(models.Model):
             raise ValidationError('Built-in roles cannot be deleted.')
         super().delete(*args, **kwargs)
 
+    @classmethod
+    def ensure_builtin_roles(cls):
+        """Seed or ensure all standard built-in roles exist in the database."""
+        roles_data = [
+            (cls.ROLE_ADMIN, 'Full administrative access across all modules.'),
+            (cls.ROLE_MANAGER, 'Store manager with inventory and sales management access.'),
+            (cls.ROLE_SALES, 'Handle sales counters and customer interactions.'),
+            (cls.ROLE_SALES_EXECUTIVE, 'Handle customer interactions and advanced sales.'),
+            (cls.ROLE_INVENTORY, 'Manage jewellery stock and inventory tracking.'),
+            (cls.ROLE_INVENTORY_MANAGER, 'Manage jewellery inventory and stock in full.'),
+            (cls.ROLE_ACCOUNTANT, 'Financial and accounting access.'),
+            (cls.ROLE_HR, 'Human resources, team management, and employee records.'),
+            (cls.ROLE_SUPPORT, 'Customer support, order tracking, and enquiry management.'),
+            (cls.ROLE_CASHIER, 'Process sales at the counter.'),
+        ]
+        created = 0
+        for name, desc in roles_data:
+            _, was_created = cls.objects.get_or_create(
+                name=name,
+                defaults={'description': desc, 'is_builtin': True},
+            )
+            if was_created:
+                created += 1
+        return created
+
 
 # ---------------------------------------------------------------------------
 # Module-level permission system

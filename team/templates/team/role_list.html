@@ -9,6 +9,9 @@
     <i class="bi bi-arrow-left me-1"></i> Back to Employees
   </a>
   {% if can_manage_roles %}
+  <a href="{% url 'team:role_seed' %}" class="btn btn-outline-primary btn-sm ms-2" title="Restore or initialize standard built-in roles">
+    <i class="bi bi-arrow-repeat me-1"></i> Initialize Standard Roles
+  </a>
   <a href="{% url 'team:role_create' %}" class="btn btn-primary btn-sm ms-2" id="btn-add-role">
     <i class="bi bi-shield-plus me-1"></i> Add Custom Role
   </a>
@@ -85,6 +88,22 @@
                 <i class="bi bi-pencil"></i>
               </a>
               {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center py-5">
+              <div class="text-muted mb-3">
+                <i class="bi bi-shield-slash display-6 d-block mb-2 text-secondary"></i>
+                <h6 class="fw-semibold">No Roles Found</h6>
+                <p class="small text-muted mb-3">You can create custom roles or initialize all standard jewellery store roles with 1 click.</p>
+              </div>
+              <a href="{% url 'team:role_seed' %}" class="btn btn-primary btn-sm me-2">
+                <i class="bi bi-magic me-1"></i> Initialize Standard Roles
+              </a>
+              <a href="{% url 'team:role_create' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-plus-circle me-1"></i> Add Custom Role
+              </a>
             </td>
           </tr>
           {% endfor %}

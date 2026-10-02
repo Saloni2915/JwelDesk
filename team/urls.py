@@ -24,6 +24,7 @@ urlpatterns = [
 
     # Roles & Permissions Management
     path('roles/',                                views.role_list,                  name='role_list'),
+    path('roles/seed/',                           views.role_seed,                  name='role_seed'),
     path('roles/add/',                            views.role_create,                name='role_create'),
     path('roles/<int:pk>/edit/',                  views.role_edit,                  name='role_edit'),
 
