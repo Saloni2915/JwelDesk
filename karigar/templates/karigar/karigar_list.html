@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}Karigars / Artisans Directory — JewelDesk{% endblock %}
+
+{% block page_title %}Artisans &amp; Karigars Directory{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    {% if user_perms.karigar.can_add %}
+    <a href="{% url 'karigar:karigar_create' %}" class="btn btn-dark btn-sm">
+        <i class="bi bi-person-plus me-1"></i> Add New Karigar
+    </a>
+    {% endif %}
+    <a href="{% url 'karigar:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-speedometer2 me-1"></i> Dashboard
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Search & Filter Card -->
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" value="{{ q }}" class="form-control"
+                           placeholder="Search by code (e.g. KRG-0001), name, mobile or skill...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="specialization" class="form-select form-select-sm">
+                    <option value="">All Specializations</option>
+                    {% for key, val in specialization_choices %}
+                    <option value="{{ key }}" {% if selected_specialization == key %}selected{% endif %}>{{ val }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All Statuses</option>
+                    {% for key, val in status_choices %}
+                    <option value="{{ key }}" {% if selected_status == key %}selected{% endif %}>{{ val }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-1">
+                <button type="submit" class="btn btn-dark btn-sm w-100">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+                <a href="{% url 'karigar:karigar_list' %}" class="btn btn-outline-secondary btn-sm" title="Clear Filters">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Karigar Directory Table -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Artisan Code</th>
+                        <th>Name &amp; Workshop</th>
+                        <th>Contact</th>
+                        <th>Specialization</th>
+                        <th>Active Work</th>
+                        <th>Status</th>
+                        <th>Joining Date</th>
+                        <th class="text-end pe-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for k in karigars %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'karigar:karigar_detail' k.id %}" class="fw-bold font-monospace text-dark text-decoration-none">
+                                {{ k.karigar_code }}
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{% url 'karigar:karigar_detail' k.id %}" class="text-dark fw-semibold text-decoration-none d-block">
+                                {{ k.name }}
+                            </a>
+                            {% if k.address %}
+                            <small class="text-muted text-truncate d-inline-block" style="max-width: 220px;">
+                                {{ k.address }}
+                            </small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="d-block fw-medium">{{ k.mobile }}</span>
+                            {% if k.alternate_contact %}
+                            <small class="text-muted">Alt: {{ k.alternate_contact }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border">{{ k.specialization }}</span>
+                        </td>
+                        <td>
+                            {% if k.active_work_count > 0 %}
+                            <span class="badge bg-info text-dark">{{ k.active_work_count }} in progress</span>
+                            {% else %}
+                            <span class="badge bg-light text-muted border">None</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if k.status == 'Active' %}
+                            <span class="badge bg-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted small">{{ k.joining_date|date:"d M Y" }}</td>
+                        <td class="text-end pe-3">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'karigar:karigar_detail' k.id %}" class="btn btn-outline-dark" title="View Profile">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if user_perms.karigar.can_edit %}
+                                <a href="{% url 'karigar:karigar_edit' k.id %}" class="btn btn-outline-secondary" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% endif %}
+                                {% if user_perms.karigar.can_add %}
+                                <a href="{% url 'karigar:assignment_create' %}?karigar={{ k.id }}" class="btn btn-outline-primary" title="Assign Work">
+                                    <i class="bi bi-hammer"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="bi bi-people fs-1 d-block mb-2 text-secondary"></i>
+                            No karigars found. Click "+ Add New Karigar" to create your first artisan profile.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include 'includes/pagination.html' with page_obj=page_obj %}
+    </div>
+</div>
+{% endblock %}

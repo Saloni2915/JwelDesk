@@ -1,0 +1,443 @@
+{% extends 'base.html' %}
+
+{% block title %}Work Assignment {{ assignment.assignment_number }} — JewelDesk{% endblock %}
+
+{% block page_title %}Work Order: {{ assignment.assignment_number }}{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex flex-wrap gap-2">
+    <!-- Status transition actions -->
+    {% if user_perms.karigar.can_edit %}
+        {% if assignment.status == 'Assigned' %}
+        <form method="post" action="{% url 'karigar:assignment_status_update' assignment.id %}" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="status" value="In Progress">
+            <button type="submit" class="btn btn-outline-info btn-sm">
+                <i class="bi bi-play-fill me-1"></i> Mark In Progress
+            </button>
+        </form>
+        {% elif assignment.status == 'In Progress' %}
+        <form method="post" action="{% url 'karigar:assignment_status_update' assignment.id %}" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="status" value="Completed">
+            <button type="submit" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-check2 me-1"></i> Mark Completed
+            </button>
+        </form>
+        {% endif %}
+
+        {% if assignment.status != 'Received' and assignment.status != 'Cancelled' %}
+        <a href="{% url 'karigar:assignment_receive' assignment.id %}" class="btn btn-success btn-sm">
+            <i class="bi bi-box-arrow-in-down me-1"></i> Receive Work &amp; Verify Weights
+        </a>
+        <a href="{% url 'karigar:assignment_edit' assignment.id %}" class="btn btn-outline-dark btn-sm">
+            <i class="bi bi-pencil me-1"></i> Edit
+        </a>
+        <form method="post" action="{% url 'karigar:assignment_status_update' assignment.id %}" class="d-inline" onsubmit="return confirm('Cancel this work assignment? If stock was deducted, it will be safely returned.');">
+            {% csrf_token %}
+            <input type="hidden" name="status" value="Cancelled">
+            <button type="submit" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-x-circle me-1"></i> Cancel
+            </button>
+        </form>
+        {% endif %}
+    {% endif %}
+
+    {% if user_perms.karigar.can_add and assignment.due_charge_amount > 0 and assignment.status != 'Cancelled' %}
+    <a href="{% url 'karigar:settlement_create' %}?karigar={{ assignment.karigar.id }}&assignment={{ assignment.id }}" class="btn btn-outline-warning btn-sm">
+        <i class="bi bi-cash-stack me-1"></i> Pay Labour Dues
+    </a>
+    {% endif %}
+
+    <a href="{% url 'karigar:assignment_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> All Assignments
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Top Status Banner -->
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-body p-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="p-3 bg-dark text-white rounded">
+                    <i class="bi bi-clipboard2-check fs-3"></i>
+                </div>
+                <div>
+                    <h5 class="mb-0 fw-bold font-monospace">{{ assignment.assignment_number }}</h5>
+                    <div class="text-muted small">
+                        Assigned to <a href="{% url 'karigar:karigar_detail' assignment.karigar.id %}" class="fw-semibold text-dark text-decoration-none">{{ assignment.karigar.name }}</a>
+                        &bull; {{ assignment.work_type }}
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <!-- Status Badge -->
+                {% if assignment.status == 'Assigned' %}
+                <span class="badge bg-secondary fs-6 px-3 py-2">Assigned (Job Issued)</span>
+                {% elif assignment.status == 'In Progress' %}
+                <span class="badge bg-info text-dark fs-6 px-3 py-2">In Progress</span>
+                {% elif assignment.status == 'Completed' %}
+                <span class="badge bg-primary fs-6 px-3 py-2">Completed (Ready for Inspection)</span>
+                {% elif assignment.status == 'Received' %}
+                <span class="badge bg-success fs-6 px-3 py-2">Received &amp; Stock Verified</span>
+                {% elif assignment.status == 'Cancelled' %}
+                <span class="badge bg-dark fs-6 px-3 py-2">Cancelled</span>
+                {% endif %}
+
+                <!-- Priority Badge -->
+                {% if assignment.priority == 'Urgent' %}
+                <span class="badge bg-danger fs-6 px-3 py-2">Urgent Priority</span>
+                {% elif assignment.priority == 'High' %}
+                <span class="badge bg-warning text-dark fs-6 px-3 py-2">High Priority</span>
+                {% else %}
+                <span class="badge bg-light text-dark border fs-6 px-3 py-2">{{ assignment.priority }} Priority</span>
+                {% endif %}
+
+                {% if assignment.is_overdue %}
+                <span class="badge bg-danger fs-6 px-3 py-2"><i class="bi bi-alarm me-1"></i> OVERDUE</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Main Column: Details, Material Accountability & Charges -->
+    <div class="col-lg-8">
+        <!-- Work & Specifications -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-file-earmark-text me-2 text-dark"></i> Work Instructions &amp; Specifications</h6>
+            </div>
+            <div class="card-body">
+                <div class="bg-light p-3 rounded mb-3">
+                    <div class="text-muted small fw-semibold text-uppercase mb-1">Job Description &amp; Instructions</div>
+                    <div class="fs-6" style="white-space: pre-line;">{{ assignment.description }}</div>
+                </div>
+
+                {% if assignment.reference_image %}
+                <div class="mb-3">
+                    <span class="text-muted small fw-semibold text-uppercase d-block mb-2">Design Sketch / Reference</span>
+                    <a href="{{ assignment.reference_image.url }}" target="_blank">
+                        <img src="{{ assignment.reference_image.url }}" alt="Design Reference" class="img-thumbnail" style="max-height: 200px;">
+                    </a>
+                </div>
+                {% endif %}
+
+                <div class="row g-3 small">
+                    <div class="col-md-4">
+                        <span class="text-muted d-block">Metal &amp; Purity</span>
+                        <span class="fw-bold">{{ assignment.metal_type }} ({{ assignment.purity }})</span>
+                    </div>
+                    <div class="col-md-4">
+                        <span class="text-muted d-block">Customer</span>
+                        {% if assignment.customer %}
+                        <a href="{% url 'customer_detail' assignment.customer.id %}" class="fw-bold text-dark text-decoration-none">
+                            {{ assignment.customer.name }} ({{ assignment.customer.mobile }})
+                        </a>
+                        {% else %}
+                        <span class="text-muted">Showroom Piece</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <span class="text-muted d-block">Custom Order Link</span>
+                        {% if assignment.custom_order %}
+                        <a href="{% url 'custom_orders:custom_order_detail' assignment.custom_order.id %}" class="fw-bold text-dark text-decoration-none">
+                            #{{ assignment.custom_order.order_number }}
+                        </a>
+                        {% else %}
+                        <span class="text-muted">None</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Material / Weight Accountability (Requirement #3) -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-scale me-2 text-warning"></i> Material &amp; Weight Accountability</h6>
+                <span class="badge bg-light text-dark border">Issued &rarr; Received &rarr; Loss &rarr; Wastage</span>
+            </div>
+            <div class="card-body">
+                <!-- Visual Weight Pipeline -->
+                <div class="row g-3 mb-4 text-center">
+                    <div class="col-sm-6 col-md-3">
+                        <div class="p-3 bg-light rounded border">
+                            <span class="text-muted small fw-semibold text-uppercase d-block">Net Issued</span>
+                            <span class="fs-4 fw-bold text-dark">{{ assignment.net_weight_issued|floatformat:3 }} g</span>
+                            <small class="text-muted d-block mt-1">Gross: {{ assignment.gross_weight_issued|floatformat:3 }}g &bull; Stone: {{ assignment.stone_weight_issued|floatformat:3 }}g</small>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <div class="p-3 bg-light rounded border">
+                            <span class="text-muted small fw-semibold text-uppercase d-block">Net Received</span>
+                            <span class="fs-4 fw-bold {% if assignment.net_weight_received > 0 %}text-success{% else %}text-muted{% endif %}">
+                                {{ assignment.net_weight_received|floatformat:3 }} g
+                            </span>
+                            <small class="text-muted d-block mt-1">Gross: {{ assignment.gross_weight_received|floatformat:3 }}g &bull; Stone: {{ assignment.stone_weight_received|floatformat:3 }}g</small>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <div class="p-3 bg-light rounded border">
+                            <span class="text-muted small fw-semibold text-uppercase d-block">Scrap Returned</span>
+                            <span class="fs-4 fw-bold text-dark">{{ assignment.scrap_weight_returned|floatformat:3 }} g</span>
+                            <small class="text-muted d-block mt-1">Filings &amp; Gold Cut Pieces</small>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <div class="p-3 rounded border {% if assignment.has_excess_wastage %}bg-danger-subtle border-danger{% else %}bg-success-subtle border-success{% endif %}">
+                            <span class="small fw-semibold text-uppercase d-block {% if assignment.has_excess_wastage %}text-danger{% else %}text-success{% endif %}">
+                                Difference / Loss
+                            </span>
+                            <span class="fs-4 fw-bold {% if assignment.has_excess_wastage %}text-danger{% else %}text-success{% endif %}">
+                                {{ assignment.weight_difference|floatformat:3 }} g
+                            </span>
+                            <small class="d-block mt-1 {% if assignment.has_excess_wastage %}text-danger{% else %}text-success{% endif %}">
+                                {% if assignment.has_excess_wastage %}Excess loss beyond allowed{% else %}Within allowed limit{% endif %}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Accountability Details Table -->
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>Accountability Metric</th>
+                                <th>Formula / Basis</th>
+                                <th class="text-end">Weight</th>
+                            </tr>
+                        </thead>
+                        <tbody class="small">
+                            <tr>
+                                <td>Gross Precious Metal Issued</td>
+                                <td class="text-muted">Raw metal or scrap provided to artisan</td>
+                                <td class="text-end fw-semibold">{{ assignment.gross_weight_issued|floatformat:3 }} g</td>
+                            </tr>
+                            <tr>
+                                <td>Stones / Findings Issued</td>
+                                <td class="text-muted">Weight of non-metal stones or findings</td>
+                                <td class="text-end fw-semibold text-muted">- {{ assignment.stone_weight_issued|floatformat:3 }} g</td>
+                            </tr>
+                            <tr class="table-light">
+                                <td class="fw-bold">Net Precious Metal Issued</td>
+                                <td class="text-muted">Gross Issued &minus; Stone Issued</td>
+                                <td class="text-end fw-bold">{{ assignment.net_weight_issued|floatformat:3 }} g</td>
+                            </tr>
+                            <tr>
+                                <td>Finished Piece Net Received</td>
+                                <td class="text-muted">Gross Received ({{ assignment.gross_weight_received|floatformat:3 }}g) &minus; Stone ({{ assignment.stone_weight_received|floatformat:3 }}g)</td>
+                                <td class="text-end fw-semibold text-success">{{ assignment.net_weight_received|floatformat:3 }} g</td>
+                            </tr>
+                            <tr>
+                                <td>Scrap / Filings Returned Back</td>
+                                <td class="text-muted">Precious metal scrap returned by artisan</td>
+                                <td class="text-end fw-semibold">{{ assignment.scrap_weight_returned|floatformat:3 }} g</td>
+                            </tr>
+                            <tr>
+                                <td>Actual Manufacturing Loss</td>
+                                <td class="text-muted">Net Issued &minus; (Net Received + Scrap)</td>
+                                <td class="text-end fw-semibold text-danger">{{ assignment.actual_wastage_weight|floatformat:3 }} g</td>
+                            </tr>
+                            <tr>
+                                <td>Allowed Wastage Allowance</td>
+                                <td class="text-muted">{{ assignment.wastage_allowed_percent }}% of Net Issued ({{ assignment.net_weight_issued|floatformat:3 }}g)</td>
+                                <td class="text-end fw-semibold">{{ assignment.wastage_weight_allowed|floatformat:3 }} g</td>
+                            </tr>
+                            <tr class="{% if assignment.has_excess_wastage %}table-danger{% else %}table-success{% endif %}">
+                                <td class="fw-bold">Accountability Variance (Difference)</td>
+                                <td class="text-muted">Actual Loss &minus; Allowed Wastage (+ve = Loss, -ve = Recovery)</td>
+                                <td class="text-end fw-bold {% if assignment.has_excess_wastage %}text-danger{% else %}text-success{% endif %}">
+                                    {{ assignment.weight_difference|floatformat:3 }} g
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Labour Charges Breakdown (Requirement #4) -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-cash-coin me-2 text-success"></i> Making / Labour Charges</h6>
+                <span class="badge bg-light text-dark border">{{ assignment.making_charge_type }}</span>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <table class="table table-sm table-borderless mb-0 small">
+                            <tr>
+                                <td class="text-muted">Rate:</td>
+                                <td class="fw-bold">₹{{ assignment.making_charge_rate|floatformat:2 }} {% if assignment.making_charge_type == 'Per Gram' %}/ gram{% endif %}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Base Labour Charge:</td>
+                                <td class="fw-semibold">₹{{ assignment.labour_charge|floatformat:2 }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Stone Setting Charges:</td>
+                                <td class="fw-semibold">₹{{ assignment.stone_charges|floatformat:2 }}</td>
+                            </tr>
+                            {% if assignment.other_charges > 0 %}
+                            <tr>
+                                <td class="text-muted">Other Charges:</td>
+                                <td class="fw-semibold">₹{{ assignment.other_charges|floatformat:2 }} <small class="text-muted">({{ assignment.other_charges_description|default:"Approved charges" }})</small></td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                    <div class="col-md-6 border-start">
+                        <div class="p-3 bg-light rounded text-center">
+                            <span class="text-muted small fw-semibold text-uppercase d-block">Total Karigar Charge</span>
+                            <span class="fs-3 fw-bold text-dark">₹{{ assignment.total_charge|floatformat:2 }}</span>
+
+                            <div class="d-flex justify-content-around mt-3 pt-2 border-top small">
+                                <div>
+                                    <span class="text-muted d-block">Settled</span>
+                                    <span class="fw-bold text-success">₹{{ assignment.paid_amount|floatformat:2 }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-muted d-block">Balance Due</span>
+                                    <span class="fw-bold {% if assignment.due_charge_amount > 0 %}text-danger{% else %}text-success{% endif %}">
+                                        ₹{{ assignment.due_charge_amount|floatformat:2 }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Sidebar Column: Timeline, Inventory Integration, Audit Trail -->
+    <div class="col-lg-4">
+        <!-- Schedule & Timeline -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2 text-dark"></i> Schedule &amp; Dates</h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0 small">
+                    <li class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Issue Date:</span>
+                        <span class="fw-semibold">{{ assignment.issue_date|date:"d M Y" }}</span>
+                    </li>
+                    <li class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Expected Completion:</span>
+                        <span class="fw-semibold {% if assignment.is_overdue %}text-danger fw-bold{% endif %}">
+                            {{ assignment.expected_completion_date|date:"d M Y"|default:"Not specified" }}
+                        </span>
+                    </li>
+                    {% if assignment.actual_completion_date %}
+                    <li class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Actual Completion:</span>
+                        <span class="fw-semibold">{{ assignment.actual_completion_date|date:"d M Y" }}</span>
+                    </li>
+                    {% endif %}
+                    {% if assignment.received_date %}
+                    <li class="d-flex justify-content-between py-2">
+                        <span class="text-muted">Received into Stock:</span>
+                        <span class="fw-semibold text-success">{{ assignment.received_date|date:"d M Y" }}</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Inventory Integration (Requirement #8) -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-boxes me-2 text-dark"></i> Inventory Movement Audit</h6>
+            </div>
+            <div class="card-body small">
+                {% if assignment.inventory_item %}
+                <div class="mb-3">
+                    <span class="text-muted d-block">Showroom Piece</span>
+                    <a href="{% url 'inventory_detail' assignment.inventory_item.id %}" class="fw-bold text-dark text-decoration-none">
+                        {{ assignment.inventory_item.item_code }} — {{ assignment.inventory_item.name }}
+                    </a>
+                </div>
+
+                <div class="p-2 bg-light rounded border mb-2">
+                    <div class="fw-semibold text-dark mb-1"><i class="bi bi-box-arrow-up-right me-1 text-danger"></i> Issue Movement:</div>
+                    {% if assignment.stock_movement_issued %}
+                    <div class="text-muted">Movement #{{ assignment.stock_movement_issued.id }} &bull; Quantity: -1</div>
+                    <div class="text-muted small">{{ assignment.stock_movement_issued.reason }}</div>
+                    {% else %}
+                    <div class="text-muted italic">No stock deduction performed at issue.</div>
+                    {% endif %}
+                </div>
+
+                <div class="p-2 bg-light rounded border">
+                    <div class="fw-semibold text-dark mb-1"><i class="bi bi-box-arrow-in-down-left me-1 text-success"></i> Receipt Movement:</div>
+                    {% if assignment.stock_movement_received %}
+                    <div class="text-muted">Movement #{{ assignment.stock_movement_received.id }} &bull; Quantity: +1</div>
+                    <div class="text-muted small">{{ assignment.stock_movement_received.reason }}</div>
+                    {% else %}
+                    <div class="text-muted italic">Not yet received into stock.</div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">
+                    This work was issued for raw metal making / custom crafting. No pre-existing showroom item was deducted.
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Personnel & Audit Trail (Requirement #11) -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-shield-check me-2 text-dark"></i> Personnel &amp; Audit Trail</h6>
+            </div>
+            <div class="card-body small">
+                <dl class="row mb-0">
+                    <dt class="col-5 text-muted">Assigned By:</dt>
+                    <dd class="col-7">{{ assignment.assigned_by.get_full_name|default:assignment.assigned_by.username|default:"System" }}</dd>
+
+                    {% if assignment.received_by %}
+                    <dt class="col-5 text-muted">Received By:</dt>
+                    <dd class="col-7">{{ assignment.received_by.get_full_name|default:assignment.received_by.username }}</dd>
+                    {% endif %}
+
+                    <dt class="col-5 text-muted">Created:</dt>
+                    <dd class="col-7">{{ assignment.created_at|date:"d M Y, H:i" }}</dd>
+
+                    <dt class="col-5 text-muted">Updated:</dt>
+                    <dd class="col-7">{{ assignment.updated_at|date:"d M Y, H:i" }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Linked Settlements -->
+        {% if settlements %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-receipt me-2 text-success"></i> Linked Payments</h6>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush small">
+                    {% for st in settlements %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <a href="{% url 'karigar:settlement_detail' st.id %}" class="fw-bold text-dark font-monospace text-decoration-none">
+                                {{ st.settlement_number }}
+                            </a>
+                            <div class="text-muted">{{ st.payment_date|date:"d M Y" }} &bull; {{ st.payment_method }}</div>
+                        </div>
+                        <span class="fw-bold text-success">₹{{ st.amount|floatformat:2 }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+
+{% block title %}Receive Work: {{ assignment.assignment_number }} — JewelDesk{% endblock %}
+
+{% block page_title %}Receive Completed Work: {{ assignment.assignment_number }}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'karigar:assignment_detail' assignment.id %}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i> Back to Job Card
+</a>
+{% endblock %}
+
+{% block content %}
+<form method="post" novalidate class="mb-5">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger shadow-sm">
+        {% for error in form.non_field_errors %}
+        <div><i class="bi bi-exclamation-circle me-1"></i> {{ error }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Top Issued Baseline Banner -->
+    <div class="card mb-4 border-0 shadow-sm bg-light">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <span class="text-muted small fw-semibold text-uppercase d-block">Artisan</span>
+                    <h6 class="fw-bold mb-0 text-dark">{{ assignment.karigar.name }}</h6>
+                    <small class="text-muted">{{ assignment.work_type }}</small>
+                </div>
+                <div class="col-md-3 border-start">
+                    <span class="text-muted small fw-semibold text-uppercase d-block">Precious Metal</span>
+                    <span class="fw-bold fs-6">{{ assignment.metal_type }} ({{ assignment.purity }})</span>
+                </div>
+                <div class="col-md-3 border-start">
+                    <span class="text-muted small fw-semibold text-uppercase d-block">Issued Net Weight</span>
+                    <span class="fw-bold fs-5 text-dark" id="base-net-issued" data-val="{{ assignment.net_weight_issued }}">{{ assignment.net_weight_issued|floatformat:3 }} g</span>
+                    <small class="text-muted d-block">Gross: {{ assignment.gross_weight_issued|floatformat:3 }}g &bull; Stones: {{ assignment.stone_weight_issued|floatformat:3 }}g</small>
+                </div>
+                <div class="col-md-3 border-start">
+                    <span class="text-muted small fw-semibold text-uppercase d-block">Allowed Wastage</span>
+                    <span class="fw-bold fs-6 text-dark" id="base-allowed-pct" data-val="{{ assignment.wastage_allowed_percent }}">{{ assignment.wastage_allowed_percent }}%</span>
+                    <small class="text-muted d-block">Max Loss: {{ assignment.wastage_weight_allowed|floatformat:3 }} g</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Input Form Column -->
+        <div class="col-lg-8">
+            <!-- Received Weights -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-scale me-2 text-warning"></i> Finished Weights &amp; Material Returned</h6>
+                    <span class="badge bg-light text-dark border">Grams (0.001g precision)</span>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold required">Gross Weight Received (g) *</label>
+                            {{ form.gross_weight_received }}
+                            {% if form.gross_weight_received.errors %}
+                            <div class="text-danger small mt-1">{{ form.gross_weight_received.errors.0 }}</div>
+                            {% endif %}
+                            <small class="text-muted">Total weight of finished piece</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Stones / Pearls Wt (g)</label>
+                            {{ form.stone_weight_received }}
+                            {% if form.stone_weight_received.errors %}
+                            <div class="text-danger small mt-1">{{ form.stone_weight_received.errors.0 }}</div>
+                            {% endif %}
+                            <small class="text-muted">Stones embedded in piece</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Scrap Gold Returned (g)</label>
+                            {{ form.scrap_weight_returned }}
+                            {% if form.scrap_weight_returned.errors %}
+                            <div class="text-danger small mt-1">{{ form.scrap_weight_returned.errors.0 }}</div>
+                            {% endif %}
+                            <small class="text-muted">Filings, cut pieces, or unused scrap</small>
+                        </div>
+                    </div>
+
+                    <!-- Live Accountability Card -->
+                    <div class="card bg-light border mt-4">
+                        <div class="card-body p-3">
+                            <h6 class="fw-bold small text-uppercase text-muted mb-3">Live Material Accountability Verification</h6>
+                            <div class="row g-2 text-center">
+                                <div class="col-md-3">
+                                    <span class="text-muted small d-block">Finished Net Wt</span>
+                                    <span class="fw-bold fs-6 text-success" id="calc-net-received">0.000 g</span>
+                                </div>
+                                <div class="col-md-3">
+                                    <span class="text-muted small d-block">Actual Loss</span>
+                                    <span class="fw-bold fs-6 text-danger" id="calc-actual-loss">0.000 g</span>
+                                </div>
+                                <div class="col-md-3">
+                                    <span class="text-muted small d-block">Allowed Loss</span>
+                                    <span class="fw-bold fs-6" id="calc-allowed-loss">0.000 g</span>
+                                </div>
+                                <div class="col-md-3">
+                                    <span class="text-muted small d-block">Variance Difference</span>
+                                    <span class="fw-bold fs-6" id="calc-variance">0.000 g</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Labour Charges Finalization -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-cash-coin me-2 text-success"></i> Finalize Labour / Making Charges</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Making Charge Type</label>
+                            {{ form.making_charge_type }}
+                            {% if form.making_charge_type.errors %}
+                            <div class="text-danger small mt-1">{{ form.making_charge_type.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Rate (₹)</label>
+                            {{ form.making_charge_rate }}
+                            {% if form.making_charge_rate.errors %}
+                            <div class="text-danger small mt-1">{{ form.making_charge_rate.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Stone Setting Charges (₹)</label>
+                            {{ form.stone_charges }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Other Approved Charges (₹)</label>
+                            {{ form.other_charges }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Other Charges Description</label>
+                            {{ form.other_charges_description }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inspection Notes -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-check2-circle me-2 text-dark"></i> Inspection &amp; Receipt Notes</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-0">
+                        <label class="form-label small fw-semibold">Quality &amp; Weight Verification Notes</label>
+                        {{ form.notes }}
+                        <small class="text-muted">Record verification results, finish quality, hallmarking stamp, or reasons for any weight discrepancy.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Column -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-calendar-check me-2 text-dark"></i> Completion Date</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold required">Actual Completion Date *</label>
+                        {{ form.actual_completion_date }}
+                        {% if form.actual_completion_date.errors %}
+                        <div class="text-danger small mt-1">{{ form.actual_completion_date.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    {% if form.return_to_inventory %}
+                    <div class="form-check form-switch mb-3 p-2 bg-light rounded border">
+                        {{ form.return_to_inventory }}
+                        <label class="form-check-label small fw-semibold ms-2" for="{{ form.return_to_inventory.id_for_label }}">
+                            {{ form.return_to_inventory.label }}
+                        </label>
+                        <div class="form-text small text-muted ms-2">{{ form.return_to_inventory.help_text }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Confirmation & Submit -->
+            <div class="card border-0 shadow-sm bg-light mb-4">
+                <div class="card-body">
+                    <div class="alert alert-info py-2 px-3 small mb-3">
+                        <i class="bi bi-info-circle me-1"></i> Submitting will mark this assignment as <strong>Received</strong>, verify accountability, and update artisan balances.
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg fs-6">
+                            <i class="bi bi-check2-all me-1"></i> Verify &amp; Receive Work
+                        </button>
+                        <a href="{% url 'karigar:assignment_detail' assignment.id %}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const grossIn = document.getElementById('id_gross_weight_received');
+    const stoneIn = document.getElementById('id_stone_weight_received');
+    const scrapIn = document.getElementById('id_scrap_weight_returned');
+
+    const netIssuedEl = document.getElementById('base-net-issued');
+    const allowedPctEl = document.getElementById('base-allowed-pct');
+
+    const netReceivedEl = document.getElementById('calc-net-received');
+    const actualLossEl = document.getElementById('calc-actual-loss');
+    const allowedLossEl = document.getElementById('calc-allowed-loss');
+    const varianceEl = document.getElementById('calc-variance');
+
+    const netIssued = parseFloat(netIssuedEl ? netIssuedEl.dataset.val : 0) || 0;
+    const allowedPct = parseFloat(allowedPctEl ? allowedPctEl.dataset.val : 0) || 0;
+
+    function recalculate() {
+        const grossRec = parseFloat(grossIn ? grossIn.value : 0) || 0;
+        const stoneRec = parseFloat(stoneIn ? stoneIn.value : 0) || 0;
+        const scrapRec = parseFloat(scrapIn ? scrapIn.value : 0) || 0;
+
+        const netRec = Math.max(0, grossRec - stoneRec);
+        const actualLoss = Math.max(0, netIssued - (netRec + scrapRec));
+        const allowedLoss = (netIssued * (allowedPct / 100));
+        const diff = actualLoss - allowedLoss;
+
+        if (netReceivedEl) netReceivedEl.textContent = netRec.toFixed(3) + ' g';
+        if (actualLossEl) actualLossEl.textContent = actualLoss.toFixed(3) + ' g';
+        if (allowedLossEl) allowedLossEl.textContent = allowedLoss.toFixed(3) + ' g';
+        if (varianceEl) {
+            varianceEl.textContent = diff.toFixed(3) + ' g';
+            if (diff > 0.0001) {
+                varianceEl.className = 'fw-bold fs-6 text-danger';
+            } else {
+                varianceEl.className = 'fw-bold fs-6 text-success';
+            }
+        }
+    }
+
+    if (grossIn) grossIn.addEventListener('input', recalculate);
+    if (stoneIn) stoneIn.addEventListener('input', recalculate);
+    if (scrapIn) scrapIn.addEventListener('input', recalculate);
+    recalculate();
+});
+</script>
+{% endblock %}

@@ -102,6 +102,7 @@ INSTALLED_APPS = [
     'sales',
     'custom_orders',
     'team',
+    'karigar',
 ]
 
 MIDDLEWARE = [

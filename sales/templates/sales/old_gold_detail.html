@@ -1,0 +1,294 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ tx.transaction_number }} — JewelDesk{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center gap-2">
+    <span>Voucher: {{ tx.transaction_number }}</span>
+    {% if tx.is_exchange %}
+    <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-6">Exchange</span>
+    {% else %}
+    <span class="badge bg-success-subtle text-success border border-success-subtle fs-6">Buyback</span>
+    {% endif %}
+    {% if tx.status == 'Completed' %}
+    <span class="badge bg-success fs-6"><i class="bi bi-check-circle me-1"></i> Completed</span>
+    {% else %}
+    <span class="badge bg-danger fs-6"><i class="bi bi-x-circle me-1"></i> Cancelled</span>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <button onclick="window.print()" class="btn btn-outline-dark btn-sm">
+        <i class="bi bi-printer me-1"></i> Print Memo / Voucher
+    </button>
+    {% if tx.status == 'Completed' %}
+    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#cancelModal">
+        <i class="bi bi-x-circle me-1"></i> Cancel Transaction
+    </button>
+    {% endif %}
+    <a href="{% url 'old_gold_list' %}" class="btn btn-dark btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Back to History
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    {% if tx.status == 'Cancelled' %}
+    <div class="alert alert-danger mb-4 d-flex align-items-center gap-2">
+        <i class="bi bi-exclamation-octagon-fill fs-4"></i>
+        <div>
+            <strong>This transaction was CANCELLED</strong> by {{ tx.cancelled_by.username|default:"Staff" }} on {{ tx.cancelled_at|date:"M d, Y h:i A" }}.
+            <div class="small">Reason: {{ tx.cancellation_reason }}</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Voucher Print Container -->
+    <div class="card border-0 shadow-sm mx-auto" style="max-width: 900px;" id="printableVoucher">
+        <!-- Voucher Header -->
+        <div class="card-header bg-white p-4 border-bottom">
+            <div class="row align-items-center">
+                <div class="col-sm-7">
+                    <h4 class="fw-bold mb-1 text-dark">{{ company.company_name|default:"JewelDesk" }}</h4>
+                    {% if company.tagline %}<div class="text-muted small mb-2">{{ company.tagline }}</div>{% endif %}
+                    <div class="text-muted small">
+                        {% if company.address %}{{ company.address }}<br>{% endif %}
+                        {% if company.phone %}Tel: {{ company.phone }}{% endif %}
+                        {% if company.email %} | Email: {{ company.email }}{% endif %}
+                    </div>
+                </div>
+                <div class="col-sm-5 text-sm-end mt-3 mt-sm-0">
+                    <h5 class="fw-bold text-uppercase text-secondary mb-1">
+                        {% if tx.is_exchange %}OLD GOLD EXCHANGE MEMO{% else %}OLD GOLD BUYBACK VOUCHER{% endif %}
+                    </h5>
+                    <div class="font-monospace fs-5 fw-bold text-dark">{{ tx.transaction_number }}</div>
+                    <div class="text-muted small">Date: {{ tx.created_at|date:"d M Y, h:i A" }}</div>
+                    {% if company.gstin %}
+                    <div class="text-muted small fw-semibold">GSTIN: {{ company.gstin|upper }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body p-4">
+            <!-- Customer Block -->
+            <div class="row mb-4 p-3 bg-light rounded-3">
+                <div class="col-sm-6">
+                    <span class="text-muted small text-uppercase fw-semibold d-block mb-1">Customer Details</span>
+                    <h6 class="fw-bold mb-1 text-dark">{{ tx.customer.name }}</h6>
+                    <div class="text-muted small">Mobile: {{ tx.customer.mobile }}</div>
+                    {% if tx.customer.email %}<div class="text-muted small">Email: {{ tx.customer.email }}</div>{% endif %}
+                </div>
+                <div class="col-sm-6 text-sm-end mt-2 mt-sm-0">
+                    <span class="text-muted small text-uppercase fw-semibold d-block mb-1">Appraisal &amp; Branch</span>
+                    <div class="small text-dark">Processed by: <strong>{{ tx.processed_by.username|default:"Staff" }}</strong></div>
+                    <div class="small text-muted">Inventory Custody: <strong>{{ tx.inventory_status }}</strong></div>
+                    {% if tx.notes %}<div class="small text-muted mt-1"><em>Notes: {{ tx.notes }}</em></div>{% endif %}
+                </div>
+            </div>
+
+            <!-- Old Gold Appraisal Table -->
+            <h6 class="fw-bold text-dark mb-3 border-bottom pb-2">
+                <i class="bi bi-gem me-1 text-warning"></i> Old Metal Intake &amp; Valuation
+            </h6>
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Item Description</th>
+                            <th>Purity / Karat</th>
+                            <th class="text-end">Gross Wt</th>
+                            <th class="text-end">Stone Wt</th>
+                            <th class="text-end">Net Wt</th>
+                            <th class="text-end">Rate (₹/g)</th>
+                            <th class="text-end">Valuation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <strong>{{ tx.item_description }}</strong>
+                                <small class="text-muted d-block">{{ tx.old_gold_type }} ({{ tx.metal_type }})</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-warning-subtle text-dark fw-bold">{{ tx.purity }}</span>
+                                <small class="text-muted d-block">Factor: {{ tx.purity_factor }}</small>
+                            </td>
+                            <td class="text-end">{{ tx.gross_weight }} g</td>
+                            <td class="text-end text-danger">- {{ tx.stone_weight }} g</td>
+                            <td class="text-end fw-bold text-success">{{ tx.net_weight }} g</td>
+                            <td class="text-end">
+                                <div>₹{{ tx.effective_rate }}</div>
+                                <small class="text-muted">(24K: ₹{{ tx.applicable_rate }})</small>
+                            </td>
+                            <td class="text-end fw-semibold">₹{{ tx.gross_valuation|floatformat:2 }}</td>
+                        </tr>
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <td colspan="6" class="text-end">Gross Gold Value:</td>
+                            <td class="text-end fw-bold">₹{{ tx.gross_valuation|floatformat:2 }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="6" class="text-end text-danger">
+                                Less: Melting / Testing Wastage ({{ tx.deduction_percent }}%):
+                            </td>
+                            <td class="text-end text-danger">- ₹{{ tx.deduction_amount|floatformat:2 }}</td>
+                        </tr>
+                        <tr class="table-warning">
+                            <td colspan="6" class="text-end fw-bold fs-6">
+                                Final Old Gold Value ({% if tx.is_exchange %}Credit{% else %}Buyback Value{% endif %}):
+                            </td>
+                            <td class="text-end fw-bolder fs-6 text-dark">₹{{ tx.final_value|floatformat:2 }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Settlement Section (Exchange vs Buyback) -->
+            {% if tx.is_exchange and tx.new_sale %}
+            <h6 class="fw-bold text-dark mb-3 border-bottom pb-2">
+                <i class="bi bi-arrow-repeat me-1 text-primary"></i> Exchange Settlement with New Jewellery
+            </h6>
+            <div class="row g-3 mb-4">
+                <div class="col-md-7">
+                    <div class="p-3 border rounded-3 bg-light h-100">
+                        <span class="text-muted small text-uppercase fw-semibold d-block mb-1">Purchased Jewellery Piece</span>
+                        <h6 class="fw-bold text-dark mb-1">
+                            <a href="{% url 'sale_detail' tx.new_sale.id %}" class="text-decoration-none">
+                                {{ tx.new_sale.jewellery_item.name }}
+                            </a>
+                        </h6>
+                        <div class="small text-muted mb-2">
+                            Tag: <strong>{{ tx.new_sale.jewellery_item.tag_number|default:tx.new_sale.jewellery_item.item_code }}</strong>
+                            | Metal: {{ tx.new_sale.jewellery_item.metal_type }} {{ tx.new_sale.jewellery_item.purity }}
+                            | Net Wt: {{ tx.new_sale.jewellery_item.net_weight }}g
+                        </div>
+                        <a href="{% url 'sale_detail' tx.new_sale.id %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-receipt me-1"></i> View Linked Sale #{{ tx.new_sale.id }}
+                        </a>
+                        <a href="{% url 'sale_invoice_pdf' tx.new_sale.id %}" class="btn btn-outline-dark btn-sm ms-1">
+                            <i class="bi bi-file-earmark-pdf me-1"></i> Download Invoice PDF
+                        </a>
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <div class="p-3 border rounded-3 bg-light h-100">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">New Jewellery Price:</span>
+                            <span class="fw-semibold">₹{{ tx.new_item_price|floatformat:2 }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Old Gold Credit:</span>
+                            <span class="text-success fw-semibold">- ₹{{ tx.final_value|floatformat:2 }}</span>
+                        </div>
+                        <hr class="my-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            {% if tx.difference_amount > 0 %}
+                            <span class="fw-bold text-danger">Customer Payable:</span>
+                            <h5 class="fw-bolder text-danger mb-0">₹{{ tx.difference_amount|floatformat:2 }}</h5>
+                            {% elif tx.difference_amount < 0 %}
+                            <span class="fw-bold text-success">Refund to Customer:</span>
+                            <h5 class="fw-bolder text-success mb-0">₹{{ tx.customer_refund|floatformat:2 }}</h5>
+                            {% else %}
+                            <span class="fw-bold text-primary">Balance Due:</span>
+                            <h5 class="fw-bolder text-primary mb-0">₹0.00</h5>
+                            {% endif %}
+                        </div>
+                        {% if tx.payment_reference %}
+                        <div class="small text-muted mt-2">
+                            Settlement Ref: {{ tx.payment_reference }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% elif tx.is_buyback %}
+            <h6 class="fw-bold text-dark mb-3 border-bottom pb-2">
+                <i class="bi bi-cash-stack me-1 text-success"></i> Buyback Payout Summary
+            </h6>
+            <div class="p-3 border rounded-3 bg-light mb-4">
+                <div class="row align-items-center">
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Total Outright Payout Amount</div>
+                        <h4 class="fw-bold text-success mb-0">₹{{ tx.final_value|floatformat:2 }}</h4>
+                    </div>
+                    <div class="col-sm-6 text-sm-end mt-2 mt-sm-0">
+                        <span class="badge bg-light text-dark border me-1">
+                            <i class="bi bi-wallet2 me-1"></i> {{ tx.payment_method }}
+                        </span>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                            {{ tx.payment_status }}
+                        </span>
+                        {% if tx.payment_reference %}
+                        <div class="small text-muted mt-1">Ref: {{ tx.payment_reference }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Signatures Block for Official Store Voucher -->
+            <div class="row mt-5 pt-4 border-top text-center">
+                <div class="col-6">
+                    <div style="height: 45px;"></div>
+                    <div class="border-top pt-2 mx-auto" style="max-width: 200px;">
+                        <small class="fw-semibold text-muted text-uppercase">Customer Signature</small>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div style="height: 45px;"></div>
+                    <div class="border-top pt-2 mx-auto" style="max-width: 200px;">
+                        <small class="fw-semibold text-muted text-uppercase">Authorized Assayer / Store</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cancellation Modal -->
+{% if tx.status == 'Completed' %}
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="post" action="{% url 'old_gold_cancel' tx.id %}">
+            {% csrf_token %}
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-danger" id="cancelModalLabel">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i> Cancel Old Gold Transaction
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small">
+                        Are you sure you want to cancel transaction <strong>{{ tx.transaction_number }}</strong>?
+                        This will mark the voucher as Cancelled and create an audit log.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Cancellation Reason <span class="text-danger">*</span></label>
+                        {{ cancel_form.cancellation_reason }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-danger btn-sm">Confirm Cancellation</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<style>
+@media print {
+    body { background-color: #fff !important; }
+    .main-sidebar, .top-navbar, .sidebar, .btn, .modal, .alert, header, nav { display: none !important; }
+    .main-content { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+    #printableVoucher { box-shadow: none !important; border: 1px solid #dee2e6 !important; width: 100% !important; max-width: 100% !important; }
+}
+</style>
+{% endblock %}

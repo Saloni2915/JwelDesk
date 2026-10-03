@@ -8,12 +8,18 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Avg, Count, Q, Sum
+from django.http import JsonResponse
 from django.utils import timezone
-from .models import Sale, Enquiry
-from .forms import PaymentForm, SaleForm, EnquiryForm
+from .models import Sale, Payment, Enquiry, OldGoldTransaction, generate_old_gold_number
+from .forms import (
+    PaymentForm, SaleForm, EnquiryForm,
+    OldGoldExchangeForm, OldGoldBuybackForm, OldGoldCancelForm
+)
 from .whatsapp import get_whatsapp_context_for_sale
 from inventory.models import JewelleryItem
-from inventory import stock
+from inventory import stock, pricing
+from team.permissions import require_permission, has_module_perm
+from accounts.models import CompanySettings
 
 
 # ==============================================================================
@@ -346,6 +352,28 @@ def sales_report(request):
     items_sold = totals['items_sold'] or 0
     average_sale_value = totals['average_sale_value'] or Decimal('0.00')
 
+    # Old gold transactions in date range (without corrupting normal sales totals)
+    old_golds = OldGoldTransaction.objects.filter(
+        created_at__date__gte=start_date,
+        created_at__date__lte=end_date,
+        status=OldGoldTransaction.STATUS_COMPLETED
+    )
+    exchange_aggr = old_golds.filter(transaction_type=OldGoldTransaction.TYPE_EXCHANGE).aggregate(
+        count=Count('id'),
+        total_val=Sum('final_value'),
+        total_net_wt=Sum('net_weight')
+    )
+    buyback_aggr = old_golds.filter(transaction_type=OldGoldTransaction.TYPE_BUYBACK).aggregate(
+        count=Count('id'),
+        total_val=Sum('final_value'),
+        total_net_wt=Sum('net_weight')
+    )
+    exchange_count = exchange_aggr['count'] or 0
+    exchange_value = exchange_aggr['total_val'] or Decimal('0.00')
+    buyback_count = buyback_aggr['count'] or 0
+    buyback_payout = buyback_aggr['total_val'] or Decimal('0.00')
+    total_old_gold_weight = (exchange_aggr['total_net_wt'] or Decimal('0.000')) + (buyback_aggr['total_net_wt'] or Decimal('0.000'))
+
     # Pagination (keeps the selected range on every page link).
     paginator = Paginator(sales, SALES_REPORT_PER_PAGE)
     page_number = request.GET.get('page')
@@ -364,6 +392,11 @@ def sales_report(request):
         'sales_count': sales_count,
         'items_sold': items_sold,
         'average_sale_value': average_sale_value,
+        'exchange_count': exchange_count,
+        'exchange_value': exchange_value,
+        'buyback_count': buyback_count,
+        'buyback_payout': buyback_payout,
+        'total_old_gold_weight': total_old_gold_weight,
     }
     return render(request, 'sales/sales_report.html', context)
 
@@ -376,12 +409,6 @@ def payment_add(request, pk):
     GET simply returns to the sale; POST validates through PaymentForm
     (amount > 0 and <= remaining due) before saving.
     """
-    from django.contrib import messages
-    from django.shortcuts import get_object_or_404, redirect
-
-    from .forms import PaymentForm
-    from .models import Sale
-
     sale = get_object_or_404(Sale, pk=pk)
     if request.method != 'POST':
         return redirect('sale_detail', pk=sale.pk)
@@ -402,4 +429,328 @@ def payment_add(request, pk):
         for field, errs in form.errors.items())
     messages.error(request, f'Payment not recorded — {errors}')
     return redirect('sale_detail', pk=sale.pk)
+
+
+# ==============================================================================
+# OLD GOLD EXCHANGE & BUYBACK VIEWS
+# ==============================================================================
+
+@require_permission('sales', 'view')
+def old_gold_list(request):
+    """
+    Transaction history for Old Gold Exchanges and Buybacks.
+    Provides searching, type filtering, status filtering, and aggregate summaries.
+    """
+    transactions = OldGoldTransaction.objects.select_related(
+        'customer', 'new_sale', 'new_sale__jewellery_item', 'processed_by'
+    ).order_by('-created_at', '-id')
+
+    # Search (Customer name, mobile, item description, voucher number)
+    q = request.GET.get('q', '').strip()
+    if q:
+        transactions = transactions.filter(
+            Q(customer__name__icontains=q) |
+            Q(customer__mobile__icontains=q) |
+            Q(transaction_number__icontains=q) |
+            Q(item_description__icontains=q) |
+            Q(new_sale__jewellery_item__name__icontains=q) |
+            Q(new_sale__jewellery_item__tag_number__icontains=q)
+        )
+
+    # Transaction type filter (Exchange vs Buyback)
+    tx_type = request.GET.get('type', '').strip()
+    if tx_type in [OldGoldTransaction.TYPE_EXCHANGE, OldGoldTransaction.TYPE_BUYBACK]:
+        transactions = transactions.filter(transaction_type=tx_type)
+
+    # Status filter
+    status = request.GET.get('status', '').strip()
+    if status in [OldGoldTransaction.STATUS_COMPLETED, OldGoldTransaction.STATUS_CANCELLED]:
+        transactions = transactions.filter(status=status)
+
+    # Totals across all completed transactions
+    completed_txs = OldGoldTransaction.objects.filter(status=OldGoldTransaction.STATUS_COMPLETED)
+    total_val_all = completed_txs.aggregate(total=Sum('final_value'))['total'] or Decimal('0.00')
+    total_net_wt_all = completed_txs.aggregate(total=Sum('net_weight'))['total'] or Decimal('0.000')
+    exchange_count_all = completed_txs.filter(transaction_type=OldGoldTransaction.TYPE_EXCHANGE).count()
+    buyback_count_all = completed_txs.filter(transaction_type=OldGoldTransaction.TYPE_BUYBACK).count()
+
+    paginator = Paginator(transactions, 15)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_title': 'Old Gold Transactions',
+        'transactions': page_obj,
+        'page_obj': page_obj,
+        'selected_q': q,
+        'selected_type': tx_type,
+        'selected_status': status,
+        'total_val_all': total_val_all,
+        'total_net_wt_all': total_net_wt_all,
+        'exchange_count_all': exchange_count_all,
+        'buyback_count_all': buyback_count_all,
+        'type_choices': OldGoldTransaction.TYPE_CHOICES,
+        'status_choices': OldGoldTransaction.STATUS_CHOICES,
+    }
+    return render(request, 'sales/old_gold_list.html', context)
+
+
+@require_permission('sales', 'add')
+def old_gold_exchange_create(request):
+    """
+    Create an Old Gold Exchange transaction:
+    - Calculates Old Gold Valuation using jewellery pricing engine conventions.
+    - Sells new jewellery piece from showroom inventory.
+    - Atomically reduces inventory, creates Sale, logs Exchange Payment credit, and records OldGoldTransaction.
+    """
+    initial_data = {}
+    if 'customer' in request.GET:
+        initial_data['customer'] = request.GET.get('customer')
+    if 'item' in request.GET:
+        initial_data['new_jewellery_item'] = request.GET.get('item')
+        try:
+            it = JewelleryItem.objects.get(pk=request.GET.get('item'))
+            initial_data['new_sale_price'] = it.selling_price
+        except JewelleryItem.DoesNotExist:
+            pass
+
+    if request.method == 'POST':
+        form = OldGoldExchangeForm(request.POST)
+        if form.is_valid():
+            with transaction.atomic():
+                # Re-fetch item with select_for_update
+                new_item = form.cleaned_data['new_jewellery_item']
+                locked_item = JewelleryItem.objects.select_for_update().get(pk=new_item.pk)
+                if locked_item.status == 'Sold' or locked_item.quantity <= 0:
+                    messages.error(request, f"Cannot exchange: '{locked_item.name}' ({locked_item.item_code}) is already SOLD.")
+                    return render(request, 'sales/old_gold_exchange_form.html', {'form': form, 'page_title': 'Old Gold Exchange'})
+
+                # Server-side calculation verification using Pricing Engine conventions
+                raw_data = form.cleaned_data
+                val = OldGoldTransaction.compute_valuation(
+                    gross_weight=raw_data['gross_weight'],
+                    stone_weight=raw_data.get('stone_weight') or Decimal('0.000'),
+                    metal_type=raw_data.get('metal_type', 'Gold'),
+                    purity=raw_data.get('purity', '22K'),
+                    custom_purity_percent=raw_data.get('custom_purity_percent'),
+                    applicable_rate=raw_data.get('applicable_rate'),
+                    deduction_percent=raw_data.get('deduction_percent') or Decimal('0.00'),
+                )
+
+                new_price = raw_data['new_sale_price']
+                diff_amount = new_price - val['final_value']
+                tx_number = generate_old_gold_number(OldGoldTransaction.TYPE_EXCHANGE)
+
+                # 1. Create Sale for new jewellery piece
+                sale = Sale.objects.create(
+                    customer=raw_data['customer'],
+                    jewellery_item=locked_item,
+                    sale_price=new_price,
+                    sale_date=timezone.now(),
+                    payment_method='Exchange',
+                    notes=f"Exchange against Old Gold Voucher {tx_number}"
+                )
+
+                # 2. Safely deduct inventory piece using existing stock management
+                stock.record_sale(locked_item, sale, user=request.user)
+
+                # 3. Apply Old Gold Credit as Payment against Sale
+                old_gold_credit = min(sale.sale_price, val['final_value'])
+                Payment.objects.create(
+                    sale=sale,
+                    amount=old_gold_credit,
+                    payment_method='Exchange',
+                    reference=tx_number,
+                    notes='Old Gold Exchange Credit'
+                )
+
+                # 4. If customer owes difference and paid at counter
+                settlement_method = raw_data.get('settlement_payment_method')
+                settlement_ref = raw_data.get('settlement_payment_reference') or ''
+                if diff_amount > 0 and settlement_method:
+                    Payment.objects.create(
+                        sale=sale,
+                        amount=diff_amount,
+                        payment_method=settlement_method,
+                        reference=settlement_ref,
+                        notes='Settlement payment for exchange difference'
+                    )
+
+                # 5. Create OldGoldTransaction record
+                og_tx = form.save(commit=False)
+                og_tx.transaction_number = tx_number
+                og_tx.transaction_type = OldGoldTransaction.TYPE_EXCHANGE
+                og_tx.net_weight = val['net_weight']
+                og_tx.purity_factor = val['purity_factor']
+                og_tx.pure_weight = val['pure_weight']
+                og_tx.effective_rate = val['effective_rate']
+                og_tx.gross_valuation = val['gross_valuation']
+                og_tx.deduction_amount = val['deduction_amount']
+                og_tx.final_value = val['final_value']
+                og_tx.inventory_status = 'Vault Stock'
+                og_tx.new_sale = sale
+                og_tx.new_item_price = new_price
+                og_tx.difference_amount = diff_amount
+                og_tx.payment_method = 'Adjusted in Sale'
+                og_tx.payment_status = 'Paid' if (diff_amount <= 0 or settlement_method) else 'Pending'
+                og_tx.status = OldGoldTransaction.STATUS_COMPLETED
+                og_tx.processed_by = request.user
+                og_tx.save()
+
+                messages.success(
+                    request,
+                    f"Exchange {tx_number} completed successfully! "
+                    f"New piece '{locked_item.name}' sold to {raw_data['customer'].name}. "
+                    f"Old Gold Credit: Rs. {val['final_value']:,.2f}."
+                )
+                return redirect('old_gold_detail', pk=og_tx.pk)
+    else:
+        form = OldGoldExchangeForm(initial=initial_data)
+
+    context = {
+        'form': form,
+        'page_title': 'Old Gold Exchange with New Jewellery',
+    }
+    return render(request, 'sales/old_gold_exchange_form.html', context)
+
+
+@require_permission('sales', 'add')
+def old_gold_buyback_create(request):
+    """
+    Create an Outright Old Gold Buyback transaction (Cash/Bank payout to customer).
+    - Calculates scrap valuation.
+    - Records payout method and reference without performing real financial calls.
+    - Stores scrap item in Vault Stock.
+    """
+    initial_data = {}
+    if 'customer' in request.GET:
+        initial_data['customer'] = request.GET.get('customer')
+
+    if request.method == 'POST':
+        form = OldGoldBuybackForm(request.POST)
+        if form.is_valid():
+            with transaction.atomic():
+                raw_data = form.cleaned_data
+                val = OldGoldTransaction.compute_valuation(
+                    gross_weight=raw_data['gross_weight'],
+                    stone_weight=raw_data.get('stone_weight') or Decimal('0.000'),
+                    metal_type=raw_data.get('metal_type', 'Gold'),
+                    purity=raw_data.get('purity', '22K'),
+                    custom_purity_percent=raw_data.get('custom_purity_percent'),
+                    applicable_rate=raw_data.get('applicable_rate'),
+                    deduction_percent=raw_data.get('deduction_percent') or Decimal('0.00'),
+                )
+                tx_number = generate_old_gold_number(OldGoldTransaction.TYPE_BUYBACK)
+
+                og_tx = form.save(commit=False)
+                og_tx.transaction_number = tx_number
+                og_tx.transaction_type = OldGoldTransaction.TYPE_BUYBACK
+                og_tx.net_weight = val['net_weight']
+                og_tx.purity_factor = val['purity_factor']
+                og_tx.pure_weight = val['pure_weight']
+                og_tx.effective_rate = val['effective_rate']
+                og_tx.gross_valuation = val['gross_valuation']
+                og_tx.deduction_amount = val['deduction_amount']
+                og_tx.final_value = val['final_value']
+                og_tx.inventory_status = 'Vault Stock'
+                og_tx.difference_amount = -val['final_value']  # Outflow to customer
+                og_tx.status = OldGoldTransaction.STATUS_COMPLETED
+                og_tx.processed_by = request.user
+                og_tx.save()
+
+                messages.success(
+                    request,
+                    f"Buyback {tx_number} recorded successfully! "
+                    f"Payout of Rs. {val['final_value']:,.2f} via {og_tx.payment_method} "
+                    f"to {og_tx.customer.name}."
+                )
+                return redirect('old_gold_detail', pk=og_tx.pk)
+    else:
+        form = OldGoldBuybackForm(initial=initial_data)
+
+    context = {
+        'form': form,
+        'page_title': 'Old Gold Outright Buyback',
+    }
+    return render(request, 'sales/old_gold_buyback_form.html', context)
+
+
+@require_permission('sales', 'view')
+def old_gold_detail(request, pk):
+    """
+    Detailed view and printable valuation/exchange voucher for an Old Gold transaction.
+    """
+    transaction_obj = get_object_or_404(
+        OldGoldTransaction.objects.select_related(
+            'customer', 'new_sale', 'new_sale__jewellery_item',
+            'processed_by', 'cancelled_by'
+        ),
+        pk=pk
+    )
+    company = CompanySettings.objects.first()
+    cancel_form = OldGoldCancelForm()
+
+    context = {
+        'page_title': f"{transaction_obj.transaction_number} - {transaction_obj.get_transaction_type_display()}",
+        'tx': transaction_obj,
+        'company': company,
+        'cancel_form': cancel_form,
+    }
+    return render(request, 'sales/old_gold_detail.html', context)
+
+
+@require_permission('sales', 'edit')
+def old_gold_cancel(request, pk):
+    """
+    Safely cancel an Old Gold transaction with mandatory reason and audit logging.
+    """
+    transaction_obj = get_object_or_404(OldGoldTransaction, pk=pk)
+    if request.method != 'POST':
+        return redirect('old_gold_detail', pk=transaction_obj.pk)
+
+    if transaction_obj.status == OldGoldTransaction.STATUS_CANCELLED:
+        messages.error(request, f"Transaction {transaction_obj.transaction_number} is already cancelled.")
+        return redirect('old_gold_detail', pk=transaction_obj.pk)
+
+    form = OldGoldCancelForm(request.POST)
+    if form.is_valid():
+        reason = form.cleaned_data['cancellation_reason']
+        with transaction.atomic():
+            transaction_obj.cancel(user=request.user, reason=reason)
+            if transaction_obj.new_sale:
+                sale = transaction_obj.new_sale
+                sale.notes += f"\n[CANCELLED] Linked Old Gold Exchange {transaction_obj.transaction_number} was cancelled by {request.user.username} on {timezone.now().strftime('%Y-%m-%d %H:%M')}: {reason}"
+                sale.save(update_fields=['notes'])
+        messages.warning(request, f"Transaction {transaction_obj.transaction_number} has been cancelled successfully.")
+        return redirect('old_gold_detail', pk=transaction_obj.pk)
+
+    messages.error(request, "Failed to cancel transaction: cancellation reason is required.")
+    return redirect('old_gold_detail', pk=transaction_obj.pk)
+
+
+@login_required
+def old_gold_rate_api(request):
+    """
+    Helper API returning base rate and effective rate for metal type and purity.
+    Used for seamless dynamic calculation on Old Gold forms.
+    """
+    metal_type = request.GET.get('metal_type', 'Gold').strip()
+    purity = request.GET.get('purity', '22K').strip()
+    custom_purity = request.GET.get('custom_purity', '').strip()
+
+    base_rate = pricing.get_current_metal_rate(metal_type)
+    if purity == 'Other' and custom_purity:
+        p_factor = pricing.to_decimal(custom_purity) / Decimal('100.00')
+    else:
+        p_factor = pricing.parse_purity_factor(metal_type, purity)
+
+    effective_rate = pricing.round_curr(base_rate * p_factor)
+    return JsonResponse({
+        'metal_type': metal_type,
+        'purity': purity,
+        'base_rate': float(base_rate),
+        'purity_factor': float(p_factor),
+        'effective_rate': float(effective_rate),
+    })
+
 

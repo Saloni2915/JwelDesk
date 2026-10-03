@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} — JewelDesk{% endblock %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block page_actions %}
+<a href="{% if is_edit %}{% url 'karigar:karigar_detail' karigar.id %}{% else %}{% url 'karigar:karigar_list' %}{% endif %}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i> Back
+</a>
+{% endblock %}
+
+{% block content %}
+<form method="post" novalidate class="mb-5">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger shadow-sm">
+        {% for error in form.non_field_errors %}
+        <div><i class="bi bi-exclamation-circle me-1"></i> {{ error }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="row g-4">
+        <!-- Main Info -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-person-badge me-2 text-dark"></i> Artisan / Workshop Profile</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Karigar Code</label>
+                            {{ form.karigar_code }}
+                            {% if form.karigar_code.errors %}
+                            <div class="text-danger small mt-1">{{ form.karigar_code.errors.0 }}</div>
+                            {% endif %}
+                            <small class="text-muted d-block mt-1">Leave blank to auto-generate (e.g. KRG-0001)</small>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label small fw-semibold required">Artisan / Workshop Name *</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                            <div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold required">Primary Mobile *</label>
+                            {{ form.mobile }}
+                            {% if form.mobile.errors %}
+                            <div class="text-danger small mt-1">{{ form.mobile.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Alternate Contact</label>
+                            {{ form.alternate_contact }}
+                            {% if form.alternate_contact.errors %}
+                            <div class="text-danger small mt-1">{{ form.alternate_contact.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Email Address</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                            <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Specialization</label>
+                            {{ form.specialization }}
+                            {% if form.specialization.errors %}
+                            <div class="text-danger small mt-1">{{ form.specialization.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Workshop / Residence Address</label>
+                            {{ form.address }}
+                            {% if form.address.errors %}
+                            <div class="text-danger small mt-1">{{ form.address.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Banking & Compliance -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-bank me-2 text-dark"></i> Banking &amp; Tax / Compliance</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">PAN / Aadhaar / Reg. No.</label>
+                            {{ form.pan_or_id }}
+                            {% if form.pan_or_id.errors %}
+                            <div class="text-danger small mt-1">{{ form.pan_or_id.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Joining Date</label>
+                            {{ form.joining_date }}
+                            {% if form.joining_date.errors %}
+                            <div class="text-danger small mt-1">{{ form.joining_date.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Bank / Settlement Details</label>
+                            {{ form.bank_details }}
+                            {% if form.bank_details.errors %}
+                            <div class="text-danger small mt-1">{{ form.bank_details.errors.0 }}</div>
+                            {% endif %}
+                            <small class="text-muted">Account Number, Bank Name, IFSC code, or UPI ID for direct transfers.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar / Settings & Notes -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-gear me-2 text-dark"></i> Status &amp; State</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Account Status</label>
+                        {{ form.status }}
+                        {% if form.status.errors %}
+                        <div class="text-danger small mt-1">{{ form.status.errors.0 }}</div>
+                        {% endif %}
+                        <small class="text-muted d-block mt-1">Inactive karigars cannot be assigned new jobs.</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Internal Notes</label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                        <div class="text-danger small mt-1">{{ form.notes.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2 pt-2">
+                        <button type="submit" class="btn btn-dark">
+                            <i class="bi bi-check-lg me-1"></i> {% if is_edit %}Save Changes{% else %}Create Karigar{% endif %}
+                        </button>
+                        <a href="{% if is_edit %}{% url 'karigar:karigar_detail' karigar.id %}{% else %}{% url 'karigar:karigar_list' %}{% endif %}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}

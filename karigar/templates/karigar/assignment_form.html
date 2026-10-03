@@ -1,0 +1,291 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} — JewelDesk{% endblock %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block page_actions %}
+<a href="{% if is_edit %}{% url 'karigar:assignment_detail' assignment.id %}{% else %}{% url 'karigar:assignment_list' %}{% endif %}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i> Back
+</a>
+{% endblock %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data" novalidate class="mb-5">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger shadow-sm">
+        {% for error in form.non_field_errors %}
+        <div><i class="bi bi-exclamation-circle me-1"></i> {{ error }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="row g-4">
+        <!-- Main Work Details Column -->
+        <div class="col-lg-8">
+            <!-- Basic Job Details -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-hammer me-2 text-dark"></i> Work Assignment Details</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold required">Artisan / Karigar *</label>
+                            {{ form.karigar }}
+                            {% if form.karigar.errors %}
+                            <div class="text-danger small mt-1">{{ form.karigar.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold required">Work Type *</label>
+                            {{ form.work_type }}
+                            {% if form.work_type.errors %}
+                            <div class="text-danger small mt-1">{{ form.work_type.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">Priority</label>
+                            {{ form.priority }}
+                            {% if form.priority.errors %}
+                            <div class="text-danger small mt-1">{{ form.priority.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold required">Job Instructions / Specifications *</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                            <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>
+                            {% endif %}
+                            <small class="text-muted">Specify ring size, bangle diameter, hallmarking needs, target dimensions, stone arrangement, etc.</small>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Reference Sketch / Design CAD Image</label>
+                            {{ form.reference_image }}
+                            {% if form.reference_image.errors %}
+                            <div class="text-danger small mt-1">{{ form.reference_image.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Material Issued & Weight Accountability -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-gem me-2 text-warning"></i> Material Issued &amp; Weight Accountability</h6>
+                    <span class="badge bg-light text-dark border">Grams (0.001g precision)</span>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Metal Type</label>
+                            {{ form.metal_type }}
+                            {% if form.metal_type.errors %}
+                            <div class="text-danger small mt-1">{{ form.metal_type.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Metal Purity</label>
+                            {{ form.purity }}
+                            {% if form.purity.errors %}
+                            <div class="text-danger small mt-1">{{ form.purity.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold required">Gross Weight Issued (g) *</label>
+                            {{ form.gross_weight_issued }}
+                            {% if form.gross_weight_issued.errors %}
+                            <div class="text-danger small mt-1">{{ form.gross_weight_issued.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Stones / Finding Wt (g)</label>
+                            {{ form.stone_weight_issued }}
+                            {% if form.stone_weight_issued.errors %}
+                            <div class="text-danger small mt-1">{{ form.stone_weight_issued.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Allowed Wastage %</label>
+                            <div class="input-group">
+                                {{ form.wastage_allowed_percent }}
+                                <span class="input-group-text">%</span>
+                            </div>
+                            {% if form.wastage_allowed_percent.errors %}
+                            <div class="text-danger small mt-1">{{ form.wastage_allowed_percent.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Live net weight banner -->
+                    <div class="alert alert-light border mt-3 mb-0 d-flex justify-content-between align-items-center py-2">
+                        <span class="small text-muted"><i class="bi bi-info-circle me-1"></i> Net Precious Metal Weight Issued:</span>
+                        <span class="fw-bold font-monospace fs-6" id="net-weight-preview">0.000 g</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Labour & Making Charges -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-cash-coin me-2 text-success"></i> Labour &amp; Making Charges</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Making Charge Type</label>
+                            {{ form.making_charge_type }}
+                            {% if form.making_charge_type.errors %}
+                            <div class="text-danger small mt-1">{{ form.making_charge_type.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Making Charge Rate</label>
+                            {{ form.making_charge_rate }}
+                            {% if form.making_charge_rate.errors %}
+                            <div class="text-danger small mt-1">{{ form.making_charge_rate.errors.0 }}</div>
+                            {% endif %}
+                            <small class="text-muted">₹ per gram or fixed lump sum ₹</small>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Stone Setting Charges (₹)</label>
+                            {{ form.stone_charges }}
+                            {% if form.stone_charges.errors %}
+                            <div class="text-danger small mt-1">{{ form.stone_charges.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Other Approved Charges (₹)</label>
+                            {{ form.other_charges }}
+                            {% if form.other_charges.errors %}
+                            <div class="text-danger small mt-1">{{ form.other_charges.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Other Charges Description</label>
+                            {{ form.other_charges_description }}
+                            {% if form.other_charges_description.errors %}
+                            <div class="text-danger small mt-1">{{ form.other_charges_description.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Integration & Schedule -->
+        <div class="col-lg-4">
+            <!-- Timeline & Schedule -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-calendar-event me-2 text-dark"></i> Schedule &amp; Deadlines</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold required">Issue Date *</label>
+                        {{ form.issue_date }}
+                        {% if form.issue_date.errors %}
+                        <div class="text-danger small mt-1">{{ form.issue_date.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Expected Completion Date</label>
+                        {{ form.expected_completion_date }}
+                        {% if form.expected_completion_date.errors %}
+                        <div class="text-danger small mt-1">{{ form.expected_completion_date.errors.0 }}</div>
+                        {% endif %}
+                        <small class="text-muted">Target delivery from artisan workshop</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer & Inventory Integration Links -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-link-45deg me-2 text-dark"></i> Order &amp; Inventory Links</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Customer (Optional)</label>
+                        {{ form.customer }}
+                        {% if form.customer.errors %}
+                        <div class="text-danger small mt-1">{{ form.customer.errors.0 }}</div>
+                        {% endif %}
+                        <small class="text-muted">Link if work is custom or repair for a customer</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Custom Order (Optional)</label>
+                        {{ form.custom_order }}
+                        {% if form.custom_order.errors %}
+                        <div class="text-danger small mt-1">{{ form.custom_order.errors.0 }}</div>
+                        {% endif %}
+                        <small class="text-muted">Link to active custom order ticket</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Showroom Inventory Piece (Optional)</label>
+                        {{ form.inventory_item }}
+                        {% if form.inventory_item.errors %}
+                        <div class="text-danger small mt-1">{{ form.inventory_item.errors.0 }}</div>
+                        {% endif %}
+                        <small class="text-muted">Select if an existing showroom piece is sent for repair, polishing, or resizing.</small>
+                    </div>
+
+                    {% if form.issue_stock_item %}
+                    <div class="form-check form-switch mb-3 p-2 bg-light rounded border">
+                        {{ form.issue_stock_item }}
+                        <label class="form-check-label small fw-semibold ms-2" for="{{ form.issue_stock_item.id_for_label }}">
+                            {{ form.issue_stock_item.label }}
+                        </label>
+                        <div class="form-text small text-muted ms-2">{{ form.issue_stock_item.help_text }}</div>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Internal Notes</label>
+                        {{ form.notes }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-dark btn-lg fs-6">
+                    <i class="bi bi-check-lg me-1"></i> {% if is_edit %}Update Assignment{% else %}Issue Assignment{% endif %}
+                </button>
+                <a href="{% if is_edit %}{% url 'karigar:assignment_detail' assignment.id %}{% else %}{% url 'karigar:assignment_list' %}{% endif %}" class="btn btn-outline-secondary">
+                    Cancel
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const grossInput = document.getElementById('id_gross_weight_issued');
+    const stoneInput = document.getElementById('id_stone_weight_issued');
+    const preview = document.getElementById('net-weight-preview');
+
+    function updateNetPreview() {
+        if (!grossInput || !preview) return;
+        const g = parseFloat(grossInput.value) || 0;
+        const s = parseFloat(stoneInput ? stoneInput.value : 0) || 0;
+        const net = Math.max(0, g - s);
+        preview.textContent = net.toFixed(3) + ' g';
+    }
+
+    if (grossInput) grossInput.addEventListener('input', updateNetPreview);
+    if (stoneInput) stoneInput.addEventListener('input', updateNetPreview);
+    updateNetPreview();
+});
+</script>
+{% endblock %}

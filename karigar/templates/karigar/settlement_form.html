@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} — JewelDesk{% endblock %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'karigar:settlement_list' %}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i> Back to Settlements
+</a>
+{% endblock %}
+
+{% block content %}
+<form method="post" novalidate class="mb-5">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger shadow-sm">
+        {% for error in form.non_field_errors %}
+        <div><i class="bi bi-exclamation-circle me-1"></i> {{ error }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="row g-4 justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-cash-stack me-2 text-success"></i> Payment Voucher Details</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold required">Artisan / Karigar *</label>
+                            {{ form.karigar }}
+                            {% if form.karigar.errors %}
+                            <div class="text-danger small mt-1">{{ form.karigar.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold required">Payment Date *</label>
+                            {{ form.payment_date }}
+                            {% if form.payment_date.errors %}
+                            <div class="text-danger small mt-1">{{ form.payment_date.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold required">Settlement Amount (₹) *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                {{ form.amount }}
+                            </div>
+                            {% if form.amount.errors %}
+                            <div class="text-danger small mt-1">{{ form.amount.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold required">Payment Method *</label>
+                            {{ form.payment_method }}
+                            {% if form.payment_method.errors %}
+                            <div class="text-danger small mt-1">{{ form.payment_method.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Payment Reference / Transaction ID</label>
+                            {{ form.payment_reference }}
+                            {% if form.payment_reference.errors %}
+                            <div class="text-danger small mt-1">{{ form.payment_reference.errors.0 }}</div>
+                            {% endif %}
+                            <small class="text-muted">Cheque Number, Bank UTR, UPI Reference, or Voucher Slip ID.</small>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Allocate Towards Work Assignments (Optional)</label>
+                            {{ form.assignments }}
+                            {% if form.assignments.errors %}
+                            <div class="text-danger small mt-1">{{ form.assignments.errors.0 }}</div>
+                            {% endif %}
+                            <small class="text-muted">Select specific assignments to mark as settled by this payment. Leave unselected for advance payment on account.</small>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Payment Notes / Remarks</label>
+                            {{ form.notes }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit action -->
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-success btn-lg fs-6">
+                    <i class="bi bi-check2-circle me-1"></i> Record &amp; Post Settlement
+                </button>
+                <a href="{% url 'karigar:settlement_list' %}" class="btn btn-outline-secondary">
+                    Cancel
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}

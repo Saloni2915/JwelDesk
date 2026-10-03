@@ -1,0 +1,286 @@
+{% extends 'base.html' %}
+
+{% block title %}Manufacturing &amp; Karigar Reports — JewelDesk{% endblock %}
+
+{% block page_title %}Karigar &amp; Manufacturing Reports{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="?tab={{ tab }}&karigar={{ selected_karigar }}&start_date={{ start_date }}&end_date={{ end_date }}&export=csv" class="btn btn-outline-success btn-sm">
+        <i class="bi bi-file-earmark-excel me-1"></i> Export to CSV
+    </a>
+    <a href="{% url 'karigar:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-speedometer2 me-1"></i> Dashboard
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Top Metrics Overview -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card h-100 border-0 shadow-sm border-start border-4 border-warning">
+            <div class="card-body">
+                <span class="text-muted small fw-semibold text-uppercase">Total Net Metal Issued</span>
+                <h4 class="fw-bold mb-0 text-dark mt-1">{{ aggregates.total_issued_wt|floatformat:3 }} g</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card h-100 border-0 shadow-sm border-start border-4 border-success">
+            <div class="card-body">
+                <span class="text-muted small fw-semibold text-uppercase">Finished Net Received</span>
+                <h4 class="fw-bold mb-0 text-success mt-1">{{ aggregates.total_received_wt|floatformat:3 }} g</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card h-100 border-0 shadow-sm border-start border-4 {% if aggregates.total_diff > 0 %}border-danger{% else %}border-info{% endif %}">
+            <div class="card-body">
+                <span class="text-muted small fw-semibold text-uppercase">Accountability Variance</span>
+                <h4 class="fw-bold mb-0 {% if aggregates.total_diff > 0 %}text-danger{% else %}text-info{% endif %} mt-1">
+                    {{ aggregates.total_diff|floatformat:3 }} g
+                </h4>
+                <small class="text-muted">Actual loss: {{ aggregates.total_actual_loss|floatformat:3 }}g</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card h-100 border-0 shadow-sm border-start border-4 border-primary">
+            <div class="card-body">
+                <span class="text-muted small fw-semibold text-uppercase">Labour Charges Total</span>
+                <h4 class="fw-bold mb-0 text-primary mt-1">₹{{ aggregates.total_charges|floatformat:2 }}</h4>
+                <small class="text-muted">Pending balance: ₹{{ aggregates.pending_balance|floatformat:2 }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-center">
+            <input type="hidden" name="tab" value="{{ tab }}">
+            <div class="col-md-4">
+                <select name="karigar" class="form-select form-select-sm">
+                    <option value="">All Artisans</option>
+                    {% for k in karigars %}
+                    <option value="{{ k.id }}" {% if selected_karigar == k.id|stringformat:"s" %}selected{% endif %}>{{ k.name }} ({{ k.karigar_code }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="date" name="start_date" value="{{ start_date }}" class="form-control form-control-sm" placeholder="From Date">
+            </div>
+            <div class="col-md-3">
+                <input type="date" name="end_date" value="{{ end_date }}" class="form-control form-control-sm" placeholder="To Date">
+            </div>
+            <div class="col-md-2 d-flex gap-1">
+                <button type="submit" class="btn btn-dark btn-sm w-100">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+                <a href="?tab={{ tab }}" class="btn btn-outline-secondary btn-sm" title="Clear Filters">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabs Navigation -->
+<ul class="nav nav-pills mb-3" id="reportsTabs">
+    <li class="nav-item">
+        <a class="nav-link {% if tab == 'work' %}active bg-dark{% else %}text-dark{% endif %}" href="?tab=work&karigar={{ selected_karigar }}&start_date={{ start_date }}&end_date={{ end_date }}">
+            <i class="bi bi-hammer me-1"></i> Work Report
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if tab == 'material' %}active bg-dark{% else %}text-dark{% endif %}" href="?tab=material&karigar={{ selected_karigar }}&start_date={{ start_date }}&end_date={{ end_date }}">
+            <i class="bi bi-scale me-1"></i> Material Accountability
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if tab == 'charges' %}active bg-dark{% else %}text-dark{% endif %}" href="?tab=charges&karigar={{ selected_karigar }}&start_date={{ start_date }}&end_date={{ end_date }}">
+            <i class="bi bi-cash-stack me-1"></i> Charges &amp; Dues
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if tab == 'overdue' %}active bg-danger text-white{% else %}text-danger{% endif %}" href="?tab=overdue&karigar={{ selected_karigar }}&start_date={{ start_date }}&end_date={{ end_date }}">
+            <i class="bi bi-alarm me-1"></i> Overdue Work Report
+        </a>
+    </li>
+</ul>
+
+<!-- Report Data Tables -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            {% if tab == 'work' %}
+            <!-- Work Report Table -->
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light small">
+                    <tr>
+                        <th>Job Ref</th>
+                        <th>Artisan</th>
+                        <th>Work Type</th>
+                        <th>Issue Date</th>
+                        <th>Expected Date</th>
+                        <th>Actual Date</th>
+                        <th>Status</th>
+                        <th class="text-end pe-3">Total Charge</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asg in assignments %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'karigar:assignment_detail' asg.id %}" class="fw-bold font-monospace text-dark text-decoration-none">
+                                {{ asg.assignment_number }}
+                            </a>
+                        </td>
+                        <td>{{ asg.karigar.name }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ asg.work_type }}</span></td>
+                        <td>{{ asg.issue_date|date:"d M Y" }}</td>
+                        <td>{{ asg.expected_completion_date|date:"d M Y"|default:"-" }}</td>
+                        <td>{{ asg.actual_completion_date|date:"d M Y"|default:"-" }}</td>
+                        <td><span class="badge bg-secondary">{{ asg.status }}</span></td>
+                        <td class="text-end pe-3 fw-bold">₹{{ asg.total_charge|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">No records match the filter.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {% elif tab == 'material' %}
+            <!-- Material Accountability Report Table -->
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light small">
+                    <tr>
+                        <th>Job Ref</th>
+                        <th>Artisan</th>
+                        <th>Metal</th>
+                        <th>Net Issued</th>
+                        <th>Net Received</th>
+                        <th>Scrap Returned</th>
+                        <th>Actual Loss</th>
+                        <th>Allowed Loss</th>
+                        <th class="text-end pe-3">Variance Diff</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asg in assignments %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'karigar:assignment_detail' asg.id %}" class="fw-bold font-monospace text-dark text-decoration-none">
+                                {{ asg.assignment_number }}
+                            </a>
+                        </td>
+                        <td>{{ asg.karigar.name }}</td>
+                        <td>{{ asg.metal_type }} {{ asg.purity }}</td>
+                        <td class="fw-semibold">{{ asg.net_weight_issued|floatformat:3 }} g</td>
+                        <td class="text-success fw-semibold">{{ asg.net_weight_received|floatformat:3 }} g</td>
+                        <td>{{ asg.scrap_weight_returned|floatformat:3 }} g</td>
+                        <td class="text-danger">{{ asg.actual_wastage_weight|floatformat:3 }} g</td>
+                        <td>{{ asg.wastage_weight_allowed|floatformat:3 }} g</td>
+                        <td class="text-end pe-3 fw-bold {% if asg.weight_difference > 0 %}text-danger{% else %}text-success{% endif %}">
+                            {{ asg.weight_difference|floatformat:3 }} g
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-muted">No records match the filter.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {% elif tab == 'charges' %}
+            <!-- Charges Report Table -->
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light small">
+                    <tr>
+                        <th>Job Ref</th>
+                        <th>Artisan</th>
+                        <th>Charge Basis</th>
+                        <th>Rate</th>
+                        <th>Labour Charge</th>
+                        <th>Total Charge</th>
+                        <th>Paid Amount</th>
+                        <th class="text-end pe-3">Balance Due</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asg in assignments %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'karigar:assignment_detail' asg.id %}" class="fw-bold font-monospace text-dark text-decoration-none">
+                                {{ asg.assignment_number }}
+                            </a>
+                        </td>
+                        <td>{{ asg.karigar.name }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ asg.making_charge_type }}</span></td>
+                        <td>₹{{ asg.making_charge_rate|floatformat:2 }}</td>
+                        <td>₹{{ asg.labour_charge|floatformat:2 }}</td>
+                        <td class="fw-semibold">₹{{ asg.total_charge|floatformat:2 }}</td>
+                        <td class="text-success fw-semibold">₹{{ asg.paid_amount|floatformat:2 }}</td>
+                        <td class="text-end pe-3 fw-bold {% if asg.due_charge_amount > 0 %}text-danger{% else %}text-success{% endif %}">
+                            ₹{{ asg.due_charge_amount|floatformat:2 }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">No records match the filter.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {% elif tab == 'overdue' %}
+            <!-- Overdue Report Table -->
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light small">
+                    <tr>
+                        <th>Job Ref</th>
+                        <th>Artisan</th>
+                        <th>Customer / Order</th>
+                        <th>Due Date</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th class="text-end pe-3">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asg in assignments %}
+                    {% if asg.is_overdue %}
+                    <tr class="table-danger">
+                        <td>
+                            <a href="{% url 'karigar:assignment_detail' asg.id %}" class="fw-bold font-monospace text-danger text-decoration-none">
+                                {{ asg.assignment_number }}
+                            </a>
+                        </td>
+                        <td>{{ asg.karigar.name }}</td>
+                        <td>{{ asg.customer.name|default:"Showroom Stock" }}</td>
+                        <td class="text-danger fw-bold">{{ asg.expected_completion_date|date:"d M Y" }}</td>
+                        <td><span class="badge bg-danger">{{ asg.priority }}</span></td>
+                        <td><span class="badge bg-secondary">{{ asg.status }}</span></td>
+                        <td class="text-end pe-3">
+                            <a href="{% url 'karigar:assignment_detail' asg.id %}" class="btn btn-outline-danger btn-sm py-0 px-2">Inspect</a>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">No overdue jobs recorded.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+        {% include 'includes/pagination.html' with page_obj=page_obj %}
+    </div>
+</div>
+{% endblock %}

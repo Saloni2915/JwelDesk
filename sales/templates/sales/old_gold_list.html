@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+
+{% block title %}Old Gold Exchange & Buyback — JewelDesk{% endblock %}
+
+{% block page_title %}Old Gold Transactions{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="{% url 'old_gold_exchange_create' %}" class="btn btn-warning btn-sm text-dark fw-semibold">
+        <i class="bi bi-arrow-repeat me-1"></i> New Exchange
+    </a>
+    <a href="{% url 'old_gold_buyback_create' %}" class="btn btn-dark btn-sm">
+        <i class="bi bi-cash-stack me-1"></i> New Buyback
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- KPI Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 bg-body-tertiary">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase">Total Old Gold Value</span>
+                    <div class="rounded-circle p-2 bg-warning-subtle text-warning">
+                        <i class="bi bi-coin fs-5"></i>
+                    </div>
+                </div>
+                <h3 class="mb-1 fw-bold text-dark">₹{{ total_val_all|floatformat:2 }}</h3>
+                <small class="text-muted">Total value acquired from customers</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 bg-body-tertiary">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase">Exchanges</span>
+                    <div class="rounded-circle p-2 bg-primary-subtle text-primary">
+                        <i class="bi bi-arrow-repeat fs-5"></i>
+                    </div>
+                </div>
+                <h3 class="mb-1 fw-bold text-dark">{{ exchange_count_all }}</h3>
+                <small class="text-muted">Used toward new jewellery sales</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 bg-body-tertiary">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase">Buybacks</span>
+                    <div class="rounded-circle p-2 bg-success-subtle text-success">
+                        <i class="bi bi-cash fs-5"></i>
+                    </div>
+                </div>
+                <h3 class="mb-1 fw-bold text-dark">{{ buyback_count_all }}</h3>
+                <small class="text-muted">Outright scrap gold buybacks</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 bg-body-tertiary">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase">Net Scrap Weight</span>
+                    <div class="rounded-circle p-2 bg-secondary-subtle text-secondary">
+                        <i class="bi bi-shield-shaded fs-5"></i>
+                    </div>
+                </div>
+                <h3 class="mb-1 fw-bold text-dark">{{ total_net_wt_all|floatformat:3 }} g</h3>
+                <small class="text-muted">Net precious metal held in Vault</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search & Filter Card -->
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="q" value="{{ selected_q }}" class="form-control"
+                           placeholder="Search customer, voucher #, description, new item...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="type" class="form-select form-select-sm">
+                    <option value="">All Types (Exchange &amp; Buyback)</option>
+                    {% for key, val in type_choices %}
+                    <option value="{{ key }}" {% if selected_type == key %}selected{% endif %}>{{ val }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All Statuses</option>
+                    {% for key, val in status_choices %}
+                    <option value="{{ key }}" {% if selected_status == key %}selected{% endif %}>{{ val }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-1">
+                <button type="submit" class="btn btn-outline-dark btn-sm w-100">
+                    <i class="bi bi-funnel me-1"></i> Filter
+                </button>
+                <a href="{% url 'old_gold_list' %}" class="btn btn-outline-secondary btn-sm" title="Clear Filters">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Transactions Table -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Voucher #</th>
+                        <th>Type</th>
+                        <th>Customer</th>
+                        <th>Old Gold Item</th>
+                        <th>Purity &amp; Wt</th>
+                        <th>Valuation</th>
+                        <th>New Item / Settlement</th>
+                        <th>Status</th>
+                        <th>Date &amp; Staff</th>
+                        <th class="text-end pe-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tx in transactions %}
+                    <tr class="{% if tx.status == 'Cancelled' %}opacity-75 bg-light{% endif %}">
+                        <td class="ps-3">
+                            <a href="{% url 'old_gold_detail' tx.id %}" class="fw-bold font-monospace text-decoration-none text-dark">
+                                {{ tx.transaction_number }}
+                            </a>
+                        </td>
+                        <td>
+                            {% if tx.is_exchange %}
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                <i class="bi bi-arrow-repeat me-1"></i> Exchange
+                            </span>
+                            {% else %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                <i class="bi bi-cash-stack me-1"></i> Buyback
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'customer_detail' tx.customer.id %}" class="text-decoration-none text-dark fw-medium">
+                                {{ tx.customer.name }}
+                            </a>
+                            <small class="text-muted d-block">{{ tx.customer.mobile }}</small>
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-truncate" style="max-width: 180px;" title="{{ tx.item_description }}">
+                                {{ tx.item_description }}
+                            </div>
+                            <small class="text-muted">{{ tx.old_gold_type }} ({{ tx.metal_type }})</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-warning-subtle text-dark fw-semibold">{{ tx.purity }}</span>
+                            <small class="text-muted d-block">
+                                Net: <strong>{{ tx.net_weight }}g</strong> (Gr: {{ tx.gross_weight }}g)
+                            </small>
+                        </td>
+                        <td>
+                            <div class="fw-bold text-dark">₹{{ tx.final_value|floatformat:2 }}</div>
+                            <small class="text-muted">Rate: ₹{{ tx.effective_rate }}/g</small>
+                        </td>
+                        <td>
+                            {% if tx.is_exchange and tx.new_sale %}
+                            <a href="{% url 'sale_detail' tx.new_sale.id %}" class="text-decoration-none text-primary fw-medium">
+                                Sale #{{ tx.new_sale.id }} ({{ tx.new_sale.jewellery_item.name }})
+                            </a>
+                            <small class="d-block text-muted">
+                                {% if tx.difference_amount > 0 %}
+                                Customer Paid: <span class="text-success fw-semibold">₹{{ tx.difference_amount|floatformat:2 }}</span>
+                                {% elif tx.difference_amount < 0 %}
+                                Refunded: <span class="text-danger fw-semibold">₹{{ tx.customer_refund|floatformat:2 }}</span>
+                                {% else %}
+                                Even Exchange (₹0 due)
+                                {% endif %}
+                            </small>
+                            {% elif tx.is_buyback %}
+                            <span class="badge bg-light text-dark border">
+                                <i class="bi bi-wallet2 me-1"></i> {{ tx.payment_method }}
+                            </span>
+                            <small class="text-muted d-block">
+                                {{ tx.payment_status }} {% if tx.payment_reference %}· {{ tx.payment_reference }}{% endif %}
+                            </small>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if tx.status == 'Completed' %}
+                            <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Completed</span>
+                            {% else %}
+                            <span class="badge bg-danger" title="{{ tx.cancellation_reason }}">
+                                <i class="bi bi-x-circle me-1"></i> Cancelled
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div>{{ tx.created_at|date:"M d, Y" }}</div>
+                            <small class="text-muted">
+                                By: {{ tx.processed_by.username|default:"Staff" }}
+                            </small>
+                        </td>
+                        <td class="text-end pe-3">
+                            <a href="{% url 'old_gold_detail' tx.id %}" class="btn btn-outline-dark btn-sm py-1 px-2" title="View Memo / Voucher">
+                                <i class="bi bi-receipt-cutoff me-1"></i> Memo
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+                            No Old Gold transactions found.
+                            <div class="mt-2">
+                                <a href="{% url 'old_gold_exchange_create' %}" class="btn btn-warning btn-sm me-1 text-dark">
+                                    <i class="bi bi-arrow-repeat me-1"></i> Record Exchange
+                                </a>
+                                <a href="{% url 'old_gold_buyback_create' %}" class="btn btn-dark btn-sm">
+                                    <i class="bi bi-cash-stack me-1"></i> Record Buyback
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer bg-white border-0 py-3">
+        <nav aria-label="Transactions pagination">
+            <ul class="pagination pagination-sm justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ selected_q }}&type={{ selected_type }}&status={{ selected_status }}">Previous</a>
+                </li>
+                {% endif %}
+                <li class="page-item disabled">
+                    <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                </li>
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ selected_q }}&type={{ selected_type }}&status={{ selected_status }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -160,6 +160,7 @@ class EmployeePermission(models.Model):
     MODULE_REPORTS       = 'reports'
     MODULE_METAL_PRICES  = 'metal_prices'
     MODULE_SETTINGS      = 'settings'
+    MODULE_KARIGAR       = 'karigar'
 
     MODULE_CHOICES = [
         (MODULE_DASHBOARD,     'Dashboard'),
@@ -172,6 +173,7 @@ class EmployeePermission(models.Model):
         (MODULE_REPORTS,       'Reports'),
         (MODULE_METAL_PRICES,  'Metal Prices'),
         (MODULE_SETTINGS,      'Settings'),
+        (MODULE_KARIGAR,       'Karigar / Manufacturing'),
     ]
 
     MODULES = [c[0] for c in MODULE_CHOICES]
@@ -248,6 +250,7 @@ class EmployeePermission(models.Model):
                 cls.MODULE_REPORTS:       view_exp,
                 cls.MODULE_METAL_PRICES:  view_only,
                 cls.MODULE_SETTINGS:      view_only,
+                cls.MODULE_KARIGAR:       full,
             }
 
         elif role_name in (Role.ROLE_SALES, Role.ROLE_SALES_EXECUTIVE):
@@ -258,6 +261,7 @@ class EmployeePermission(models.Model):
                 cls.MODULE_SALES:         view_add,
                 cls.MODULE_CUSTOM_ORDERS: view_add,
                 cls.MODULE_METAL_PRICES:  view_only,
+                cls.MODULE_KARIGAR:       view_add,
             }
 
         elif role_name in (Role.ROLE_INVENTORY, Role.ROLE_INVENTORY_MANAGER):
@@ -265,6 +269,7 @@ class EmployeePermission(models.Model):
                 cls.MODULE_DASHBOARD:    view_only,
                 cls.MODULE_INVENTORY:    full,
                 cls.MODULE_METAL_PRICES: view_only,
+                cls.MODULE_KARIGAR:      full,
             }
 
         elif role_name == Role.ROLE_ACCOUNTANT:
@@ -273,6 +278,7 @@ class EmployeePermission(models.Model):
                 cls.MODULE_SALES:     view_exp,
                 cls.MODULE_REPORTS:   view_exp,
                 cls.MODULE_CUSTOMERS: view_only,
+                cls.MODULE_KARIGAR:   view_exp,
             }
 
         elif role_name == Role.ROLE_SUPPORT:
@@ -282,6 +288,7 @@ class EmployeePermission(models.Model):
                 cls.MODULE_INVENTORY:     view_only,
                 cls.MODULE_CUSTOM_ORDERS: view_only,
                 cls.MODULE_SALES:         view_only,
+                cls.MODULE_KARIGAR:       view_only,
             }
 
         elif role_name == Role.ROLE_CASHIER:
@@ -291,6 +298,7 @@ class EmployeePermission(models.Model):
                 cls.MODULE_INVENTORY:     view_only,
                 cls.MODULE_SALES:         view_add,
                 cls.MODULE_METAL_PRICES:  view_only,
+                cls.MODULE_KARIGAR:       view_only,
             }
 
         # Ensure all modules have an entry (default to no access)

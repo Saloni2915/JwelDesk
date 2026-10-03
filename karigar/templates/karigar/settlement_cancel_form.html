@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Cancel Settlement {{ settlement.settlement_number }} — JewelDesk{% endblock %}
+
+{% block page_title %}Cancel Settlement Voucher{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'karigar:settlement_detail' settlement.id %}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i> Back to Voucher
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card border-danger shadow-sm">
+            <div class="card-header bg-danger text-white py-3">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-exclamation-triangle me-2"></i> Confirm Settlement Cancellation</h6>
+            </div>
+            <div class="card-body p-4">
+                <p class="text-danger fw-semibold">
+                    Warning: Cancelling voucher <strong>{{ settlement.settlement_number }}</strong> will permanently mark it as Cancelled and reverse all payment amounts credited to linked work assignments.
+                </p>
+
+                <div class="bg-light p-3 rounded mb-4 small">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Artisan:</span>
+                        <span class="fw-bold">{{ settlement.karigar.name }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Settlement Amount:</span>
+                        <span class="fw-bold text-success">₹{{ settlement.amount|floatformat:2 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Payment Date:</span>
+                        <span>{{ settlement.payment_date|date:"d M Y" }}</span>
+                    </div>
+                </div>
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label class="form-label small fw-semibold required">Reason for Cancellation *</label>
+                        {{ form.cancellation_reason }}
+                        {% if form.cancellation_reason.errors %}
+                        <div class="text-danger small mt-1">{{ form.cancellation_reason.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text small text-muted">This reason will be recorded permanently in the audit history.</div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-x-circle me-1"></i> Confirm &amp; Cancel Settlement
+                        </button>
+                        <a href="{% url 'karigar:settlement_detail' settlement.id %}" class="btn btn-outline-secondary">
+                            Abort
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -7,7 +7,8 @@ from django.utils import timezone
 from inventory.models import Category, JewelleryItem
 from customers.models import Customer
 from django.core.exceptions import ValidationError
-from sales.models import Payment, Sale, Enquiry
+from sales.models import Payment, Sale, Enquiry, OldGoldTransaction, generate_old_gold_number
+from team.models import Role, Employee, EmployeePermission
 
 
 class SalesAndEnquiryTests(TestCase):
@@ -837,6 +838,372 @@ class PaymentTests(TestCase):
         body = response.content
         self.assertIn(b'Paid', body)
         self.assertIn(b'Due', body)
+
+
+class OldGoldTransactionTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='sales_rep', password='Password123')
+        self.client.login(username='sales_rep', password='Password123')
+
+        self.category = Category.objects.create(name='Necklaces', description='Gold Necklaces')
+        self.customer = Customer.objects.create(
+            name='Priya Sharma',
+            mobile='+91 9123456780',
+            email='priya@example.com'
+        )
+        self.available_item = JewelleryItem.objects.create(
+            item_code='NK-001',
+            tag_number='JWL-000099',
+            name='22K Heritage Gold Necklace',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('15.000'),
+            net_weight=Decimal('14.500'),
+            selling_price=Decimal('120000.00'),
+            quantity=1,
+            status='Available'
+        )
+
+    def test_valuation_formula_24k(self):
+        val = OldGoldTransaction.compute_valuation(
+            gross_weight=Decimal('10.000'),
+            stone_weight=Decimal('0.000'),
+            metal_type='Gold',
+            purity='24K',
+            applicable_rate=Decimal('7500.00'),
+            deduction_percent=Decimal('0.00')
+        )
+        self.assertEqual(val['net_weight'], Decimal('10.000'))
+        self.assertEqual(val['purity_factor'], Decimal('1.000000'))
+        self.assertEqual(val['effective_rate'], Decimal('7500.00'))
+        self.assertEqual(val['gross_valuation'], Decimal('75000.00'))
+        self.assertEqual(val['deduction_amount'], Decimal('0.00'))
+        self.assertEqual(val['final_value'], Decimal('75000.00'))
+
+    def test_valuation_formula_22k_with_stone_and_deduction(self):
+        val = OldGoldTransaction.compute_valuation(
+            gross_weight=Decimal('10.000'),
+            stone_weight=Decimal('1.000'),
+            metal_type='Gold',
+            purity='22K',
+            applicable_rate=Decimal('7200.00'),
+            deduction_percent=Decimal('2.00')
+        )
+        # Net weight = 10 - 1 = 9g
+        self.assertEqual(val['net_weight'], Decimal('9.000'))
+        # 22/24 purity factor: 7200 * 22/24 = 6600.00
+        self.assertEqual(val['effective_rate'], Decimal('6600.00'))
+        # 9g * 6600 = 59400.00
+        self.assertEqual(val['gross_valuation'], Decimal('59400.00'))
+        # 2% deduction = 1188.00
+        self.assertEqual(val['deduction_amount'], Decimal('1188.00'))
+        # Final value = 59400 - 1188 = 58212.00
+        self.assertEqual(val['final_value'], Decimal('58212.00'))
+
+    def test_valuation_formula_18k(self):
+        val = OldGoldTransaction.compute_valuation(
+            gross_weight=Decimal('8.000'),
+            stone_weight=Decimal('0.000'),
+            metal_type='Gold',
+            purity='18K',
+            applicable_rate=Decimal('8000.00'),
+            deduction_percent=Decimal('3.00')
+        )
+        # 18/24 = 0.75 * 8000 = 6000.00/g
+        self.assertEqual(val['effective_rate'], Decimal('6000.00'))
+        # 8g * 6000 = 48000.00
+        self.assertEqual(val['gross_valuation'], Decimal('48000.00'))
+        # 3% of 48000 = 1440.00
+        self.assertEqual(val['deduction_amount'], Decimal('1440.00'))
+        self.assertEqual(val['final_value'], Decimal('46560.00'))
+
+    def test_valuation_formula_custom_purity(self):
+        val = OldGoldTransaction.compute_valuation(
+            gross_weight=Decimal('5.000'),
+            stone_weight=Decimal('0.000'),
+            metal_type='Gold',
+            purity='Other',
+            custom_purity_percent=Decimal('80.00'),
+            applicable_rate=Decimal('7000.00'),
+            deduction_percent=Decimal('0.00')
+        )
+        self.assertEqual(val['purity_factor'], Decimal('0.800000'))
+        self.assertEqual(val['effective_rate'], Decimal('5600.00'))
+        self.assertEqual(val['final_value'], Decimal('28000.00'))
+
+    def test_model_validation_errors(self):
+        # Gross weight <= 0
+        tx = OldGoldTransaction(
+            transaction_number='OG-TEST-1',
+            customer=self.customer,
+            gross_weight=Decimal('0.000'),
+            stone_weight=Decimal('0.000'),
+            net_weight=Decimal('0.000'),
+            applicable_rate=Decimal('7000.00'),
+            effective_rate=Decimal('6400.00'),
+            gross_valuation=Decimal('0.00'),
+            final_value=Decimal('0.00')
+        )
+        with self.assertRaises(ValidationError):
+            tx.clean()
+
+        # Stone weight >= gross weight
+        tx.gross_weight = Decimal('5.000')
+        tx.stone_weight = Decimal('5.000')
+        with self.assertRaises(ValidationError):
+            tx.clean()
+
+    def test_exchange_creation_workflow(self):
+        """Old gold exchange against new necklace item."""
+        response = self.client.post(reverse('old_gold_exchange_create'), {
+            'customer': self.customer.id,
+            'metal_type': 'Gold',
+            'old_gold_type': 'Broken Jewellery',
+            'item_description': 'Old 22K bangles (2 pcs broken)',
+            'gross_weight': '10.000',
+            'stone_weight': '1.000',
+            'purity': '22K',
+            'applicable_rate': '7200.00',
+            'deduction_percent': '2.00',
+            'new_jewellery_item': self.available_item.id,
+            'new_sale_price': '120000.00',
+            'settlement_payment_method': 'UPI',
+            'settlement_payment_reference': 'UPI-REF-998877',
+            'notes': 'Test exchange'
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        # 1. OldGoldTransaction created
+        tx = OldGoldTransaction.objects.filter(customer=self.customer, transaction_type='Exchange').first()
+        self.assertIsNotNone(tx)
+        self.assertEqual(tx.net_weight, Decimal('9.000'))
+        self.assertEqual(tx.final_value, Decimal('58212.00'))
+        self.assertEqual(tx.inventory_status, 'Vault Stock')
+        self.assertTrue(tx.transaction_number.startswith('OGX-'))
+
+        # 2. Sale created for new necklace
+        sale = tx.new_sale
+        self.assertIsNotNone(sale)
+        self.assertEqual(sale.jewellery_item, self.available_item)
+        self.assertEqual(sale.sale_price, Decimal('120000.00'))
+
+        # 3. Piece status marked Sold and inventory stock decremented
+        self.available_item.refresh_from_db()
+        self.assertEqual(self.available_item.status, 'Sold')
+        self.assertEqual(self.available_item.quantity, 0)
+
+        # 4. Exchange payment credited and UPI settlement payment recorded
+        payments = sale.payments.all()
+        self.assertEqual(payments.count(), 2)
+
+        exchange_payment = payments.filter(payment_method='Exchange').first()
+        self.assertIsNotNone(exchange_payment)
+        self.assertEqual(exchange_payment.amount, Decimal('58212.00'))
+
+        upi_payment = payments.filter(payment_method='UPI').first()
+        self.assertIsNotNone(upi_payment)
+        self.assertEqual(upi_payment.amount, Decimal('61788.00'))  # 120,000 - 58,212
+
+        # 5. Sale is fully paid
+        self.assertEqual(sale.paid_amount, Decimal('120000.00'))
+        self.assertEqual(sale.due_amount, Decimal('0.00'))
+        self.assertEqual(sale.payment_status, 'Paid')
+
+    def test_exchange_where_old_gold_exceeds_new_item_price(self):
+        """Old gold value (e.g. 58,212) > New Ring price (e.g. 40,000)."""
+        cheap_ring = JewelleryItem.objects.create(
+            item_code='RN-CHEAP',
+            name='Simple 18K Band',
+            category=self.category,
+            metal_type='Gold',
+            purity='18K',
+            gross_weight=Decimal('3.000'),
+            net_weight=Decimal('3.000'),
+            selling_price=Decimal('40000.00'),
+            quantity=1,
+            status='Available'
+        )
+
+        response = self.client.post(reverse('old_gold_exchange_create'), {
+            'customer': self.customer.id,
+            'metal_type': 'Gold',
+            'old_gold_type': 'Coins / Bullion',
+            'item_description': '22K Gold Coin 10g',
+            'gross_weight': '10.000',
+            'stone_weight': '1.000',
+            'purity': '22K',
+            'applicable_rate': '7200.00',
+            'deduction_percent': '2.00',
+            'new_jewellery_item': cheap_ring.id,
+            'new_sale_price': '40000.00',
+            'notes': 'Exchange with refund due'
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        tx = OldGoldTransaction.objects.filter(customer=self.customer, new_sale__jewellery_item=cheap_ring).first()
+        self.assertIsNotNone(tx)
+        self.assertEqual(tx.final_value, Decimal('58212.00'))
+        self.assertEqual(tx.difference_amount, Decimal('-18212.00'))
+        self.assertEqual(tx.customer_refund, Decimal('18212.00'))
+        self.assertEqual(tx.customer_payable, Decimal('0.00'))
+
+        # Sale paid_amount is capped at 40000 without overpayment error
+        sale = tx.new_sale
+        self.assertEqual(sale.paid_amount, Decimal('40000.00'))
+        self.assertEqual(sale.due_amount, Decimal('0.00'))
+        self.assertEqual(sale.payment_status, 'Paid')
+
+    def test_buyback_creation_workflow(self):
+        """Outright buyback with cash payout."""
+        response = self.client.post(reverse('old_gold_buyback_create'), {
+            'customer': self.customer.id,
+            'metal_type': 'Gold',
+            'old_gold_type': 'Old Jewellery',
+            'item_description': 'Old broken chain and earring',
+            'gross_weight': '5.000',
+            'stone_weight': '0.500',
+            'purity': '22K',
+            'applicable_rate': '7200.00',
+            'deduction_percent': '1.00',
+            'payment_method': 'Cash',
+            'payment_status': 'Paid',
+            'payment_reference': 'CASH-VOUCHER-01',
+            'notes': 'Scrap purchase'
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        tx = OldGoldTransaction.objects.filter(customer=self.customer, transaction_type='Buyback').first()
+        self.assertIsNotNone(tx)
+        self.assertTrue(tx.transaction_number.startswith('OGB-'))
+        self.assertEqual(tx.inventory_status, 'Vault Stock')
+        # Net wt = 4.5g, effective rate = 6600, gross = 29700, 1% ded = 297 -> 29403
+        self.assertEqual(tx.net_weight, Decimal('4.500'))
+        self.assertEqual(tx.final_value, Decimal('29403.00'))
+        self.assertEqual(tx.payment_method, 'Cash')
+        self.assertEqual(tx.payment_status, 'Paid')
+
+        # Verify showroom inventory is NOT contaminated with scrap
+        self.assertFalse(JewelleryItem.objects.filter(name__icontains='broken chain').exists())
+
+    def test_sequential_number_generation(self):
+        num1 = generate_old_gold_number('Exchange')
+        OldGoldTransaction.objects.create(
+            transaction_number=num1,
+            transaction_type='Exchange',
+            customer=self.customer,
+            gross_weight=Decimal('1.000'),
+            net_weight=Decimal('1.000'),
+            applicable_rate=Decimal('7000.00'),
+            effective_rate=Decimal('6400.00'),
+            gross_valuation=Decimal('6400.00'),
+            final_value=Decimal('6400.00')
+        )
+        num2 = generate_old_gold_number('Exchange')
+        self.assertEqual(num1, 'OGX-00001')
+        self.assertEqual(num2, 'OGX-00002')
+
+    def test_cancellation_preserves_audit_trail(self):
+        tx = OldGoldTransaction.objects.create(
+            transaction_number='OGX-AUDIT-1',
+            transaction_type='Exchange',
+            customer=self.customer,
+            gross_weight=Decimal('5.000'),
+            net_weight=Decimal('5.000'),
+            applicable_rate=Decimal('7000.00'),
+            effective_rate=Decimal('6400.00'),
+            gross_valuation=Decimal('32000.00'),
+            final_value=Decimal('32000.00')
+        )
+
+        response = self.client.post(reverse('old_gold_cancel', kwargs={'pk': tx.pk}), {
+            'cancellation_reason': 'Customer changed mind and took back gold'
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        tx.refresh_from_db()
+        self.assertEqual(tx.status, 'Cancelled')
+        self.assertEqual(tx.cancelled_by, self.user)
+        self.assertIsNotNone(tx.cancelled_at)
+        self.assertIn('Customer changed mind', tx.cancellation_reason)
+
+    def test_rate_api_endpoint(self):
+        response = self.client.get(reverse('old_gold_rate_api'), {
+            'metal_type': 'Gold',
+            'purity': '18K'
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['purity'], '18K')
+        self.assertAlmostEqual(data['purity_factor'], 0.75, places=2)
+        self.assertGreater(data['effective_rate'], 0)
+
+    def test_sales_report_preserves_normal_sales_totals(self):
+        # Create normal sale
+        sale = Sale.objects.create(
+            customer=self.customer,
+            jewellery_item=self.available_item,
+            sale_price=Decimal('120000.00'),
+            payment_method='Cash'
+        )
+
+        # Create buyback
+        OldGoldTransaction.objects.create(
+            transaction_number='OGB-REP-1',
+            transaction_type='Buyback',
+            customer=self.customer,
+            gross_weight=Decimal('10.000'),
+            net_weight=Decimal('10.000'),
+            applicable_rate=Decimal('7000.00'),
+            effective_rate=Decimal('6400.00'),
+            gross_valuation=Decimal('64000.00'),
+            final_value=Decimal('64000.00')
+        )
+
+        response = self.client.get(reverse('sales_report'), {'period': 'today'})
+        self.assertEqual(response.status_code, 200)
+        # Normal sales totals MUST remain uncorrupted
+        self.assertEqual(response.context['total_amount'], Decimal('120000.00'))
+        self.assertEqual(response.context['sales_count'], 1)
+        # Old gold buyback is tracked in separate dedicated metrics
+        self.assertEqual(response.context['buyback_count'], 1)
+        self.assertEqual(response.context['buyback_payout'], Decimal('64000.00'))
+
+    def test_permissions_unauthorized_access(self):
+        # Create an employee with no sales permissions
+        unauth_user = User.objects.create_user(username='hr_rep', password='Password123')
+        role, _ = Role.objects.get_or_create(name='HR')
+        emp = Employee.objects.create(
+            user=unauth_user,
+            employee_id='EMP-9999',
+            full_name='HR Staff',
+            email='hr@example.com',
+            mobile='+91 9000000001',
+            designation='HR Assistant',
+            role=role,
+            status=Employee.STATUS_ACTIVE
+        )
+        EmployeePermission.objects.create(
+            employee=emp,
+            module='sales',
+            can_view=False,
+            can_add=False,
+            can_edit=False,
+            can_delete=False
+        )
+
+        # Login as unauth_user
+        self.client.login(username='hr_rep', password='Password123')
+
+        # Accessing old gold list should return HTTP 403 Forbidden
+        response = self.client.get(reverse('old_gold_list'))
+        self.assertEqual(response.status_code, 403)
+
+        # Accessing exchange create should return HTTP 403 Forbidden
+        response2 = self.client.get(reverse('old_gold_exchange_create'))
+        self.assertEqual(response2.status_code, 403)
+
 
 
 

@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block title %}Settlement Voucher {{ settlement.settlement_number }} — JewelDesk{% endblock %}
+
+{% block page_title %}Settlement Voucher: {{ settlement.settlement_number }}{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <button onclick="window.print()" class="btn btn-outline-dark btn-sm">
+        <i class="bi bi-printer me-1"></i> Print Receipt
+    </button>
+    {% if settlement.status == 'Completed' and user_perms.karigar.can_delete %}
+    <a href="{% url 'karigar:settlement_cancel' settlement.id %}" class="btn btn-outline-danger btn-sm">
+        <i class="bi bi-x-circle me-1"></i> Cancel Voucher
+    </a>
+    {% endif %}
+    <a href="{% url 'karigar:settlement_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Settlements
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <!-- Voucher Card -->
+        <div class="card border-0 shadow-sm print-area">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-0 fw-bold font-monospace fs-5">{{ settlement.settlement_number }}</h6>
+                    <small class="text-muted">Artisan Labour Payment Voucher</small>
+                </div>
+                <div>
+                    {% if settlement.status == 'Completed' %}
+                    <span class="badge bg-success fs-6 px-3 py-2">Paid / Settled</span>
+                    {% else %}
+                    <span class="badge bg-danger fs-6 px-3 py-2">Cancelled Voucher</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <!-- Cancelled Alert if applicable -->
+                {% if settlement.status == 'Cancelled' %}
+                <div class="alert alert-danger shadow-sm mb-4">
+                    <h6 class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> This settlement has been cancelled</h6>
+                    <div class="small">
+                        Cancelled by: {{ settlement.cancelled_by.get_full_name|default:settlement.cancelled_by.username }}
+                        on {{ settlement.cancelled_at|date:"d M Y, H:i" }}
+                    </div>
+                    {% if settlement.cancellation_reason %}
+                    <div class="small mt-1"><strong>Reason:</strong> {{ settlement.cancellation_reason }}</div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Top Voucher Overview -->
+                <div class="row g-4 mb-4 border-bottom pb-4">
+                    <div class="col-md-6">
+                        <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Payee (Artisan):</span>
+                        <h5 class="fw-bold mb-1 text-dark">
+                            <a href="{% url 'karigar:karigar_detail' settlement.karigar.id %}" class="text-dark text-decoration-none">
+                                {{ settlement.karigar.name }}
+                            </a>
+                        </h5>
+                        <div class="small text-muted">{{ settlement.karigar.karigar_code }} &bull; {{ settlement.karigar.mobile }}</div>
+                        {% if settlement.karigar.address %}
+                        <div class="small text-muted mt-1">{{ settlement.karigar.address|linebreaksbr }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Payment Amount:</span>
+                        <h2 class="fw-bold text-success mb-0">₹{{ settlement.amount|floatformat:2 }}</h2>
+                        <div class="small text-muted mt-1">Paid on {{ settlement.payment_date|date:"d M Y" }}</div>
+                        <div class="small text-muted">{{ settlement.payment_method }} {% if settlement.payment_reference %}(Ref: {{ settlement.payment_reference }}){% endif %}</div>
+                    </div>
+                </div>
+
+                <!-- Processed Info -->
+                <div class="row g-3 mb-4 small">
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Processed By:</span>
+                        <span class="fw-semibold">{{ settlement.processed_by.get_full_name|default:settlement.processed_by.username|default:"System" }}</span>
+                    </div>
+                    <div class="col-sm-6 text-sm-end">
+                        <span class="text-muted d-block">Created Timestamp:</span>
+                        <span>{{ settlement.created_at|date:"d M Y, H:i" }}</span>
+                    </div>
+                </div>
+
+                <!-- Allocated Assignments -->
+                {% if assignments %}
+                <div class="mb-4">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-list-check me-2 text-dark"></i> Allocated Work Assignments</h6>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm align-middle mb-0">
+                            <thead class="table-light small">
+                                <tr>
+                                    <th>Job #</th>
+                                    <th>Work Type</th>
+                                    <th>Metal Issued</th>
+                                    <th>Total Charge</th>
+                                    <th>Settled Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="small">
+                                {% for asg in assignments %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'karigar:assignment_detail' asg.id %}" class="fw-bold font-monospace text-dark text-decoration-none">
+                                            {{ asg.assignment_number }}
+                                        </a>
+                                    </td>
+                                    <td>{{ asg.work_type }}</td>
+                                    <td>{{ asg.net_weight_issued|floatformat:3 }} g</td>
+                                    <td class="fw-semibold">₹{{ asg.total_charge|floatformat:2 }}</td>
+                                    <td class="fw-semibold text-success">₹{{ asg.paid_amount|floatformat:2 }}</td>
+                                    <td>
+                                        {% if asg.payment_status == 'Paid' %}
+                                        <span class="badge bg-success">Paid</span>
+                                        {% else %}
+                                        <span class="badge bg-warning text-dark">{{ asg.payment_status }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if settlement.notes %}
+                <div class="p-3 bg-light rounded small">
+                    <strong class="d-block text-muted text-uppercase mb-1">Notes / Terms:</strong>
+                    {{ settlement.notes|linebreaksbr }}
+                </div>
+                {% endif %}
+
+                <!-- Signature block for print -->
+                <div class="row pt-5 mt-4 border-top text-center small text-muted">
+                    <div class="col-6">
+                        <div class="border-top pt-2 mx-4">Prepared By (JewelDesk)</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="border-top pt-2 mx-4">Artisan Signature / Stamp</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

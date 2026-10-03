@@ -160,6 +160,16 @@ def build_invoice_pdf(sale):
     c.drawString(130 * mm, y, 'Grand Total')
     c.drawRightString(col_x[4], y, f'Rs. {sale.sale_price:,.2f}')
 
+    # Old gold exchange credit if linked to an exchange transaction
+    og = getattr(sale, 'old_gold_exchange', None)
+    if og and og.status == 'Completed':
+        y -= 6 * mm
+        c.setFont('Helvetica', 10)
+        c.setFillColor(BRAND_GOLD)
+        c.drawString(130 * mm, y, f'Old Gold ({og.transaction_number})')
+        c.drawRightString(col_x[4], y, f'- Rs. {og.final_value:,.2f}')
+        c.setFillColor(BRAND_DARK)
+
     # Paid / Due / Status (calculated from recorded payments)
     paid = sale.paid_amount
     due = sale.due_amount
