@@ -25,6 +25,10 @@
     <!-- Top Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top top-navbar">
         <div class="container-fluid">
+            <!-- Mobile Sidebar Toggler -->
+            <button class="btn btn-link text-light d-md-none me-2 p-1 border-0" id="sidebarToggle" type="button" aria-label="Toggle navigation">
+                <i class="bi bi-list fs-4"></i>
+            </button>
             <a class="navbar-brand d-flex align-items-center" href="{% url 'dashboard' %}">
                 <i class="bi bi-gem me-2"></i>
                 <span class="fw-semibold company-name">{{ company.name }}</span>
@@ -48,190 +52,385 @@
     <div class="d-flex" id="wrapper">
         <!-- Sidebar -->
         <nav class="sidebar bg-dark" id="sidebar">
+            <!-- Vertically Scrollable Menu Area -->
             <div class="sidebar-menu">
                 <ul class="nav flex-column">
+
+                    <!-- 1. Dashboard -->
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+                        <a class="nav-link nav-link-single {% if request.resolver_match.url_name == 'dashboard' and request.resolver_match.app_name != 'karigar' %}active{% endif %}"
                            href="{% url 'dashboard' %}">
-                            <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                            <span class="sidebar-item-content">
+                                <i class="bi bi-speedometer2 sidebar-item-icon"></i>
+                                <span class="sidebar-item-title">Dashboard</span>
+                            </span>
                         </a>
                     </li>
+
+                    <!-- 2. Sales & Exchange -->
                     <li class="nav-item">
-                        <a class="nav-link {% if 'inventory' in request.resolver_match.url_name and 'import' not in request.resolver_match.url_name %}active{% endif %}"
-                           href="{% url 'inventory_list' %}">
-                            <i class="bi bi-gem me-2"></i> Inventory
+                        <a class="nav-link sidebar-dropdown-toggle {% if 'sale' in request.resolver_match.url_name and request.resolver_match.url_name != 'sales_report' or 'old_gold' in request.resolver_match.url_name or '/old-gold/' in request.path or '/sales/' in request.path and '/sales/report/' not in request.path %}parent-active{% else %}collapsed{% endif %}"
+                           data-bs-toggle="collapse"
+                           href="#submenu-sales"
+                           role="button"
+                           aria-expanded="{% if 'sale' in request.resolver_match.url_name and request.resolver_match.url_name != 'sales_report' or 'old_gold' in request.resolver_match.url_name or '/old-gold/' in request.path or '/sales/' in request.path and '/sales/report/' not in request.path %}true{% else %}false{% endif %}"
+                           aria-controls="submenu-sales">
+                            <span class="sidebar-item-content">
+                                <i class="bi bi-receipt sidebar-item-icon"></i>
+                                <span class="sidebar-item-title">Sales &amp; Exchange</span>
+                            </span>
+                            <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
+                        <div class="collapse sidebar-submenu-collapse {% if 'sale' in request.resolver_match.url_name and request.resolver_match.url_name != 'sales_report' or 'old_gold' in request.resolver_match.url_name or '/old-gold/' in request.path or '/sales/' in request.path and '/sales/report/' not in request.path %}show{% endif %}" id="submenu-sales">
+                            <ul class="nav flex-column sidebar-submenu">
+                                <li class="nav-item">
+                                    <a class="nav-link {% if 'sale' in request.resolver_match.url_name and request.resolver_match.url_name != 'sales_report' and 'old_gold' not in request.resolver_match.url_name %}active{% endif %}"
+                                       href="{% url 'sale_list' %}">
+                                        <i class="bi bi-receipt"></i> All Sales
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'old_gold_exchange_create' %}active{% endif %}"
+                                       href="{% url 'old_gold_exchange_create' %}">
+                                        <i class="bi bi-arrow-repeat"></i> Old Gold Exchange
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'old_gold_buyback_create' %}active{% endif %}"
+                                       href="{% url 'old_gold_buyback_create' %}">
+                                        <i class="bi bi-cash-stack"></i> Old Gold Buyback
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'old_gold_list' or request.resolver_match.url_name == 'old_gold_detail' %}active{% endif %}"
+                                       href="{% url 'old_gold_list' %}">
+                                        <i class="bi bi-journal-text"></i> Old Gold History
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </li>
+
+                    <!-- 3. Inventory -->
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'inventory_import' %}active{% endif %}"
-                           href="{% url 'inventory_import' %}">
-                            <i class="bi bi-upload me-2"></i> Import Inventory
+                        <a class="nav-link sidebar-dropdown-toggle {% if 'inventory' in request.resolver_match.url_name or request.resolver_match.url_name == 'stock_movement_list' or '/inventory/' in request.path %}parent-active{% else %}collapsed{% endif %}"
+                           data-bs-toggle="collapse"
+                           href="#submenu-inventory"
+                           role="button"
+                           aria-expanded="{% if 'inventory' in request.resolver_match.url_name or request.resolver_match.url_name == 'stock_movement_list' or '/inventory/' in request.path %}true{% else %}false{% endif %}"
+                           aria-controls="submenu-inventory">
+                            <span class="sidebar-item-content">
+                                <i class="bi bi-gem sidebar-item-icon"></i>
+                                <span class="sidebar-item-title">Inventory</span>
+                            </span>
+                            <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
+                        <div class="collapse sidebar-submenu-collapse {% if 'inventory' in request.resolver_match.url_name or request.resolver_match.url_name == 'stock_movement_list' or '/inventory/' in request.path %}show{% endif %}" id="submenu-inventory">
+                            <ul class="nav flex-column sidebar-submenu">
+                                <li class="nav-item">
+                                    <a class="nav-link {% if 'inventory' in request.resolver_match.url_name and 'import' not in request.resolver_match.url_name and request.resolver_match.url_name != 'stock_movement_list' %}active{% endif %}"
+                                       href="{% url 'inventory_list' %}">
+                                        <i class="bi bi-gem"></i> Jewellery Stock
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'stock_movement_list' %}active{% endif %}"
+                                       href="{% url 'stock_movement_list' %}">
+                                        <i class="bi bi-arrow-left-right"></i> Stock Movements
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'inventory_import' or request.resolver_match.url_name == 'inventory_import_sample' %}active{% endif %}"
+                                       href="{% url 'inventory_import' %}">
+                                        <i class="bi bi-upload"></i> Import Inventory
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </li>
+
+                    <!-- 4. Pricing & Rates -->
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'stock_movement_list' %}active{% endif %}"
-                           href="{% url 'stock_movement_list' %}">
-                            <i class="bi bi-arrow-left-right me-2"></i> Stock Movements
+                        <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.url_name == 'pricing_calculator' or request.resolver_match.url_name == 'metal_rates' or '/pricing/' in request.path or '/metal-rates/' in request.path %}parent-active{% else %}collapsed{% endif %}"
+                           data-bs-toggle="collapse"
+                           href="#submenu-pricing"
+                           role="button"
+                           aria-expanded="{% if request.resolver_match.url_name == 'pricing_calculator' or request.resolver_match.url_name == 'metal_rates' or '/pricing/' in request.path or '/metal-rates/' in request.path %}true{% else %}false{% endif %}"
+                           aria-controls="submenu-pricing">
+                            <span class="sidebar-item-content">
+                                <i class="bi bi-calculator sidebar-item-icon"></i>
+                                <span class="sidebar-item-title">Pricing &amp; Rates</span>
+                            </span>
+                            <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
+                        <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.url_name == 'pricing_calculator' or request.resolver_match.url_name == 'metal_rates' or '/pricing/' in request.path or '/metal-rates/' in request.path %}show{% endif %}" id="submenu-pricing">
+                            <ul class="nav flex-column sidebar-submenu">
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'pricing_calculator' or '/pricing/' in request.path %}active{% endif %}"
+                                       href="{% url 'pricing_calculator' %}">
+                                        <i class="bi bi-calculator"></i> Pricing Engine
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'metal_rates' or '/metal-rates/' in request.path %}active{% endif %}"
+                                       href="{% url 'metal_rates' %}">
+                                        <i class="bi bi-coin"></i> Metal Rates
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </li>
+
+                    <!-- 5. Customers -->
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'pricing_calculator' %}active{% endif %}"
-                           href="{% url 'pricing_calculator' %}">
-                            <i class="bi bi-calculator me-2"></i> Pricing Engine
+                        <a class="nav-link sidebar-dropdown-toggle {% if 'customer' in request.resolver_match.url_name or 'enquiry' in request.resolver_match.url_name or '/customers/' in request.path or '/enquiries/' in request.path %}parent-active{% else %}collapsed{% endif %}"
+                           data-bs-toggle="collapse"
+                           href="#submenu-customers"
+                           role="button"
+                           aria-expanded="{% if 'customer' in request.resolver_match.url_name or 'enquiry' in request.resolver_match.url_name or '/customers/' in request.path or '/enquiries/' in request.path %}true{% else %}false{% endif %}"
+                           aria-controls="submenu-customers">
+                            <span class="sidebar-item-content">
+                                <i class="bi bi-people sidebar-item-icon"></i>
+                                <span class="sidebar-item-title">Customers</span>
+                            </span>
+                            <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
+                        <div class="collapse sidebar-submenu-collapse {% if 'customer' in request.resolver_match.url_name or 'enquiry' in request.resolver_match.url_name or '/customers/' in request.path or '/enquiries/' in request.path %}show{% endif %}" id="submenu-customers">
+                            <ul class="nav flex-column sidebar-submenu">
+                                <li class="nav-item">
+                                    <a class="nav-link {% if 'customer' in request.resolver_match.url_name or '/customers/' in request.path %}active{% endif %}"
+                                       href="{% url 'customer_list' %}">
+                                        <i class="bi bi-people"></i> Customers Directory
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if 'enquiry' in request.resolver_match.url_name or '/enquiries/' in request.path %}active{% endif %}"
+                                       href="{% url 'enquiry_list' %}">
+                                        <i class="bi bi-chat-left-text"></i> Customer Enquiries
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </li>
+
+                    <!-- 6. Custom Orders -->
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'metal_rates' %}active{% endif %}"
-                           href="{% url 'metal_rates' %}">
-                            <i class="bi bi-coin me-2"></i> Metal Rates
+                        <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.app_name == 'custom_orders' or 'custom_order' in request.resolver_match.url_name or '/custom-orders/' in request.path %}parent-active{% else %}collapsed{% endif %}"
+                           data-bs-toggle="collapse"
+                           href="#submenu-orders"
+                           role="button"
+                           aria-expanded="{% if request.resolver_match.app_name == 'custom_orders' or 'custom_order' in request.resolver_match.url_name or '/custom-orders/' in request.path %}true{% else %}false{% endif %}"
+                           aria-controls="submenu-orders">
+                            <span class="sidebar-item-content">
+                                <i class="bi bi-hammer sidebar-item-icon"></i>
+                                <span class="sidebar-item-title">Custom Orders</span>
+                            </span>
+                            <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
+                        <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.app_name == 'custom_orders' or 'custom_order' in request.resolver_match.url_name or '/custom-orders/' in request.path %}show{% endif %}" id="submenu-orders">
+                            <ul class="nav flex-column sidebar-submenu">
+                                <li class="nav-item">
+                                    <a class="nav-link {% if 'custom_order' in request.resolver_match.url_name or request.resolver_match.app_name == 'custom_orders' and request.resolver_match.url_name != 'custom_order_add' %}active{% endif %}"
+                                       href="{% url 'custom_orders:custom_order_list' %}">
+                                        <i class="bi bi-hammer"></i> All Custom Orders
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'custom_order_add' %}active{% endif %}"
+                                       href="{% url 'custom_orders:custom_order_add' %}">
+                                        <i class="bi bi-plus-circle"></i> New Custom Order
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'customer' in request.resolver_match.url_name %}active{% endif %}"
-                           href="{% url 'customer_list' %}">
-                            <i class="bi bi-people me-2"></i> Customers
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'enquiry' in request.resolver_match.url_name %}active{% endif %}"
-                           href="{% url 'enquiry_list' %}">
-                            <i class="bi bi-chat-left-text me-2"></i> Enquiries
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'sale' in request.resolver_match.url_name and 'old_gold' not in request.resolver_match.url_name and request.resolver_match.url_name != 'sales_report' %}active{% endif %}"
-                           href="{% url 'sale_list' %}">
-                            <i class="bi bi-receipt me-2"></i> Sales
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'old_gold_exchange_create' %}active{% endif %}"
-                           href="{% url 'old_gold_exchange_create' %}">
-                            <i class="bi bi-arrow-repeat me-2"></i> Old Gold Exchange
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'old_gold_buyback_create' %}active{% endif %}"
-                           href="{% url 'old_gold_buyback_create' %}">
-                            <i class="bi bi-cash-stack me-2"></i> Old Gold Buyback
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'old_gold_list' or request.resolver_match.url_name == 'old_gold_detail' %}active{% endif %}"
-                           href="{% url 'old_gold_list' %}">
-                            <i class="bi bi-journal-text me-2"></i> Old Gold History
-                        </a>
-                    </li>
-                    <li class="nav-item sidebar-section">Custom Orders</li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'custom_order' in request.resolver_match.url_name and request.resolver_match.url_name != 'custom_order_add' %}active{% endif %}"
-                           href="{% url 'custom_orders:custom_order_list' %}">
-                            <i class="bi bi-hammer me-2"></i> All Custom Orders
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'custom_order_add' %}active{% endif %}"
-                           href="{% url 'custom_orders:custom_order_add' %}">
-                            <i class="bi bi-plus-circle me-2"></i> New Custom Order
-                        </a>
-                    </li>
+
+                    <!-- 7. Manufacturing & Artisans (Karigar) -->
                     {% if user.is_superuser or user.is_staff or user_perms.karigar.can_view or not user.employee_profile %}
-                    <li class="nav-item sidebar-section">Manufacturing &amp; Artisans</li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
-                           href="{% url 'karigar:dashboard' %}">
-                            <i class="bi bi-speedometer2 me-2"></i> Karigar Dashboard
+                        <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.app_name == 'karigar' or '/karigar/' in request.path %}parent-active{% else %}collapsed{% endif %}"
+                           data-bs-toggle="collapse"
+                           href="#submenu-karigar"
+                           role="button"
+                           aria-expanded="{% if request.resolver_match.app_name == 'karigar' or '/karigar/' in request.path %}true{% else %}false{% endif %}"
+                           aria-controls="submenu-karigar">
+                            <span class="sidebar-item-content">
+                                <i class="bi bi-person-workspace sidebar-item-icon"></i>
+                                <span class="sidebar-item-title">Manufacturing &amp; Karigars</span>
+                            </span>
+                            <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and 'karigar_' in request.resolver_match.url_name %}active{% endif %}"
-                           href="{% url 'karigar:karigar_list' %}">
-                            <i class="bi bi-person-workspace me-2"></i> Karigars / Artisans
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'assignment_list' %}active{% endif %}"
-                           href="{% url 'karigar:assignment_list' %}">
-                            <i class="bi bi-clipboard2-check me-2"></i> Work Assignments
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'pending_assignments' %}active{% endif %}"
-                           href="{% url 'karigar:pending_assignments' %}">
-                            <i class="bi bi-hourglass-split me-2"></i> Pending &amp; Overdue
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and 'settlement_' in request.resolver_match.url_name %}active{% endif %}"
-                           href="{% url 'karigar:settlement_list' %}">
-                            <i class="bi bi-cash-stack me-2"></i> Settlements &amp; Dues
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'reports' %}active{% endif %}"
-                           href="{% url 'karigar:reports' %}">
-                            <i class="bi bi-file-earmark-bar-graph me-2"></i> Karigar Reports
-                        </a>
+                        <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.app_name == 'karigar' or '/karigar/' in request.path %}show{% endif %}" id="submenu-karigar">
+                            <ul class="nav flex-column sidebar-submenu">
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+                                       href="{% url 'karigar:dashboard' %}">
+                                        <i class="bi bi-speedometer2"></i> Karigar Dashboard
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and 'karigar_' in request.resolver_match.url_name %}active{% endif %}"
+                                       href="{% url 'karigar:karigar_list' %}">
+                                        <i class="bi bi-person-workspace"></i> Karigars / Artisans
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'assignment_list' or request.resolver_match.url_name == 'assignment_create' or request.resolver_match.url_name == 'assignment_detail' or request.resolver_match.url_name == 'assignment_edit' %}active{% endif %}"
+                                       href="{% url 'karigar:assignment_list' %}">
+                                        <i class="bi bi-clipboard2-check"></i> Work Assignments
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'pending_assignments' %}active{% endif %}"
+                                       href="{% url 'karigar:pending_assignments' %}">
+                                        <i class="bi bi-hourglass-split"></i> Pending &amp; Overdue
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and 'settlement_' in request.resolver_match.url_name %}active{% endif %}"
+                                       href="{% url 'karigar:settlement_list' %}">
+                                        <i class="bi bi-cash-stack"></i> Settlements &amp; Dues
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'reports' %}active{% endif %}"
+                                       href="{% url 'karigar:reports' %}">
+                                        <i class="bi bi-file-earmark-bar-graph"></i> Karigar Reports
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </li>
                     {% endif %}
-                    <li class="nav-item sidebar-section">Team &amp; HR</li>
+
+                    <!-- 8. Team & HR -->
                     {% if user.is_superuser or user.is_staff or user_perms.team.can_view or not user.employee_profile %}
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.app_name == 'team' and request.resolver_match.url_name == 'employee_list' %}active{% endif %}"
-                           href="{% url 'team:employee_list' %}">
-                            <i class="bi bi-people-fill me-2"></i> Employees
+                        <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.app_name == 'team' or '/team/' in request.path %}parent-active{% else %}collapsed{% endif %}"
+                           data-bs-toggle="collapse"
+                           href="#submenu-team"
+                           role="button"
+                           aria-expanded="{% if request.resolver_match.app_name == 'team' or '/team/' in request.path %}true{% else %}false{% endif %}"
+                           aria-controls="submenu-team">
+                            <span class="sidebar-item-content">
+                                <i class="bi bi-people-fill sidebar-item-icon"></i>
+                                <span class="sidebar-item-title">Team &amp; HR</span>
+                            </span>
+                            <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
-                    </li>
-                    {% if user.is_superuser or user.is_staff or user_perms.team.can_add or not user.employee_profile %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.app_name == 'team' and request.resolver_match.url_name == 'employee_create' %}active{% endif %}"
-                           href="{% url 'team:employee_create' %}">
-                            <i class="bi bi-person-plus-fill me-2"></i> Add Employee
-                        </a>
-                    </li>
-                    {% endif %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.app_name == 'team' and 'role' in request.resolver_match.url_name %}active{% endif %}"
-                           href="{% url 'team:role_list' %}">
-                            <i class="bi bi-shield-lock-fill me-2"></i> Roles &amp; Permissions
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'branch' in request.resolver_match.url_name %}active{% endif %}"
-                           href="{% url 'team:branch_list' %}">
-                            <i class="bi bi-shop me-2"></i> Branches
-                        </a>
+                        <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.app_name == 'team' or '/team/' in request.path %}show{% endif %}" id="submenu-team">
+                            <ul class="nav flex-column sidebar-submenu">
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'team' and request.resolver_match.url_name in 'employee_list employee_detail employee_edit employee_branches employee_permissions' %}active{% endif %}"
+                                       href="{% url 'team:employee_list' %}">
+                                        <i class="bi bi-people-fill"></i> Employees
+                                    </a>
+                                </li>
+                                {% if user.is_superuser or user.is_staff or user_perms.team.can_add or not user.employee_profile %}
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'team' and request.resolver_match.url_name == 'employee_create' %}active{% endif %}"
+                                       href="{% url 'team:employee_create' %}">
+                                        <i class="bi bi-person-plus-fill"></i> Add Employee
+                                    </a>
+                                </li>
+                                {% endif %}
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'team' and 'role' in request.resolver_match.url_name %}active{% endif %}"
+                                       href="{% url 'team:role_list' %}">
+                                        <i class="bi bi-shield-lock-fill"></i> Roles &amp; Permissions
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if 'branch' in request.resolver_match.url_name %}active{% endif %}"
+                                       href="{% url 'team:branch_list' %}">
+                                        <i class="bi bi-shop"></i> Branches
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </li>
                     {% elif user.employee_profile %}
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.app_name == 'team' %}active{% endif %}"
+                        <a class="nav-link nav-link-single {% if request.resolver_match.app_name == 'team' %}active{% endif %}"
                            href="{% url 'team:employee_detail' user.employee_profile.pk %}">
-                            <i class="bi bi-person-badge-fill me-2"></i> My Profile
+                            <span class="sidebar-item-content">
+                                <i class="bi bi-person-badge-fill sidebar-item-icon"></i>
+                                <span class="sidebar-item-title">My Profile</span>
+                            </span>
                         </a>
                     </li>
                     {% endif %}
-                    <li class="nav-item sidebar-section">Settings</li>
+
+                    <!-- 9. Reports -->
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'company_settings' %}active{% endif %}"
-                           href="{% url 'accounts:company_settings' %}">
-                            <i class="bi bi-building me-2"></i> Company Settings
+                        <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.url_name == 'sales_report' or request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'reports' or '/sales/report/' in request.path or '/karigar/reports/' in request.path %}parent-active{% else %}collapsed{% endif %}"
+                           data-bs-toggle="collapse"
+                           href="#submenu-reports"
+                           role="button"
+                           aria-expanded="{% if request.resolver_match.url_name == 'sales_report' or request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'reports' or '/sales/report/' in request.path or '/karigar/reports/' in request.path %}true{% else %}false{% endif %}"
+                           aria-controls="submenu-reports">
+                            <span class="sidebar-item-content">
+                                <i class="bi bi-bar-chart-line sidebar-item-icon"></i>
+                                <span class="sidebar-item-title">Reports</span>
+                            </span>
+                            <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
+                        <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.url_name == 'sales_report' or request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'reports' or '/sales/report/' in request.path or '/karigar/reports/' in request.path %}show{% endif %}" id="submenu-reports">
+                            <ul class="nav flex-column sidebar-submenu">
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'sales_report' or '/sales/report/' in request.path %}active{% endif %}"
+                                       href="{% url 'sales_report' %}">
+                                        <i class="bi bi-receipt"></i> Sales Report
+                                    </a>
+                                </li>
+                                {% if user.is_superuser or user.is_staff or user_perms.karigar.can_view or not user.employee_profile %}
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'reports' %}active{% endif %}"
+                                       href="{% url 'karigar:reports' %}">
+                                        <i class="bi bi-file-earmark-bar-graph"></i> Karigar Reports
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div>
                     </li>
+
+                    <!-- 10. Settings -->
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'themes' %}active{% endif %}"
-                           href="{% url 'accounts:themes' %}">
-                            <i class="bi bi-palette me-2"></i> Themes
+                        <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.url_name == 'company_settings' or request.resolver_match.url_name == 'themes' or '/settings/' in request.path or '/company-settings/' in request.path %}parent-active{% else %}collapsed{% endif %}"
+                           data-bs-toggle="collapse"
+                           href="#submenu-settings"
+                           role="button"
+                           aria-expanded="{% if request.resolver_match.url_name == 'company_settings' or request.resolver_match.url_name == 'themes' or '/settings/' in request.path or '/company-settings/' in request.path %}true{% else %}false{% endif %}"
+                           aria-controls="submenu-settings">
+                            <span class="sidebar-item-content">
+                                <i class="bi bi-gear sidebar-item-icon"></i>
+                                <span class="sidebar-item-title">Settings</span>
+                            </span>
+                            <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
+                        <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.url_name == 'company_settings' or request.resolver_match.url_name == 'themes' or '/settings/' in request.path or '/company-settings/' in request.path %}show{% endif %}" id="submenu-settings">
+                            <ul class="nav flex-column sidebar-submenu">
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'company_settings' %}active{% endif %}"
+                                       href="{% url 'accounts:company_settings' %}">
+                                        <i class="bi bi-building"></i> Company Settings
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'themes' %}active{% endif %}"
+                                       href="{% url 'accounts:themes' %}">
+                                        <i class="bi bi-palette"></i> Themes
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'sales_report' %}active{% endif %}"
-                           href="{% url 'sales_report' %}">
-                            <i class="bi bi-bar-chart-line me-2"></i> Sales Report
-                        </a>
-                    </li>
+
                 </ul>
             </div>
-            <!-- Company branding in sidebar (single source of truth) -->
+
+            <!-- Fixed Sidebar Company Branding Footer -->
             <div class="sidebar-company">
                 {% if company.logo %}
                 <a href="{% url 'accounts:company_settings' %}" class="sidebar-company-logo-link" title="{{ company.name }} logo">
@@ -244,6 +443,9 @@
                 </div>
             </div>
         </nav>
+
+        <!-- Mobile Drawer Backdrop -->
+        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
         <!-- Page Content -->
         <div class="main-content" id="page-content">
@@ -286,6 +488,66 @@
         (function () {
             var t = localStorage.getItem('jd-theme') || 'light';
             document.documentElement.setAttribute('data-theme', t);
+        })();
+
+        // Navigation & Sidebar Enhancements
+        (function() {
+            // 1. Mobile Sidebar Toggle & Backdrop
+            var toggleBtn = document.getElementById('sidebarToggle');
+            var backdrop = document.getElementById('sidebarBackdrop');
+
+            function closeMobileSidebar() {
+                document.body.classList.remove('sidebar-mobile-open');
+            }
+
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    document.body.classList.toggle('sidebar-mobile-open');
+                });
+            }
+
+            if (backdrop) {
+                backdrop.addEventListener('click', closeMobileSidebar);
+            }
+
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    closeMobileSidebar();
+                }
+            });
+
+            // 2. Active Page Parent Auto-Open & Scroll-into-view
+            document.addEventListener('DOMContentLoaded', function() {
+                var activeLink = document.querySelector('.sidebar .nav-link.active');
+                if (activeLink) {
+                    var parentCollapse = activeLink.closest('.sidebar-submenu-collapse');
+                    if (parentCollapse) {
+                        if (!parentCollapse.classList.contains('show')) {
+                            var bsCollapse = bootstrap.Collapse.getOrCreateInstance(parentCollapse);
+                            bsCollapse.show();
+                        }
+                        var parentToggle = document.querySelector('[data-bs-toggle="collapse"][href="#' + parentCollapse.id + '"]');
+                        if (parentToggle) {
+                            parentToggle.classList.remove('collapsed');
+                            parentToggle.classList.add('parent-active');
+                            parentToggle.setAttribute('aria-expanded', 'true');
+                        }
+                    }
+
+                    // Auto scroll menu area so active link is visible without manual scroll
+                    setTimeout(function() {
+                        var sidebarMenu = document.querySelector('.sidebar-menu');
+                        if (sidebarMenu && activeLink) {
+                            var linkRect = activeLink.getBoundingClientRect();
+                            var menuRect = sidebarMenu.getBoundingClientRect();
+                            if (linkRect.top < menuRect.top || linkRect.bottom > menuRect.bottom) {
+                                activeLink.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                            }
+                        }
+                    }, 120);
+                }
+            });
         })();
     </script>
     {% block extra_js %}{% endblock %}

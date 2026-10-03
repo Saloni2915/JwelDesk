@@ -1,4 +1,4 @@
-﻿/* ========================================
+/* ========================================
    JewelDesk - Custom Styles & Theme System
    Semantic CSS variables drive every theme.
    Root attribute: data-theme (light | dark | gold)
@@ -234,104 +234,252 @@ a:hover {
    4. SIDEBAR
    -------------------------------------------- */
 .sidebar {
-    width: 240px;
-    min-height: calc(100vh - 56px);
-    margin-top: 56px;
+    width: 260px;
+    height: calc(100vh - 56px);
+    max-height: calc(100vh - 56px);
     position: fixed;
-    top: 0;
+    top: 56px;
     left: 0;
+    bottom: 0;
     z-index: 1030;
-    overflow-y: auto;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important; /* Sidebar never scrolls the whole window; internal menu scrolls */
     background-color: var(--sidebar-bg) !important;
     border-right: 1px solid rgba(0, 0, 0, 0.15);
-    transition: background-color 0.25s ease;
+    transition: transform 0.25s ease, background-color 0.25s ease;
 }
 
+/* 1. Vertically Scrollable Menu Area - CRITICAL: min-height: 0 and flex: 1 1 0% allows container to shrink and scroll */
 .sidebar .sidebar-menu {
-    padding-top: 1rem;
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.75rem !important;
+    overscroll-behavior: contain !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: rgba(255, 255, 255, 0.25) rgba(0, 0, 0, 0.15) !important;
 }
 
-.sidebar .sidebar-section {
-    color: var(--sidebar-text);
-    opacity: 0.85;
-    padding: 1.1rem 1.25rem 0.35rem;
-    font-size: 0.68rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-weight: 700;
+/* Custom Sleek Scrollbar inside Sidebar Menu */
+.sidebar .sidebar-menu::-webkit-scrollbar {
+    width: 6px !important;
+}
+.sidebar .sidebar-menu::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.15) !important;
+}
+.sidebar .sidebar-menu::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.25) !important;
+    border-radius: 4px !important;
+}
+.sidebar .sidebar-menu::-webkit-scrollbar-thumb:hover {
+    background: var(--accent) !important;
 }
 
-.sidebar .nav-link {
-    color: var(--sidebar-text);
-    padding: 0.7rem 1.25rem;
-    font-size: 0.9rem;
-    border-left: 3px solid transparent;
-    transition: all 0.2s ease;
+.sidebar .nav-item {
+    width: 100% !important;
 }
 
-.sidebar .nav-link:hover {
-    color: var(--sidebar-text-active);
-    background-color: var(--sidebar-hover);
-    border-left-color: var(--accent);
+/* 3. Parent Navigation Item: Horizontal flex with dropdown arrow on FAR RIGHT */
+.sidebar .sidebar-dropdown-toggle,
+.sidebar .nav-link-single {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    padding: 0.65rem 1rem !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+    text-decoration: none !important;
+    border-left: 3px solid transparent !important;
+    color: var(--sidebar-text) !important;
+    transition: background-color 0.15s ease, color 0.15s ease, border-left-color 0.15s ease !important;
+    cursor: pointer !important;
+    user-select: none !important;
 }
 
-.sidebar .nav-link.active {
-    color: var(--sidebar-text-active);
-    background-color: var(--sidebar-active-bg);
-    border-left-color: var(--accent);
-    font-weight: 600;
+.sidebar .sidebar-dropdown-toggle:hover,
+.sidebar .nav-link-single:hover {
+    color: var(--sidebar-text-active) !important;
+    background-color: var(--sidebar-hover) !important;
+    border-left-color: rgba(255, 255, 255, 0.3) !important;
 }
 
-.sidebar .nav-link i {
-    width: 20px;
-    text-align: center;
+.sidebar .nav-link-single.active {
+    color: var(--sidebar-text-active) !important;
+    background-color: var(--sidebar-active-bg) !important;
+    border-left-color: var(--accent) !important;
+    font-weight: 600 !important;
 }
 
-/* Sidebar company branding */
-.sidebar-company {
-    margin-top: 1.5rem;
-    padding: 1rem 1.25rem 1.25rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+/* Active Category Parent State */
+.sidebar .sidebar-dropdown-toggle.parent-active {
+    color: var(--sidebar-text-active) !important;
+    font-weight: 600 !important;
+}
+
+.sidebar .sidebar-dropdown-toggle.parent-active .sidebar-item-icon {
+    color: var(--accent) !important;
+}
+
+.sidebar .sidebar-dropdown-toggle.parent-active .sidebar-item-title {
+    font-weight: 600 !important;
+    color: var(--sidebar-text-active) !important;
+}
+
+/* Category Left Content (Icon + Title on the same row) */
+.sidebar .sidebar-item-content {
+    display: inline-flex !important;
+    align-items: center !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+.sidebar .sidebar-item-icon {
+    width: 22px !important;
+    min-width: 22px !important;
+    text-align: center !important;
+    font-size: 0.95rem !important;
+    margin-right: 0.65rem !important;
+    flex-shrink: 0 !important;
+}
+
+.sidebar .sidebar-item-title {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    font-size: 0.88rem !important;
+    font-weight: 500 !important;
+}
+
+/* Dropdown Arrow: Locked to the Far Right of the item row */
+.sidebar .dropdown-chevron {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    margin-left: auto !important;
+    font-size: 0.72rem !important;
+    line-height: 1 !important;
+    width: 14px !important;
+    height: 14px !important;
+    text-align: center !important;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    opacity: 0.75 !important;
+}
+
+/* When expanded, arrow rotates smoothly 180 degrees upwards (▲) */
+.sidebar .sidebar-dropdown-toggle[aria-expanded="true"] .dropdown-chevron,
+.sidebar .sidebar-dropdown-toggle:not(.collapsed) .dropdown-chevron {
+    transform: rotate(180deg) !important;
+    opacity: 1 !important;
+    color: var(--accent) !important;
+}
+
+/* Submenu dropdown container */
+.sidebar .sidebar-submenu-collapse {
+    transition: height 0.22s ease !important;
+}
+
+.sidebar .sidebar-submenu {
+    list-style: none !important;
+    margin: 0 !important;
+    padding: 0.25rem 0 0.35rem 0 !important;
+    background: rgba(0, 0, 0, 0.16) !important;
+    border-left: 2px solid rgba(255, 255, 255, 0.08) !important;
+    margin-left: 1.15rem !important;
+    margin-right: 0.65rem !important;
+    border-radius: 0 6px 6px 0 !important;
+}
+
+.sidebar .sidebar-submenu .nav-link {
+    color: var(--sidebar-text) !important;
+    padding: 0.42rem 0.85rem 0.42rem 1.15rem !important;
+    font-size: 0.82rem !important;
+    display: flex !important;
+    align-items: center !important;
+    border-left: 3px solid transparent !important;
+    text-decoration: none !important;
+    white-space: nowrap !important;
+    transition: all 0.15s ease !important;
+}
+
+.sidebar .sidebar-submenu .nav-link i {
+    width: 18px !important;
+    font-size: 0.82rem !important;
+    text-align: center !important;
+    margin-right: 0.45rem !important;
+    opacity: 0.85 !important;
+    flex-shrink: 0 !important;
+}
+
+.sidebar .sidebar-submenu .nav-link:hover {
+    color: var(--sidebar-text-active) !important;
+    background-color: var(--sidebar-hover) !important;
+    border-left-color: rgba(255, 255, 255, 0.35) !important;
+}
+
+.sidebar .sidebar-submenu .nav-link.active {
+    color: var(--sidebar-text-active) !important;
+    background-color: var(--sidebar-active-bg) !important;
+    border-left-color: var(--accent) !important;
+    font-weight: 600 !important;
+}
+
+/* 4. Fixed Sidebar Company Branding Footer */
+.sidebar .sidebar-company {
+    flex: 0 0 auto !important;
+    margin-top: auto !important;
+    padding: 0.75rem 1.15rem 0.9rem !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background-color: var(--sidebar-bg) !important;
 }
 
 .sidebar-company-logo-link {
-    display: inline-block;
-    margin-bottom: 0.5rem;
+    display: inline-block !important;
+    margin-bottom: 0.35rem !important;
 }
 
 .sidebar-company-logo {
-    display: block;
-    max-width: 56px;
-    max-height: 56px;
-    border-radius: 8px;
-    object-fit: contain;
-    background: #ffffff;
-    padding: 3px;
+    display: block !important;
+    max-width: 44px !important;
+    max-height: 44px !important;
+    border-radius: 6px !important;
+    object-fit: contain !important;
+    background: #ffffff !important;
+    padding: 2px !important;
 }
 
 .sidebar-company-name {
-    color: var(--sidebar-text-active);
-    font-size: 0.9rem;
-    font-weight: 600;
-    word-break: break-word;
+    color: var(--sidebar-text-active) !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    word-break: break-word !important;
 }
 
 .sidebar-company-meta {
-    color: var(--sidebar-text);
-    font-size: 0.72rem;
-    margin-top: 0.15rem;
-    word-break: break-word;
+    color: var(--sidebar-text) !important;
+    font-size: 0.68rem !important;
+    margin-top: 0.1rem !important;
+    word-break: break-word !important;
 }
 
 /* Main content area */
 .main-content {
-    margin-left: 240px;
+    margin-left: 260px;
     margin-top: 56px;
     padding: 1.5rem 2rem;
-    width: calc(100% - 240px);
+    width: calc(100% - 260px);
     min-height: calc(100vh - 56px);
     background-color: var(--bg-primary);
-    transition: background-color 0.25s ease;
+    transition: background-color 0.25s ease, margin-left 0.25s ease, width 0.25s ease;
 }
 
 /* --------------------------------------------
@@ -740,15 +888,42 @@ a:hover {
   .cockpit-quick-link { padding: 0.7rem 0.8rem; }
 }
 
+/* Mobile Backdrop */
+.sidebar-backdrop {
+    display: none;
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 1025;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    backdrop-filter: blur(2px);
+}
+
 @media (max-width: 768px) {
     .sidebar {
-        width: 0;
-        overflow: hidden;
+        width: 270px !important;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease-in-out;
+        box-shadow: none;
+    }
+
+    body.sidebar-mobile-open .sidebar {
+        transform: translateX(0);
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.45);
+    }
+
+    body.sidebar-mobile-open .sidebar-backdrop {
+        display: block;
+        opacity: 1;
     }
 
     .main-content {
-        margin-left: 0;
-        width: 100%;
+        margin-left: 0 !important;
+        width: 100% !important;
         padding: 1rem;
     }
 
