@@ -11,10 +11,10 @@
   </a>
   {% endif %}
   {% if user_perms.team.can_view %}
-  <a href="{% url 'team:role_list' %}" class="btn btn-outline-dark btn-sm ms-2" id="btn-roles">
+  <a href="{% url 'team:role_list' %}" class="btn btn-outline-dark btn-sm" id="btn-roles">
     <i class="bi bi-shield-check me-1"></i> Roles &amp; Permissions
   </a>
-  <a href="{% url 'team:branch_list' %}" class="btn btn-outline-secondary btn-sm ms-2" id="btn-branches">
+  <a href="{% url 'team:branch_list' %}" class="btn btn-outline-secondary btn-sm" id="btn-branches">
     <i class="bi bi-building me-1"></i> Branches
   </a>
   {% endif %}

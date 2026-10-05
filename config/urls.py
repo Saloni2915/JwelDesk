@@ -27,9 +27,12 @@ from accounts.views import (
     password_reset_confirm_view,
     password_reset_complete_view,
 )
+from .pwa_views import manifest_view, service_worker_view, offline_view, download_report_view, view_report_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('download-report/', download_report_view, name='download_project_report'),
+    path('view-report/', view_report_view, name='view_project_report'),
     path('', include('inventory.urls')),
     path('accounts/', include('accounts.urls')),
     path('customers/', include('customers.urls')),
@@ -45,6 +48,11 @@ urlpatterns = [
     path('accounts/password-reset/done/', password_reset_done_view, name='password_reset_done'),
     path('accounts/password-reset/confirm/<uidb64>/<token>/', password_reset_confirm_view, name='password_reset_confirm'),
     path('accounts/password-reset/complete/', password_reset_complete_view, name='password_reset_complete'),
+
+    # Progressive Web App (PWA) endpoints
+    path('manifest.json', manifest_view, name='pwa_manifest'),
+    path('sw.js', service_worker_view, name='pwa_service_worker'),
+    path('offline/', offline_view, name='pwa_offline'),
 ]
 
 

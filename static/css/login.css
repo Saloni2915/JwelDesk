@@ -9,6 +9,8 @@
 body.jd-auth {
     min-height: 100vh;
     min-height: 100dvh;
+    max-width: 100%;
+    overflow-x: hidden;
     background-color: var(--bg-primary);
     color: var(--text-primary);
 }
@@ -18,6 +20,8 @@ body.jd-auth {
     grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
     min-height: 100vh;
     min-height: 100dvh;
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 /* ------------------------------------------

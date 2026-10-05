@@ -1,0 +1,88 @@
+<!-- Floating Offline Alert Toast -->
+<div id="pwaOfflineToast" class="pwa-offline-toast d-none" role="alert" aria-live="assertive">
+    <i class="bi bi-wifi-off me-2 text-danger fs-5"></i>
+    <div>
+        <strong class="d-block">Offline Mode</strong>
+        <small>Internet connection lost. Local cache active.</small>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // 1. Root-scoped Progressive Web App Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                    .then(function(reg) {
+                        reg.onupdatefound = function() {
+                            var installingWorker = reg.installing;
+                            if (installingWorker) {
+                                installingWorker.onstatechange = function() {
+                                    if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                        console.log('[PWA] New version of JewelDesk available.');
+                                    }
+                                };
+                            }
+                        };
+                    })
+                    .catch(function(err) {
+                        console.warn('[PWA] Service worker registration:', err);
+                    });
+            });
+        }
+
+        // 2. In-App Install Prompt Handling
+        var deferredPrompt = null;
+        var installNavItems = document.querySelectorAll('.pwa-install-item, #pwaInstallNavItem');
+        var installButtons = document.querySelectorAll('.pwa-install-trigger, #pwaInstallBtn');
+
+        window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            deferredPrompt = e;
+            installNavItems.forEach(function(item) {
+                item.classList.remove('d-none');
+            });
+        });
+
+        installButtons.forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then(function(choiceResult) {
+                        if (choiceResult.outcome === 'accepted') {
+                            installNavItems.forEach(function(item) {
+                                item.classList.add('d-none');
+                            });
+                        }
+                        deferredPrompt = null;
+                    });
+                }
+            });
+        });
+
+        window.addEventListener('appinstalled', function() {
+            installNavItems.forEach(function(item) {
+                item.classList.add('d-none');
+            });
+            deferredPrompt = null;
+            console.log('[PWA] JewelDesk installed successfully.');
+        });
+
+        // 3. Real-time Offline / Online Detection Toast
+        var offlineToast = document.getElementById('pwaOfflineToast');
+        function handleNetworkChange() {
+            if (!offlineToast) return;
+            if (!navigator.onLine) {
+                offlineToast.classList.remove('d-none');
+            } else {
+                offlineToast.classList.add('d-none');
+            }
+        }
+        window.addEventListener('online', handleNetworkChange);
+        window.addEventListener('offline', handleNetworkChange);
+        if (!navigator.onLine) {
+            handleNetworkChange();
+        }
+    })();
+</script>

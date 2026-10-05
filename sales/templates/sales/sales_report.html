@@ -15,7 +15,7 @@
 <div class="card mb-4">
     <div class="card-body">
         <form method="get" class="row g-2 align-items-end">
-            <div class="col-md-3">
+            <div class="col-12 col-md-3">
                 <label for="report-period" class="form-label mb-1">Date Range</label>
                 <select name="period" id="report-period" class="form-select form-select-sm"
                         onchange="this.form.submit()">
@@ -25,17 +25,17 @@
                     <option value="custom" {% if selected_period == 'custom' %}selected{% endif %}>Custom Date Range</option>
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-12 col-sm-6 col-md-3">
                 <label for="report-start" class="form-label mb-1">From</label>
                 <input type="date" name="start_date" id="report-start"
                        value="{{ selected_start_date }}" class="form-control form-control-sm">
             </div>
-            <div class="col-md-3">
+            <div class="col-12 col-sm-6 col-md-3">
                 <label for="report-end" class="form-label mb-1">To</label>
                 <input type="date" name="end_date" id="report-end"
                        value="{{ selected_end_date }}" class="form-control form-control-sm">
             </div>
-            <div class="col-md-3 d-flex gap-1">
+            <div class="col-12 col-md-3 d-flex gap-1 mt-2 mt-md-0">
                 <button type="submit" class="btn btn-outline-dark btn-sm w-100" title="Show Report">
                     <i class="bi bi-funnel"></i> Show Report
                 </button>

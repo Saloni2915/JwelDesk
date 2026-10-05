@@ -13,6 +13,8 @@
     <link href="{% static 'css/style.css' %}" rel="stylesheet">
     <!-- Login page styles -->
     <link href="{% static 'css/login.css' %}" rel="stylesheet">
+    <!-- PWA & Mobile Web App Meta Tags -->
+    {% include 'includes/pwa_head.html' %}
     <!-- Apply the saved theme before first paint (same system as base.html) -->
     <script>
         (function () {
@@ -120,6 +122,12 @@
                     <a href="{% url 'accounts:signup' %}" class="jd-auth__link ms-1" id="jd-signup-link">Sign Up</a>
                 </div>
 
+                <div class="mt-3 pwa-install-item d-none" id="pwaLoginInstallBox">
+                    <button type="button" class="btn btn-outline-warning w-100 pwa-install-trigger btn-sm py-2" id="pwaLoginInstallBtn">
+                        <i class="bi bi-download me-1"></i> Install JewelDesk App
+                    </button>
+                </div>
+
                 <p class="jd-auth__foot">
                     <i class="bi bi-shield-lock" aria-hidden="true"></i>
                     <span>Secure sign-in. Access is limited to your shop's staff accounts.</span>
@@ -148,5 +156,7 @@
             toggle.addEventListener('click', function () { apply(!visible); });
         })();
     </script>
+    <!-- Progressive Web App (PWA) Scripts & Offline Handling -->
+    {% include 'includes/pwa_scripts.html' %}
 </body>
 </html>

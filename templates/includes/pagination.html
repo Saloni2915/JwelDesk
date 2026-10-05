@@ -1,6 +1,6 @@
 {% if page_obj.has_other_pages %}
-<div class="d-flex flex-wrap justify-content-between align-items-center p-3 border-top bg-white rounded-bottom">
-    <div class="text-muted small">
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2 p-3 border-top bg-white rounded-bottom">
+    <div class="text-muted small text-center text-sm-start">
         Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} entries
     </div>
     <nav aria-label="Page navigation">

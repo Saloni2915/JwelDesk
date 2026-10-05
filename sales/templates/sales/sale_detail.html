@@ -109,47 +109,49 @@
                 </div>
 
                 <!-- Item Details Table -->
-                <table class="table table-bordered mb-4">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Tag / Item Code</th>
-                            <th>Description</th>
-                            <th>Metal / Purity</th>
-                            <th>Net Weight</th>
-                            <th class="text-end">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>
-                                <span class="fw-semibold font-monospace">{{ sale.jewellery_item.tag_number|default:sale.jewellery_item.item_code }}</span>
-                                <small class="text-muted d-block">{{ sale.jewellery_item.item_code }}</small>
-                                {% if sale.jewellery_item.design_code and sale.jewellery_item.design_code != sale.jewellery_item.item_code %}
-                                <small class="text-muted d-block font-monospace">Design: {{ sale.jewellery_item.design_code }}</small>
-                                {% endif %}
-                                {% if sale.jewellery_item.huid %}
-                                <small class="text-muted d-block font-monospace">HUID: {{ sale.jewellery_item.huid }}</small>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <strong>{{ sale.jewellery_item.name }}</strong>
-                                <small class="text-muted d-block">{{ sale.jewellery_item.category.name }}</small>
-                            </td>
-                            <td>{{ sale.jewellery_item.metal_type }} / {{ sale.jewellery_item.purity }}</td>
-                            <td>
-                                {{ sale.jewellery_item.net_weight }}g
-                                <small class="text-muted d-block">Gross {{ sale.jewellery_item.gross_weight }}g{% if sale.jewellery_item.stone_weight %} &middot; Stone {{ sale.jewellery_item.stone_weight }}g{% endif %}</small>
-                            </td>
-                            <td class="text-end fw-bold">₹{{ sale.sale_price }}</td>
-                        </tr>
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <th colspan="4" class="text-end">Total Amount:</th>
-                            <th class="text-end fs-5 text-success">₹{{ sale.sale_price }}</th>
-                        </tr>
-                    </tfoot>
-                </table>
+                <div class="table-responsive mb-4">
+                    <table class="table table-bordered mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Tag / Item Code</th>
+                                <th>Description</th>
+                                <th>Metal / Purity</th>
+                                <th>Net Weight</th>
+                                <th class="text-end">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <span class="fw-semibold font-monospace">{{ sale.jewellery_item.tag_number|default:sale.jewellery_item.item_code }}</span>
+                                    <small class="text-muted d-block">{{ sale.jewellery_item.item_code }}</small>
+                                    {% if sale.jewellery_item.design_code and sale.jewellery_item.design_code != sale.jewellery_item.item_code %}
+                                    <small class="text-muted d-block font-monospace">Design: {{ sale.jewellery_item.design_code }}</small>
+                                    {% endif %}
+                                    {% if sale.jewellery_item.huid %}
+                                    <small class="text-muted d-block font-monospace">HUID: {{ sale.jewellery_item.huid }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>{{ sale.jewellery_item.name }}</strong>
+                                    <small class="text-muted d-block">{{ sale.jewellery_item.category.name }}</small>
+                                </td>
+                                <td>{{ sale.jewellery_item.metal_type }} / {{ sale.jewellery_item.purity }}</td>
+                                <td>
+                                    {{ sale.jewellery_item.net_weight }}g
+                                    <small class="text-muted d-block">Gross {{ sale.jewellery_item.gross_weight }}g{% if sale.jewellery_item.stone_weight %} &middot; Stone {{ sale.jewellery_item.stone_weight }}g{% endif %}</small>
+                                </td>
+                                <td class="text-end fw-bold">₹{{ sale.sale_price }}</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="4" class="text-end">Total Amount:</th>
+                                <th class="text-end fs-5 text-success">₹{{ sale.sale_price }}</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
 
                 {% if sale.notes %}
                 <div class="mb-3 p-3 bg-light rounded">
