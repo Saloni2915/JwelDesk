@@ -33,7 +33,7 @@
             </button>
             <a class="navbar-brand d-flex align-items-center text-truncate" href="{% url 'dashboard' %}" style="max-width: calc(100vw - 190px);">
                 <i class="bi bi-gem me-2 flex-shrink-0"></i>
-                <span class="fw-semibold company-name text-truncate">{{ company.name }}</span>
+                <span class="fw-semibold company-name">{{ company.name }}</span>
             </a>
             <div class="ms-auto d-flex align-items-center flex-shrink-0">
                 {% if user.is_authenticated %}

@@ -43,15 +43,14 @@ def has_module_perm(user, module, action='view'):
     if user.is_staff:
         return True
 
-    # Any authenticated account without an employee profile is treated as store administrator
-    return True
+    return False
 
 
 def is_admin_user(user):
     """Check if the user is a superuser or has the Admin role."""
     if not user or not user.is_authenticated or not user.is_active:
         return False
-    if user.is_superuser or user.is_staff:
+    if user.is_superuser:
         return True
 
     emp = None
@@ -65,8 +64,7 @@ def is_admin_user(user):
             emp.status == Employee.STATUS_ACTIVE
             and emp.role.name == Role.ROLE_ADMIN
         )
-    # Authenticated user without employee profile is the primary store administrator
-    return True
+    return user.is_staff
 
 
 def require_permission(module, action='view'):
