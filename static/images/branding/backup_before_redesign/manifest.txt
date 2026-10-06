@@ -1,0 +1,28 @@
+# JewelDesk Branding Assets Backup Manifest
+Created: 2026-10-06 22:36
+Purpose: Backup of all branding assets prior to applying new 3-asset redesign.
+
+## Backed Up Assets:
+1. App Icons & Favicons:
+   - Location: icons/
+   - Original location: static/icons/
+   - Files:
+     - favicon.ico
+     - favicon-16x16.png
+     - favicon-32x32.png
+     - apple-touch-icon.png
+     - icon-192x192.png
+     - icon-512x512.png
+     - icon-maskable-192x192.png
+     - icon-maskable-512x512.png
+
+2. Main Brand / Company Logo:
+   - File: company_logo_1791305015398.png
+   - Original location: media/company/1791305015398.png
+
+3. Login Page Hero Visual / Background:
+   - File: jewellery-hero.jpg
+   - Original location: static/images/login/jewellery-hero.jpg
+
+## Restoration:
+To restore previous assets, copy all files back to their respective original paths.

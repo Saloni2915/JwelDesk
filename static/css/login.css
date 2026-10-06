@@ -71,7 +71,12 @@ body.jd-login-page {
     padding: 0;
     min-height: 100vh;
     min-height: 100dvh;
-    background-color: var(--bg-primary, #0e141f);
+    background-color: #0c1017;
+    background-image: linear-gradient(135deg, rgba(12, 16, 23, 0.88), rgba(18, 24, 36, 0.82)), url("../images/branding/login_background.jpg");
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
     color: var(--text-primary, #f1f5f9);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -79,6 +84,10 @@ body.jd-login-page {
     overflow-x: hidden;
     position: relative;
     line-height: 1.5;
+}
+
+[data-theme="light"] body.jd-login-page {
+    background-image: linear-gradient(135deg, rgba(248, 250, 252, 0.90), rgba(241, 245, 249, 0.86)), url("../images/branding/login_background.jpg");
 }
 
 /* Subtle luxury ambient background glows */
@@ -496,24 +505,30 @@ img {
 .jd-login-card {
     width: 100%;
     max-width: 440px;
-    background: var(--surface, #151d2c);
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    background: rgba(21, 29, 44, 0.94);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
     border-radius: 1.25rem;
     padding: clamp(1.75rem, 3vw, 2.5rem);
-    box-shadow: 0 24px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(197, 155, 39, 0.08);
+    box-shadow: 0 24px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(197, 155, 39, 0.12);
     transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 [data-theme="light"] .jd-login-card {
-    background: #ffffff;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border-color: rgba(0, 0, 0, 0.08);
-    box-shadow: 0 20px 45px -12px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 20px 45px -12px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 [data-theme="gold"] .jd-login-card {
-    background: #221c10;
+    background: rgba(34, 28, 16, 0.94);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border-color: rgba(201, 162, 39, 0.25);
-    box-shadow: 0 20px 45px -12px rgba(120, 96, 40, 0.2);
+    box-shadow: 0 20px 45px -12px rgba(120, 96, 40, 0.25);
 }
 
 /* Card Header */
@@ -973,7 +988,7 @@ img {
    9. Legacy Auth Classes (Retained for signup.html & password_reset_*.html)
    -------------------------------------------------------------------------- */
 .jd-auth__shell { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); min-height: 100vh; }
-.jd-auth__visual { position: relative; display: flex; align-items: flex-end; padding: clamp(1.75rem, 3vw, 3.25rem); color: #fdf6e4; background-color: #150f0a; background-image: url("../images/login/jewellery-hero.jpg"); background-size: cover; background-position: 64% 42%; }
+.jd-auth__visual { position: relative; display: flex; align-items: flex-end; padding: clamp(1.75rem, 3vw, 3.25rem); color: #fdf6e4; background-color: #150f0a; background-image: url("../images/branding/login_background.jpg"); background-size: cover; background-position: center center; }
 .jd-auth__scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(18, 12, 7, 0.58) 0%, rgba(18, 12, 7, 0.16) 36%, rgba(14, 9, 5, 0.86) 100%); }
 .jd-auth__visual-inner { position: relative; z-index: 1; max-width: 30rem; }
 .jd-auth__brand { display: flex; align-items: center; gap: 0.7rem; }

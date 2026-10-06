@@ -493,12 +493,14 @@ a:hover {
 
 .sidebar-company-logo {
     display: block !important;
-    max-width: 44px !important;
-    max-height: 44px !important;
+    max-width: 150px !important;
+    max-height: 42px !important;
+    width: auto !important;
+    height: auto !important;
     border-radius: 6px !important;
     object-fit: contain !important;
     background: #ffffff !important;
-    padding: 2px !important;
+    padding: 3px 6px !important;
 }
 
 .sidebar-company-name {

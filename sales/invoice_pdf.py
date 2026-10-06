@@ -77,8 +77,8 @@ def build_invoice_pdf(sale):
     if company and company.logo and default_storage.exists(company.logo.name):
         try:
             with company.logo.open('rb') as fh:
-                img = RLImage(fh, width=14 * mm, height=14 * mm)
-                img.drawOn(c, page_w - 35 * mm, page_h - 26 * mm)
+                img = RLImage(fh, width=32 * mm, height=10 * mm, kind='proportional')
+                img.drawOn(c, page_w - 45 * mm, page_h - 24 * mm)
         except Exception:
             pass  # A broken/unreadable logo must not block the invoice.
 
