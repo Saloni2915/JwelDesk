@@ -435,6 +435,7 @@ def payment_add(request, pk):
 # OLD GOLD EXCHANGE & BUYBACK VIEWS
 # ==============================================================================
 
+@login_required
 @require_permission('sales', 'view')
 def old_gold_list(request):
     """
@@ -495,6 +496,7 @@ def old_gold_list(request):
     return render(request, 'sales/old_gold_list.html', context)
 
 
+@login_required
 @require_permission('sales', 'add')
 def old_gold_exchange_create(request):
     """
@@ -614,6 +616,7 @@ def old_gold_exchange_create(request):
     return render(request, 'sales/old_gold_exchange_form.html', context)
 
 
+@login_required
 @require_permission('sales', 'add')
 def old_gold_buyback_create(request):
     """
@@ -675,6 +678,7 @@ def old_gold_buyback_create(request):
     return render(request, 'sales/old_gold_buyback_form.html', context)
 
 
+@login_required
 @require_permission('sales', 'view')
 def old_gold_detail(request, pk):
     """
@@ -699,6 +703,7 @@ def old_gold_detail(request, pk):
     return render(request, 'sales/old_gold_detail.html', context)
 
 
+@login_required
 @require_permission('sales', 'edit')
 def old_gold_cancel(request, pk):
     """

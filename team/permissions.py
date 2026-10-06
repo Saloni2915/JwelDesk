@@ -43,6 +43,11 @@ def has_module_perm(user, module, action='view'):
     if user.is_staff:
         return True
 
+    # Authenticated user without employee profile:
+    # Allowed for regular showroom operations, restricted for administrative team management.
+    if module != 'team':
+        return True
+
     return False
 
 
