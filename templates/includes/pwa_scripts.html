@@ -39,6 +39,7 @@
         window.addEventListener('beforeinstallprompt', function(e) {
             e.preventDefault();
             deferredPrompt = e;
+            window.deferredPrompt = e;
             installNavItems.forEach(function(item) {
                 item.classList.remove('d-none');
             });
@@ -47,16 +48,32 @@
         installButtons.forEach(function(btn) {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    deferredPrompt.userChoice.then(function(choiceResult) {
+                var promptObj = deferredPrompt || window.deferredPrompt;
+                if (promptObj) {
+                    promptObj.prompt();
+                    promptObj.userChoice.then(function(choiceResult) {
                         if (choiceResult.outcome === 'accepted') {
                             installNavItems.forEach(function(item) {
                                 item.classList.add('d-none');
                             });
                         }
                         deferredPrompt = null;
+                        window.deferredPrompt = null;
                     });
+                } else {
+                    // Show guidance modal if available, otherwise browser instructions
+                    var modalEl = document.getElementById('pwaInstallGuideModal');
+                    if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                        var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                        modal.show();
+                    } else {
+                        var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                        if (isIOS) {
+                            alert("To install JewelDesk App on iOS: Tap Share (⬆) in Safari and select 'Add to Home Screen'.");
+                        } else {
+                            alert("To install JewelDesk App / APK on your device: Tap the browser menu (⋮) and select 'Install app' or 'Add to Home screen'.");
+                        }
+                    }
                 }
             });
         });

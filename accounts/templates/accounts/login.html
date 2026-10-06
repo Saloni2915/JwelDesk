@@ -4,18 +4,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign in — JewelDesk</title>
+    <title>Sign In — JewelDesk</title>
+
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <!-- Shared theme tokens (light / dark / gold) -->
-    <link href="{% static 'css/style.css' %}" rel="stylesheet">
-    <!-- Login page styles -->
-    <link href="{% static 'css/login.css' %}" rel="stylesheet">
+    <!-- External stylesheet with cache buster -->
+    <link href="{% static 'css/login.css' %}?v={% now "U" %}" rel="stylesheet">
+
     <!-- PWA & Mobile Web App Meta Tags -->
     {% include 'includes/pwa_head.html' %}
-    <!-- Apply the saved theme before first paint (same system as base.html) -->
+
+    <!-- Apply saved theme before first paint (prevent flash) -->
     <script>
         (function () {
             var t = localStorage.getItem('jd-theme') || 'light';
@@ -23,121 +24,653 @@
             document.cookie = 'jd-theme=' + t + '; path=/; max-age=31536000; SameSite=Lax';
         })();
     </script>
+
+    <!-- Embedded Critical Standalone CSS: Guarantees 100% pixel-perfect styling even offline, on slow CDN, or behind service worker cache -->
+    <style>
+        :root {
+            --bg-primary: #0e141f;
+            --bg-secondary: #121824;
+            --surface: #151d2c;
+            --surface-alt: rgba(255, 255, 255, 0.05);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: rgba(255, 255, 255, 0.1);
+            --accent: #c59b27;
+            --accent-hover: #e0b43a;
+            --on-accent: #1a2232;
+            --input-bg: #0e1420;
+            --input-border: rgba(255, 255, 255, 0.14);
+            --danger: #ef4444;
+        }
+        [data-theme="light"] {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #f1f5f9;
+            --surface: #ffffff;
+            --surface-alt: #f1f5f9;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --accent: #b48516;
+            --accent-hover: #966f12;
+            --on-accent: #ffffff;
+            --input-bg: #ffffff;
+            --input-border: #cbd5e1;
+            --danger: #dc2626;
+        }
+        [data-theme="gold"] {
+            --bg-primary: #141009;
+            --bg-secondary: #1e180d;
+            --surface: #221c10;
+            --surface-alt: rgba(245, 206, 107, 0.06);
+            --text-primary: #fef9ed;
+            --text-secondary: #d6caa8;
+            --text-muted: #9e9171;
+            --border: rgba(245, 206, 107, 0.2);
+            --accent: #e5b338;
+            --accent-hover: #f3ca58;
+            --on-accent: #141009;
+            --input-bg: #1a140b;
+            --input-border: rgba(245, 206, 107, 0.25);
+            --danger: #ef4444;
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+        body.jd-login-page {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            min-height: 100dvh;
+            background-color: var(--bg-primary, #0e141f);
+            color: var(--text-primary, #f1f5f9);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            overflow-x: hidden;
+            line-height: 1.5;
+        }
+        img { max-width: 100%; height: auto; display: block; }
+        .jd-login-layout { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+        .jd-login-header {
+            width: 100%;
+            padding: 1.15rem 1.75rem;
+            border-bottom: 1px solid var(--border);
+            background: rgba(18, 24, 36, 0.75);
+            backdrop-filter: blur(12px);
+        }
+        [data-theme="light"] .jd-login-header { background: rgba(255, 255, 255, 0.9); }
+        .jd-login-header__inner {
+            max-width: 1360px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        .jd-brand-link { display: inline-flex; align-items: center; gap: 0.75rem; text-decoration: none; color: inherit; }
+        .jd-brand-icon {
+            display: grid;
+            place-items: center;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 0.65rem;
+            font-size: 1.2rem;
+            color: #1a2232;
+            background: linear-gradient(135deg, #fce08b 0%, #c59b27 100%);
+            box-shadow: 0 4px 12px rgba(197, 155, 39, 0.3);
+            flex-shrink: 0;
+        }
+        .jd-brand-text { display: flex; flex-direction: column; }
+        .jd-brand-name { font-size: 1.3rem; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
+        .jd-brand-badge { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
+        .jd-header-actions { display: flex; align-items: center; gap: 1.25rem; }
+        .jd-trust-badge {
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            background: var(--surface-alt);
+            border: 1px solid var(--border);
+            padding: 0.35rem 0.85rem;
+            border-radius: 2rem;
+        }
+        .jd-theme-pills {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 2rem;
+        }
+        .jd-theme-btn {
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .jd-theme-btn.active { color: var(--on-accent); background: var(--accent); }
+        .jd-login-main {
+            flex: 1 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(1.5rem, 3.5vw, 3.5rem) 1.5rem;
+        }
+        .jd-login-container { width: 100%; max-width: 1320px; margin: 0 auto; }
+        .jd-landing-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.85fr);
+            gap: clamp(2rem, 4vw, 4.5rem);
+            align-items: center;
+            width: 100%;
+        }
+        .jd-hero-col { min-width: 0; width: 100%; }
+        .jd-form-col { min-width: 0; width: 100%; display: flex; justify-content: center; }
+        .jd-hero-content { display: flex; flex-direction: column; }
+        .jd-hero-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.55rem;
+            width: fit-content;
+            padding: 0.35rem 0.95rem;
+            border-radius: 2rem;
+            background: rgba(197, 155, 39, 0.12);
+            border: 1px solid rgba(197, 155, 39, 0.3);
+            color: var(--accent);
+            font-size: 0.82rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+        }
+        .jd-pill-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+        }
+        .jd-hero-title {
+            font-size: clamp(2rem, 3.6vw, 3.1rem);
+            font-weight: 800;
+            line-height: 1.18;
+            letter-spacing: -0.025em;
+            color: var(--text-primary);
+            margin: 0 0 1.15rem;
+        }
+        .jd-hero-title-highlight {
+            background: linear-gradient(135deg, #f7d57a 0%, #c59b27 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+        .jd-hero-subtitle {
+            font-size: clamp(0.95rem, 1.25vw, 1.1rem);
+            line-height: 1.6;
+            color: var(--text-secondary);
+            max-width: 580px;
+            margin: 0 0 2rem;
+        }
+        .jd-features-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1.1rem;
+            margin-bottom: 2.2rem;
+        }
+        .jd-feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.85rem;
+            padding: 0.9rem 1rem;
+            border-radius: 0.85rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+        }
+        .jd-feature-icon {
+            width: 2.3rem;
+            height: 2.3rem;
+            border-radius: 0.6rem;
+            display: grid;
+            place-items: center;
+            font-size: 1.1rem;
+            color: var(--accent);
+            background: rgba(197, 155, 39, 0.12);
+            flex-shrink: 0;
+        }
+        .jd-feature-text { display: flex; flex-direction: column; }
+        .jd-feature-text strong { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.15rem; }
+        .jd-feature-text small { font-size: 0.76rem; line-height: 1.4; color: var(--text-muted); }
+        .jd-showcase-window {
+            position: relative;
+            border-radius: 1.1rem;
+            overflow: hidden;
+            background: #121824;
+            border: 1px solid var(--border);
+            box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.45);
+            width: 100%;
+            max-width: 100%;
+        }
+        .jd-showcase-img-wrap {
+            position: relative;
+            width: 100%;
+            height: 220px;
+            max-height: 240px;
+            overflow: hidden;
+        }
+        .jd-showcase-img {
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: cover;
+            object-position: 60% 40%;
+            filter: brightness(0.88) contrast(1.05);
+        }
+        .jd-showcase-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(14, 20, 31, 0.2) 0%, rgba(14, 20, 31, 0.85) 100%);
+        }
+        .jd-showcase-badge {
+            position: absolute;
+            bottom: 1rem;
+            left: 1.25rem;
+            right: 1.25rem;
+            display: flex;
+            align-items: center;
+            background: rgba(18, 24, 36, 0.88);
+            border: 1px solid rgba(197, 155, 39, 0.35);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: #f1f5f9;
+        }
+        .jd-login-card-wrapper { display: flex; justify-content: center; width: 100%; }
+        .jd-login-card {
+            width: 100%;
+            max-width: 440px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 1.25rem;
+            padding: clamp(1.75rem, 3vw, 2.5rem);
+            box-shadow: 0 24px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(197, 155, 39, 0.08);
+        }
+        [data-theme="light"] .jd-login-card { background: #ffffff; }
+        .jd-card-header { margin-bottom: 1.75rem; text-align: center; }
+        .jd-card-icon-halo {
+            width: 3.25rem;
+            height: 3.25rem;
+            border-radius: 1rem;
+            margin: 0 auto 1.15rem;
+            display: grid;
+            place-items: center;
+            font-size: 1.45rem;
+            color: var(--on-accent);
+            background: linear-gradient(135deg, #fce08b 0%, #c59b27 100%);
+            box-shadow: 0 8px 20px rgba(197, 155, 39, 0.3);
+        }
+        .jd-card-title { font-size: 1.65rem; font-weight: 700; color: var(--text-primary); margin: 0 0 0.35rem; }
+        .jd-card-subtitle { font-size: 0.9rem; color: var(--text-secondary); margin: 0; }
+        .jd-error-alert {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.85rem 1rem;
+            margin-bottom: 1.35rem;
+            border-radius: 0.75rem;
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #ef4444;
+            font-size: 0.86rem;
+            line-height: 1.45;
+        }
+        .jd-error-alert i { font-size: 1.15rem; margin-top: 0.1rem; flex-shrink: 0; }
+        .jd-input-group { margin-bottom: 1.25rem; }
+        .jd-input-label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.4rem; }
+        .jd-input-wrapper { position: relative; display: flex; align-items: center; }
+        .jd-input-icon { position: absolute; left: 1rem; color: var(--text-muted); font-size: 1rem; pointer-events: none; z-index: 2; }
+        .jd-input-field {
+            width: 100%;
+            min-height: 48px;
+            padding: 0.75rem 1rem 0.75rem 2.75rem;
+            font-size: 1rem;
+            color: var(--text-primary);
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 0.75rem;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+        .jd-input-field:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(197, 155, 39, 0.25); }
+        .jd-input-field--password { padding-right: 3rem; }
+        .jd-password-toggle {
+            position: absolute;
+            right: 0.4rem;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            width: 2.4rem;
+            height: 2.4rem;
+            display: grid;
+            place-items: center;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            z-index: 3;
+            font-size: 1.05rem;
+        }
+        .jd-forgot-link { font-size: 0.8rem; font-weight: 500; color: var(--accent); text-decoration: none; }
+        .jd-forgot-link:hover { text-decoration: underline; color: var(--accent-hover); }
+        .jd-submit-btn {
+            width: 100%;
+            min-height: 48px;
+            padding: 0.85rem 1.25rem;
+            margin-top: 0.5rem;
+            border: 1px solid var(--accent);
+            border-radius: 0.75rem;
+            background: linear-gradient(135deg, #e8c257 0%, #c59b27 100%);
+            color: var(--on-accent);
+            font-size: 1rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(197, 155, 39, 0.3);
+            transition: all 0.15s ease;
+        }
+        .jd-submit-btn:hover { background: linear-gradient(135deg, #edd075 0%, #cca333 100%); transform: translateY(-1px); }
+        .jd-signup-prompt { margin-top: 1.35rem; font-size: 0.88rem; text-align: center; }
+        .jd-signup-link { color: var(--accent); text-decoration: none; font-weight: 600; }
+        .jd-signup-link:hover { text-decoration: underline; color: var(--accent-hover); }
+        .jd-card-footer { margin-top: 1.5rem; padding-top: 1.15rem; border-top: 1px solid var(--border); text-align: center; }
+        .jd-security-note { font-size: 0.74rem; color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center; }
+        .jd-login-footer {
+            width: 100%;
+            padding: 1rem 1.75rem;
+            border-top: 1px solid var(--border);
+            background: rgba(14, 20, 31, 0.6);
+        }
+        .jd-login-footer__inner {
+            max-width: 1360px;
+            margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+        @media (max-width: 991.98px) {
+            .jd-landing-grid { display: flex; flex-direction: column-reverse; gap: 2.25rem; }
+            .jd-hero-col { margin-top: 1rem; padding-top: 1.5rem; border-top: 1px solid var(--border); text-align: center; }
+            .jd-hero-content { align-items: center; }
+            .jd-features-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); text-align: left; width: 100%; }
+            .jd-showcase-window { max-width: 500px; margin: 0 auto; }
+            .jd-login-card { max-width: 480px; margin: 0 auto; padding: 1.75rem 1.5rem; }
+        }
+        @media (max-width: 575.98px) {
+            .jd-features-grid { grid-template-columns: 1fr; }
+            .jd-showcase-img-wrap { height: 160px; }
+            .jd-login-card { padding: 1.5rem 1.15rem; }
+            .jd-card-title { font-size: 1.45rem; }
+            .jd-login-footer__inner { flex-direction: column; text-align: center; }
+        }
+    </style>
 </head>
-<body class="jd-auth">
-    <div class="jd-auth__shell">
+<body class="jd-login-page">
+    <div class="jd-login-layout">
 
-        <!-- Left: jewellery showroom visual (decorative) -->
-        <aside class="jd-auth__visual" role="img"
-               aria-label="Gold necklaces, a pendant, rings and earrings displayed on a warm, softly lit jewellery counter">
-            <div class="jd-auth__scrim" aria-hidden="true"></div>
-            <div class="jd-auth__visual-inner">
-                <div class="jd-auth__brand">
-                    <span class="jd-auth__brand-mark"><i class="bi bi-gem"></i></span>
-                    <span class="jd-auth__brand-name">JewelDesk</span>
+        <!-- Top Landing Navigation & Brand Bar -->
+        <header class="jd-login-header">
+            <div class="jd-login-header__inner">
+                <a href="{% url 'accounts:login' %}" class="jd-brand-link" aria-label="JewelDesk Home">
+                    <div class="jd-brand-icon">
+                        <i class="bi bi-gem" aria-hidden="true"></i>
+                    </div>
+                    <div class="jd-brand-text">
+                        <span class="jd-brand-name">JewelDesk</span>
+                        <span class="jd-brand-badge">Retail ERP</span>
+                    </div>
+                </a>
+
+                <div class="jd-header-actions">
+                    <div class="jd-trust-badge d-none d-md-inline-flex">
+                        <i class="bi bi-shield-check text-warning me-1" aria-hidden="true"></i>
+                        <span>ISO 27001 Certified & BIS Hallmark Ready</span>
+                    </div>
+
+                    <!-- Theme Switcher Pills -->
+                    <div class="jd-theme-pills" role="radiogroup" aria-label="Theme switcher">
+                        <button type="button" class="jd-theme-btn" data-theme-value="light" title="Light theme" aria-label="Light theme">
+                            <i class="bi bi-sun" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" class="jd-theme-btn" data-theme-value="dark" title="Dark theme" aria-label="Dark theme">
+                            <i class="bi bi-moon" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" class="jd-theme-btn" data-theme-value="gold" title="Gold luxury theme" aria-label="Gold luxury theme">
+                            <i class="bi bi-gem" aria-hidden="true"></i>
+                        </button>
+                    </div>
                 </div>
-                <p class="jd-auth__tagline">Jewellery Business Management</p>
-                <p class="jd-auth__support">Manage your jewellery business with clarity and confidence.</p>
-                <ul class="jd-auth__points">
-                    <li><i class="bi bi-gem"></i> Inventory, metal rates and billing</li>
-                    <li><i class="bi bi-people"></i> Customers, enquiries and custom orders</li>
-                    <li><i class="bi bi-graph-up-arrow"></i> Sales reports for every counter</li>
-                </ul>
             </div>
-        </aside>
+        </header>
 
-        <!-- Right: sign-in card -->
-        <main class="jd-auth__panel">
-            <div class="jd-auth__card">
-                <p class="jd-auth__logo">
-                    <span class="jd-auth__logo-mark"><i class="bi bi-gem" aria-hidden="true"></i></span>
-                    <span>JewelDesk</span>
-                </p>
+        <!-- Main Landing Body -->
+        <main class="jd-login-main">
+            <div class="jd-login-container">
+                <div class="jd-landing-grid">
 
-                <h1 class="jd-auth__title">Welcome back</h1>
-                <p class="jd-auth__subtitle">Sign in to open your jewellery business dashboard.</p>
+                    <!-- Left: Hero Branding, Value Proposition & Jewellery Visual Showcase -->
+                    <section class="jd-hero-col" aria-label="JewelDesk Overview">
+                        <div class="jd-hero-content">
+                            <!-- Hero Pill -->
+                            <div class="jd-hero-pill">
+                                <span class="jd-pill-dot" aria-hidden="true"></span>
+                                <span>Smart Jewellery Retail ERP</span>
+                            </div>
 
-                {% if messages %}
-                <div class="mb-3">
-                    {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} jd-auth__notice" role="status">
-                        <i class="bi bi-info-circle" aria-hidden="true"></i>
-                        <span>{{ message }}</span>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
+                            <!-- Hero Title & Subtitle -->
+                            <h1 class="jd-hero-title">
+                                Your Jewellery Business,<br>
+                                <span class="jd-hero-title-highlight">Beautifully Organized.</span>
+                            </h1>
+                            <p class="jd-hero-subtitle">
+                                Manage your gold & silver inventory, live metal rates, bullion barcoding, GST billing, and customer relationships — all in one place.
+                            </p>
 
-                {% if form.errors %}
-                <div class="jd-auth__alert" role="alert" id="jd-login-error">
-                    <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
-                    <span>Invalid username or password. Please try again.</span>
-                </div>
-                {% endif %}
+                            <!-- Feature Highlights Grid -->
+                            <div class="jd-features-grid">
+                                <div class="jd-feature-item">
+                                    <div class="jd-feature-icon">
+                                        <i class="bi bi-gem" aria-hidden="true"></i>
+                                    </div>
+                                    <div class="jd-feature-text">
+                                        <strong>Smart Inventory & HUID</strong>
+                                        <small>Weight, purity, hallmark & barcoding</small>
+                                    </div>
+                                </div>
+                                <div class="jd-feature-item">
+                                    <div class="jd-feature-icon">
+                                        <i class="bi bi-graph-up-arrow" aria-hidden="true"></i>
+                                    </div>
+                                    <div class="jd-feature-text">
+                                        <strong>Real-time Bullion Rates</strong>
+                                        <small>Instant multi-counter pricing update</small>
+                                    </div>
+                                </div>
+                                <div class="jd-feature-item">
+                                    <div class="jd-feature-icon">
+                                        <i class="bi bi-receipt" aria-hidden="true"></i>
+                                    </div>
+                                    <div class="jd-feature-text">
+                                        <strong>Fast GST Invoicing</strong>
+                                        <small>Tax breakdown & custom payment modes</small>
+                                    </div>
+                                </div>
+                                <div class="jd-feature-item">
+                                    <div class="jd-feature-icon">
+                                        <i class="bi bi-shield-lock" aria-hidden="true"></i>
+                                    </div>
+                                    <div class="jd-feature-text">
+                                        <strong>Role-Based Security</strong>
+                                        <small>Staff counters & audit tracking</small>
+                                    </div>
+                                </div>
+                            </div>
 
-                <form method="post" novalidate>
-                    {% csrf_token %}
-                    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+                            <!-- Jewellery Photograph Showcase Frame -->
+                            <div class="jd-showcase-window">
+                                <div class="jd-showcase-img-wrap">
+                                    <img src="{% static 'images/login/jewellery-hero.jpg' %}"
+                                         alt="Luxury gold, diamond and gemstone jewellery collection"
+                                         class="jd-showcase-img"
+                                         loading="eager"
+                                         width="1300"
+                                         height="1650">
+                                    <div class="jd-showcase-overlay" aria-hidden="true"></div>
+                                    <div class="jd-showcase-badge">
+                                        <i class="bi bi-stars text-warning fs-5 me-2" aria-hidden="true"></i>
+                                        <div>
+                                            <span class="fw-semibold d-block">Handcrafted for Modern Jewellers</span>
+                                            <small>Trusted by retail showrooms across India</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
 
-                    <div class="jd-auth__field">
-                        <label class="jd-auth__label" for="id_username">Username or Email</label>
-                        <div class="jd-auth__input">
-                            <i class="bi bi-person jd-auth__icon" aria-hidden="true"></i>
-                            <input type="text" name="username" id="id_username"
-                                   class="jd-auth__control" placeholder="Enter your username or email"
-                                   autocomplete="username" autocapitalize="none"
-                                   autocorrect="off" spellcheck="false" autofocus required
-                                   {% if form.errors %}aria-invalid="true" aria-describedby="jd-login-error"{% endif %}>
+                    <!-- Right: Premium SaaS Login Authentication Card -->
+                    <div class="jd-form-col">
+                        <div class="jd-login-card-wrapper">
+                            <div class="jd-login-card">
+                                
+                                <div class="jd-card-header text-center">
+                                    <div class="jd-card-icon-halo">
+                                        <i class="bi bi-gem" aria-hidden="true"></i>
+                                    </div>
+                                    <h2 class="jd-card-title">Welcome back</h2>
+                                    <p class="jd-card-subtitle">Sign in to continue to JewelDesk</p>
+                                </div>
+
+                                {% if messages %}
+                                <div class="mb-3">
+                                    {% for message in messages %}
+                                    <div class="alert alert-{{ message.tags }} jd-error-alert" role="status">
+                                        <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
+                                        <span>{{ message }}</span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+
+                                {% if form.errors %}
+                                <div class="jd-error-alert" role="alert" id="jd-login-error">
+                                    <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                                    <span>Invalid username or password. Please try again.</span>
+                                </div>
+                                {% endif %}
+
+                                <form method="post" novalidate id="jd-login-form">
+                                    {% csrf_token %}
+                                    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+                                    <div class="jd-input-group">
+                                        <label class="jd-input-label" for="id_username">Username or Email</label>
+                                        <div class="jd-input-wrapper">
+                                            <i class="bi bi-person jd-input-icon" aria-hidden="true"></i>
+                                            <input type="text"
+                                                   name="username"
+                                                   id="id_username"
+                                                   class="jd-input-field"
+                                                   placeholder="Enter your username or email"
+                                                   autocomplete="username"
+                                                   autocapitalize="none"
+                                                   autocorrect="off"
+                                                   spellcheck="false"
+                                                   autofocus
+                                                   required
+                                                   {% if form.errors %}aria-invalid="true" aria-describedby="jd-login-error"{% endif %}>
+                                        </div>
+                                    </div>
+
+                                    <div class="jd-input-group">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <label class="jd-input-label mb-0" for="id_password">Password</label>
+                                            <a href="{% url 'accounts:password_reset' %}" class="jd-forgot-link" id="jd-forgot-password-link">Forgot Password?</a>
+                                        </div>
+                                        <div class="jd-input-wrapper">
+                                            <i class="bi bi-lock jd-input-icon" aria-hidden="true"></i>
+                                            <input type="password"
+                                                   name="password"
+                                                   id="id_password"
+                                                   class="jd-input-field jd-input-field--password"
+                                                   placeholder="Enter your password"
+                                                   autocomplete="current-password"
+                                                   required
+                                                   {% if form.errors %}aria-invalid="true" aria-describedby="jd-login-error"{% endif %}>
+                                            <button type="button"
+                                                    class="jd-password-toggle"
+                                                    id="jd-password-toggle"
+                                                    aria-label="Show password"
+                                                    aria-pressed="false"
+                                                    aria-controls="id_password">
+                                                <i class="bi bi-eye" aria-hidden="true"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <button type="submit" class="jd-submit-btn" id="jd-login-submit-btn">
+                                        <span>Sign In to Dashboard</span>
+                                        <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                                    </button>
+                                </form>
+
+                                <div class="jd-signup-prompt text-center" id="jd-signup-prompt">
+                                    <span class="text-secondary">Don't have an account?</span>
+                                    <a href="{% url 'accounts:signup' %}" class="jd-signup-link ms-1" id="jd-signup-link">Sign Up</a>
+                                </div>
+
+                                <div class="mt-3 pwa-install-item d-none" id="pwaLoginInstallBox">
+                                    <button type="button" class="btn btn-outline-warning w-100 pwa-install-trigger btn-sm py-2" id="pwaLoginInstallBtn">
+                                        <i class="bi bi-download me-1"></i> Install JewelDesk App
+                                    </button>
+                                </div>
+
+                                <div class="jd-card-footer">
+                                    <p class="jd-security-note mb-0">
+                                        <i class="bi bi-shield-lock-fill text-warning me-1" aria-hidden="true"></i>
+                                        <span>256-bit SSL encrypted • Authorized showroom access only</span>
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="jd-auth__field">
-                        <label class="jd-auth__label" for="id_password">Password</label>
-                        <div class="jd-auth__input">
-                            <i class="bi bi-lock jd-auth__icon" aria-hidden="true"></i>
-                            <input type="password" name="password" id="id_password"
-                                   class="jd-auth__control jd-auth__control--password"
-                                   placeholder="Enter your password" autocomplete="current-password"
-                                   required
-                                   {% if form.errors %}aria-invalid="true" aria-describedby="jd-login-error"{% endif %}>
-                            <button type="button" class="jd-auth__toggle" id="jd-password-toggle"
-                                    aria-label="Show password" aria-pressed="false"
-                                    aria-controls="id_password">
-                                <i class="bi bi-eye" aria-hidden="true"></i>
-                            </button>
-                        </div>
-                        <div class="d-flex justify-content-end mt-1">
-                            <a href="{% url 'accounts:password_reset' %}" class="jd-auth__link" id="jd-forgot-password-link">Forgot Password?</a>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="jd-auth__submit">
-                        Sign in
-                        <i class="bi bi-arrow-right" aria-hidden="true"></i>
-                    </button>
-                </form>
-
-                <div class="text-center mt-3" id="jd-signup-prompt">
-                    <span class="text-secondary small">Don't have an account?</span>
-                    <a href="{% url 'accounts:signup' %}" class="jd-auth__link ms-1" id="jd-signup-link">Sign Up</a>
                 </div>
-
-                <div class="mt-3 pwa-install-item d-none" id="pwaLoginInstallBox">
-                    <button type="button" class="btn btn-outline-warning w-100 pwa-install-trigger btn-sm py-2" id="pwaLoginInstallBtn">
-                        <i class="bi bi-download me-1"></i> Install JewelDesk App
-                    </button>
-                </div>
-
-                <p class="jd-auth__foot">
-                    <i class="bi bi-shield-lock" aria-hidden="true"></i>
-                    <span>Secure sign-in. Access is limited to your shop's staff accounts.</span>
-                </p>
             </div>
         </main>
+
+        <!-- Landing Footer -->
+        <footer class="jd-login-footer">
+            <div class="jd-login-footer__inner">
+                <div class="text-muted small">© {% now "Y" %} JewelDesk POS & ERP. Crafted for Fine Jewellery Retail.</div>
+                <div class="d-flex align-items-center gap-3 text-muted small">
+                    <span class="d-inline-flex align-items-center"><i class="bi bi-patch-check text-warning me-1"></i> Cloud Ready</span>
+                    <span class="d-inline-flex align-items-center"><i class="bi bi-lightning-charge text-warning me-1"></i> Ultra Fast</span>
+                </div>
+            </div>
+        </footer>
+
     </div>
 
+    <!-- Scripts: Theme switching & Password toggle -->
     <script>
-        // Show / hide password toggle (no dependency, keyboard accessible).
+        // Password visibility toggle
         (function () {
             var toggle = document.getElementById('jd-password-toggle');
             var input = document.getElementById('id_password');
@@ -155,7 +688,43 @@
 
             toggle.addEventListener('click', function () { apply(!visible); });
         })();
+
+        // Theme Switcher Buttons
+        (function () {
+            var buttons = document.querySelectorAll('.jd-theme-btn');
+            function getSavedTheme() {
+                return localStorage.getItem('jd-theme') || 'light';
+            }
+            function setActiveBtn(theme) {
+                buttons.forEach(function (btn) {
+                    if (btn.getAttribute('data-theme-value') === theme) {
+                        btn.classList.add('active');
+                        btn.setAttribute('aria-checked', 'true');
+                    } else {
+                        btn.classList.remove('active');
+                        btn.setAttribute('aria-checked', 'false');
+                    }
+                });
+            }
+            function switchTheme(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                try { localStorage.setItem('jd-theme', theme); } catch (e) {}
+                document.cookie = 'jd-theme=' + theme + '; path=/; max-age=31536000; SameSite=Lax';
+                setActiveBtn(theme);
+            }
+
+            // Init active button
+            setActiveBtn(getSavedTheme());
+
+            buttons.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var theme = this.getAttribute('data-theme-value');
+                    switchTheme(theme);
+                });
+            });
+        })();
     </script>
+
     <!-- Progressive Web App (PWA) Scripts & Offline Handling -->
     {% include 'includes/pwa_scripts.html' %}
 </body>

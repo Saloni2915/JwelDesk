@@ -1,0 +1,1250 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JewelDesk — Jewellery Business Management Software</title>
+    <meta name="description" content="JewelDesk is an all-in-one software platform for jewellery retail showrooms, managing inventory, HUID hallmarking, live bullion pricing, sales billing, customer ledgers, and GST invoices.">
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Landing Page Stylesheet -->
+    <link href="{% static 'css/landing.css' %}?v={% now "U" %}" rel="stylesheet">
+
+    <!-- PWA & Mobile Web App Meta Tags -->
+    {% include 'includes/pwa_head.html' %}
+</head>
+<body class="jd-landing-body">
+
+    <!-- Ambient background glows -->
+    <div class="jd-ambient-glow jd-glow-gold" style="top: -100px; left: -100px;"></div>
+    <div class="jd-ambient-glow jd-glow-blue" style="top: 300px; right: -150px;"></div>
+
+    <!-- ======================================================================
+         0. TOP NOTIFICATION BANNER: APP / APK DOWNLOAD & INSTALL
+         ====================================================================== -->
+    <aside class="jd-top-banner" id="pwaTopBanner" role="region" aria-label="App Download Notification">
+        <div class="jd-top-banner__inner">
+            <div class="jd-top-banner__content">
+                <span class="jd-top-banner__badge">
+                    <i class="bi bi-phone-fill text-warning" aria-hidden="true"></i> Mobile App
+                </span>
+                <span class="jd-top-banner__text">
+                    <strong>JewelDesk App (APK / PWA):</strong> Install directly on your mobile or PC for faster billing & offline counter access!
+                </span>
+            </div>
+            <div class="jd-top-banner__actions">
+                <button type="button" class="jd-banner-btn pwa-install-trigger" id="pwaBannerInstallBtn">
+                    <i class="bi bi-download me-1" aria-hidden="true"></i> Download App (APK)
+                </button>
+                <button type="button" class="jd-banner-close" id="pwaBannerCloseBtn" aria-label="Dismiss notification">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ======================================================================
+         1. TOP NAVIGATION
+         ====================================================================== -->
+    <header>
+        <nav class="jd-landing-nav" id="topNav">
+            <div class="jd-landing-nav__inner">
+                <!-- Brand Logo -->
+                <a href="#hero" class="jd-landing-logo" aria-label="JewelDesk Software">
+                    <span class="jd-logo-gem"><i class="bi bi-gem" aria-hidden="true"></i></span>
+                    <span class="jd-logo-title">JewelDesk</span>
+                    <span class="jd-logo-badge">Software</span>
+                </a>
+
+                <!-- Desktop Nav Links -->
+                <div class="jd-nav-links">
+                    <a href="#hero" class="jd-nav-link active">Home</a>
+                    <a href="#features" class="jd-nav-link">Features</a>
+                    <a href="#how-it-works" class="jd-nav-link">How It Works</a>
+                    <a href="#why-jeweldesk" class="jd-nav-link">Why JewelDesk</a>
+                    <a href="#showcase" class="jd-nav-link">Showcase</a>
+                    <a href="#brochure" class="jd-nav-link">Brochure</a>
+                    <a href="#feedback" class="jd-nav-link">Feedback</a>
+                    <a href="#faq" class="jd-nav-link">FAQ</a>
+                </div>
+
+                <!-- Auth Action Buttons -->
+                <div class="jd-nav-actions">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'dashboard' %}" class="jd-btn jd-btn-gold jd-btn-sm" id="navDashboardBtn">
+                            <i class="bi bi-speedometer2" aria-hidden="true"></i> Go to Dashboard
+                        </a>
+                    {% else %}
+                        <a href="{% url 'accounts:login' %}" class="jd-btn jd-btn-ghost jd-btn-sm" id="navSignInBtn">Sign In</a>
+                        <a href="{% url 'signup_root' %}" class="jd-btn jd-btn-gold jd-btn-sm" id="navTrialBtn">
+                            Start Free Trial <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                        </a>
+                    {% endif %}
+                </div>
+
+                <!-- Mobile Hamburger Toggle -->
+                <button type="button" class="jd-mobile-toggle" id="mobileNavToggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobileDrawer">
+                    <i class="bi bi-list" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <!-- Mobile Drawer Menu -->
+            <div class="jd-mobile-drawer" id="mobileDrawer">
+                <div class="jd-mobile-drawer__links">
+                    <a href="#hero" class="jd-mobile-link"><span>Home</span> <i class="bi bi-chevron-right text-muted"></i></a>
+                    <a href="#features" class="jd-mobile-link"><span>Features</span> <i class="bi bi-chevron-right text-muted"></i></a>
+                    <a href="#how-it-works" class="jd-mobile-link"><span>How It Works</span> <i class="bi bi-chevron-right text-muted"></i></a>
+                    <a href="#why-jeweldesk" class="jd-mobile-link"><span>Why JewelDesk</span> <i class="bi bi-chevron-right text-muted"></i></a>
+                    <a href="#showcase" class="jd-mobile-link"><span>Software Showcase</span> <i class="bi bi-chevron-right text-muted"></i></a>
+                    <a href="#brochure" class="jd-mobile-link"><span>Discover JewelDesk</span> <i class="bi bi-chevron-right text-muted"></i></a>
+                    <a href="#feedback" class="jd-mobile-link"><span>Feedback</span> <i class="bi bi-chevron-right text-muted"></i></a>
+                    <a href="#faq" class="jd-mobile-link"><span>FAQ</span> <i class="bi bi-chevron-right text-muted"></i></a>
+                </div>
+                <div class="jd-mobile-drawer__actions">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'dashboard' %}" class="jd-btn jd-btn-gold">
+                            <i class="bi bi-speedometer2" aria-hidden="true"></i> Go to Dashboard
+                        </a>
+                    {% else %}
+                        <a href="{% url 'accounts:login' %}" class="jd-btn jd-btn-ghost">Sign In</a>
+                        <a href="{% url 'signup_root' %}" class="jd-btn jd-btn-gold">
+                            Start Free Trial <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <!-- ======================================================================
+             2. HERO SECTION
+             ====================================================================== -->
+        <section class="jd-hero-section" id="hero" aria-labelledby="heroTitle">
+            <div class="jd-container">
+                <!-- Pill Badge -->
+                <div class="jd-hero-badge">
+                    <span class="jd-badge-dot" aria-hidden="true"></span>
+                    <span>Jewellery Business Management Software</span>
+                </div>
+
+                <!-- Main Heading -->
+                <h1 class="jd-hero-title" id="heroTitle">
+                    Manage Your Jewellery Business,<br>
+                    <span class="text-gold-gradient">All in One Place.</span>
+                </h1>
+
+                <!-- Subtitle -->
+                <p class="jd-hero-subtitle">
+                    JewelDesk helps jewellery businesses manage inventory, sales, customers, reports and everyday operations from one organized software platform.
+                </p>
+
+                <!-- Action CTAs -->
+                <div class="jd-hero-ctas">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'dashboard' %}" class="jd-btn jd-btn-gold jd-btn-lg" id="heroDashboardBtn">
+                            <i class="bi bi-speedometer2" aria-hidden="true"></i> Go to Dashboard
+                        </a>
+                    {% else %}
+                        <a href="{% url 'signup_root' %}" class="jd-btn jd-btn-gold jd-btn-lg" id="heroTrialBtn">
+                            Start Free Trial <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                        </a>
+                        <a href="{% url 'accounts:login' %}" class="jd-btn jd-btn-ghost jd-btn-lg" id="heroSignInBtn">
+                            <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Sign In
+                        </a>
+                    {% endif %}
+                </div>
+
+                <!-- Trust Points Bar -->
+                <div class="jd-hero-trust-bar">
+                    <span><i class="bi bi-shield-check" aria-hidden="true"></i> BIS Hallmark & HUID Ready</span>
+                    <span><i class="bi bi-receipt" aria-hidden="true"></i> GST Invoices & Itemized Rates</span>
+                    <span><i class="bi bi-phone" aria-hidden="true"></i> Responsive Desktop & Mobile POS</span>
+                    <span><i class="bi bi-graph-up-arrow" aria-hidden="true"></i> Live Gold & Silver Pricing</span>
+                </div>
+
+                <!-- Software Product UI Mockup (Actual JewelDesk Dashboard Representation) -->
+                <div class="jd-mockup-wrapper" role="region" aria-label="JewelDesk Software Preview">
+                    <div class="jd-mockup-topbar">
+                        <div class="jd-mockup-dots" aria-hidden="true">
+                            <span class="jd-mockup-dot dot-red"></span>
+                            <span class="jd-mockup-dot dot-yellow"></span>
+                            <span class="jd-mockup-dot dot-green"></span>
+                        </div>
+                        <div class="jd-mockup-title">
+                            <i class="bi bi-lock-fill text-warning me-1" aria-hidden="true"></i>
+                            <span>https://jeweldesk.app/dashboard/ — Jewellery Business Cockpit</span>
+                        </div>
+                        <div class="jd-mockup-badge">
+                            <i class="bi bi-patch-check-fill me-1" aria-hidden="true"></i> Live Software
+                        </div>
+                    </div>
+
+                    <div class="jd-mockup-content">
+                        <!-- Live Bullion Ticker Bar -->
+                        <div class="jd-mockup-ticker">
+                            <span class="jd-ticker-label">
+                                <i class="bi bi-graph-up-arrow" aria-hidden="true"></i> Live Bullion Counter Rates:
+                            </span>
+                            <div class="jd-ticker-rates">
+                                <span class="jd-ticker-rate">Gold 24K: <strong>₹7,250 / g</strong></span>
+                                <span class="jd-ticker-rate">Gold 22K: <strong>₹6,650 / g</strong></span>
+                                <span class="jd-ticker-rate">Gold 18K: <strong>₹5,440 / g</strong></span>
+                                <span class="jd-ticker-rate">Silver 999: <strong>₹88.50 / g</strong></span>
+                            </div>
+                        </div>
+
+                        <!-- 4 Summary KPI Stat Cards -->
+                        <div class="jd-mockup-stats">
+                            <div class="jd-mockup-stat-card">
+                                <div class="jd-mockup-stat-icon icon-gold">
+                                    <i class="bi bi-cash-stack" aria-hidden="true"></i>
+                                </div>
+                                <div>
+                                    <div class="jd-mockup-stat-val">₹1,42,850</div>
+                                    <div class="jd-mockup-stat-lbl">Today's Sales</div>
+                                </div>
+                            </div>
+                            <div class="jd-mockup-stat-card">
+                                <div class="jd-mockup-stat-icon icon-green">
+                                    <i class="bi bi-graph-up-arrow" aria-hidden="true"></i>
+                                </div>
+                                <div>
+                                    <div class="jd-mockup-stat-val">₹24,85,600</div>
+                                    <div class="jd-mockup-stat-lbl">Total Revenue</div>
+                                </div>
+                            </div>
+                            <div class="jd-mockup-stat-card">
+                                <div class="jd-mockup-stat-icon icon-blue">
+                                    <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+                                </div>
+                                <div>
+                                    <div class="jd-mockup-stat-val">₹45,200</div>
+                                    <div class="jd-mockup-stat-lbl">Outstanding Due</div>
+                                </div>
+                            </div>
+                            <div class="jd-mockup-stat-card">
+                                <div class="jd-mockup-stat-icon icon-purple">
+                                    <i class="bi bi-gem" aria-hidden="true"></i>
+                                </div>
+                                <div>
+                                    <div class="jd-mockup-stat-val">₹68,50,000</div>
+                                    <div class="jd-mockup-stat-lbl">Inventory Value</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Real Data Table Preview -->
+                        <div class="jd-mockup-table-wrap">
+                            <table class="jd-mockup-table" aria-label="Sample Inventory Table">
+                                <thead>
+                                    <tr>
+                                        <th>Tag Number</th>
+                                        <th>Jewellery Item</th>
+                                        <th>Metal & Purity</th>
+                                        <th>Net Weight</th>
+                                        <th>HUID Code</th>
+                                        <th>Item Price</th>
+                                        <th>Stock Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="jd-table-tag">TAG-1042</span></td>
+                                        <td class="fw-semibold text-white">Bridal Temple Necklace</td>
+                                        <td>Gold 22K (916)</td>
+                                        <td>34.500 g</td>
+                                        <td><code>HD8492</code></td>
+                                        <td class="text-white">₹2,45,000</td>
+                                        <td><span class="jd-badge-avail">Available</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="jd-table-tag">TAG-1088</span></td>
+                                        <td class="fw-semibold text-white">Solitaire Diamond Ring</td>
+                                        <td>Gold 18K (750)</td>
+                                        <td>4.850 g</td>
+                                        <td><code>DM3190</code></td>
+                                        <td class="text-white">₹88,500</td>
+                                        <td><span class="jd-badge-avail">Available</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="jd-table-tag">TAG-0921</span></td>
+                                        <td class="fw-semibold text-white">Traditional Silver Anklets</td>
+                                        <td>Silver 999</td>
+                                        <td>120.000 g</td>
+                                        <td><code>SL9012</code></td>
+                                        <td class="text-white">₹10,800</td>
+                                        <td><span class="jd-badge-sold">Sold</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             3. FEATURES SECTION
+             ====================================================================== -->
+        <section class="jd-section" id="features" aria-labelledby="featuresTitle">
+            <div class="jd-container">
+                <div class="jd-section-header">
+                    <span class="jd-section-pill">Core Features</span>
+                    <h2 class="jd-section-title" id="featuresTitle">
+                        Built for the Specific Needs of Jewellery Retail
+                    </h2>
+                    <p class="jd-section-subtitle">
+                        Every feature in JewelDesk has been engineered around precious metals, gemstones, hallmark compliance, and daily counter transactions.
+                    </p>
+                </div>
+
+                <div class="jd-features-grid">
+                    <!-- Feature 1: Inventory Management -->
+                    <article class="jd-feature-card">
+                        <div class="jd-feature-icon">
+                            <i class="bi bi-gem" aria-hidden="true"></i>
+                        </div>
+                        <h3>Inventory Management</h3>
+                        <p>Manage jewellery pieces, tag numbers, HUID, gross & net weight, purity (18K, 22K, 24K, Silver), stones, and stock status in real-time.</p>
+                    </article>
+
+                    <!-- Feature 2: Sales Management -->
+                    <article class="jd-feature-card">
+                        <div class="jd-feature-icon">
+                            <i class="bi bi-cart-check" aria-hidden="true"></i>
+                        </div>
+                        <h3>Sales Management</h3>
+                        <p>Record jewellery sales rapidly at the billing counter and automatically transition relevant stock status from Available to Sold.</p>
+                    </article>
+
+                    <!-- Feature 3: Customer Management -->
+                    <article class="jd-feature-card">
+                        <div class="jd-feature-icon">
+                            <i class="bi bi-people" aria-hidden="true"></i>
+                        </div>
+                        <h3>Customer Management</h3>
+                        <p>Keep customer records, contact numbers, PAN/GSTIN details, and full purchase ledgers organized alongside business transactions.</p>
+                    </article>
+
+                    <!-- Feature 4: Sales Reports -->
+                    <article class="jd-feature-card">
+                        <div class="jd-feature-icon">
+                            <i class="bi bi-bar-chart-line" aria-hidden="true"></i>
+                        </div>
+                        <h3>Sales Reports</h3>
+                        <p>Analyze business revenue using today, week, month, and custom-date financial reports with breakdowns across all payment modes.</p>
+                    </article>
+
+                    <!-- Feature 5: Gold & Silver Pricing -->
+                    <article class="jd-feature-card">
+                        <div class="jd-feature-icon">
+                            <i class="bi bi-graph-up-arrow" aria-hidden="true"></i>
+                        </div>
+                        <h3>Gold & Silver Pricing</h3>
+                        <p>Configure live daily metal rates for 24K, 22K, 18K gold and silver with instant recalculation of item retail estimates across counters.</p>
+                    </article>
+
+                    <!-- Feature 6: Stock Movement Tracking -->
+                    <article class="jd-feature-card">
+                        <div class="jd-feature-icon">
+                            <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
+                        </div>
+                        <h3>Stock Movement</h3>
+                        <p>Track jewellery stock movement, manual adjustments, sales deductions, returns, and inventory status changes with clear audit trails.</p>
+                    </article>
+
+                    <!-- Feature 7: Digital GST Invoices -->
+                    <article class="jd-feature-card">
+                        <div class="jd-feature-icon">
+                            <i class="bi bi-receipt" aria-hidden="true"></i>
+                        </div>
+                        <h3>Digital Invoices</h3>
+                        <p>Generate professional sales invoices with CGST/SGST breakdown, HSN classification, itemized making charges, and printable PDF formats.</p>
+                    </article>
+
+                    <!-- Feature 8: WhatsApp Communication -->
+                    <article class="jd-feature-card">
+                        <div class="jd-feature-icon">
+                            <i class="bi bi-whatsapp" aria-hidden="true"></i>
+                        </div>
+                        <h3>WhatsApp Integration</h3>
+                        <p>Quickly communicate with customers after purchases by sharing invoice details and payment acknowledgements directly via WhatsApp.</p>
+                    </article>
+
+                    <!-- Feature 9: Custom Orders & Karigars -->
+                    <article class="jd-feature-card">
+                        <div class="jd-feature-icon">
+                            <i class="bi bi-tools" aria-hidden="true"></i>
+                        </div>
+                        <h3>Custom Orders</h3>
+                        <p>Manage customer custom jewellery requests, reference images, karigar workshop allocation, expected delivery dates, and advance deposits.</p>
+                    </article>
+
+                    <!-- Feature 10: Team Management -->
+                    <article class="jd-feature-card">
+                        <div class="jd-feature-icon">
+                            <i class="bi bi-shield-lock" aria-hidden="true"></i>
+                        </div>
+                        <h3>Team Management</h3>
+                        <p>Manage employees and counter roles with fine-grained permissions to keep sensitive financial metrics secure from staff accounts.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             4. HOW IT WORKS SECTION
+             ====================================================================== -->
+        <section class="jd-section" id="how-it-works" aria-labelledby="howItWorksTitle">
+            <div class="jd-container">
+                <div class="jd-section-header">
+                    <span class="jd-section-pill">Simple Workflow</span>
+                    <h2 class="jd-section-title" id="howItWorksTitle">
+                        How JewelDesk Works
+                    </h2>
+                    <p class="jd-section-subtitle">
+                        Streamline your showroom operations from setup to daily transactions in four intuitive steps.
+                    </p>
+                </div>
+
+                <div class="jd-steps-grid">
+                    <!-- Step 1 -->
+                    <div class="jd-step-card">
+                        <div class="jd-step-number">01</div>
+                        <h3>Create Your Account</h3>
+                        <p>Start your JewelDesk workspace in seconds. Configure your store name, GSTIN, address, and daily gold and silver rates.</p>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="jd-step-card">
+                        <div class="jd-step-number">02</div>
+                        <h3>Add Your Jewellery</h3>
+                        <p>Catalog your jewellery inventory with tag numbers, BIS HUID, purity, gross weight, net weight, stones, and pricing rules.</p>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="jd-step-card">
+                        <div class="jd-step-number">03</div>
+                        <h3>Manage Sales & Customers</h3>
+                        <p>Record transactions at the counter, select payment modes (Cash, UPI, Card), and print or share digital invoices instantly.</p>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div class="jd-step-card">
+                        <div class="jd-step-number">04</div>
+                        <h3>Track Your Business</h3>
+                        <p>Inspect sales reports, inventory valuations, outstanding customer dues, and staff activities live from the dashboard cockpit.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             5. WHY JEWELDESK SECTION
+             ====================================================================== -->
+        <section class="jd-section" id="why-jeweldesk" aria-labelledby="whyTitle">
+            <div class="jd-container">
+                <div class="jd-section-header">
+                    <span class="jd-section-pill">Why JewelDesk</span>
+                    <h2 class="jd-section-title" id="whyTitle">
+                        Built for Jewellery, Not Generic Grocery Stores
+                    </h2>
+                    <p class="jd-section-subtitle">
+                        Standard point-of-sale software struggles with metal purity variances, HUID compliance, and daily bullion rates. JewelDesk is designed specifically for jewellery retailers.
+                    </p>
+                </div>
+
+                <div class="jd-why-grid">
+                    <div class="jd-why-card">
+                        <div class="jd-why-icon"><i class="bi bi-box-seam" aria-hidden="true"></i></div>
+                        <h3>Organized Jewellery Inventory</h3>
+                        <p>Eliminate confusion with structured tag numbers, category groupings, gross versus net weights, and clear stock status indicators.</p>
+                    </div>
+                    <div class="jd-why-card">
+                        <div class="jd-why-icon"><i class="bi bi-lightning-charge" aria-hidden="true"></i></div>
+                        <h3>Easier Sales Management</h3>
+                        <p>Faster checkout with multi-payment splits (Cash, UPI, Card) and automatic inventory status synchronization on every completed bill.</p>
+                    </div>
+                    <div class="jd-why-card">
+                        <div class="jd-why-icon"><i class="bi bi-eye" aria-hidden="true"></i></div>
+                        <h3>Better Stock Visibility</h3>
+                        <p>Know exactly which items are in showcase trays, which are sold, and which are under karigar making at any given moment.</p>
+                    </div>
+                    <div class="jd-why-card">
+                        <div class="jd-why-icon"><i class="bi bi-person-badge" aria-hidden="true"></i></div>
+                        <h3>Centralized Customer Records</h3>
+                        <p>Maintain historical transactions, outstanding payment dues, and phone numbers in one accessible customer directory.</p>
+                    </div>
+                    <div class="jd-why-card">
+                        <div class="jd-why-icon"><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i></div>
+                        <h3>Digital GST Invoices</h3>
+                        <p>Generate clean, professional sales bills with legal tax breakdowns that customers trust and tax accountants appreciate.</p>
+                    </div>
+                    <div class="jd-why-card">
+                        <div class="jd-why-icon"><i class="bi bi-phone" aria-hidden="true"></i></div>
+                        <h3>Accessible Across Devices</h3>
+                        <p>Works smoothly on showroom desktop PCs, laptops, iPads, tablets, and smartphones without expensive proprietary hardware.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             6. SOFTWARE SHOWCASE SECTION
+             ====================================================================== -->
+        <section class="jd-section" id="showcase" aria-labelledby="showcaseTitle">
+            <div class="jd-container">
+                <div class="jd-section-header">
+                    <span class="jd-section-pill">Software Showcase</span>
+                    <h2 class="jd-section-title" id="showcaseTitle">
+                        A Polished Look at the Actual JewelDesk UI
+                    </h2>
+                    <p class="jd-section-subtitle">
+                        Here is what the real JewelDesk software looks like once you sign in. Explore the key screens of your daily workspace.
+                    </p>
+                </div>
+
+                <!-- Interactive Tab Switcher -->
+                <div class="jd-showcase-tabs" role="tablist" aria-label="Software Views">
+                    <button type="button" class="jd-tab-btn active" data-tab="tab-dashboard" role="tab" aria-selected="true" aria-controls="tab-dashboard">
+                        <i class="bi bi-speedometer2 me-1" aria-hidden="true"></i> Dashboard Cockpit
+                    </button>
+                    <button type="button" class="jd-tab-btn" data-tab="tab-inventory" role="tab" aria-selected="false" aria-controls="tab-inventory">
+                        <i class="bi bi-gem me-1" aria-hidden="true"></i> Inventory Management
+                    </button>
+                    <button type="button" class="jd-tab-btn" data-tab="tab-sales" role="tab" aria-selected="false" aria-controls="tab-sales">
+                        <i class="bi bi-cart-check me-1" aria-hidden="true"></i> Sales & Checkout
+                    </button>
+                    <button type="button" class="jd-tab-btn" data-tab="tab-reports" role="tab" aria-selected="false" aria-controls="tab-reports">
+                        <i class="bi bi-graph-up me-1" aria-hidden="true"></i> Reports & Analytics
+                    </button>
+                </div>
+
+                <!-- Showcase Frame -->
+                <div class="jd-mockup-wrapper">
+                    <div class="jd-mockup-topbar">
+                        <div class="jd-mockup-dots" aria-hidden="true">
+                            <span class="jd-mockup-dot dot-red"></span>
+                            <span class="jd-mockup-dot dot-yellow"></span>
+                            <span class="jd-mockup-dot dot-green"></span>
+                        </div>
+                        <div class="jd-mockup-title" id="showcaseViewTitle">
+                            JewelDesk — Dashboard Cockpit
+                        </div>
+                        <div class="jd-mockup-badge">
+                            Live Interface
+                        </div>
+                    </div>
+
+                    <div class="jd-mockup-content">
+                        <!-- Panel 1: Dashboard -->
+                        <div class="jd-tab-panel active" id="tab-dashboard" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                                <h4 class="mb-0 text-white fs-5 fw-bold"><i class="bi bi-speedometer2 text-warning me-2"></i>Jewellery Business Cockpit</h4>
+                                <div class="d-flex gap-2">
+                                    <span class="badge bg-secondary p-2">Today: {% now "d M Y" %}</span>
+                                </div>
+                            </div>
+                            <div class="jd-mockup-stats">
+                                <div class="jd-mockup-stat-card">
+                                    <div class="jd-mockup-stat-icon icon-gold"><i class="bi bi-cash-stack"></i></div>
+                                    <div>
+                                        <div class="jd-mockup-stat-val">₹1,42,850.00</div>
+                                        <div class="jd-mockup-stat-lbl">Today's Sales</div>
+                                    </div>
+                                </div>
+                                <div class="jd-mockup-stat-card">
+                                    <div class="jd-mockup-stat-icon icon-green"><i class="bi bi-graph-up-arrow"></i></div>
+                                    <div>
+                                        <div class="jd-mockup-stat-val">₹24,85,600.00</div>
+                                        <div class="jd-mockup-stat-lbl">Total Revenue</div>
+                                    </div>
+                                </div>
+                                <div class="jd-mockup-stat-card">
+                                    <div class="jd-mockup-stat-icon icon-blue"><i class="bi bi-hourglass-split"></i></div>
+                                    <div>
+                                        <div class="jd-mockup-stat-val">₹45,200.00</div>
+                                        <div class="jd-mockup-stat-lbl">Outstanding Due</div>
+                                    </div>
+                                </div>
+                                <div class="jd-mockup-stat-card">
+                                    <div class="jd-mockup-stat-icon icon-purple"><i class="bi bi-gem"></i></div>
+                                    <div>
+                                        <div class="jd-mockup-stat-val">₹68,50,000.00</div>
+                                        <div class="jd-mockup-stat-lbl">Inventory Valuation</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-3 bg-dark rounded border border-secondary text-secondary small">
+                                <i class="bi bi-info-circle text-warning me-1"></i> Dashboard aggregates data directly from recorded Sales, Payments, and Jewellery Items in your local database.
+                            </div>
+                        </div>
+
+                        <!-- Panel 2: Inventory -->
+                        <div class="jd-tab-panel" id="tab-inventory" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                                <h4 class="mb-0 text-white fs-5 fw-bold"><i class="bi bi-gem text-warning me-2"></i>Jewellery Stock Inventory</h4>
+                                <div class="d-flex gap-2">
+                                    <span class="btn btn-sm btn-dark border"><i class="bi bi-funnel me-1"></i> Filter by Purity</span>
+                                    <span class="btn btn-sm btn-dark border"><i class="bi bi-search me-1"></i> Search Tag/HUID</span>
+                                </div>
+                            </div>
+                            <div class="jd-mockup-table-wrap">
+                                <table class="jd-mockup-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Tag</th>
+                                            <th>Item Name</th>
+                                            <th>Metal & Karat</th>
+                                            <th>Gross Wt</th>
+                                            <th>Net Wt</th>
+                                            <th>HUID</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><span class="jd-table-tag">TAG-1011</span></td>
+                                            <td class="text-white">Antique Kundan Choker</td>
+                                            <td>Gold 22K</td>
+                                            <td>42.150 g</td>
+                                            <td>38.500 g</td>
+                                            <td><code>KN4812</code></td>
+                                            <td><span class="jd-badge-avail">Available</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="jd-table-tag">TAG-1012</span></td>
+                                            <td class="text-white">Solitaire Diamond Studs</td>
+                                            <td>Gold 18K</td>
+                                            <td>3.200 g</td>
+                                            <td>3.050 g</td>
+                                            <td><code>DM9021</code></td>
+                                            <td><span class="jd-badge-avail">Available</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="jd-table-tag">TAG-1013</span></td>
+                                            <td class="text-white">Traditional Gold Bangles (Pair)</td>
+                                            <td>Gold 22K</td>
+                                            <td>48.800 g</td>
+                                            <td>48.800 g</td>
+                                            <td><code>BG7712</code></td>
+                                            <td><span class="jd-badge-sold">Sold</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Panel 3: Sales -->
+                        <div class="jd-tab-panel" id="tab-sales" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                                <h4 class="mb-0 text-white fs-5 fw-bold"><i class="bi bi-cart-check text-warning me-2"></i>Counter Sales Billing</h4>
+                                <div class="d-flex gap-2">
+                                    <span class="badge bg-success p-2"><i class="bi bi-plus-lg me-1"></i> New Sale Checkout</span>
+                                </div>
+                            </div>
+                            <div class="jd-mockup-table-wrap">
+                                <table class="jd-mockup-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Sale ID</th>
+                                            <th>Customer Name</th>
+                                            <th>Purchased Item</th>
+                                            <th>Final Price</th>
+                                            <th>Payment Method</th>
+                                            <th>Invoice</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>#SL-2041</strong></td>
+                                            <td class="text-white">Rajesh Kumar Verma</td>
+                                            <td>Gold Wedding Band 22K</td>
+                                            <td class="text-warning fw-bold">₹42,500</td>
+                                            <td><span class="badge bg-secondary">UPI / GPay</span></td>
+                                            <td><span class="text-warning small"><i class="bi bi-receipt"></i> View GST Bill</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>#SL-2042</strong></td>
+                                            <td class="text-white">Ananya Sharma</td>
+                                            <td>Emerald Diamond Pendant 18K</td>
+                                            <td class="text-warning fw-bold">₹78,200</td>
+                                            <td><span class="badge bg-secondary">Card (HDFC)</span></td>
+                                            <td><span class="text-warning small"><i class="bi bi-receipt"></i> View GST Bill</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Panel 4: Reports -->
+                        <div class="jd-tab-panel" id="tab-reports" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                                <h4 class="mb-0 text-white fs-5 fw-bold"><i class="bi bi-graph-up text-warning me-2"></i>Sales & Tax Reports</h4>
+                                <div class="d-flex gap-2">
+                                    <span class="btn btn-sm btn-outline-warning"><i class="bi bi-file-earmark-arrow-down me-1"></i> Export Excel/CSV</span>
+                                </div>
+                            </div>
+                            <div class="p-3 bg-dark rounded border border-secondary">
+                                <div class="row g-3 text-center">
+                                    <div class="col-sm-4 border-end border-secondary">
+                                        <div class="text-muted small">Total Taxable Sales</div>
+                                        <div class="text-white fs-5 fw-bold">₹24,13,203.88</div>
+                                    </div>
+                                    <div class="col-sm-4 border-end border-secondary">
+                                        <div class="text-muted small">GST Collected (3%)</div>
+                                        <div class="text-warning fs-5 fw-bold">₹72,396.12</div>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <div class="text-muted small">Gross Revenue</div>
+                                        <div class="text-success fs-5 fw-bold">₹24,85,600.00</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             7. BROCHURE & OVERVIEW SECTION
+             ====================================================================== -->
+        <section class="jd-section" id="brochure" aria-labelledby="brochureTitle">
+            <div class="jd-container">
+                <div class="jd-brochure-card">
+                    <div class="jd-brochure-left">
+                        <span class="jd-section-pill">Official Documentation</span>
+                        <h2 class="jd-section-title" id="brochureTitle">Discover JewelDesk</h2>
+                        <p>
+                            Get a comprehensive overview of the JewelDesk software architecture, module workflows, and compliance specifications in our official software documentation.
+                        </p>
+                        <ul class="jd-brochure-bullets">
+                            <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Complete Feature Reference</li>
+                            <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Retail Workflow Guide</li>
+                            <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> GST & HUID Setup Details</li>
+                            <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> System Architecture & PWA</li>
+                        </ul>
+                        <div class="jd-brochure-actions">
+                            {% if has_pdf %}
+                                <a href="{% url 'download_project_report' %}" class="jd-btn jd-btn-gold" id="downloadBrochureBtn">
+                                    <i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i> Download Software Overview (PDF)
+                                </a>
+                                <a href="{% url 'view_project_report' %}" target="_blank" class="jd-btn jd-btn-ghost" id="viewBrochureBtn">
+                                    <i class="bi bi-eye" aria-hidden="true"></i> View Report Inline
+                                </a>
+                            {% else %}
+                                <a href="#features" class="jd-btn jd-btn-gold">
+                                    <i class="bi bi-arrow-up-right" aria-hidden="true"></i> Explore Features Above
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="jd-brochure-right">
+                        <div class="jd-doc-icon">
+                            <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-white fs-6">JewelDesk Complete Project Report</div>
+                            <div class="small text-muted mt-1">Official Software Specification Document</div>
+                        </div>
+                        <div class="badge bg-secondary p-2 mt-2">
+                            <i class="bi bi-shield-check text-warning me-1"></i> Verified & Production Ready
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             8. FEEDBACK SECTION
+             ====================================================================== -->
+        <section class="jd-section" id="feedback" aria-labelledby="feedbackTitle">
+            <div class="jd-container">
+                <div class="jd-section-header">
+                    <span class="jd-section-pill">User Input</span>
+                    <h2 class="jd-section-title" id="feedbackTitle">
+                        Help Us Make JewelDesk Better
+                    </h2>
+                    <p class="jd-section-subtitle">
+                        JewelDesk is actively built for jewellery retailers. Share your workflow suggestions, feature requests, or questions with our product engineering team.
+                    </p>
+                </div>
+
+                <div class="jd-feedback-card">
+                    <form id="feedbackForm" onsubmit="handleFeedbackSubmit(event)">
+                        <div class="jd-feedback-form">
+                            <div>
+                                <label class="jd-input-label" for="fbName">Your Name</label>
+                                <input type="text" id="fbName" class="jd-input-text" placeholder="e.g. Ramesh Soni" required>
+                            </div>
+                            <div>
+                                <label class="jd-input-label" for="fbEmail">Email Address</label>
+                                <input type="email" id="fbEmail" class="jd-input-text" placeholder="ramesh@jewellers.com" required>
+                            </div>
+                            <div class="jd-form-full">
+                                <label class="jd-input-label" for="fbShowroom">Showroom / Business Name (Optional)</label>
+                                <input type="text" id="fbShowroom" class="jd-input-text" placeholder="e.g. Shree Jewellers, Mumbai">
+                            </div>
+                            <div class="jd-form-full">
+                                <label class="jd-input-label" for="fbMessage">Your Suggestion or Feedback</label>
+                                <textarea id="fbMessage" rows="4" class="jd-textarea" placeholder="Tell us what features would help your jewellery counter workflow..." required></textarea>
+                            </div>
+                            <div class="jd-form-full d-flex justify-content-end gap-2">
+                                <button type="submit" class="jd-btn jd-btn-gold" id="fbSubmitBtn">
+                                    <i class="bi bi-send me-1"></i> Submit Feedback
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="fbSuccessMsg" class="d-none mt-3 p-3 bg-dark border border-success rounded text-success text-center">
+                        <i class="bi bi-check-circle-fill me-1"></i> Thank you! Your feedback has been forwarded to the JewelDesk team.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             9. FAQ SECTION
+             ====================================================================== -->
+        <section class="jd-section" id="faq" aria-labelledby="faqTitle">
+            <div class="jd-container">
+                <div class="jd-section-header">
+                    <span class="jd-section-pill">Answers</span>
+                    <h2 class="jd-section-title" id="faqTitle">
+                        Frequently Asked Questions
+                    </h2>
+                    <p class="jd-section-subtitle">
+                        Got questions about JewelDesk software? Here are straightforward answers about the platform.
+                    </p>
+                </div>
+
+                <div class="jd-faq-grid">
+                    <!-- Q1 -->
+                    <div class="jd-faq-item is-open">
+                        <button type="button" class="jd-faq-question" aria-expanded="true">
+                            <span>What is JewelDesk?</span>
+                            <i class="bi bi-chevron-down jd-faq-icon" aria-hidden="true"></i>
+                        </button>
+                        <div class="jd-faq-answer">
+                            JewelDesk is a dedicated jewellery business management and point-of-sale (POS) software designed specifically for jewellery retail showrooms, gold/silver traders, and custom jewellery workshops to manage inventory, sales billing, customer relationships, and GST reporting.
+                        </div>
+                    </div>
+
+                    <!-- Q2 -->
+                    <div class="jd-faq-item">
+                        <button type="button" class="jd-faq-question" aria-expanded="false">
+                            <span>Who is JewelDesk designed for?</span>
+                            <i class="bi bi-chevron-down jd-faq-icon" aria-hidden="true"></i>
+                        </button>
+                        <div class="jd-faq-answer">
+                            JewelDesk is built for independent jewellery retail showrooms, family jewellery businesses, bullion merchants, and manufacturing workshops looking for a streamlined digital system without complex enterprise software clutter.
+                        </div>
+                    </div>
+
+                    <!-- Q3 -->
+                    <div class="jd-faq-item">
+                        <button type="button" class="jd-faq-question" aria-expanded="false">
+                            <span>What can I manage using JewelDesk?</span>
+                            <i class="bi bi-chevron-down jd-faq-icon" aria-hidden="true"></i>
+                        </button>
+                        <div class="jd-faq-answer">
+                            You can manage jewellery stock with item tags, HUID hallmarking codes, gross & net weight, gold and silver daily market rates, counter sales transactions, customer directories and ledgers, custom orders with reference designs, karigar allocations, and financial reports.
+                        </div>
+                    </div>
+
+                    <!-- Q4 -->
+                    <div class="jd-faq-item">
+                        <button type="button" class="jd-faq-question" aria-expanded="false">
+                            <span>Can I manage jewellery inventory and sales together?</span>
+                            <i class="bi bi-chevron-down jd-faq-icon" aria-hidden="true"></i>
+                        </button>
+                        <div class="jd-faq-answer">
+                            Yes. Inventory and sales are tightly coupled. Whenever you create a sale, the corresponding jewellery item is automatically marked as Sold, updating your real-time stock balances and inventory valuations instantaneously.
+                        </div>
+                    </div>
+
+                    <!-- Q5 -->
+                    <div class="jd-faq-item">
+                        <button type="button" class="jd-faq-question" aria-expanded="false">
+                            <span>Can I use JewelDesk on mobile and tablet devices?</span>
+                            <i class="bi bi-chevron-down jd-faq-icon" aria-hidden="true"></i>
+                        </button>
+                        <div class="jd-faq-answer">
+                            Yes. The entire JewelDesk application is fully mobile-responsive and functions as an installable Progressive Web App (PWA). You can use it comfortably on Android tablets, iPads, mobile phones, or desktop counter PCs.
+                        </div>
+                    </div>
+
+                    <!-- Q6 -->
+                    <div class="jd-faq-item">
+                        <button type="button" class="jd-faq-question" aria-expanded="false">
+                            <span>How do I start using JewelDesk?</span>
+                            <i class="bi bi-chevron-down jd-faq-icon" aria-hidden="true"></i>
+                        </button>
+                        <div class="jd-faq-answer">
+                            Click on the "Start Free Trial" button to register your showroom account with a username and password. Once registered, you will be taken immediately to your dashboard cockpit to begin managing your stock.
+                        </div>
+                    </div>
+
+                    <!-- Q7 -->
+                    <div class="jd-faq-item">
+                        <button type="button" class="jd-faq-question" aria-expanded="false">
+                            <span>Is there a free trial?</span>
+                            <i class="bi bi-chevron-down jd-faq-icon" aria-hidden="true"></i>
+                        </button>
+                        <div class="jd-faq-answer">
+                            Yes. You can create a trial account without upfront payment or credit card requirements to test all software capabilities directly in your showroom environment.
+                        </div>
+                    </div>
+
+                    <!-- Q8 -->
+                    <div class="jd-faq-item">
+                        <button type="button" class="jd-faq-question" aria-expanded="false">
+                            <span>Does JewelDesk support GST billing and WhatsApp sharing?</span>
+                            <i class="bi bi-chevron-down jd-faq-icon" aria-hidden="true"></i>
+                        </button>
+                        <div class="jd-faq-answer">
+                            Yes. JewelDesk generates GST-compliant bills with CGST and SGST tax computation, itemized making charges, and one-click WhatsApp sharing to send invoice confirmations directly to customers.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================================
+             10. FINAL CALL TO ACTION (CTA)
+             ====================================================================== -->
+        <section class="jd-section" id="cta" aria-labelledby="ctaTitle">
+            <div class="jd-container">
+                <div class="jd-final-cta-card">
+                    <h2 id="ctaTitle">Ready to Manage Your Jewellery Business Smarter?</h2>
+                    <p>
+                        Join jewellery retail showrooms that manage inventory, counter sales, and customer billing with complete clarity using JewelDesk.
+                    </p>
+                    <div class="jd-final-cta-buttons">
+                        {% if user.is_authenticated %}
+                            <a href="{% url 'dashboard' %}" class="jd-btn jd-btn-gold jd-btn-lg" id="finalCtaDashboardBtn">
+                                <i class="bi bi-speedometer2" aria-hidden="true"></i> Go to Dashboard
+                            </a>
+                        {% else %}
+                            <a href="{% url 'signup_root' %}" class="jd-btn jd-btn-gold jd-btn-lg" id="finalCtaTrialBtn">
+                                Start Free Trial <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+                            </a>
+                            <a href="{% url 'accounts:login' %}" class="jd-btn jd-btn-ghost jd-btn-lg" id="finalCtaSignInBtn">
+                                <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Sign In
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ======================================================================
+         11. FOOTER
+         ====================================================================== -->
+    <footer class="jd-landing-footer">
+        <div class="jd-container">
+            <div class="jd-footer-grid">
+                <!-- Brand Info -->
+                <div class="jd-footer-brand">
+                    <h4>
+                        <span class="jd-logo-gem" style="width: 1.8rem; height: 1.8rem; font-size: 0.95rem;">
+                            <i class="bi bi-gem"></i>
+                        </span>
+                        JewelDesk
+                    </h4>
+                    <p>
+                        Modern jewellery retail management software designed for gold showrooms, silver dealers, and fine jewellery businesses.
+                    </p>
+                    <div class="d-flex gap-2">
+                        {% if user.is_authenticated %}
+                            <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-warning">Go to Dashboard</a>
+                        {% else %}
+                            <a href="{% url 'accounts:login' %}" class="btn btn-sm btn-outline-light">Sign In</a>
+                            <a href="{% url 'signup_root' %}" class="btn btn-sm btn-warning">Free Trial</a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Navigation Links -->
+                <div class="jd-footer-col">
+                    <h5>Navigation</h5>
+                    <ul class="jd-footer-links">
+                        <li><a href="#hero">Home</a></li>
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#how-it-works">How It Works</a></li>
+                        <li><a href="#why-jeweldesk">Why JewelDesk</a></li>
+                        <li><a href="#showcase">Software Showcase</a></li>
+                    </ul>
+                </div>
+
+                <!-- Resources Links -->
+                <div class="jd-footer-col">
+                    <h5>Resources</h5>
+                    <ul class="jd-footer-links">
+                        <li><a href="#brochure">Discover JewelDesk</a></li>
+                        <li><a href="#feedback">User Feedback</a></li>
+                        <li><a href="#faq">Frequently Asked Questions</a></li>
+                        {% if has_pdf %}
+                            <li><a href="{% url 'download_project_report' %}">Download Overview PDF</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <!-- Access Links -->
+                <div class="jd-footer-col">
+                    <h5>Software Access</h5>
+                    <ul class="jd-footer-links">
+                        <li><a href="{% url 'accounts:login' %}">Sign In to Counter</a></li>
+                        <li><a href="{% url 'signup_root' %}">Start Free Trial</a></li>
+                        <li><a href="{% url 'accounts:password_reset' %}">Forgot Password</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Footer Bottom -->
+            <div class="jd-footer-bottom">
+                <div>
+                    © {% now "Y" %} JewelDesk. All rights reserved. Fine Jewellery Retail Management Software.
+                </div>
+                <div class="jd-footer-tech-badges">
+                    <span><i class="bi bi-shield-check text-warning" aria-hidden="true"></i> 256-Bit SSL Encrypted</span>
+                    <span><i class="bi bi-lightning-charge text-warning" aria-hidden="true"></i> Progressive Web App (PWA)</span>
+                    <span><i class="bi bi-check2-circle text-warning" aria-hidden="true"></i> BIS Hallmark Compliant</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ======================================================================
+         PWA / APK INSTALL GUIDANCE MODAL
+         ====================================================================== -->
+    <div class="modal fade" id="pwaInstallGuideModal" tabindex="-1" aria-labelledby="pwaInstallModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered jd-modal-dialog">
+            <div class="modal-content jd-modal-content">
+                <div class="modal-header jd-modal-header d-flex justify-content-between align-items-center">
+                    <h5 class="modal-title fs-5 fw-bold text-white d-flex align-items-center gap-2" id="pwaInstallModalLabel">
+                        <i class="bi bi-phone-fill text-warning"></i> Install JewelDesk App
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body jd-modal-body">
+                    <p class="text-secondary small mb-3">
+                        Install JewelDesk directly on your device without downloading heavy setup files. Works fast, saves data, and supports offline access!
+                    </p>
+
+                    <!-- Platform Guides -->
+                    <div class="jd-install-step">
+                        <div class="jd-install-step-num"><i class="bi bi-android2"></i></div>
+                        <div>
+                            <strong class="text-white d-block mb-1">Android Phones / Tablets</strong>
+                            <span class="text-secondary small">Tap the browser menu (<strong>⋮</strong> in top right corner) and select <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.</span>
+                        </div>
+                    </div>
+
+                    <div class="jd-install-step">
+                        <div class="jd-install-step-num"><i class="bi bi-apple"></i></div>
+                        <div>
+                            <strong class="text-white d-block mb-1">iPhone / iPad (Safari)</strong>
+                            <span class="text-secondary small">Tap the <strong>Share</strong> button (<i class="bi bi-box-arrow-up text-primary"></i>) at the bottom bar, then select <strong>"Add to Home Screen"</strong>.</span>
+                        </div>
+                    </div>
+
+                    <div class="jd-install-step mb-0">
+                        <div class="jd-install-step-num"><i class="bi bi-laptop"></i></div>
+                        <div>
+                            <strong class="text-white d-block mb-1">Windows PC / Mac (Chrome / Edge)</strong>
+                            <span class="text-secondary small">Click the <strong>Install App</strong> icon (<i class="bi bi-download text-warning"></i>) in your browser address bar and click <strong>"Install"</strong>.</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer jd-modal-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="jd-banner-btn pwa-install-trigger" id="pwaModalInstallBtn" onclick="if(window.deferredPrompt){window.deferredPrompt.prompt();}">
+                        <i class="bi bi-download me-1"></i> Install Now
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JavaScript Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Interactive JavaScript -->
+    <script>
+        // 1. Mobile Menu Drawer Toggle
+        (function() {
+            var toggle = document.getElementById('mobileNavToggle');
+            var drawer = document.getElementById('mobileDrawer');
+            if (!toggle || !drawer) return;
+
+            toggle.addEventListener('click', function() {
+                var isOpen = drawer.classList.contains('is-open');
+                drawer.classList.toggle('is-open', !isOpen);
+                toggle.setAttribute('aria-expanded', !isOpen ? 'true' : 'false');
+                var icon = toggle.querySelector('i');
+                if (icon) {
+                    icon.className = !isOpen ? 'bi bi-x-lg' : 'bi bi-list';
+                }
+            });
+
+            // Auto-close drawer on link click
+            var links = drawer.querySelectorAll('a');
+            links.forEach(function(link) {
+                link.addEventListener('click', function() {
+                    drawer.classList.remove('is-open');
+                    toggle.setAttribute('aria-expanded', 'false');
+                    var icon = toggle.querySelector('i');
+                    if (icon) icon.className = 'bi bi-list';
+                });
+            });
+        })();
+
+        // 2. Showcase Interactive Tab Switcher
+        (function() {
+            var tabBtns = document.querySelectorAll('.jd-tab-btn');
+            var tabPanels = document.querySelectorAll('.jd-tab-panel');
+            var titleEl = document.getElementById('showcaseViewTitle');
+
+            var titles = {
+                'tab-dashboard': 'JewelDesk — Dashboard Cockpit',
+                'tab-inventory': 'JewelDesk — Inventory Management',
+                'tab-sales': 'JewelDesk — Counter Sales Billing',
+                'tab-reports': 'JewelDesk — Reports & Financial Analytics'
+            };
+
+            tabBtns.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var targetId = this.getAttribute('data-tab');
+
+                    tabBtns.forEach(function(b) {
+                        b.classList.remove('active');
+                        b.setAttribute('aria-selected', 'false');
+                    });
+                    tabPanels.forEach(function(p) {
+                        p.classList.remove('active');
+                    });
+
+                    this.classList.add('active');
+                    this.setAttribute('aria-selected', 'true');
+
+                    var targetPanel = document.getElementById(targetId);
+                    if (targetPanel) {
+                        targetPanel.classList.add('active');
+                    }
+                    if (titleEl && titles[targetId]) {
+                        titleEl.textContent = titles[targetId];
+                    }
+                });
+            });
+        })();
+
+        // 3. FAQ Accordion Toggle
+        (function() {
+            var faqQuestions = document.querySelectorAll('.jd-faq-question');
+            faqQuestions.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var item = this.closest('.jd-faq-item');
+                    if (!item) return;
+                    var isOpen = item.classList.contains('is-open');
+
+                    // Close all
+                    document.querySelectorAll('.jd-faq-item').forEach(function(el) {
+                        el.classList.remove('is-open');
+                        var q = el.querySelector('.jd-faq-question');
+                        if (q) q.setAttribute('aria-expanded', 'false');
+                    });
+
+                    // Toggle clicked
+                    if (!isOpen) {
+                        item.classList.add('is-open');
+                        this.setAttribute('aria-expanded', 'true');
+                    }
+                });
+            });
+        })();
+
+        // 4. Feedback Form Handler
+        function handleFeedbackSubmit(event) {
+            event.preventDefault();
+            var name = document.getElementById('fbName').value.trim();
+            var email = document.getElementById('fbEmail').value.trim();
+            var showroom = document.getElementById('fbShowroom').value.trim();
+            var message = document.getElementById('fbMessage').value.trim();
+
+            var form = document.getElementById('feedbackForm');
+            var successMsg = document.getElementById('fbSuccessMsg');
+
+            if (form) form.classList.add('d-none');
+            if (successMsg) successMsg.classList.remove('d-none');
+
+            // Also open mailto as fallback for direct communication
+            var subject = encodeURIComponent('JewelDesk Software Feedback from ' + (showroom || name));
+            var body = encodeURIComponent(
+                'Name: ' + name + '\n' +
+                'Email: ' + email + '\n' +
+                'Showroom: ' + showroom + '\n\n' +
+                'Feedback / Suggestion:\n' + message
+            );
+            window.location.href = 'mailto:support@jeweldesk.app?subject=' + subject + '&body=' + body;
+        }
+
+        // 5. Active Navbar Link on Scroll
+        (function() {
+            var sections = document.querySelectorAll('section[id]');
+            var navLinks = document.querySelectorAll('.jd-nav-link');
+
+            window.addEventListener('scroll', function() {
+                var scrollY = window.pageYOffset + 120;
+                sections.forEach(function(section) {
+                    var sectionHeight = section.offsetHeight;
+                    var sectionTop = section.offsetTop;
+                    var sectionId = section.getAttribute('id');
+
+                    if (scrollY >= sectionTop && scrollY < sectionTop + sectionHeight) {
+                        navLinks.forEach(function(link) {
+                            if (link.getAttribute('href') === '#' + sectionId) {
+                                link.classList.add('active');
+                            } else {
+                                link.classList.remove('active');
+                            }
+                        });
+                    }
+                });
+            });
+        })();
+
+        // 6. Top PWA Banner Dismiss Persistence
+        (function() {
+            var banner = document.getElementById('pwaTopBanner');
+            var closeBtn = document.getElementById('pwaBannerCloseBtn');
+            if (!banner) return;
+
+            if (sessionStorage.getItem('jd-pwa-banner-dismissed') === 'true') {
+                banner.classList.add('is-hidden');
+            }
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function() {
+                    banner.classList.add('is-hidden');
+                    sessionStorage.setItem('jd-pwa-banner-dismissed', 'true');
+                });
+            }
+        })();
+    </script>
+
+    <!-- Progressive Web App (PWA) Scripts & Offline Handling -->
+    {% include 'includes/pwa_scripts.html' %}
+</body>
+</html>

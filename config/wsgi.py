@@ -16,10 +16,11 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 application = get_wsgi_application()
 app = application
 
-# On Vercel serverless functions with ephemeral /tmp/db.sqlite3, ensure SQLite tables exist.
-# For production PostgreSQL (Supabase/Neon), migrations should be applied directly
-# to the database (bypassing pooler advisory lock limits and avoiding cold-start latency).
-if os.environ.get('VERCEL') and (not os.environ.get('DATABASE_URL') or os.environ.get('VERCEL_AUTO_MIGRATE')):
+# Auto-migration should NEVER run automatically on every serverless request/cold start.
+# Running migrate during WSGI import adds 5-15 seconds of latency on every cold start
+# and causes advisory lock contention with PostgreSQL poolers.
+# If migrations are explicitly required on deployment, set VERCEL_AUTO_MIGRATE=1.
+if os.environ.get('VERCEL') and os.environ.get('VERCEL_AUTO_MIGRATE', '').lower() in ('1', 'true', 'yes'):
     try:
         from django.core.management import call_command
         call_command('migrate', interactive=False)

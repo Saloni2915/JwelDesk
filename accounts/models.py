@@ -71,6 +71,11 @@ class CompanySettings(models.Model):
         # Singleton: always overwrite the single settings row (pk=1).
         self.pk = 1
         super().save(*args, **kwargs)
+        try:
+            from django.core.cache import cache
+            cache.delete('company_settings:singleton')
+        except Exception:
+            pass
 
     @classmethod
     def load(cls):

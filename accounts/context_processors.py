@@ -7,25 +7,38 @@ other template can render the shop name/logo/GSTIN dynamically.
 Reads the singleton on every request so saved branding changes appear
 immediately; a safe fallback is used while nothing is configured.
 """
+from django.core.cache import cache
 from .models import CompanySettings
 
 
 def company_settings_context(request):
-    """Return ``{'company': <branding>}`` for every template render.
+    """Return ``{'company': <branding>}`` for template renders.
 
-    The branding row is read fresh from the database on every request, so a
-    change saved in Company Settings is visible in the header and sidebar on
-    the very next page load. (An earlier revision cached the row for the whole
-    process lifetime, which is why saved changes appeared to be ignored.)
+    - On the public landing page, branding is not needed, so DB query is bypassed entirely.
+    - On all other pages, the row is read from cache (invalidated when saved in Company Settings),
+      saving an expensive remote DB round-trip on every page navigation.
     """
+    path = getattr(request, 'path', '')
+    if path in ('/', '/landing/'):
+        return {'company': _make_fallback_company()}
+
     return {'company': _load_company()}
 
 
 def _load_company():
-    """Return the CompanySettings row (pk=1), or a safe fallback object."""
+    """Return the cached CompanySettings row (pk=1), or a safe fallback object."""
+    cached = cache.get('company_settings:singleton')
+    if cached is not None:
+        return cached
+
     company = CompanySettings.objects.filter(pk=1).first()
     if company is None:
         return _make_fallback_company()
+
+    try:
+        cache.set('company_settings:singleton', company, timeout=3600)
+    except Exception:
+        pass
     return company
 
 

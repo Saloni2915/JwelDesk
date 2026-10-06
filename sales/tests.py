@@ -843,7 +843,7 @@ class PaymentTests(TestCase):
 class OldGoldTransactionTests(TestCase):
     def setUp(self):
         self.client = Client()
-        self.user = User.objects.create_user(username='sales_rep', password='Password123')
+        self.user = User.objects.create_user(username='sales_rep', password='Password123', is_staff=True)
         self.client.login(username='sales_rep', password='Password123')
 
         self.category = Category.objects.create(name='Necklaces', description='Gold Necklaces')

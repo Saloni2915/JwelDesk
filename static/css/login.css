@@ -1,495 +1,1007 @@
 /* ==========================================================================
-   JewelDesk — Login page (accounts/login.html)
-   Loaded *after* css/style.css so it reuses the shared theme tokens
-   (--surface, --bg-primary, --input-bg, --accent, ...) exactly as the rest of
-   the app does. There is no separate theme system here: the page simply
-   follows the existing light / dark / gold themes via [data-theme].
+   JewelDesk — Premium Landing-Page-Style Login & Authentication Architecture
    ========================================================================== */
 
-body.jd-auth {
+/* --------------------------------------------------------------------------
+   0. Independent CSS Custom Properties (Theme Tokens)
+   -------------------------------------------------------------------------- */
+:root {
+    --bg-primary: #0e141f;
+    --bg-secondary: #121824;
+    --surface: #151d2c;
+    --surface-alt: rgba(255, 255, 255, 0.05);
+    --surface-hover: rgba(255, 255, 255, 0.08);
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --border: rgba(255, 255, 255, 0.1);
+    --accent: #c59b27;
+    --accent-hover: #e0b43a;
+    --on-accent: #1a2232;
+    --input-bg: #0e1420;
+    --input-border: rgba(255, 255, 255, 0.14);
+    --danger: #ef4444;
+}
+
+[data-theme="light"] {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #f1f5f9;
+    --surface: #ffffff;
+    --surface-alt: #f1f5f9;
+    --surface-hover: #e2e8f0;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --accent: #b48516;
+    --accent-hover: #966f12;
+    --on-accent: #ffffff;
+    --input-bg: #ffffff;
+    --input-border: #cbd5e1;
+    --danger: #dc2626;
+}
+
+[data-theme="gold"] {
+    --bg-primary: #141009;
+    --bg-secondary: #1e180d;
+    --surface: #221c10;
+    --surface-alt: rgba(245, 206, 107, 0.06);
+    --surface-hover: rgba(245, 206, 107, 0.12);
+    --text-primary: #fef9ed;
+    --text-secondary: #d6caa8;
+    --text-muted: #9e9171;
+    --border: rgba(245, 206, 107, 0.2);
+    --accent: #e5b338;
+    --accent-hover: #f3ca58;
+    --on-accent: #141009;
+    --input-bg: #1a140b;
+    --input-border: rgba(245, 206, 107, 0.25);
+    --danger: #ef4444;
+}
+
+/* --------------------------------------------------------------------------
+   1. Universal Resets & Base Typography
+   -------------------------------------------------------------------------- */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+body.jd-login-page {
+    margin: 0;
+    padding: 0;
     min-height: 100vh;
     min-height: 100dvh;
-    max-width: 100%;
+    background-color: var(--bg-primary, #0e141f);
+    color: var(--text-primary, #f1f5f9);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
-    background-color: var(--bg-primary);
+    position: relative;
+    line-height: 1.5;
+}
+
+/* Subtle luxury ambient background glows */
+body.jd-login-page::before {
+    content: "";
+    position: fixed;
+    top: -15%;
+    left: -10%;
+    width: 60vw;
+    height: 60vw;
+    max-width: 800px;
+    max-height: 800px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(197, 155, 39, 0.08) 0%, rgba(197, 155, 39, 0) 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+body.jd-login-page::after {
+    content: "";
+    position: fixed;
+    bottom: -20%;
+    right: -10%;
+    width: 50vw;
+    height: 50vw;
+    max-width: 700px;
+    max-height: 700px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(29, 78, 216, 0.05) 0%, rgba(29, 78, 216, 0) 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+[data-theme="light"] body.jd-login-page::before {
+    background: radial-gradient(circle, rgba(197, 155, 39, 0.12) 0%, rgba(197, 155, 39, 0) 70%);
+}
+
+.jd-login-layout {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* --------------------------------------------------------------------------
+   2. Landing Header / Brand Navigation Bar
+   -------------------------------------------------------------------------- */
+.jd-login-header {
+    width: 100%;
+    padding: 1.15rem 1.75rem;
+    border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+    background: rgba(18, 24, 36, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+[data-theme="light"] .jd-login-header {
+    background: rgba(255, 255, 255, 0.9);
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="gold"] .jd-login-header {
+    background: rgba(30, 24, 13, 0.85);
+    border-bottom-color: rgba(201, 162, 39, 0.2);
+}
+
+.jd-login-header__inner {
+    max-width: 1360px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+/* Brand Link & Icon */
+.jd-brand-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    color: inherit;
+}
+
+.jd-brand-icon {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.65rem;
+    font-size: 1.2rem;
+    color: #1a2232;
+    background: linear-gradient(135deg, #fce08b 0%, #c59b27 100%);
+    box-shadow: 0 4px 12px rgba(197, 155, 39, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    flex-shrink: 0;
+}
+
+.jd-brand-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.jd-brand-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
     color: var(--text-primary);
 }
 
-.jd-auth__shell {
-    display: grid;
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-    min-height: 100vh;
-    min-height: 100dvh;
-    max-width: 100%;
-    overflow-x: hidden;
+.jd-brand-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent, #c59b27);
 }
 
-/* ------------------------------------------
-   Left: jewellery showroom visual
-   ------------------------------------------ */
-.jd-auth__visual {
-    position: relative;
-    display: flex;
-    align-items: flex-end;
-    padding: clamp(1.75rem, 3vw, 3.25rem);
-    overflow: hidden;
-    color: #fdf6e4;
-    background-color: #150f0a;
-    background-image: url("../images/login/jewellery-hero.jpg");
-    background-size: cover;
-    background-position: 64% 42%;
-    background-repeat: no-repeat;
-}
-
-/* Warm dark/gold scrim: keeps the jewellery readable and the text legible. */
-.jd-auth__scrim {
-    position: absolute;
-    inset: 0;
-    background:
-        linear-gradient(180deg,
-            rgba(18, 12, 7, 0.58) 0%,
-            rgba(18, 12, 7, 0.16) 36%,
-            rgba(14, 9, 5, 0.86) 100%),
-        radial-gradient(115% 75% at 12% 92%,
-            rgba(10, 6, 3, 0.82) 0%, rgba(10, 6, 3, 0) 62%);
-}
-
-[data-theme="dark"] .jd-auth__scrim {
-    background:
-        linear-gradient(180deg,
-            rgba(10, 8, 11, 0.64) 0%,
-            rgba(10, 8, 11, 0.24) 36%,
-            rgba(8, 6, 9, 0.90) 100%),
-        radial-gradient(115% 75% at 12% 92%,
-            rgba(6, 4, 7, 0.85) 0%, rgba(6, 4, 7, 0) 62%);
-}
-
-[data-theme="gold"] .jd-auth__scrim {
-    background:
-        linear-gradient(180deg,
-            rgba(34, 25, 10, 0.52) 0%,
-            rgba(34, 25, 10, 0.14) 36%,
-            rgba(26, 18, 6, 0.86) 100%),
-        radial-gradient(115% 75% at 12% 92%,
-            rgba(22, 15, 5, 0.82) 0%, rgba(22, 15, 5, 0) 62%);
-}
-
-.jd-auth__visual-inner {
-    position: relative;
-    z-index: 1;
-    max-width: 30rem;
-}
-
-.jd-auth__brand {
+/* Header Right Actions */
+.jd-header-actions {
     display: flex;
     align-items: center;
-    gap: 0.7rem;
+    gap: 1.25rem;
 }
 
-.jd-auth__brand-mark {
+.jd-trust-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--surface-alt, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    padding: 0.35rem 0.85rem;
+    border-radius: 2rem;
+}
+
+/* Theme Switcher Pills */
+.jd-theme-pills {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    background: var(--surface, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    border-radius: 2rem;
+}
+
+.jd-theme-btn {
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
     display: grid;
     place-items: center;
-    width: 2.6rem;
-    height: 2.6rem;
-    border-radius: 0.8rem;
-    font-size: 1.2rem;
-    color: #241a06;
-    background-color: #e8c777;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55),
-                0 8px 22px rgba(0, 0, 0, 0.38);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.jd-auth__brand-name {
-    font-size: 1.55rem;
-    font-weight: 700;
-    letter-spacing: 0.01em;
-    color: #ffffff;
+.jd-theme-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.1);
 }
 
-.jd-auth__tagline {
-    margin: 0.5rem 0 0;
-    font-size: 0.82rem;
-    font-weight: 700;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: #e9c877;
+.jd-theme-btn.active {
+    color: var(--on-accent, #1a2232);
+    background: var(--accent, #c59b27);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
-.jd-auth__support {
-    margin: 0.9rem 0 0;
-    max-width: 26rem;
-    font-size: 0.95rem;
-    line-height: 1.6;
-    color: rgba(255, 248, 232, 0.84);
-}
-
-.jd-auth__points {
-    display: grid;
-    gap: 0.45rem;
-    margin: 1.4rem 0 0;
-    padding: 0;
-    list-style: none;
-}
-
-.jd-auth__points li {
-    display: flex;
-    align-items: center;
-    gap: 0.55rem;
-    font-size: 0.86rem;
-    color: rgba(255, 247, 230, 0.86);
-}
-
-.jd-auth__points i {
-    font-size: 0.78rem;
-    color: #dcb761;
-}
-/* ------------------------------------------
-   Right: login card
-   ------------------------------------------ */
-.jd-auth__panel {
+/* --------------------------------------------------------------------------
+   3. Main Body & Independent Grid Layout
+   -------------------------------------------------------------------------- */
+.jd-login-main {
+    flex: 1 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: clamp(1.5rem, 4vw, 3rem);
-    background-color: var(--bg-primary);
-    overflow-y: auto;
+    padding: clamp(1.5rem, 3.5vw, 3.5rem) 1.5rem;
 }
 
-.jd-auth__card {
+.jd-login-container {
     width: 100%;
-    max-width: 26.5rem;
+    max-width: 1320px;
+    margin: 0 auto;
 }
 
-.jd-auth__logo {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    font-size: 1.05rem;
-    font-weight: 700;
-    letter-spacing: 0.01em;
-    color: var(--text-primary);
-}
-
-.jd-auth__logo-mark {
+/* Standalone Grid: Does NOT depend on Bootstrap to look perfect */
+.jd-landing-grid {
     display: grid;
-    place-items: center;
-    width: 2.1rem;
-    height: 2.1rem;
-    border-radius: 0.65rem;
-    font-size: 1rem;
-    color: var(--on-accent);
-    background-color: var(--accent);
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.85fr);
+    gap: clamp(2rem, 4vw, 4.5rem);
+    align-items: center;
+    width: 100%;
 }
 
-.jd-auth__title {
-    margin: 1.15rem 0 0.45rem;
-    font-size: 1.7rem;
-    font-weight: 700;
-    letter-spacing: -0.01em;
+.jd-hero-col {
+    min-width: 0;
+    width: 100%;
 }
 
-.jd-auth__subtitle {
-    margin: 0 0 1.5rem;
-    font-size: 0.92rem;
-    line-height: 1.55;
+.jd-form-col {
+    min-width: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+/* --------------------------------------------------------------------------
+   4. Hero & Product Showcase (Left Column)
+   -------------------------------------------------------------------------- */
+.jd-hero-content {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Badge Pill */
+.jd-hero-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    width: fit-content;
+    padding: 0.35rem 0.95rem;
+    border-radius: 2rem;
+    background: rgba(197, 155, 39, 0.12);
+    border: 1px solid rgba(197, 155, 39, 0.3);
+    color: var(--accent, #c59b27);
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    margin-bottom: 1.25rem;
+}
+
+.jd-pill-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: var(--accent, #c59b27);
+    box-shadow: 0 0 8px var(--accent, #c59b27);
+    animation: pulse-glow 2s infinite ease-in-out;
+}
+
+@keyframes pulse-glow {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* Hero Typography */
+.jd-hero-title {
+    font-size: clamp(2rem, 3.6vw, 3.1rem);
+    font-weight: 800;
+    line-height: 1.18;
+    letter-spacing: -0.025em;
+    color: var(--text-primary);
+    margin: 0 0 1.15rem;
+}
+
+.jd-hero-title-highlight {
+    background: linear-gradient(135deg, #f7d57a 0%, #c59b27 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+}
+
+.jd-hero-subtitle {
+    font-size: clamp(0.95rem, 1.25vw, 1.1rem);
+    line-height: 1.6;
     color: var(--text-secondary);
+    max-width: 580px;
+    margin: 0 0 2rem;
 }
 
-.jd-auth__alert {
+/* Features Grid */
+.jd-features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin-bottom: 2.2rem;
+}
+
+.jd-feature-item {
     display: flex;
     align-items: flex-start;
-    gap: 0.6rem;
-    margin-bottom: 1.15rem;
-    padding: 0.75rem 0.9rem;
-    border: 1px solid var(--danger);
-    border-radius: 0.7rem;
-    background-color: rgba(231, 76, 60, 0.10);
-    color: var(--danger);
-    font-size: 0.875rem;
+    gap: 0.85rem;
+    padding: 0.9rem 1rem;
+    border-radius: 0.85rem;
+    background: var(--surface, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.jd-feature-item:hover {
+    transform: translateY(-2px);
+    border-color: rgba(197, 155, 39, 0.4);
+}
+
+.jd-feature-icon {
+    width: 2.3rem;
+    height: 2.3rem;
+    border-radius: 0.6rem;
+    display: grid;
+    place-items: center;
+    font-size: 1.1rem;
+    color: var(--accent, #c59b27);
+    background: rgba(197, 155, 39, 0.12);
+    flex-shrink: 0;
+}
+
+.jd-feature-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.jd-feature-text strong {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.15rem;
+}
+
+.jd-feature-text small {
+    font-size: 0.76rem;
+    line-height: 1.4;
+    color: var(--text-muted);
+}
+
+/* Showcase Window & Photograph Frame */
+.jd-showcase-window {
+    position: relative;
+    border-radius: 1.1rem;
+    overflow: hidden;
+    background: #121824;
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+    box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.45);
+    width: 100%;
+    max-width: 100%;
+}
+
+.jd-showcase-img-wrap {
+    position: relative;
+    width: 100%;
+    height: 220px;
+    max-height: 240px;
+    overflow: hidden;
+}
+
+.jd-showcase-img {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: cover;
+    object-position: 60% 40%;
+    filter: brightness(0.88) contrast(1.05);
+    transition: transform 0.4s ease;
+}
+
+.jd-showcase-window:hover .jd-showcase-img {
+    transform: scale(1.03);
+}
+
+.jd-showcase-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(14, 20, 31, 0.2) 0%, rgba(14, 20, 31, 0.85) 100%);
+}
+
+.jd-showcase-badge {
+    position: absolute;
+    bottom: 1rem;
+    left: 1.25rem;
+    right: 1.25rem;
+    display: flex;
+    align-items: center;
+    background: rgba(18, 24, 36, 0.88);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(197, 155, 39, 0.35);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: #f1f5f9;
+}
+
+.jd-showcase-badge .fw-semibold {
+    font-size: 0.85rem;
+    line-height: 1.3;
+}
+
+.jd-showcase-badge small {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.65);
+}
+
+/* --------------------------------------------------------------------------
+   5. Login Card (Right Column)
+   -------------------------------------------------------------------------- */
+.jd-login-card-wrapper {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.jd-login-card {
+    width: 100%;
+    max-width: 440px;
+    background: var(--surface, #151d2c);
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    border-radius: 1.25rem;
+    padding: clamp(1.75rem, 3vw, 2.5rem);
+    box-shadow: 0 24px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(197, 155, 39, 0.08);
+    transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+[data-theme="light"] .jd-login-card {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 20px 45px -12px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="gold"] .jd-login-card {
+    background: #221c10;
+    border-color: rgba(201, 162, 39, 0.25);
+    box-shadow: 0 20px 45px -12px rgba(120, 96, 40, 0.2);
+}
+
+/* Card Header */
+.jd-card-header {
+    margin-bottom: 1.75rem;
+    text-align: center;
+}
+
+.jd-card-icon-halo {
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 1rem;
+    margin: 0 auto 1.15rem;
+    display: grid;
+    place-items: center;
+    font-size: 1.45rem;
+    color: var(--on-accent, #1a2232);
+    background: linear-gradient(135deg, #fce08b 0%, #c59b27 100%);
+    box-shadow: 0 8px 20px rgba(197, 155, 39, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.jd-card-title {
+    font-size: 1.65rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: var(--text-primary);
+    margin: 0 0 0.35rem;
+}
+
+.jd-card-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* Error Alert */
+.jd-error-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    margin-bottom: 1.35rem;
+    border-radius: 0.75rem;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+    font-size: 0.86rem;
     line-height: 1.45;
 }
 
-.jd-auth__alert i {
+.jd-error-alert i {
+    font-size: 1.15rem;
     margin-top: 0.1rem;
+    flex-shrink: 0;
 }
 
-.jd-auth__notice {
-    display: flex;
-    align-items: center;
-    gap: 0.55rem;
-    margin-bottom: 1.15rem;
-    font-size: 0.86rem;
+/* Form Inputs */
+.jd-input-group {
+    margin-bottom: 1.25rem;
 }
 
-/* Fields ---------------------------------------------------------------- */
-.jd-auth__field {
-    margin-bottom: 1.1rem;
-}
-
-.jd-auth__label {
+.jd-input-label {
     display: block;
-    margin-bottom: 0.4rem;
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--text-primary);
+    margin-bottom: 0.4rem;
 }
 
-.jd-auth__input {
+.jd-input-wrapper {
     position: relative;
+    display: flex;
+    align-items: center;
 }
 
-.jd-auth__icon {
+.jd-input-icon {
     position: absolute;
-    top: 50%;
-    left: 0.95rem;
-    transform: translateY(-50%);
-    font-size: 0.95rem;
+    left: 1rem;
     color: var(--text-muted);
+    font-size: 1rem;
     pointer-events: none;
+    z-index: 2;
+    transition: color 0.2s ease;
 }
 
-.jd-auth__control {
+.jd-input-field {
     width: 100%;
-    padding: 0.72rem 0.95rem 0.72rem 2.6rem;
-    border: 1px solid var(--input-border);
-    border-radius: 0.7rem;
-    background-color: var(--input-bg);
+    min-height: 48px;
+    padding: 0.75rem 1rem 0.75rem 2.75rem;
+    font-size: 1rem; /* 16px prevents iOS Safari auto-zoom */
     color: var(--text-primary);
-    font-size: 0.95rem;
+    background: var(--input-bg, #0e1420);
+    border: 1px solid var(--input-border, rgba(255, 255, 255, 0.12));
+    border-radius: 0.75rem;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
-.jd-auth__control--password {
+[data-theme="light"] .jd-input-field {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.jd-input-field::placeholder {
+    color: var(--text-muted);
+    opacity: 0.75;
+}
+
+.jd-input-field:focus {
+    outline: none;
+    border-color: var(--accent, #c59b27);
+    box-shadow: 0 0 0 3px rgba(197, 155, 39, 0.25);
+}
+
+.jd-input-field:focus ~ .jd-input-icon,
+.jd-input-wrapper:focus-within .jd-input-icon {
+    color: var(--accent, #c59b27);
+}
+
+.jd-input-field--password {
     padding-right: 3rem;
 }
 
-.jd-auth__control:focus {
-    border-color: var(--accent);
-    background-color: var(--input-bg);
-    color: var(--text-primary);
-    box-shadow: 0 0 0 0.2rem var(--bs-focus-ring-color);
-}
-
-.jd-auth__toggle {
+.jd-password-toggle {
     position: absolute;
-    top: 50%;
-    right: 0.3rem;
+    right: 0.4rem;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    width: 2.4rem;
+    height: 2.4rem;
     display: grid;
     place-items: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    transform: translateY(-50%);
-    border: 0;
-    border-radius: 0.55rem;
-    background: transparent;
-    color: var(--text-muted);
+    border-radius: 0.5rem;
     cursor: pointer;
+    z-index: 3;
+    font-size: 1.05rem;
+    transition: color 0.2s ease, background-color 0.2s ease;
 }
 
-.jd-auth__toggle:hover {
-    color: var(--accent);
-    background-color: var(--surface-hover);
+.jd-password-toggle:hover {
+    color: var(--accent, #c59b27);
+    background: rgba(255, 255, 255, 0.08);
 }
 
-.jd-auth__toggle:focus-visible {
-    outline: 2px solid var(--accent);
+.jd-password-toggle:focus-visible {
+    outline: 2px solid var(--accent, #c59b27);
     outline-offset: 1px;
 }
 
-.jd-auth__link {
-    display: inline-flex;
-    align-items: center;
-    color: var(--accent);
-    font-size: 0.85rem;
+.jd-forgot-link {
+    font-size: 0.8rem;
     font-weight: 500;
+    color: var(--accent, #c59b27);
     text-decoration: none;
-    transition: color 0.15s ease, text-decoration 0.15s ease;
+    transition: color 0.15s ease;
 }
 
-.jd-auth__link:hover,
-.jd-auth__link:focus-visible {
-    color: var(--accent-hover);
+.jd-forgot-link:hover,
+.jd-forgot-link:focus-visible {
+    color: var(--accent-hover, #b8941f);
     text-decoration: underline;
 }
 
-.jd-auth__help-text {
-    margin-top: 0.35rem;
-    font-size: 0.78rem;
-    color: var(--text-muted);
-    line-height: 1.4;
-}
-
-.jd-auth__help-text ul {
-    margin: 0.35rem 0 0;
-    padding-left: 1.25rem;
-}
-
-.jd-auth__status-icon {
-    display: grid;
-    place-items: center;
-    width: 3.8rem;
-    height: 3.8rem;
-    margin: 0 auto 1.25rem;
-    border-radius: 50%;
-    font-size: 1.85rem;
-}
-
-.jd-auth__status-icon--success {
-    background-color: rgba(46, 204, 113, 0.14);
-    color: #2ecc71;
-}
-
-.jd-auth__status-icon--info {
-    background-color: rgba(52, 152, 219, 0.14);
-    color: #3498db;
-}
-
-.jd-auth__status-icon--warning {
-    background-color: rgba(231, 76, 60, 0.14);
-    color: var(--danger);
-}
-
-/* Primary action -------------------------------------------------------- */
-.jd-auth__submit {
+/* Primary Submit Button */
+.jd-submit-btn {
+    width: 100%;
+    min-height: 48px;
+    padding: 0.85rem 1.25rem;
+    margin-top: 0.5rem;
+    border: 1px solid var(--accent, #c59b27);
+    border-radius: 0.75rem;
+    background: linear-gradient(135deg, #e8c257 0%, #c59b27 100%);
+    color: var(--on-accent, #1a2232);
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    width: 100%;
-    padding: 0.8rem 1rem;
-    border: 1px solid var(--accent);
-    border-radius: 0.7rem;
-    background-color: var(--accent);
-    color: var(--on-accent);
-    font-size: 0.98rem;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
-    transition: background-color 0.15s ease, border-color 0.15s ease,
-                box-shadow 0.15s ease;
+    gap: 0.6rem;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(197, 155, 39, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
-.jd-auth__submit:hover,
-.jd-auth__submit:focus-visible {
-    background-color: var(--accent-hover);
-    border-color: var(--accent-hover);
-    color: var(--on-accent);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35),
-                0 6px 16px rgba(120, 84, 20, 0.28);
+.jd-submit-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(197, 155, 39, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    background: linear-gradient(135deg, #edd075 0%, #cca333 100%);
+    color: var(--on-accent, #1a2232);
 }
 
-.jd-auth__submit:focus-visible {
-    outline: 2px solid var(--accent);
+.jd-submit-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(197, 155, 39, 0.3);
+}
+
+.jd-submit-btn:focus-visible {
+    outline: 2px solid var(--accent, #c59b27);
     outline-offset: 2px;
 }
 
-/* ------------------------------------------
-   Responsive: the visual becomes a top hero
-   ------------------------------------------ */
+.jd-submit-btn i {
+    transition: transform 0.2s ease;
+}
+
+.jd-submit-btn:hover i {
+    transform: translateX(3px);
+}
+
+/* Signup Prompt */
+.jd-signup-prompt {
+    margin-top: 1.35rem;
+    font-size: 0.88rem;
+    text-align: center;
+}
+
+.jd-signup-link {
+    color: var(--accent, #c59b27);
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.jd-signup-link:hover,
+.jd-signup-link:focus-visible {
+    color: var(--accent-hover, #b8941f);
+    text-decoration: underline;
+}
+
+/* Card Footer Note */
+.jd-card-footer {
+    margin-top: 1.5rem;
+    padding-top: 1.15rem;
+    border-top: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+    text-align: center;
+}
+
+.jd-security-note {
+    font-size: 0.74rem;
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --------------------------------------------------------------------------
+   6. Landing Footer
+   -------------------------------------------------------------------------- */
+.jd-login-footer {
+    width: 100%;
+    padding: 1rem 1.75rem;
+    border-top: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+    background: rgba(14, 20, 31, 0.6);
+}
+
+[data-theme="light"] .jd-login-footer {
+    background: rgba(248, 250, 252, 0.8);
+    border-top-color: rgba(0, 0, 0, 0.08);
+}
+
+.jd-login-footer__inner {
+    max-width: 1360px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+/* --------------------------------------------------------------------------
+   7. Helper / Utility Classes (Standalone fallback)
+   -------------------------------------------------------------------------- */
+.d-flex { display: flex !important; }
+.d-none { display: none !important; }
+.align-items-center { align-items: center !important; }
+.justify-content-between { justify-content: space-between !important; }
+.justify-content-center { justify-content: center !important; }
+.text-center { text-align: center !important; }
+.text-warning { color: #f59e0b !important; }
+.text-secondary { color: var(--text-secondary, #94a3b8) !important; }
+.text-muted { color: var(--text-muted, #64748b) !important; }
+.fw-semibold { font-weight: 600 !important; }
+.fw-bold { font-weight: 700 !important; }
+.mb-0 { margin-bottom: 0 !important; }
+.mb-1 { margin-bottom: 0.25rem !important; }
+.mb-3 { margin-bottom: 1rem !important; }
+.mt-1 { margin-top: 0.25rem !important; }
+.mt-3 { margin-top: 1rem !important; }
+.ms-1 { margin-left: 0.25rem !important; }
+.me-1 { margin-right: 0.25rem !important; }
+.me-2 { margin-right: 0.5rem !important; }
+.gap-3 { gap: 1rem !important; }
+.small { font-size: 0.82rem !important; }
+.w-100 { width: 100% !important; }
+
+.btn-outline-warning {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--accent, #c59b27);
+    color: var(--accent, #c59b27);
+    background: transparent;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-outline-warning:hover {
+    background: var(--accent, #c59b27);
+    color: var(--on-accent, #1a2232);
+}
+
+@media (min-width: 768px) {
+    .d-md-inline-flex { display: inline-flex !important; }
+}
+
+/* --------------------------------------------------------------------------
+   8. Responsive Breakpoint Strategy
+   -------------------------------------------------------------------------- */
+
+/* Tablet & Laptop (< 1200px) */
+@media (max-width: 1199.98px) {
+    .jd-features-grid {
+        grid-template-columns: 1fr;
+    }
+    .jd-showcase-img-wrap {
+        height: 180px;
+    }
+}
+
+/* Tablet & Mobile (< 992px) */
 @media (max-width: 991.98px) {
-    .jd-auth__shell {
-        grid-template-columns: minmax(0, 1fr);
+    .jd-login-header {
+        padding: 0.85rem 1.25rem;
     }
 
-    .jd-auth__visual {
-        min-height: 15.5rem;
-        padding: 1.6rem 1.35rem;
-        background-position: 62% 34%;
-        border-radius: 0 0 1.1rem 1.1rem;
+    .jd-login-main {
+        padding: 1.5rem 1rem 2rem;
     }
 
-    .jd-auth__brand-mark {
+    /* Reverse order on mobile/tablet so Login Card appears FIRST! */
+    .jd-landing-grid {
+        display: flex;
+        flex-direction: column-reverse;
+        gap: 2.25rem;
+    }
+
+    .jd-hero-col {
+        margin-top: 1rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+    }
+
+    .jd-hero-content {
+        text-align: center;
+        align-items: center;
+    }
+
+    .jd-hero-subtitle {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .jd-features-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        text-align: left;
+        width: 100%;
+    }
+
+    .jd-showcase-window {
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+
+    .jd-login-card {
+        max-width: 480px;
+        margin: 0 auto;
+        padding: 1.75rem 1.5rem;
+    }
+}
+
+/* Small Mobile (< 576px) */
+@media (max-width: 575.98px) {
+    .jd-login-header {
+        padding: 0.75rem 1rem;
+    }
+
+    .jd-brand-name {
+        font-size: 1.15rem;
+    }
+
+    .jd-brand-icon {
         width: 2.2rem;
         height: 2.2rem;
         font-size: 1.05rem;
-        border-radius: 0.7rem;
     }
 
-    .jd-auth__brand-name {
-        font-size: 1.3rem;
+    .jd-hero-title {
+        font-size: 1.75rem;
     }
 
-    .jd-auth__tagline {
-        margin-top: 0.4rem;
-        font-size: 0.72rem;
-        letter-spacing: 0.14em;
+    .jd-features-grid {
+        grid-template-columns: 1fr;
     }
 
-    .jd-auth__support {
-        margin-top: 0.6rem;
-        font-size: 0.86rem;
-        line-height: 1.5;
+    .jd-showcase-img-wrap {
+        height: 160px;
     }
 
-    .jd-auth__points {
-        display: none;
+    .jd-login-card {
+        padding: 1.5rem 1.15rem;
+        border-radius: 1rem;
     }
 
-    .jd-auth__panel {
-        align-items: flex-start;
-        padding: 1.6rem 1.15rem 2.25rem;
-    }
-
-    .jd-auth__card {
-        max-width: 34rem;   /* keep the form comfortable, never cramped */
-        margin: 0 auto;
-    }
-}
-
-@media (max-width: 575.98px) {
-    .jd-auth__visual {
-        min-height: 12.5rem;
-        padding: 1.25rem 1.1rem;
-    }
-
-    .jd-auth__title {
+    .jd-card-title {
         font-size: 1.45rem;
     }
 
-    .jd-auth__subtitle {
-        margin-bottom: 1.25rem;
+    .jd-card-icon-halo {
+        width: 2.75rem;
+        height: 2.75rem;
+        font-size: 1.25rem;
+        margin-bottom: 0.85rem;
     }
 
-    .jd-auth__foot {
-        align-items: flex-start;
-    }
-}
-
-/* Short landscape screens: shrink the hero so the form stays visible. */
-@media (max-width: 991.98px) and (max-height: 560px) {
-    .jd-auth__visual {
-        min-height: 9rem;
-    }
-
-    .jd-auth__support {
-        display: none;
+    .jd-login-footer__inner {
+        flex-direction: column;
+        text-align: center;
+        justify-content: center;
     }
 }
 
-/* Desktop: the visual stays put while the form scrolls if needed. */
-@media (min-width: 992px) {
-    .jd-auth__visual {
-        position: sticky;
-        top: 0;
-        align-self: start;
-        height: 100vh;
-        height: 100dvh;
+/* Extra Small Screens (< 380px) */
+@media (max-width: 379.98px) {
+    .jd-login-card {
+        padding: 1.25rem 0.9rem;
+    }
+
+    .jd-input-field {
+        padding-left: 2.4rem;
+        font-size: 0.95rem;
+    }
+
+    .jd-input-icon {
+        left: 0.75rem;
     }
 }
 
-.jd-auth__foot {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 1.35rem 0 0;
-    padding-top: 1.1rem;
-    border-top: 1px solid var(--border);
-    font-size: 0.78rem;
-    line-height: 1.5;
-    color: var(--text-muted);
-}
-
-.jd-auth__foot i {
-    color: var(--accent);
-}
-
-/* Short landscape screens: shrink the hero so the form stays visible. */
+/* --------------------------------------------------------------------------
+   9. Legacy Auth Classes (Retained for signup.html & password_reset_*.html)
+   -------------------------------------------------------------------------- */
+.jd-auth__shell { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); min-height: 100vh; }
+.jd-auth__visual { position: relative; display: flex; align-items: flex-end; padding: clamp(1.75rem, 3vw, 3.25rem); color: #fdf6e4; background-color: #150f0a; background-image: url("../images/login/jewellery-hero.jpg"); background-size: cover; background-position: 64% 42%; }
+.jd-auth__scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(18, 12, 7, 0.58) 0%, rgba(18, 12, 7, 0.16) 36%, rgba(14, 9, 5, 0.86) 100%); }
+.jd-auth__visual-inner { position: relative; z-index: 1; max-width: 30rem; }
+.jd-auth__brand { display: flex; align-items: center; gap: 0.7rem; }
+.jd-auth__brand-mark { display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border-radius: 0.8rem; font-size: 1.2rem; color: #241a06; background-color: #e8c777; }
+.jd-auth__brand-name { font-size: 1.55rem; font-weight: 700; color: #ffffff; }
+.jd-auth__tagline { margin: 0.5rem 0 0; font-size: 0.82rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #e9c877; }
+.jd-auth__support { margin: 0.9rem 0 0; max-width: 26rem; font-size: 0.95rem; line-height: 1.6; color: rgba(255, 248, 232, 0.84); }
+.jd-auth__points { display: grid; gap: 0.45rem; margin: 1.4rem 0 0; padding: 0; list-style: none; }
+.jd-auth__points li { display: flex; align-items: center; gap: 0.55rem; font-size: 0.86rem; color: rgba(255, 247, 230, 0.86); }
+.jd-auth__points i { color: #dcb761; }
+.jd-auth__panel { display: flex; align-items: center; justify-content: center; padding: clamp(1.5rem, 4vw, 3rem); background-color: var(--bg-primary); overflow-y: auto; }
+.jd-auth__card { width: 100%; max-width: 28rem; }
+.jd-auth__title { font-size: 1.7rem; font-weight: 700; color: var(--text-primary); margin: 0 0 0.45rem; }
+.jd-auth__subtitle { font-size: 0.92rem; color: var(--text-secondary); margin: 0 0 1.5rem; }
+.jd-auth__field { margin-bottom: 1.1rem; }
+.jd-auth__label { display: block; margin-bottom: 0.4rem; font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
+.jd-auth__input { position: relative; }
+.jd-auth__icon { position: absolute; top: 50%; left: 0.95rem; transform: translateY(-50%); font-size: 0.95rem; color: var(--text-muted); pointer-events: none; }
+.jd-auth__control { width: 100%; min-height: 44px; padding: 0.72rem 0.95rem 0.72rem 2.6rem; border: 1px solid var(--input-border); border-radius: 0.7rem; background-color: var(--input-bg); color: var(--text-primary); font-size: 1rem; box-sizing: border-box; }
+.jd-auth__control:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 0.2rem var(--bs-focus-ring-color); }
+.jd-auth__control--password { padding-right: 3rem; }
+.jd-auth__toggle { position: absolute; top: 50%; right: 0.3rem; transform: translateY(-50%); border: 0; background: transparent; color: var(--text-muted); width: 2.25rem; height: 2.25rem; border-radius: 0.55rem; cursor: pointer; }
+.jd-auth__submit { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%; min-height: 46px; border: 1px solid var(--accent); border-radius: 0.7rem; background-color: var(--accent); color: var(--on-accent); font-size: 0.98rem; font-weight: 600; cursor: pointer; text-decoration: none; }
+.jd-auth__submit:hover { background-color: var(--accent-hover); color: var(--on-accent); }
+.jd-auth__link { color: var(--accent); text-decoration: none; font-size: 0.85rem; font-weight: 500; }
+.jd-auth__link:hover { text-decoration: underline; color: var(--accent-hover); }
+.jd-auth__alert { display: flex; align-items: flex-start; gap: 0.6rem; margin-bottom: 1.15rem; padding: 0.75rem 0.9rem; border: 1px solid var(--danger); border-radius: 0.7rem; background-color: rgba(231, 76, 60, 0.10); color: var(--danger); font-size: 0.875rem; }
+.jd-auth__foot { display: flex; align-items: center; gap: 0.5rem; margin: 1.35rem 0 0; padding-top: 1.1rem; border-top: 1px solid var(--border); font-size: 0.78rem; color: var(--text-muted); }
+.jd-auth__status-icon { display: grid; place-items: center; width: 3.8rem; height: 3.8rem; margin: 0 auto 1.25rem; border-radius: 50%; font-size: 1.85rem; }
+.jd-auth__status-icon--success { background-color: rgba(46, 204, 113, 0.14); color: #2ecc71; }
+.jd-auth__status-icon--info { background-color: rgba(52, 152, 219, 0.14); color: #3498db; }
