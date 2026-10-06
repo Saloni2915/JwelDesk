@@ -26,23 +26,36 @@
 
     <!-- Top Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top top-navbar">
-        <div class="container-fluid">
-            <!-- Mobile/Tablet Sidebar Toggler (active < 992px) -->
-            <button class="btn btn-link text-light d-lg-none me-2 p-1 border-0" id="sidebarToggle" type="button" aria-label="Toggle navigation">
-                <i class="bi bi-list fs-4"></i>
-            </button>
-            <a class="navbar-brand d-flex align-items-center text-truncate" href="{% url 'dashboard' %}" style="max-width: calc(100vw - 190px);">
-                <i class="bi bi-gem me-2 flex-shrink-0"></i>
-                <span class="fw-semibold company-name">{{ company.name }}</span>
-            </a>
+        <div class="container-fluid px-2 px-sm-3">
+            <!-- Left Top Corner: Sidebar Toggler + Brand + Logged-in User Info -->
+            <div class="d-flex align-items-center min-w-0" style="min-width: 0;">
+                <!-- Mobile/Tablet Sidebar Toggler (active < 992px) -->
+                <button class="btn btn-link text-light d-lg-none me-2 p-1 border-0 flex-shrink-0" id="sidebarToggle" type="button" aria-label="Toggle navigation">
+                    <i class="bi bi-list fs-4"></i>
+                </button>
+                <div class="d-flex flex-column justify-content-center min-w-0" style="min-width: 0;">
+                    <a class="navbar-brand d-inline-flex align-items-center text-truncate p-0 m-0" href="{% url 'dashboard' %}" style="line-height: 1.2;">
+                        <i class="bi bi-gem me-1 text-warning flex-shrink-0" style="font-size: 0.95rem;"></i>
+                        <span class="fw-semibold company-name">{{ company.name }}</span>
+                    </a>
+                    {% if user.is_authenticated %}
+                    <div class="navbar-user-tag d-inline-flex align-items-center text-truncate" style="font-size: 0.72rem; line-height: 1.1; margin-top: 1px;" title="Logged in as {{ user.username }}">
+                        <i class="bi bi-person-fill text-warning me-1 flex-shrink-0" style="font-size: 0.72rem;"></i>
+                        <span class="text-truncate fw-medium" style="max-width: 140px; color: #f7d57a;">{{ user.username }}</span>
+                        {% if user.is_superuser %}
+                        <span class="badge bg-warning text-dark ms-1 px-1 py-0" style="font-size: 0.58rem; font-weight: 700;">Admin</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Right Controls: Logout -->
             <div class="ms-auto d-flex align-items-center flex-shrink-0">
                 {% if user.is_authenticated %}
-                <span class="navbar-text text-light me-2 d-none d-sm-inline-flex align-items-center">
-                    <i class="bi bi-person-circle me-1"></i> <span class="d-inline-block text-truncate" style="max-width: 120px;">{{ user.username }}</span>
-                </span>
                 <form method="post" action="{% url 'accounts:logout' %}" class="d-inline">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-outline-light btn-sm d-inline-flex align-items-center" title="Logout" aria-label="Logout">
+                    <button type="submit" class="btn btn-outline-light btn-sm d-inline-flex align-items-center" title="Logout ({{ user.username }})" aria-label="Logout">
                         <i class="bi bi-box-arrow-right"></i>
                         <span class="d-none d-sm-inline ms-1">Logout</span>
                     </button>
@@ -55,6 +68,19 @@
     <div class="d-flex" id="wrapper">
         <!-- Sidebar -->
         <nav class="sidebar bg-dark" id="sidebar">
+            <!-- Sidebar User Header for Mobile & Desktop -->
+            {% if user.is_authenticated %}
+            <div class="sidebar-user-header px-3 py-2 border-bottom border-secondary border-opacity-25 d-flex align-items-center gap-2">
+                <div class="rounded-circle bg-warning bg-opacity-25 text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px; font-size: 0.95rem;">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                <div class="d-flex flex-column min-w-0" style="line-height: 1.2;">
+                    <span class="text-light fw-semibold text-truncate small" title="{{ user.username }}">{{ user.username }}</span>
+                    <span class="text-muted text-truncate" style="font-size: 0.7rem;">{% if user.is_superuser %}Administrator{% else %}Store Staff{% endif %}</span>
+                </div>
+            </div>
+            {% endif %}
+
             <!-- Vertically Scrollable Menu Area -->
             <div class="sidebar-menu">
                 <ul class="nav flex-column">
