@@ -59,46 +59,44 @@ def dashboard(request):
 
     today = timezone.localdate()
 
-    total_items = JewelleryItem.objects.count()
-    available_items = JewelleryItem.objects.filter(status='Available').count()
-    sold_items = JewelleryItem.objects.filter(status='Sold').count()
-
     # Import sales & enquiries models dynamically to prevent circular imports if any
     from sales.models import Sale, Enquiry, Payment
     from customers.models import Customer
     from custom_orders.models import CustomOrder
 
-    # ---- Sales aggregates -------------------------------------------------
-    today_sales_data = Sale.objects.filter(sale_date__date=today).aggregate(
-        total_amount=Sum('sale_price'),
-        count=Count('id')
-    )
-    today_sales_amount = today_sales_data['total_amount'] or 0
-    today_sales_count = today_sales_data['count'] or 0
-
-    sales_totals = Sale.objects.aggregate(
-        total_amount=Sum('sale_price'),
-        count=Count('id'),
-    )
-    total_sales_amount = sales_totals['total_amount'] or 0
-    total_sales_count = sales_totals['count'] or 0
-
-    # Outstanding = total sales - total payments (never stored, always derived)
-    payments_total = Payment.objects.aggregate(
-        total=Sum('amount'))['total'] or 0
-    from decimal import Decimal
-    try:
-        outstanding_amount = Decimal(total_sales_amount) - Decimal(payments_total)
-    except Exception:
-        outstanding_amount = 0
-    if outstanding_amount < 0:
-        outstanding_amount = Decimal('0.00')
-
-    # ---- Inventory / customers -------------------------------------------
+    # ---- Inventory summary & counts (single unified aggregate) -----------
     summary = stock.inventory_summary()
+    total_items = summary.get('total_items', 0)
+    available_items = summary.get('available_stock', 0)
     inventory_value = summary.get('inventory_value')
     low_stock_designs = summary.get('low_stock_designs', [])[:5]
     low_stock_design_count = summary.get('low_stock_design_count', 0)
+
+    # Sold items count
+    sold_items = JewelleryItem.objects.filter(status='Sold').count()
+
+    # ---- Sales aggregates (combined in 1 single SQL query) ----------------
+    sales_aggregates = Sale.objects.aggregate(
+        today_amount=Sum('sale_price', filter=Q(sale_date__date=today)),
+        today_count=Count('id', filter=Q(sale_date__date=today)),
+        total_amount=Sum('sale_price'),
+        total_count=Count('id'),
+    )
+    today_sales_amount = sales_aggregates['today_amount'] or Decimal('0.00')
+    today_sales_count = sales_aggregates['today_count'] or 0
+    total_sales_amount = sales_aggregates['total_amount'] or Decimal('0.00')
+    total_sales_count = sales_aggregates['total_count'] or 0
+
+    # Outstanding = total sales - total payments (never stored, always derived)
+    payments_total = Payment.objects.aggregate(
+        total=Sum('amount'))['total'] or Decimal('0.00')
+    try:
+        outstanding_amount = Decimal(total_sales_amount) - Decimal(payments_total)
+    except Exception:
+        outstanding_amount = Decimal('0.00')
+    if outstanding_amount < 0:
+        outstanding_amount = Decimal('0.00')
+
     customer_count = Customer.objects.count()
 
     # Pending custom orders = everything not Delivered/Cancelled
@@ -111,8 +109,12 @@ def dashboard(request):
     pending_custom_orders_count = pending_orders_qs.count()
     pending_custom_orders = list(pending_orders_qs[:5])
 
-    # ---- Recent sales (latest 5) ------------------------------------------
-    recent_sales = Sale.objects.select_related('customer', 'jewellery_item').order_by('-sale_date')[:5]
+    # ---- Recent sales (latest 5) with prefetched payments (avoids N+1 queries) ---
+    recent_sales = (
+        Sale.objects.select_related('customer', 'jewellery_item')
+        .prefetch_related('payments')
+        .order_by('-sale_date')[:5]
+    )
 
     # ---- 7-day sales overview (CSS/SVG bars, no JS dependency) ------------
     week_start = today - datetime.timedelta(days=6)
@@ -247,8 +249,10 @@ def inventory_list(request):
     if status:
         items = items.filter(status=status)
 
-    # Stock filter (In Stock / Low Stock / Out of Stock / Reserved)
-    low_stock_codes = stock.low_stock_design_codes(threshold)
+    # Stock summary & low-stock designs (computed once to prevent duplicate GROUP BY queries)
+    inventory_summary = stock.inventory_summary(threshold)
+    low_stock_codes = {d['design_code'] for d in inventory_summary.get('low_stock_designs', [])}
+
     stock_filter = request.GET.get('stock', '').strip()
     if stock_filter == 'available':
         items = items.filter(status='Available')
@@ -276,12 +280,23 @@ def inventory_list(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Flag the items on this page that are running low (single query for the
-    # whole page - the design codes were already fetched above).
+    # Flag the items on this page that are running low (single in-memory set lookup)
     for item in page_obj.object_list:
         item.is_low_stock = (
             item.status == 'Available' and item.quantity > 0
             and item.design_code in low_stock_codes)
+
+    # Purity choices (cached in process memory for 1h to avoid repeated SELECT DISTINCT)
+    from django.core.cache import cache
+    purity_choices = cache.get('inventory:purity_choices')
+    if purity_choices is None:
+        purity_choices = list(
+            JewelleryItem.objects.exclude(purity='')
+            .order_by('purity')
+            .values_list('purity', flat=True)
+            .distinct()
+        )
+        cache.set('inventory:purity_choices', purity_choices, 3600)
 
     context = {
         'items': page_obj,
@@ -291,10 +306,7 @@ def inventory_list(request):
         'status_choices': JewelleryItem.STATUS_CHOICES,
         'huid_status_choices': JewelleryItem.HUID_STATUS_CHOICES,
         'hallmark_status_choices': JewelleryItem.HALLMARK_STATUS_CHOICES,
-        'purity_choices': (JewelleryItem.objects.exclude(purity='')
-                           .order_by('purity')
-                           .values_list('purity', flat=True)
-                           .distinct()),
+        'purity_choices': purity_choices,
         'stock_filter_choices': stock.STOCK_STATUS_FILTERS,
         'selected_q': q,
         'selected_tag': tag,
@@ -308,7 +320,7 @@ def inventory_list(request):
         'selected_stock': stock_filter,
         'selected_sort': sort,
         'low_stock_threshold': threshold,
-        'summary': stock.inventory_summary(threshold),
+        'summary': inventory_summary,
     }
     return render(request, 'inventory/item_list.html', context)
 

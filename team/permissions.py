@@ -29,11 +29,14 @@ def has_module_perm(user, module, action='view'):
     if user.is_superuser:
         return True
 
-    emp = None
-    try:
-        emp = user.employee_profile
-    except Exception:
-        emp = None
+    emp = getattr(user, '_cached_employee_profile', None)
+    if emp is None and not getattr(user, '_checked_employee_profile', False):
+        try:
+            emp = user.employee_profile
+        except Exception:
+            emp = None
+        user._cached_employee_profile = emp
+        user._checked_employee_profile = True
 
     if emp:
         if emp.status != Employee.STATUS_ACTIVE:
@@ -58,11 +61,14 @@ def is_admin_user(user):
     if user.is_superuser:
         return True
 
-    emp = None
-    try:
-        emp = user.employee_profile
-    except Exception:
-        emp = None
+    emp = getattr(user, '_cached_employee_profile', None)
+    if emp is None and not getattr(user, '_checked_employee_profile', False):
+        try:
+            emp = user.employee_profile
+        except Exception:
+            emp = None
+        user._cached_employee_profile = emp
+        user._checked_employee_profile = True
 
     if emp:
         return (

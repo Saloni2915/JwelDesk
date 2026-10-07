@@ -54,7 +54,7 @@ def customer_add(request):
 def customer_detail(request, pk):
     """View customer profile, purchase history, and enquiries."""
     customer = get_object_or_404(Customer, pk=pk)
-    sales = customer.sales.select_related('jewellery_item').order_by('-sale_date')
+    sales = customer.sales.select_related('jewellery_item').prefetch_related('payments').order_by('-sale_date')
     enquiries = customer.enquiries.select_related('category').order_by('-created_at')
 
     context = {

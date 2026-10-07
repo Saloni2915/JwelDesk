@@ -98,7 +98,7 @@ def employee_list(request):
         'sel_dept': dept,
         'sel_status': status,
         'sel_branch': branch_id,
-        'total_count': qs.count(),
+        'total_count': paginator.count,
         'can_add_employee': has_module_perm(request.user, 'team', 'add'),
     })
 

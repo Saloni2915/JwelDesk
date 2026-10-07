@@ -40,6 +40,7 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     '[::1]',
+    'testserver',
 ]
 
 # Allow custom hosts from environment variables if defined
@@ -154,10 +155,12 @@ _database_url = (
 
 if _database_url:
     # When deployed on Vercel or using Supabase Transaction Pooler (port 6543 / PgBouncer):
-    # - conn_max_age is set to 0 (connections are short-lived per serverless request, avoiding stale pooler connections)
+    # - conn_max_age default 60s allows warm serverless workers to reuse established TLS/DB
+    #   connections without paying a 400-800ms handshake penalty on every request.
+    #   conn_health_checks=True safely verifies connection vitality before query execution.
     # - DISABLE_SERVER_SIDE_CURSORS is set to True (PgBouncer in transaction mode does not support PostgreSQL named cursors)
     # - SSL is required for remote database connections
-    conn_max_age_val = int(os.environ.get('CONN_MAX_AGE', '0'))
+    conn_max_age_val = int(os.environ.get('CONN_MAX_AGE', '60'))
     ssl_required = 'localhost' not in _database_url and '127.0.0.1' not in _database_url
 
     try:
@@ -275,6 +278,17 @@ STORAGES = {
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
+}
+
+# Cache headers for static assets: 1 day on production/Vercel CDN, 0 in local development
+WHITENOISE_MAX_AGE = int(os.environ.get('WHITENOISE_MAX_AGE', '86400' if not DEBUG else '0'))
+
+# In-memory cache for process-level caching of singletons, metal prices & query results
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'jeweldesk-locmem',
+    }
 }
 
 # Uploaded files (e.g. custom order reference photos).

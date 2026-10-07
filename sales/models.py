@@ -35,6 +35,10 @@ class Sale(models.Model):
     @property
     def paid_amount(self):
         """Total received against this sale (never stored)."""
+        # If payments have been prefetched, sum in-memory without extra SQL query
+        if hasattr(self, '_prefetched_objects_cache') and 'payments' in self._prefetched_objects_cache:
+            return sum((p.amount for p in self.payments.all()), Decimal('0'))
+
         from django.db.models import Sum
         total = Payment.objects.filter(sale=self).aggregate(total=Sum('amount'))['total']
         return total or Decimal('0')

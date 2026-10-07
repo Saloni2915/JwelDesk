@@ -29,7 +29,11 @@ from accounts.models import CompanySettings
 @login_required
 def sale_list(request):
     """List all sales records with search and payment method filters."""
-    sales = Sale.objects.select_related('customer', 'jewellery_item').order_by('-sale_date')
+    sales = (
+        Sale.objects.select_related('customer', 'jewellery_item')
+        .prefetch_related('payments')
+        .order_by('-sale_date')
+    )
 
     # Search (Customer name or item name/code/tag/design/HUID)
     q = request.GET.get('q', '').strip()
@@ -336,6 +340,7 @@ def sales_report(request):
     sales = (
         Sale.objects
         .select_related('customer', 'jewellery_item')
+        .prefetch_related('payments')
         .filter(sale_date__date__gte=start_date, sale_date__date__lte=end_date)
         .order_by('-sale_date')
     )
@@ -352,27 +357,26 @@ def sales_report(request):
     items_sold = totals['items_sold'] or 0
     average_sale_value = totals['average_sale_value'] or Decimal('0.00')
 
-    # Old gold transactions in date range (without corrupting normal sales totals)
-    old_golds = OldGoldTransaction.objects.filter(
+    # Old gold transactions in date range (combined in 1 single aggregate query)
+    old_gold_aggr = OldGoldTransaction.objects.filter(
         created_at__date__gte=start_date,
         created_at__date__lte=end_date,
         status=OldGoldTransaction.STATUS_COMPLETED
+    ).aggregate(
+        exchange_count=Count('id', filter=Q(transaction_type=OldGoldTransaction.TYPE_EXCHANGE)),
+        exchange_val=Sum('final_value', filter=Q(transaction_type=OldGoldTransaction.TYPE_EXCHANGE)),
+        exchange_net_wt=Sum('net_weight', filter=Q(transaction_type=OldGoldTransaction.TYPE_EXCHANGE)),
+        buyback_count=Count('id', filter=Q(transaction_type=OldGoldTransaction.TYPE_BUYBACK)),
+        buyback_val=Sum('final_value', filter=Q(transaction_type=OldGoldTransaction.TYPE_BUYBACK)),
+        buyback_net_wt=Sum('net_weight', filter=Q(transaction_type=OldGoldTransaction.TYPE_BUYBACK)),
     )
-    exchange_aggr = old_golds.filter(transaction_type=OldGoldTransaction.TYPE_EXCHANGE).aggregate(
-        count=Count('id'),
-        total_val=Sum('final_value'),
-        total_net_wt=Sum('net_weight')
-    )
-    buyback_aggr = old_golds.filter(transaction_type=OldGoldTransaction.TYPE_BUYBACK).aggregate(
-        count=Count('id'),
-        total_val=Sum('final_value'),
-        total_net_wt=Sum('net_weight')
-    )
-    exchange_count = exchange_aggr['count'] or 0
-    exchange_value = exchange_aggr['total_val'] or Decimal('0.00')
-    buyback_count = buyback_aggr['count'] or 0
-    buyback_payout = buyback_aggr['total_val'] or Decimal('0.00')
-    total_old_gold_weight = (exchange_aggr['total_net_wt'] or Decimal('0.000')) + (buyback_aggr['total_net_wt'] or Decimal('0.000'))
+    exchange_count = old_gold_aggr['exchange_count'] or 0
+    exchange_value = old_gold_aggr['exchange_val'] or Decimal('0.00')
+    exchange_net_wt = old_gold_aggr['exchange_net_wt'] or Decimal('0.000')
+    buyback_count = old_gold_aggr['buyback_count'] or 0
+    buyback_payout = old_gold_aggr['buyback_val'] or Decimal('0.00')
+    buyback_net_wt = old_gold_aggr['buyback_net_wt'] or Decimal('0.000')
+    total_old_gold_weight = exchange_net_wt + buyback_net_wt
 
     # Pagination (keeps the selected range on every page link).
     paginator = Paginator(sales, SALES_REPORT_PER_PAGE)
