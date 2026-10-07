@@ -337,6 +337,7 @@
                     <li class="nav-item">
                         <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.app_name == 'team' or '/team/' in request.path %}parent-active{% else %}collapsed{% endif %}"
                            data-bs-toggle="collapse"
+                           data-bs-target="#submenu-team"
                            href="#submenu-team"
                            role="button"
                            aria-expanded="{% if request.resolver_match.app_name == 'team' or '/team/' in request.path %}true{% else %}false{% endif %}"
@@ -568,9 +569,32 @@
             // Auto-close drawer when tapping a navigation link on touch/mobile screens
             var navLinks = document.querySelectorAll('.sidebar .sidebar-menu a:not([data-bs-toggle="collapse"])');
             navLinks.forEach(function(link) {
-                link.addEventListener('click', function() {
+                link.addEventListener('click', function(e) {
+                    var href = link.getAttribute('href');
                     if (window.innerWidth < 992) {
-                        closeMobileSidebar();
+                        if (href && href !== '#' && !href.startsWith('javascript:')) {
+                            // Delay slightly so mobile browser initiates page navigation before drawer slides off-screen
+                            setTimeout(closeMobileSidebar, 200);
+                        } else {
+                            closeMobileSidebar();
+                        }
+                    }
+                });
+            });
+
+            // Prevent unwanted URL hash mutation in standalone PWA mode for submenu toggles
+            var collapseToggles = document.querySelectorAll('.sidebar [data-bs-toggle="collapse"]');
+            collapseToggles.forEach(function(toggle) {
+                toggle.addEventListener('click', function(e) {
+                    var href = toggle.getAttribute('href');
+                    if (href && href.startsWith('#')) {
+                        e.preventDefault();
+                        var targetId = toggle.getAttribute('data-bs-target') || href;
+                        var targetEl = document.querySelector(targetId);
+                        if (targetEl && typeof bootstrap !== 'undefined' && bootstrap.Collapse) {
+                            var bsCollapse = bootstrap.Collapse.getOrCreateInstance(targetEl);
+                            bsCollapse.toggle();
+                        }
                     }
                 });
             });
@@ -591,7 +615,7 @@
                             var bsCollapse = bootstrap.Collapse.getOrCreateInstance(parentCollapse);
                             bsCollapse.show();
                         }
-                        var parentToggle = document.querySelector('[data-bs-toggle="collapse"][href="#' + parentCollapse.id + '"]');
+                        var parentToggle = document.querySelector('[data-bs-toggle="collapse"][href="#' + parentCollapse.id + '"], [data-bs-toggle="collapse"][data-bs-target="#' + parentCollapse.id + '"]');
                         if (parentToggle) {
                             parentToggle.classList.remove('collapsed');
                             parentToggle.classList.add('parent-active');

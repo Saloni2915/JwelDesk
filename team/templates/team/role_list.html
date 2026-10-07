@@ -8,7 +8,7 @@
   <a href="{% url 'team:employee_list' %}" class="btn btn-outline-secondary btn-sm">
     <i class="bi bi-arrow-left me-1"></i> Back to Employees
   </a>
-  {% if can_manage_roles %}
+  {% if can_manage_roles or not user.employee_profile %}
   <a href="{% url 'team:role_seed' %}" class="btn btn-outline-primary btn-sm ms-2" title="Restore or initialize standard built-in roles">
     <i class="bi bi-arrow-repeat me-1"></i> Initialize Standard Roles
   </a>
@@ -83,7 +83,7 @@
               </div>
             </td>
             <td class="text-end pe-3">
-              {% if can_manage_roles %}
+              {% if can_manage_roles or not user.employee_profile %}
               <a href="{% url 'team:role_edit' item.role.pk %}" class="btn btn-outline-secondary btn-sm" title="Edit Role">
                 <i class="bi bi-pencil"></i>
               </a>

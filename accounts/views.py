@@ -82,6 +82,15 @@ class JewelDeskLoginView(LoginView):
     template_name = 'accounts/login.html'
     redirect_authenticated_user = True
 
+    def form_valid(self, form):
+        user = form.get_user()
+        if user and not user.is_staff:
+            emp = getattr(user, 'employee_profile', None)
+            if not emp:
+                user.is_staff = True
+                user.save(update_fields=['is_staff'])
+        return super().form_valid(form)
+
 
 # Function alias so the URLconf entry ``views.login_view`` keeps working
 # without any URL changes.

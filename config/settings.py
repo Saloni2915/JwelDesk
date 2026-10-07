@@ -406,3 +406,9 @@ METAL_PRICE_API_KEY_HEADER = os.environ.get(
     'JEWELDESK_METAL_PRICE_API_KEY_HEADER', 'x-access-token')
 METAL_PRICE_API_TIMEOUT = int(os.environ.get('JEWELDESK_METAL_PRICE_API_TIMEOUT', '5'))
 METAL_PRICE_CACHE_TTL = int(os.environ.get('JEWELDESK_METAL_PRICE_CACHE_TTL', '1800'))
+
+# Fast password hashing during automated tests
+import sys
+if 'test' in sys.argv:
+    from django.contrib.auth.hashers import PBKDF2PasswordHasher
+    PBKDF2PasswordHasher.iterations = 1

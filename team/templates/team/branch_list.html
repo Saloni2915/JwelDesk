@@ -8,7 +8,7 @@
   <a href="{% url 'team:employee_list' %}" class="btn btn-outline-secondary btn-sm" id="btn-back-team">
     <i class="bi bi-people me-1"></i> Back to Team
   </a>
-  {% if user.is_staff %}
+  {% if user.is_staff or user.is_superuser or user_perms.team.can_edit or user_perms.team.can_add or not user.employee_profile %}
   <a href="{% url 'team:branch_create' %}" class="btn btn-primary btn-sm ms-2" id="btn-add-branch">
     <i class="bi bi-plus-circle me-1"></i> Add Branch
   </a>
@@ -55,9 +55,11 @@
             </td>
             <td class="text-muted small">{{ b.created_at|date:"d M Y" }}</td>
             <td class="text-end pe-3">
+              {% if user.is_staff or user.is_superuser or user_perms.team.can_edit or not user.employee_profile %}
               <a href="{% url 'team:branch_edit' b.pk %}" class="btn btn-outline-secondary btn-sm" title="Edit Branch">
                 <i class="bi bi-pencil"></i> Edit
               </a>
+              {% endif %}
             </td>
           </tr>
           {% endfor %}
@@ -69,7 +71,7 @@
       <i class="bi bi-shop display-4 text-muted mb-3 d-block"></i>
       <h6 class="text-muted">No branches created yet</h6>
       <p class="text-muted small">Add your main showroom, flagship store, or warehouse branch.</p>
-      {% if user.is_staff %}
+      {% if user.is_staff or user.is_superuser or user_perms.team.can_edit or user_perms.team.can_add or not user.employee_profile %}
       <a href="{% url 'team:branch_create' %}" class="btn btn-primary btn-sm">
         <i class="bi bi-plus-circle me-1"></i> Add First Branch
       </a>

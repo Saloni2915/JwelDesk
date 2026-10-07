@@ -5,12 +5,12 @@
 {% block page_title %}Team Management{% endblock %}
 
 {% block page_actions %}
-  {% if can_add_employee or user_perms.team.can_add %}
+  {% if can_add_employee or user_perms.team.can_add or not user.employee_profile %}
   <a href="{% url 'team:employee_create' %}" class="btn btn-primary btn-sm shadow-sm" id="btn-add-employee">
     <i class="bi bi-person-plus me-1"></i> Add Employee
   </a>
   {% endif %}
-  {% if user_perms.team.can_view %}
+  {% if user_perms.team.can_view or not user.employee_profile %}
   <a href="{% url 'team:role_list' %}" class="btn btn-outline-dark btn-sm" id="btn-roles">
     <i class="bi bi-shield-check me-1"></i> Roles &amp; Permissions
   </a>
@@ -175,7 +175,7 @@
                 <a href="{% url 'team:employee_detail' emp.pk %}" class="btn btn-outline-primary" title="View Profile">
                   <i class="bi bi-eye"></i>
                 </a>
-                {% if user_perms.team.can_edit %}
+                {% if user_perms.team.can_edit or not user.employee_profile %}
                 <a href="{% url 'team:employee_edit' emp.pk %}" class="btn btn-outline-secondary" title="Edit">
                   <i class="bi bi-pencil"></i>
                 </a>
@@ -235,7 +235,7 @@
       <i class="bi bi-people display-4 text-muted mb-3 d-block"></i>
       <h6 class="fw-semibold">No Employees Found</h6>
       <p class="text-muted small">No employee records match the active search or filter criteria.</p>
-      {% if can_add_employee or user_perms.team.can_add %}
+      {% if can_add_employee or user_perms.team.can_add or not user.employee_profile %}
       <a href="{% url 'team:employee_create' %}" class="btn btn-primary btn-sm mt-2">
         <i class="bi bi-person-plus me-1"></i> Add First Employee
       </a>
