@@ -27,10 +27,22 @@ from accounts.views import (
     password_reset_confirm_view,
     password_reset_complete_view,
 )
-from .pwa_views import manifest_view, service_worker_view, offline_view, download_report_view, view_report_view
+from .pwa_views import (
+    manifest_view,
+    service_worker_view,
+    offline_view,
+    download_report_view,
+    view_report_view,
+    download_brochure_view,
+    view_brochure_view,
+    digital_brochure_view,
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('download-brochure/', download_brochure_view, name='download_brochure'),
+    path('view-brochure/', view_brochure_view, name='view_brochure'),
+    path('brochure/', digital_brochure_view, name='digital_brochure'),
     path('download-report/', download_report_view, name='download_project_report'),
     path('view-report/', view_report_view, name='view_project_report'),
     path('', include('inventory.urls')),

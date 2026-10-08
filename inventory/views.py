@@ -27,20 +27,20 @@ from . import metal_prices
 def landing_page(request):
     """Public software landing page for JewelDesk.
 
-    Introduces the JewelDesk retail management platform to unauthenticated visitors.
-    If an authenticated user visits '/' without '?view=landing', smoothly redirect
-    them to their showroom dashboard cockpit.
+    Always serves the modern JewelDesk software landing page at '/'.
+    Visitors can explore features, benefits, and download the digital brochure.
+    Authenticated users have direct 'Go to Dashboard' access from the navbar & hero.
     """
-    if request.user.is_authenticated and request.GET.get('view') != 'landing':
-        return redirect('dashboard')
-
     from django.conf import settings
 
-    pdf_path = settings.BASE_DIR / 'JewelDesk_Complete_Project_Report.pdf'
-    has_pdf = pdf_path.exists()
+    report_pdf_path = settings.BASE_DIR / 'JewelDesk_Complete_Project_Report.pdf'
+    brochure_pdf_path = settings.BASE_DIR / 'JewelDesk_Product_Brochure.pdf'
+    has_pdf = report_pdf_path.exists()
+    has_brochure = brochure_pdf_path.exists()
 
     context = {
         'has_pdf': has_pdf,
+        'has_brochure': has_brochure,
     }
     return render(request, 'landing.html', context)
 

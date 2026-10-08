@@ -73,3 +73,34 @@ def view_report_view(request):
         raise Http404("Report PDF file not found.")
     return FileResponse(open(pdf_path, 'rb'), as_attachment=False, filename='JewelDesk_Complete_Project_Report.pdf', content_type='application/pdf')
 
+
+@require_GET
+def download_brochure_view(request):
+    """Serve the customer-facing JewelDesk brochure as a downloadable PDF attachment."""
+    from django.http import FileResponse
+    pdf_path = settings.BASE_DIR / 'JewelDesk_Product_Brochure.pdf'
+    if not pdf_path.exists():
+        raise Http404("Brochure PDF file not found.")
+    return FileResponse(open(pdf_path, 'rb'), as_attachment=True, filename='JewelDesk_Product_Brochure.pdf', content_type='application/pdf')
+
+
+@require_GET
+def view_brochure_view(request):
+    """Display the customer-facing JewelDesk brochure inline in the browser."""
+    from django.http import FileResponse
+    pdf_path = settings.BASE_DIR / 'JewelDesk_Product_Brochure.pdf'
+    if not pdf_path.exists():
+        raise Http404("Brochure PDF file not found.")
+    return FileResponse(open(pdf_path, 'rb'), as_attachment=False, filename='JewelDesk_Product_Brochure.pdf', content_type='application/pdf')
+
+
+@require_GET
+def digital_brochure_view(request):
+    """Serve the interactive digital HTML brochure."""
+    html_path = settings.BASE_DIR / 'brochure' / 'jeweldesk_brochure.html'
+    if not html_path.exists():
+        raise Http404("Digital brochure file not found.")
+    with open(html_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    return HttpResponse(content, content_type='text/html; charset=utf-8')
+

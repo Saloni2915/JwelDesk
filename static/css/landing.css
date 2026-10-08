@@ -1,27 +1,56 @@
 /* ==========================================================================
    JewelDesk — Public Software Landing Page Stylesheet
-   Luxury Jewellery Business Management Software Experience
+   Theme: Sovereign Atelier Royal Dark Chocolate & Imperial Gold
+   Specifically designed for Fine Jewellery Showroom & Retail Business Owners
    ========================================================================== */
 
 :root {
-    --jd-bg: #0b0f19;
-    --jd-bg-elevated: #111827;
-    --jd-surface: #151f32;
-    --jd-surface-hover: #1c2a44;
-    --jd-surface-card: #141e30;
-    --jd-border: rgba(255, 255, 255, 0.08);
-    --jd-border-gold: rgba(197, 155, 39, 0.3);
-    --jd-gold: #c59b27;
-    --jd-gold-light: #f7d57a;
-    --jd-gold-hover: #e0b43a;
-    --jd-on-gold: #111827;
-    --jd-text-primary: #f8fafc;
-    --jd-text-secondary: #94a3b8;
-    --jd-text-muted: #64748b;
-    --jd-success: #10b981;
-    --jd-danger: #ef4444;
-    --jd-info: #38bdf8;
-    --jd-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    /* Sovereign Atelier Dark Brown & Royal Gold Theme */
+    --jd-bg: #160F09;               /* Deep Royal Dark Brown / Espresso Velvet */
+    --jd-bg-elevated: #241A11;      /* Rich Dark Roast Walnut Surface */
+    --jd-surface: #241A11;          /* Dark Chocolate Card Surface */
+    --jd-surface-hover: #2D2015;    /* Warm Roasted Chestnut Hover */
+    --jd-surface-card: #20160E;     /* Velvet Espresso Card */
+    --jd-surface-gold: #2A1D12;     /* Amber Gold Tinted Dark Brown */
+    
+    /* Structural Borders (Lustrous Gold on Dark Brown) */
+    --jd-border: rgba(212, 175, 55, 0.28);
+    --jd-border-light: rgba(212, 175, 55, 0.16);
+    --jd-border-gold: rgba(212, 175, 55, 0.45);
+    --jd-border-gold-strong: #D4AF37;
+
+    /* Rich Regal & Champagne Gold Accents */
+    --jd-gold-primary: #E5C365;     /* Radiant Champagne Gold */
+    --jd-gold: #ECC86A;             /* High-contrast Gold on Dark Ground */
+    --jd-gold-bright: #F5D77F;      /* 24K Leaf Gold */
+    --jd-gold-light: #FBE092;       /* Luminous Amber Gold */
+    --jd-gold-hover: #D4AF37;       /* Deep Imperial Gold */
+    --jd-gold-bg: rgba(212, 175, 55, 0.15);
+    --jd-gold-bg-hover: rgba(212, 175, 55, 0.25);
+    --jd-on-gold: #140D07;          /* Dark Espresso text on Gold buttons */
+
+    /* Text Hierarchy (High Contrast against Dark Brown Canvas) */
+    --jd-text-primary: #FAF4EA;     /* Warm Pure Pearl Ivory */
+    --jd-text-secondary: #D4C5B0;   /* Cashmere Beige */
+    --jd-text-muted: #A89680;       /* Warm Muted Almond Taupe */
+
+    /* State Tokens */
+    --jd-success: #22C55E;          /* Bright Bullion Emerald */
+    --jd-success-bg: rgba(34, 197, 94, 0.15);
+    --jd-danger: #EF4444;           /* Ruby Red */
+    --jd-danger-bg: rgba(239, 68, 68, 0.15);
+    --jd-info: #60A5FA;
+
+    /* Typography */
+    --jd-font-headline: 'Playfair Display', Georgia, serif;
+    --jd-font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --jd-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+    /* Luxury Dark Espresso & Gold Box Shadows */
+    --jd-shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(212, 175, 55, 0.06);
+    --jd-shadow-md: 0 10px 30px rgba(0, 0, 0, 0.55), 0 3px 12px rgba(212, 175, 55, 0.10);
+    --jd-shadow-lg: 0 22px 55px rgba(0, 0, 0, 0.65), 0 8px 25px rgba(212, 175, 55, 0.15);
+    --jd-shadow-gold: 0 0 30px rgba(212, 175, 55, 0.35);
 }
 
 *, *::before, *::after {
@@ -40,7 +69,7 @@ body.jd-landing-body {
     padding: 0;
     background-color: var(--jd-bg);
     color: var(--jd-text-primary);
-    font-family: var(--jd-font);
+    font-family: var(--jd-font-body);
     line-height: 1.6;
     overflow-x: clip;
     width: 100%;
@@ -50,7 +79,25 @@ body.jd-landing-body {
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* Ambient glow container - prevents horizontal scrollbar on mobile */
+/* ==========================================================================
+   Luxury Jewellery Showroom Ambient Dark Brown Backdrop Layer
+   ========================================================================== */
+.jd-showroom-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: 
+        radial-gradient(ellipse at 50% 25%, rgba(26, 18, 11, 0.82) 0%, rgba(20, 14, 9, 0.92) 55%, rgba(16, 11, 7, 0.98) 100%),
+        url('/static/images/branding/jewel_showroom_bg.jpg') center top / cover no-repeat;
+    opacity: 0.65;
+    pointer-events: none;
+    z-index: 0;
+    filter: saturate(1.22) contrast(1.10);
+}
+
+/* Ambient luminous golden glows container */
 .jd-ambient-glow-wrapper {
     position: absolute;
     top: 0;
@@ -62,24 +109,27 @@ body.jd-landing-body {
     z-index: 0;
 }
 
-/* Ambient glow backgrounds */
 .jd-ambient-glow {
     position: absolute;
-    width: 600px;
-    height: 600px;
+    width: 650px;
+    height: 650px;
     border-radius: 50%;
-    filter: blur(120px);
+    filter: blur(140px);
     pointer-events: none;
     z-index: 0;
-    opacity: 0.15;
+    opacity: 0.35;
 }
 
 .jd-glow-gold {
-    background: radial-gradient(circle, var(--jd-gold) 0%, transparent 70%);
+    background: radial-gradient(circle, #ECC86A 0%, rgba(212, 175, 55, 0.16) 50%, transparent 70%);
+}
+
+.jd-glow-champagne {
+    background: radial-gradient(circle, #F3D279 0%, rgba(243, 210, 121, 0.14) 50%, transparent 70%);
 }
 
 .jd-glow-blue {
-    background: radial-gradient(circle, #2563eb 0%, transparent 70%);
+    background: radial-gradient(circle, #ECC86A 0%, rgba(212, 175, 55, 0.10) 50%, transparent 70%);
 }
 
 /* Container */
@@ -98,11 +148,12 @@ body.jd-landing-body {
 .jd-top-banner {
     position: relative;
     z-index: 1001;
-    background: linear-gradient(90deg, #111a2d 0%, #16243d 50%, #111a2d 100%);
-    border-bottom: 1px solid rgba(197, 155, 39, 0.35);
-    color: #f8fafc;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
-    transition: all 0.3s ease;
+    background: linear-gradient(90deg, #120C07 0%, #1A120B 100%);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.35);
+    color: #FAF4EA;
+    font-size: 0.85rem;
+    padding: 0.5rem 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
 .jd-top-banner.is-hidden {
@@ -112,7 +163,7 @@ body.jd-landing-body {
 .jd-top-banner__inner {
     max-width: 1280px;
     margin: 0 auto;
-    padding: 0.55rem 1.5rem;
+    padding: 0 1.5rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -124,180 +175,175 @@ body.jd-landing-body {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    flex-wrap: wrap;
+    flex: 1 1 300px;
 }
 
 .jd-top-banner__badge {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    background: rgba(197, 155, 39, 0.18);
-    border: 1px solid rgba(197, 155, 39, 0.45);
-    color: #f7d57a;
-    font-size: 0.75rem;
+    background: rgba(212, 175, 55, 0.2);
+    border: 1px solid rgba(212, 175, 55, 0.45);
+    color: #F5D77F;
+    font-size: 0.72rem;
     font-weight: 700;
+    padding: 0.15rem 0.55rem;
+    border-radius: 9999px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    padding: 0.2rem 0.55rem;
-    border-radius: 1rem;
-    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .jd-top-banner__text {
-    color: #e2e8f0;
-    font-size: 0.86rem;
+    color: #D4C5B0;
+    font-size: 0.82rem;
     line-height: 1.4;
 }
 
 .jd-top-banner__text strong {
-    color: #ffffff;
+    color: #FFFFFF;
 }
 
 .jd-top-banner__actions {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    margin-left: auto;
+    gap: 0.65rem;
+    flex-shrink: 0;
 }
 
 .jd-banner-btn {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    gap: 0.45rem;
-    background: linear-gradient(135deg, #f7d57a 0%, #c59b27 100%);
-    color: #111827;
-    font-size: 0.82rem;
+    background: linear-gradient(135deg, #FBE092 0%, #D4AF37 40%, #B8860B 100%);
+    color: #140D07;
     font-weight: 700;
+    font-size: 0.75rem;
     padding: 0.35rem 0.85rem;
-    border-radius: 0.5rem;
-    border: none;
+    border-radius: 0.4rem;
+    border: 1px solid #F5D77F;
     cursor: pointer;
     text-decoration: none;
-    box-shadow: 0 2px 8px rgba(197, 155, 39, 0.3);
-    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
     white-space: nowrap;
 }
 
 .jd-banner-btn:hover {
-    background: linear-gradient(135deg, #fae099 0%, #d8ac32 100%);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(197, 155, 39, 0.45);
-    color: #111827;
+    box-shadow: 0 3px 12px rgba(212, 175, 55, 0.45);
+    color: #140D07;
 }
 
 .jd-banner-close {
     background: transparent;
     border: none;
-    color: #94a3b8;
-    width: 1.8rem;
-    height: 1.8rem;
-    border-radius: 0.35rem;
-    display: grid;
-    place-items: center;
-    font-size: 0.95rem;
+    color: #A89680;
+    font-size: 0.9rem;
+    padding: 0.25rem;
     cursor: pointer;
-    transition: color 0.15s ease, background-color 0.15s ease;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    border-radius: 0.25rem;
 }
 
 .jd-banner-close:hover {
-    color: #ffffff;
+    color: #FFFFFF;
     background: rgba(255, 255, 255, 0.1);
 }
 
-/* Install Guide Modal */
-.jd-modal-dialog {
-    max-width: 500px;
-}
-.jd-modal-content {
-    background: #111827;
-    border: 1px solid rgba(197, 155, 39, 0.35);
-    border-radius: 1rem;
-    color: #f1f5f9;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
-}
-.jd-modal-header {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 1.25rem 1.5rem;
-}
-.jd-modal-body {
-    padding: 1.5rem;
-}
-.jd-modal-footer {
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 1rem 1.5rem;
-}
-.jd-install-step {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.85rem;
-    margin-bottom: 1rem;
-}
-.jd-install-step-num {
-    width: 1.8rem;
-    height: 1.8rem;
-    border-radius: 50%;
-    background: rgba(197, 155, 39, 0.15);
-    color: #c59b27;
-    display: grid;
-    place-items: center;
-    font-size: 0.85rem;
-    font-weight: 700;
-    flex-shrink: 0;
-}
-
-@media (max-width: 767.98px) {
-    .jd-top-banner__inner {
-        padding: 0.5rem 1rem;
-        gap: 0.6rem;
-    }
-    .jd-top-banner__content {
-        gap: 0.5rem;
-        width: 100%;
-    }
-    .jd-top-banner__actions {
-        width: 100%;
-        justify-content: space-between;
-        margin-left: 0;
-    }
-    .jd-banner-btn {
-        flex: 1;
-        padding: 0.45rem 0.85rem;
-        font-size: 0.82rem;
-    }
-}
-
 /* --------------------------------------------------------------------------
-   1. Top Navigation Bar
+   1. Navigation Bar (Dark Roast Chocolate & Gold Trims)
    -------------------------------------------------------------------------- */
 .jd-landing-nav {
     position: sticky;
     top: 0;
-    left: 0;
-    width: 100%;
     z-index: 1000;
-    background: rgba(11, 15, 25, 0.85);
+    background-color: rgba(22, 15, 9, 0.94);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--jd-border);
-    transition: background-color 0.25s ease, border-color 0.25s ease;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.30);
+    transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.jd-landing-nav.scrolled {
+    background-color: rgba(18, 12, 7, 0.98);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6), 0 1px 3px rgba(212, 175, 55, 0.1);
 }
 
 .jd-landing-nav__inner {
     max-width: 1280px;
     margin: 0 auto;
-    padding: 0.95rem 1.5rem;
+    padding: 0.85rem 1.5rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1.25rem;
 }
 
-/* Brand Group (Holds Mobile Toggle & Logo) */
 .jd-nav-brand-group {
     display: inline-flex;
     align-items: center;
-    gap: 0.65rem;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+.jd-landing-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    color: inherit;
+    flex-shrink: 0;
+}
+
+.jd-landing-logo-img {
+    height: 38px;
+    width: auto;
+    max-width: 165px;
+    object-fit: contain;
+    background: #241A11;
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.jd-nav-links {
+    display: flex;
+    align-items: center;
+    gap: 1.75rem;
+}
+
+.jd-nav-link {
+    text-decoration: none;
+    color: var(--jd-text-secondary);
+    font-size: 0.92rem;
+    font-weight: 500;
+    transition: color 0.15s ease;
+    padding: 0.25rem 0;
+    position: relative;
+}
+
+.jd-nav-link:hover,
+.jd-nav-link.active {
+    color: var(--jd-gold);
+}
+
+.jd-nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: var(--jd-gold);
+    border-radius: 2px;
+}
+
+.jd-nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
     flex-shrink: 0;
 }
 
@@ -307,183 +353,113 @@ body.jd-landing-body {
     flex-shrink: 0;
 }
 
-/* Logo */
-.jd-landing-logo {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.65rem;
-    text-decoration: none;
-    color: inherit;
-    flex-shrink: 0;
-}
-
-.jd-logo-gem {
-    width: 2.35rem;
-    height: 2.35rem;
-    border-radius: 0.65rem;
-    display: grid;
-    place-items: center;
-    font-size: 1.15rem;
-    color: #111827;
-    background: linear-gradient(135deg, var(--jd-gold-light) 0%, var(--jd-gold) 100%);
-    box-shadow: 0 4px 12px rgba(197, 155, 39, 0.35);
-}
-
-.jd-logo-title {
-    font-size: 1.35rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    color: var(--jd-text-primary);
-}
-
-.jd-logo-badge {
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--jd-gold);
-    background: rgba(197, 155, 39, 0.12);
-    border: 1px solid rgba(197, 155, 39, 0.3);
-    padding: 0.15rem 0.5rem;
-    border-radius: 1rem;
-    margin-left: 0.25rem;
-}
-
-/* Desktop Links */
-.jd-nav-links {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-}
-
-.jd-nav-link {
-    text-decoration: none;
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--jd-text-secondary);
-    transition: color 0.2s ease;
-    padding: 0.35rem 0;
-    position: relative;
-}
-
-.jd-nav-link:hover,
-.jd-nav-link.active {
-    color: var(--jd-text-primary);
-}
-
-.jd-nav-link:hover::after,
-.jd-nav-link.active::after {
-    content: "";
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: var(--jd-gold);
-    border-radius: 2px;
-}
-
-/* Navigation Actions */
-.jd-nav-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-}
-
-/* Buttons */
+/* Button System */
 .jd-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    font-family: var(--jd-font-body);
     font-size: 0.92rem;
     font-weight: 600;
-    padding: 0.65rem 1.25rem;
-    border-radius: 0.65rem;
+    padding: 0.65rem 1.35rem;
+    border-radius: 0.4rem;
     text-decoration: none;
     cursor: pointer;
     border: 1px solid transparent;
     transition: all 0.2s ease;
     min-height: 42px;
     white-space: nowrap;
+    line-height: 1.2;
 }
 
 .jd-btn-xs {
     padding: 0.35rem 0.75rem;
     font-size: 0.8rem;
     min-height: 32px;
-    border-radius: 0.5rem;
+    border-radius: 0.35rem;
 }
 
 .jd-btn-sm {
-    padding: 0.45rem 0.95rem;
-    font-size: 0.84rem;
+    padding: 0.45rem 1rem;
+    font-size: 0.85rem;
     min-height: 36px;
+    border-radius: 0.35rem;
 }
 
 .jd-btn-lg {
-    padding: 0.85rem 1.65rem;
+    padding: 0.85rem 1.85rem;
     font-size: 1.02rem;
-    border-radius: 0.75rem;
+    border-radius: 0.45rem;
     min-height: 48px;
-}
-
-.jd-btn-gold {
-    background: linear-gradient(135deg, var(--jd-gold-light) 0%, var(--jd-gold) 100%);
-    color: var(--jd-on-gold);
-    box-shadow: 0 4px 14px rgba(197, 155, 39, 0.32);
     font-weight: 700;
 }
 
+.jd-btn-gold {
+    background: linear-gradient(135deg, #F5D77F 0%, #D4AF37 35%, #B8860B 80%, #996515 100%);
+    color: #1A140B !important;
+    border: 1px solid #ECC86A;
+    box-shadow: 0 4px 18px rgba(184, 134, 11, 0.32), inset 0 1px 1px rgba(255, 255, 255, 0.45);
+    font-weight: 700;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
 .jd-btn-gold:hover {
-    background: linear-gradient(135deg, #fae099 0%, #d8ac32 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(197, 155, 39, 0.45);
-    color: var(--jd-on-gold);
+    background: linear-gradient(135deg, #FBE092 0%, #DFC052 35%, #C59318 80%, #A87012 100%);
+    color: #1A140B !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(184, 134, 11, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.6);
 }
 
 .jd-btn-ghost {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: var(--jd-border);
+    background: rgba(36, 26, 17, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(212, 175, 55, 0.35);
     color: var(--jd-text-primary);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
 }
 
 .jd-btn-ghost:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
-    color: #ffffff;
+    background: #2D2015;
+    border-color: var(--jd-gold-bright);
+    color: var(--jd-gold-bright);
+    box-shadow: 0 4px 16px rgba(212, 175, 55, 0.22);
 }
 
 .jd-btn-outline-gold {
-    background: transparent;
-    border-color: var(--jd-gold);
-    color: var(--jd-gold);
+    background: rgba(32, 22, 14, 0.75);
+    backdrop-filter: blur(8px);
+    border: 1.5px solid var(--jd-gold);
+    color: var(--jd-gold-bright);
+    font-weight: 700;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
 }
 
 .jd-btn-outline-gold:hover {
-    background: rgba(197, 155, 39, 0.12);
-    color: var(--jd-gold-light);
-    border-color: var(--jd-gold-light);
+    background: var(--jd-gold);
+    border-color: var(--jd-gold-bright);
+    color: #140D07;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.35);
 }
 
-/* Mobile Toggle */
+/* Mobile Toggle & Drawer */
 .jd-mobile-toggle {
     display: none;
     border: 1px solid var(--jd-border);
-    background: rgba(255, 255, 255, 0.05);
+    background: #241A11;
     color: var(--jd-text-primary);
-    width: 2.6rem;
-    height: 2.6rem;
-    border-radius: 0.55rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.4rem;
     place-items: center;
     font-size: 1.35rem;
     cursor: pointer;
 }
 
-/* Mobile Drawer */
 .jd-mobile-drawer {
     display: none;
-    background: #0f1523;
+    background: #1C130B;
     border-bottom: 1px solid var(--jd-border);
     padding: 1.25rem 1.5rem 1.75rem;
     flex-direction: column;
@@ -491,6 +467,7 @@ body.jd-landing-body {
     max-height: calc(100vh - 70px);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    box-shadow: var(--jd-shadow-md);
 }
 
 .jd-mobile-drawer.is-open {
@@ -500,16 +477,16 @@ body.jd-landing-body {
 .jd-mobile-drawer__links {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.65rem;
 }
 
 .jd-mobile-link {
     text-decoration: none;
     color: var(--jd-text-secondary);
-    font-size: 1rem;
+    font-size: 0.98rem;
     font-weight: 500;
     padding: 0.5rem 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.15);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -528,40 +505,65 @@ body.jd-landing-body {
 
 .jd-mobile-drawer__actions .jd-btn {
     width: 100%;
-    justify-content: center;
-    min-height: 44px;
 }
 
 /* --------------------------------------------------------------------------
-   2. Hero Section
+   2. Hero Section (With Rich Dark Brown & Showroom Ambience)
    -------------------------------------------------------------------------- */
 .jd-hero-section {
     position: relative;
-    padding: clamp(3rem, 6vw, 5.5rem) 0 4rem;
+    padding: clamp(3.5rem, 6vw, 6rem) 0 clamp(3rem, 5vw, 5.5rem);
+    background: 
+        radial-gradient(ellipse at 50% 20%, rgba(28, 19, 12, 0.75) 0%, rgba(22, 15, 9, 0.90) 55%, rgba(16, 11, 7, 0.98) 100%),
+        url('/static/images/branding/jewel_showroom_bg.jpg') center 22% / cover no-repeat;
+    border-bottom: 1.5px solid rgba(212, 175, 55, 0.35);
+    box-shadow: 0 10px 40px -15px rgba(0, 0, 0, 0.75);
     overflow: hidden;
+}
+
+.jd-hero-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.15fr;
+    gap: 3.5rem;
+    align-items: center;
+}
+
+.jd-hero-left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+}
+
+.jd-hero-content {
     text-align: center;
+    max-width: 960px;
+    margin: 0 auto;
 }
 
 .jd-hero-badge {
     display: inline-flex;
     align-items: center;
-    gap: 0.55rem;
-    padding: 0.4rem 1.1rem;
-    border-radius: 2rem;
-    background: rgba(197, 155, 39, 0.12);
-    border: 1px solid rgba(197, 155, 39, 0.35);
-    color: var(--jd-gold);
-    font-size: 0.85rem;
-    font-weight: 600;
-    margin-bottom: 1.5rem;
+    gap: 0.5rem;
+    padding: 0.38rem 1.15rem;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #2A1D12 0%, #1F150D 100%);
+    border: 1.5px solid rgba(212, 175, 55, 0.55);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.45);
+    color: var(--jd-gold-bright);
+    font-size: 0.84rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 1.35rem;
 }
 
 .jd-badge-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--jd-gold);
-    box-shadow: 0 0 10px var(--jd-gold);
+    background: #ECC86A;
+    box-shadow: 0 0 10px #ECC86A;
     animation: jd-pulse 2s infinite ease-in-out;
 }
 
@@ -571,137 +573,198 @@ body.jd-landing-body {
 }
 
 .jd-hero-title {
-    font-size: clamp(2.2rem, 4.8vw, 4rem);
-    font-weight: 800;
-    line-height: 1.15;
-    letter-spacing: -0.03em;
-    color: #ffffff;
-    max-width: 900px;
-    margin: 0 auto 1.35rem;
+    font-family: var(--jd-font-headline);
+    font-size: clamp(2.4rem, 3.8vw, 3.6rem);
+    font-weight: 700;
+    line-height: 1.16;
+    letter-spacing: -0.02em;
+    color: var(--jd-text-primary);
+    margin: 0 0 1.25rem;
 }
 
 .text-gold-gradient {
-    background: linear-gradient(135deg, #fae29c 0%, var(--jd-gold) 100%);
+    background: linear-gradient(135deg, #FBE092 0%, #ECC86A 35%, #D4AF37 70%, #F5D77F 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     display: inline-block;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
 }
 
 .jd-hero-subtitle {
-    font-size: clamp(1rem, 1.4vw, 1.25rem);
-    line-height: 1.65;
+    font-size: clamp(1.02rem, 1.25vw, 1.18rem);
+    line-height: 1.68;
     color: var(--jd-text-secondary);
-    max-width: 760px;
-    margin: 0 auto 2.25rem;
+    max-width: 550px;
+    margin: 0 0 1.85rem;
+    font-weight: 400;
 }
 
 .jd-hero-ctas {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 1rem;
+    gap: 0.85rem;
     flex-wrap: wrap;
-    margin-bottom: 2rem;
+    margin-bottom: 1.85rem;
 }
 
 .jd-hero-trust-bar {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 2rem;
+    gap: 1.35rem;
     flex-wrap: wrap;
-    color: var(--jd-text-muted);
-    font-size: 0.86rem;
-    font-weight: 500;
-    margin-bottom: 3.5rem;
+    color: var(--jd-text-secondary);
+    font-size: 0.84rem;
+    font-weight: 600;
 }
 
 .jd-hero-trust-bar span {
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
+    background: rgba(36, 26, 17, 0.85);
+    padding: 0.25rem 0.65rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    color: var(--jd-text-primary);
 }
 
 .jd-hero-trust-bar i {
-    color: var(--jd-gold);
+    color: var(--jd-gold-bright);
     font-size: 1rem;
 }
 
+.jd-hero-right {
+    position: relative;
+    width: 100%;
+}
+
 /* --------------------------------------------------------------------------
-   Browser / Software Window Mockup Frame
+   Hero Cockpit UI Mockup (Dark Velvet Chocolate & Imperial Gold Frame)
    -------------------------------------------------------------------------- */
 .jd-mockup-wrapper {
-    max-width: 1140px;
-    margin: 0 auto;
-    position: relative;
-    border-radius: 1.15rem;
-    background: #0f1523;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(197, 155, 39, 0.15);
+    background: #20160E;
+    border: 2px solid rgba(212, 175, 55, 0.45);
+    border-radius: 0.85rem;
+    box-shadow: 0 25px 65px -10px rgba(0, 0, 0, 0.85), 0 0 35px rgba(212, 175, 55, 0.15);
     overflow: hidden;
-    text-align: left;
+    position: relative;
+    max-width: 1180px;
+    margin: 0 auto;
 }
 
 .jd-mockup-topbar {
-    background: #151c2c;
-    padding: 0.85rem 1.25rem;
+    background: linear-gradient(180deg, #2A1D12 0%, #20160E 100%);
+    padding: 0.75rem 1.25rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.75rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    min-width: 0;
+    border-bottom: 1.5px solid rgba(212, 175, 55, 0.35);
+    gap: 1rem;
 }
 
 .jd-mockup-dots {
     display: flex;
+    gap: 0.35rem;
     align-items: center;
-    gap: 0.45rem;
-    flex-shrink: 0;
 }
 
 .jd-mockup-dot {
-    width: 11px;
-    height: 11px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
 }
 
-.dot-red { background: #ef4444; }
-.dot-yellow { background: #f59e0b; }
-.dot-green { background: #10b981; }
+.dot-red { background: #EF4444; }
+.dot-yellow { background: #F59E0B; }
+.dot-green { background: #10B981; }
 
 .jd-mockup-title {
-    font-size: 0.8rem;
-    color: var(--jd-text-muted);
-    font-weight: 600;
-    display: inline-flex;
+    font-size: 0.82rem;
+    color: var(--jd-text-secondary);
+    display: flex;
     align-items: center;
-    gap: 0.4rem;
-    min-width: 0;
+    gap: 0.35rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    flex: 1;
+}
+
+.jd-mockup-url {
+    font-family: var(--jd-font-mono);
+    color: var(--jd-gold-light);
+    font-weight: 600;
 }
 
 .jd-mockup-badge {
+    background: linear-gradient(135deg, #3D2916 0%, #291A0C 100%);
+    border: 1px solid var(--jd-gold);
+    color: var(--jd-gold-bright);
     font-size: 0.72rem;
-    color: var(--jd-gold);
-    background: rgba(197, 155, 39, 0.12);
-    border: 1px solid rgba(197, 155, 39, 0.3);
-    padding: 0.15rem 0.6rem;
-    border-radius: 1rem;
-    flex-shrink: 0;
+    font-weight: 800;
+    padding: 0.2rem 0.65rem;
+    border-radius: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
     white-space: nowrap;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
 }
 
-/* Mockup Inside Layout */
+/* Live Bullion Rates Ticker Ribbon (Imperial Gold Dark Banner) */
+.jd-mockup-ticker {
+    background: linear-gradient(90deg, #1C130B 0%, #24190F 50%, #1C130B 100%);
+    border-bottom: 1.5px solid rgba(212, 175, 55, 0.35);
+    padding: 0.65rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    font-size: 0.84rem;
+}
+
+.jd-ticker-label {
+    font-weight: 800;
+    color: var(--jd-gold-bright);
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.76rem;
+}
+
+.jd-ticker-rates {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.jd-ticker-rate {
+    color: var(--jd-text-secondary);
+    background: rgba(36, 26, 17, 0.9);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    padding: 0.2rem 0.65rem;
+    border-radius: 4px;
+    font-size: 0.80rem;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.jd-ticker-rate strong {
+    color: var(--jd-gold-light);
+    margin-left: 0.25rem;
+    font-weight: 700;
+}
+
+/* Mockup Body Content */
 .jd-mockup-content {
-    background: #0e1420;
-    padding: clamp(1.25rem, 2.5vw, 2rem);
+    padding: 1.5rem;
+    background: #1B120B;
 }
 
-/* Mockup Cockpit Stats Grid */
+/* KPI Stats Grid in Mockup */
 .jd-mockup-stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -710,368 +773,459 @@ body.jd-landing-body {
 }
 
 .jd-mockup-stat-card {
-    background: var(--jd-surface-card);
-    border: 1px solid var(--jd-border);
-    border-radius: 0.85rem;
+    background: linear-gradient(135deg, #261A10 0%, #20150D 100%);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 0.5rem;
     padding: 1rem;
     display: flex;
     align-items: center;
     gap: 0.85rem;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
 }
 
 .jd-mockup-stat-icon {
-    width: 2.6rem;
-    height: 2.6rem;
-    border-radius: 0.65rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.4rem;
     display: grid;
     place-items: center;
     font-size: 1.25rem;
     flex-shrink: 0;
 }
 
-.icon-gold { background: rgba(197, 155, 39, 0.15); color: var(--jd-gold); }
-.icon-green { background: rgba(16, 185, 129, 0.15); color: var(--jd-success); }
-.icon-blue { background: rgba(56, 189, 248, 0.15); color: var(--jd-info); }
-.icon-purple { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+.icon-gold { 
+    background: linear-gradient(135deg, #382413 0%, #28190B 100%); 
+    color: var(--jd-gold-bright); 
+    border: 1px solid rgba(212, 175, 55, 0.5);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+.icon-green { 
+    background: rgba(34, 197, 94, 0.15); 
+    color: #4ADE80; 
+    border: 1px solid rgba(34, 197, 94, 0.35);
+}
+.icon-blue { 
+    background: rgba(59, 130, 246, 0.15); 
+    color: #93C5FD; 
+    border: 1px solid rgba(59, 130, 246, 0.35);
+}
+.icon-purple { 
+    background: rgba(168, 85, 247, 0.15); 
+    color: #C084FC; 
+    border: 1px solid rgba(168, 85, 247, 0.35);
+}
 
 .jd-mockup-stat-val {
     font-size: 1.15rem;
-    font-weight: 700;
-    color: #ffffff;
+    font-weight: 800;
+    color: var(--jd-text-primary);
+    font-variant-numeric: tabular-nums;
     line-height: 1.2;
 }
 
 .jd-mockup-stat-lbl {
-    font-size: 0.74rem;
+    font-size: 0.76rem;
     color: var(--jd-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
     font-weight: 600;
-}
-
-/* Live Metal Rate Ticker inside mockup */
-.jd-mockup-ticker {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: rgba(197, 155, 39, 0.08);
-    border: 1px solid rgba(197, 155, 39, 0.25);
-    border-radius: 0.65rem;
-    padding: 0.75rem 1.25rem;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-}
-
-.jd-ticker-label {
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: var(--jd-gold);
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-}
-
-.jd-ticker-rates {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    flex-wrap: wrap;
-    font-size: 0.84rem;
-}
-
-.jd-ticker-rate strong {
-    color: #ffffff;
-    margin-left: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 0.15rem;
 }
 
 /* Mockup Table */
 .jd-mockup-table-wrap {
-    background: var(--jd-surface-card);
-    border: 1px solid var(--jd-border);
-    border-radius: 0.85rem;
     overflow-x: auto;
+    border: 1px solid rgba(212, 175, 55, 0.28);
+    border-radius: 0.5rem;
+    background: #20160E;
 }
 
 .jd-mockup-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.85rem;
+    text-align: left;
 }
 
 .jd-mockup-table th {
-    background: #141c2c;
-    padding: 0.85rem 1rem;
-    color: var(--jd-text-muted);
-    font-weight: 600;
-    text-align: left;
-    border-bottom: 1px solid var(--jd-border);
-    font-size: 0.78rem;
+    background: #291D13;
+    color: var(--jd-gold-light);
+    font-weight: 700;
+    padding: 0.75rem 1rem;
+    border-bottom: 1.5px solid rgba(212, 175, 55, 0.3);
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    white-space: nowrap;
 }
 
 .jd-mockup-table td {
-    padding: 0.85rem 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-    color: var(--jd-text-secondary);
-    white-space: nowrap;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+    color: var(--jd-text-primary);
+    font-variant-numeric: tabular-nums;
 }
 
-.jd-mockup-table tr:hover td {
-    background: rgba(255, 255, 255, 0.02);
+.jd-mockup-table tr:last-child td {
+    border-bottom: none;
 }
 
 .jd-table-tag {
-    font-family: monospace;
-    font-weight: 600;
-    color: var(--jd-gold);
-    background: rgba(197, 155, 39, 0.1);
-    padding: 0.2rem 0.45rem;
-    border-radius: 0.35rem;
+    font-family: var(--jd-font-mono);
+    font-size: 0.78rem;
+    background: #2E1F13;
+    border: 1px solid rgba(212, 175, 55, 0.45);
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.25rem;
+    color: var(--jd-gold-bright);
+    font-weight: 700;
 }
 
 .jd-badge-avail {
-    color: #10b981;
-    background: rgba(16, 185, 129, 0.12);
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    background: rgba(34, 197, 94, 0.18);
+    color: #4ADE80;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    font-size: 0.74rem;
+    font-weight: 700;
     padding: 0.2rem 0.55rem;
-    border-radius: 1rem;
-    font-size: 0.75rem;
-    font-weight: 600;
+    border-radius: 0.25rem;
 }
 
 .jd-badge-sold {
-    color: #94a3b8;
-    background: rgba(148, 163, 184, 0.12);
-    border: 1px solid rgba(148, 163, 184, 0.3);
+    background: rgba(168, 150, 128, 0.15);
+    color: #D4C5B0;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    font-size: 0.74rem;
+    font-weight: 700;
     padding: 0.2rem 0.55rem;
-    border-radius: 1rem;
-    font-size: 0.75rem;
-    font-weight: 600;
+    border-radius: 0.25rem;
 }
 
 /* --------------------------------------------------------------------------
-   3. Section Header Standard
+   Sections General Framework
    -------------------------------------------------------------------------- */
 .jd-section {
-    padding: clamp(3.5rem, 6vw, 6rem) 0;
+    padding: clamp(3.5rem, 6vw, 5.5rem) 0;
     position: relative;
+    z-index: 1;
+}
+
+.jd-section-alt {
+    background: rgba(26, 18, 11, 0.65);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(212, 175, 55, 0.16);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.16);
+    box-shadow: inset 0 2px 20px rgba(0, 0, 0, 0.35);
 }
 
 .jd-section-header {
     text-align: center;
-    max-width: 760px;
-    margin: 0 auto 3.5rem;
+    max-width: 800px;
+    margin: 0 auto clamp(2.5rem, 4vw, 3.5rem);
 }
 
 .jd-section-pill {
     display: inline-block;
-    font-size: 0.78rem;
-    font-weight: 700;
+    padding: 0.35rem 1.15rem;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #2A1D12 0%, #1F150D 100%);
+    border: 1.5px solid rgba(212, 175, 55, 0.55);
+    color: var(--jd-gold-bright);
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--jd-gold);
-    margin-bottom: 0.75rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
 }
 
 .jd-section-title {
-    font-size: clamp(1.85rem, 3.2vw, 2.65rem);
-    font-weight: 800;
-    letter-spacing: -0.025em;
-    color: #ffffff;
-    line-height: 1.25;
+    font-family: var(--jd-font-headline);
+    font-size: clamp(2.1rem, 3.6vw, 2.85rem);
+    font-weight: 700;
+    color: var(--jd-text-primary);
+    line-height: 1.22;
+    letter-spacing: -0.02em;
     margin: 0 0 1rem;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
 }
 
 .jd-section-subtitle {
-    font-size: clamp(0.95rem, 1.2vw, 1.1rem);
+    font-size: 1.05rem;
     color: var(--jd-text-secondary);
-    line-height: 1.6;
+    line-height: 1.62;
     margin: 0;
 }
 
 /* --------------------------------------------------------------------------
-   4. Features Grid
+   3. Benefits Section (6 Dark Velvet Chocolate & Gold Cards)
+   -------------------------------------------------------------------------- */
+.jd-benefits-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.75rem;
+}
+
+.jd-benefit-card {
+    background: linear-gradient(180deg, #261A10 0%, #20160E 100%);
+    border: 1.5px solid rgba(212, 175, 55, 0.32);
+    border-radius: 0.65rem;
+    padding: 2rem 1.75rem;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.2);
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.jd-benefit-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #ECC86A 0%, #D4AF37 50%, #B8860B 100%);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.jd-benefit-card:hover {
+    transform: translateY(-4px);
+    border-color: #D4AF37;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), 0 0 25px rgba(212, 175, 55, 0.2);
+}
+
+.jd-benefit-card:hover::before {
+    opacity: 1;
+}
+
+.jd-benefit-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 0.5rem;
+    background: linear-gradient(135deg, #352315 0%, #26180C 100%);
+    border: 1.5px solid rgba(212, 175, 55, 0.5);
+    color: var(--jd-gold-bright);
+    display: grid;
+    place-items: center;
+    font-size: 1.5rem;
+    margin-bottom: 1.35rem;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+.jd-benefit-card h3 {
+    font-size: 1.18rem;
+    font-weight: 700;
+    color: var(--jd-text-primary);
+    margin: 0 0 0.6rem;
+}
+
+.jd-benefit-card p {
+    font-size: 0.92rem;
+    color: var(--jd-text-secondary);
+    margin: 0;
+    line-height: 1.6;
+}
+
+/* --------------------------------------------------------------------------
+   4. Problems vs. JewelDesk Solutions Section
+   -------------------------------------------------------------------------- */
+.jd-comparison-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1.25rem;
+}
+
+.jd-comparison-card {
+    background: #20160E;
+    border: 1.5px solid rgba(212, 175, 55, 0.32);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.jd-comparison-card:hover {
+    transform: translateY(-3px);
+    border-color: #D4AF37;
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.6), 0 0 20px rgba(212, 175, 55, 0.15);
+}
+
+.jd-comp-problem {
+    background: linear-gradient(180deg, #2E1515 0%, #241111 100%);
+    padding: 1.25rem 1rem;
+    border-bottom: 1px dashed rgba(239, 68, 68, 0.45);
+}
+
+.jd-comp-label-prob {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #F87171;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0.35rem;
+}
+
+.jd-comp-problem h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #FECACA;
+    margin: 0 0 0.35rem;
+}
+
+.jd-comp-problem p {
+    font-size: 0.84rem;
+    color: #FCA5A5;
+    margin: 0;
+    line-height: 1.45;
+}
+
+.jd-comp-solution {
+    background: linear-gradient(180deg, #261A10 0%, #1F150D 100%);
+    padding: 1.25rem 1rem;
+    flex-grow: 1;
+    border-top: 1px solid rgba(212, 175, 55, 0.25);
+}
+
+.jd-comp-label-sol {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--jd-gold-bright);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0.35rem;
+}
+
+.jd-comp-solution h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--jd-text-primary);
+    margin: 0 0 0.35rem;
+}
+
+.jd-comp-solution p {
+    font-size: 0.84rem;
+    color: var(--jd-text-secondary);
+    margin: 0;
+    line-height: 1.45;
+}
+
+/* --------------------------------------------------------------------------
+   5. Core Features (9 Dark Chocolate & Gold Cards)
    -------------------------------------------------------------------------- */
 .jd-features-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
+    gap: 1.75rem;
 }
 
 .jd-feature-card {
-    background: var(--jd-surface);
-    border: 1px solid var(--jd-border);
-    border-radius: 1rem;
-    padding: 1.75rem 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    background: linear-gradient(180deg, #261A10 0%, #20160E 100%);
+    border: 1.5px solid rgba(212, 175, 55, 0.32);
+    border-radius: 0.65rem;
+    padding: 2rem 1.75rem;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.2);
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.jd-feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #ECC86A 0%, #D4AF37 50%, #B8860B 100%);
+    opacity: 0;
+    transition: opacity 0.25s ease;
 }
 
 .jd-feature-card:hover {
-    transform: translateY(-3px);
-    border-color: var(--jd-border-gold);
-    box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.4);
+    transform: translateY(-4px);
+    border-color: #D4AF37;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), 0 0 25px rgba(212, 175, 55, 0.2);
+}
+
+.jd-feature-card:hover::before {
+    opacity: 1;
 }
 
 .jd-feature-icon {
-    width: 3rem;
-    height: 3rem;
-    border-radius: 0.75rem;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 0.5rem;
+    background: linear-gradient(135deg, #352315 0%, #26180C 100%);
+    border: 1.5px solid rgba(212, 175, 55, 0.5);
+    color: var(--jd-gold-bright);
     display: grid;
     place-items: center;
-    font-size: 1.45rem;
-    color: var(--jd-gold);
-    background: rgba(197, 155, 39, 0.12);
-    border: 1px solid rgba(197, 155, 39, 0.25);
-    flex-shrink: 0;
+    font-size: 1.5rem;
+    margin-bottom: 1.35rem;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
 }
 
 .jd-feature-card h3 {
-    font-size: 1.15rem;
+    font-size: 1.18rem;
     font-weight: 700;
-    color: #ffffff;
-    margin: 0;
+    color: var(--jd-text-primary);
+    margin: 0 0 0.6rem;
 }
 
 .jd-feature-card p {
-    font-size: 0.9rem;
+    font-size: 0.92rem;
     color: var(--jd-text-secondary);
-    line-height: 1.55;
     margin: 0;
+    line-height: 1.6;
 }
 
 /* --------------------------------------------------------------------------
-   5. How It Works Steps
-   -------------------------------------------------------------------------- */
-.jd-steps-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.5rem;
-    position: relative;
-}
-
-.jd-step-card {
-    background: var(--jd-surface);
-    border: 1px solid var(--jd-border);
-    border-radius: 1rem;
-    padding: 1.85rem 1.5rem;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    transition: transform 0.2s ease, border-color 0.2s ease;
-}
-
-.jd-step-card:hover {
-    transform: translateY(-3px);
-    border-color: var(--jd-border-gold);
-}
-
-.jd-step-number {
-    font-size: 1.85rem;
-    font-weight: 800;
-    color: var(--jd-gold);
-    opacity: 0.85;
-    margin-bottom: 0.85rem;
-    font-family: monospace;
-}
-
-.jd-step-card h3 {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: #ffffff;
-    margin: 0 0 0.65rem;
-}
-
-.jd-step-card p {
-    font-size: 0.88rem;
-    color: var(--jd-text-secondary);
-    line-height: 1.55;
-    margin: 0;
-}
-
-/* --------------------------------------------------------------------------
-   6. Why JewelDesk Cards
-   -------------------------------------------------------------------------- */
-.jd-why-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-}
-
-.jd-why-card {
-    background: linear-gradient(180deg, rgba(21, 31, 50, 0.8) 0%, rgba(17, 24, 39, 0.8) 100%);
-    border: 1px solid var(--jd-border);
-    border-radius: 1rem;
-    padding: 1.85rem 1.6rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.85rem;
-    transition: transform 0.2s ease, border-color 0.2s ease;
-}
-
-.jd-why-card:hover {
-    transform: translateY(-3px);
-    border-color: rgba(197, 155, 39, 0.35);
-}
-
-.jd-why-icon {
-    font-size: 1.75rem;
-    color: var(--jd-gold);
-    margin-bottom: 0.25rem;
-}
-
-.jd-why-card h3 {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: #ffffff;
-    margin: 0;
-}
-
-.jd-why-card p {
-    font-size: 0.9rem;
-    color: var(--jd-text-secondary);
-    line-height: 1.55;
-    margin: 0;
-}
-
-/* --------------------------------------------------------------------------
-   7. Software Showcase (Interactive Tabs)
+   6. Product Showcase Tabs & Realistic UI Frame
    -------------------------------------------------------------------------- */
 .jd-showcase-tabs {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    margin-bottom: 2rem;
+    gap: 0.65rem;
+    margin-bottom: 2.25rem;
     flex-wrap: wrap;
 }
 
 .jd-tab-btn {
-    background: var(--jd-surface);
-    border: 1px solid var(--jd-border);
+    background: rgba(36, 26, 17, 0.85);
+    border: 1.5px solid rgba(212, 175, 55, 0.35);
     color: var(--jd-text-secondary);
+    padding: 0.7rem 1.35rem;
+    border-radius: 0.45rem;
+    font-family: var(--jd-font-body);
     font-size: 0.92rem;
-    font-weight: 600;
-    padding: 0.65rem 1.35rem;
-    border-radius: 2rem;
+    font-weight: 700;
     cursor: pointer;
     transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .jd-tab-btn:hover {
-    color: #ffffff;
-    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--jd-gold-bright);
+    border-color: #D4AF37;
+    background: #2E2015;
+    transform: translateY(-1px);
 }
 
 .jd-tab-btn.active {
-    background: rgba(197, 155, 39, 0.15);
-    border-color: var(--jd-gold);
-    color: var(--jd-gold-light);
+    background: linear-gradient(135deg, #FBE092 0%, #D4AF37 35%, #B8860B 80%, #996515 100%);
+    color: #140D07 !important;
+    border-color: #ECC86A;
+    box-shadow: 0 4px 18px rgba(212, 175, 55, 0.35);
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .jd-tab-panel {
@@ -1083,54 +1237,170 @@ body.jd-landing-body {
 }
 
 /* --------------------------------------------------------------------------
-   8. Brochure & Overview Section
+   7. How JewelDesk Works (3 Steps with Radiant Gold Numerals)
    -------------------------------------------------------------------------- */
-.jd-brochure-card {
-    background: linear-gradient(135deg, rgba(20, 30, 48, 0.95) 0%, rgba(15, 21, 35, 0.95) 100%);
-    border: 1px solid var(--jd-border-gold);
-    border-radius: 1.25rem;
-    padding: clamp(2rem, 4vw, 3.5rem);
+.jd-steps-grid {
     display: grid;
-    grid-template-columns: 1.25fr 0.75fr;
-    gap: 2.5rem;
-    align-items: center;
-    box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.5);
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
 }
 
-.jd-brochure-left h3 {
-    font-size: 1.85rem;
-    font-weight: 800;
-    color: #ffffff;
-    margin: 0 0 1rem;
+.jd-step-card {
+    background: linear-gradient(180deg, #261A10 0%, #20160E 100%);
+    border: 1.5px solid rgba(212, 175, 55, 0.32);
+    border-radius: 0.75rem;
+    padding: 2.5rem 2.25rem;
+    position: relative;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.jd-step-card:hover {
+    transform: translateY(-4px);
+    border-color: #D4AF37;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6), 0 0 25px rgba(212, 175, 55, 0.2);
+}
+
+.jd-step-number {
+    font-family: var(--jd-font-headline);
+    font-size: 3.2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #FBE092 0%, #ECC86A 35%, #D4AF37 70%, #F5D77F 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+    margin-bottom: 0.85rem;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.6));
+}
+
+.jd-step-card h3 {
+    font-size: 1.28rem;
+    font-weight: 700;
+    color: var(--jd-text-primary);
+    margin: 0 0 0.75rem;
+}
+
+.jd-step-card p {
+    font-size: 0.94rem;
+    color: var(--jd-text-secondary);
+    line-height: 1.62;
+    margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   8. Why JewelDesk (6 Value Drivers)
+   -------------------------------------------------------------------------- */
+.jd-why-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.75rem;
+}
+
+.jd-why-card {
+    background: linear-gradient(180deg, #261A10 0%, #20160E 100%);
+    border: 1.5px solid rgba(212, 175, 55, 0.32);
+    border-radius: 0.65rem;
+    padding: 2rem 1.75rem;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.jd-why-card:hover {
+    transform: translateY(-4px);
+    border-color: #D4AF37;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), 0 0 25px rgba(212, 175, 55, 0.2);
+}
+
+.jd-why-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 0.5rem;
+    background: linear-gradient(135deg, #352315 0%, #26180C 100%);
+    border: 1.5px solid rgba(212, 175, 55, 0.5);
+    color: var(--jd-gold-bright);
+    display: grid;
+    place-items: center;
+    font-size: 1.5rem;
+    margin-bottom: 1.35rem;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+.jd-why-card h3 {
+    font-size: 1.18rem;
+    font-weight: 700;
+    color: var(--jd-text-primary);
+    margin: 0 0 0.6rem;
+}
+
+.jd-why-card p {
+    font-size: 0.92rem;
+    color: var(--jd-text-secondary);
+    margin: 0;
+    line-height: 1.6;
+}
+
+/* --------------------------------------------------------------------------
+   9. Dedicated Brochure Section (Dark Brown Atelier Edition)
+   -------------------------------------------------------------------------- */
+.jd-brochure-card {
+    background: linear-gradient(135deg, #261A10 0%, #1F150E 100%);
+    border: 2px solid rgba(212, 175, 55, 0.55);
+    border-radius: 0.85rem;
+    padding: clamp(2rem, 4vw, 3.5rem);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 3rem;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65), 0 0 25px rgba(212, 175, 55, 0.12);
+    position: relative;
+    overflow: hidden;
+}
+
+.jd-brochure-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 8px;
+    height: 100%;
+    background: linear-gradient(180deg, #FBE092 0%, #D4AF37 50%, #B8860B 100%);
+}
+
+.jd-brochure-left {
+    flex: 1 1 580px;
 }
 
 .jd-brochure-left p {
-    font-size: 0.98rem;
+    font-size: 1rem;
     color: var(--jd-text-secondary);
-    line-height: 1.6;
-    margin: 0 0 1.5rem;
+    line-height: 1.68;
+    margin-bottom: 1.5rem;
 }
 
 .jd-brochure-bullets {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.85rem 1.5rem;
     margin: 0 0 2rem;
     padding: 0;
     list-style: none;
 }
 
 .jd-brochure-bullets li {
-    font-size: 0.88rem;
+    font-size: 0.92rem;
+    font-weight: 600;
     color: var(--jd-text-primary);
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.55rem;
 }
 
 .jd-brochure-bullets i {
-    color: var(--jd-gold);
-    font-size: 1rem;
+    color: var(--jd-gold-bright);
+    font-size: 1.15rem;
+    flex-shrink: 0;
 }
 
 .jd-brochure-actions {
@@ -1141,38 +1411,84 @@ body.jd-landing-body {
 }
 
 .jd-brochure-right {
-    background: #0b0f19;
-    border: 1px solid var(--jd-border);
-    border-radius: 1rem;
-    padding: 2rem 1.5rem;
+    background: rgba(36, 26, 17, 0.95);
+    border: 1.5px solid rgba(212, 175, 55, 0.45);
+    border-radius: 0.75rem;
+    padding: 2.25rem 2rem;
     text-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 1rem;
+    flex: 0 0 320px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 .jd-doc-icon {
-    width: 4rem;
-    height: 4rem;
-    border-radius: 1rem;
+    width: 4.75rem;
+    height: 4.75rem;
+    border-radius: 0.6rem;
     display: grid;
     place-items: center;
-    font-size: 2rem;
-    color: var(--jd-gold);
-    background: rgba(197, 155, 39, 0.12);
+    font-size: 2.6rem;
+    color: var(--jd-gold-bright);
+    background: linear-gradient(135deg, #382413 0%, #28190B 100%);
+    border: 1.5px solid rgba(212, 175, 55, 0.55);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
 }
 
 /* --------------------------------------------------------------------------
-   9. Feedback Section
+   10. Final CTA Banner (Imperial Dark Espresso & Royal Gold Crown)
+   -------------------------------------------------------------------------- */
+.jd-final-cta-card {
+    background: radial-gradient(circle at 50% 20%, #2D1E12 0%, #191008 100%);
+    border: 2px solid rgba(212, 175, 55, 0.65);
+    border-radius: 1rem;
+    padding: clamp(2.5rem, 5vw, 4.25rem) 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    color: var(--jd-text-primary);
+    box-shadow: 0 25px 65px rgba(0, 0, 0, 0.8), 0 0 35px rgba(212, 175, 55, 0.2);
+}
+
+.jd-final-cta-card h2 {
+    font-family: var(--jd-font-headline);
+    font-size: clamp(2.1rem, 4vw, 3.2rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #FAF4EA;
+    margin: 0 0 1rem;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+}
+
+.jd-final-cta-card p {
+    font-size: clamp(1.05rem, 1.35vw, 1.25rem);
+    color: var(--jd-text-secondary);
+    max-width: 680px;
+    margin: 0 auto 2.25rem;
+    line-height: 1.65;
+}
+
+.jd-final-cta-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+}
+
+/* --------------------------------------------------------------------------
+   11. Feedback Section
    -------------------------------------------------------------------------- */
 .jd-feedback-card {
-    background: var(--jd-surface);
-    border: 1px solid var(--jd-border);
-    border-radius: 1.25rem;
+    background: linear-gradient(180deg, #261A10 0%, #20160E 100%);
+    border: 1.5px solid rgba(212, 175, 55, 0.4);
+    border-radius: 0.85rem;
     padding: clamp(2rem, 3.5vw, 3rem);
     max-width: 860px;
     margin: 0 auto;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.55);
 }
 
 .jd-feedback-form {
@@ -1188,63 +1504,61 @@ body.jd-landing-body {
 .jd-input-label {
     display: block;
     font-size: 0.85rem;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--jd-text-primary);
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.45rem;
 }
 
 .jd-input-text,
 .jd-textarea {
     width: 100%;
-    padding: 0.75rem 1rem;
-    background: #0b0f19;
-    border: 1px solid var(--jd-border);
-    border-radius: 0.65rem;
+    padding: 0.8rem 1.1rem;
+    background: #1B120B;
+    border: 1.5px solid rgba(212, 175, 55, 0.35);
+    border-radius: 0.45rem;
     color: var(--jd-text-primary);
-    font-size: 0.95rem;
-    font-family: inherit;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    font-family: var(--jd-font-body);
+    font-size: 0.92rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
 .jd-input-text:focus,
 .jd-textarea:focus {
     outline: none;
-    border-color: var(--jd-gold);
-    box-shadow: 0 0 0 3px rgba(197, 155, 39, 0.25);
+    border-color: #ECC86A;
+    background: #241A11;
+    box-shadow: 0 0 0 3.5px rgba(212, 175, 55, 0.25);
 }
 
 /* --------------------------------------------------------------------------
-   10. FAQ Accordion
+   12. FAQ Section
    -------------------------------------------------------------------------- */
 .jd-faq-grid {
-    max-width: 860px;
-    margin: 0 auto;
     display: flex;
     flex-direction: column;
-    gap: 0.85rem;
+    gap: 1rem;
+    max-width: 860px;
+    margin: 0 auto;
 }
 
 .jd-faq-item {
-    background: var(--jd-surface);
-    border: 1px solid var(--jd-border);
-    border-radius: 0.85rem;
+    background: linear-gradient(180deg, #261A10 0%, #20160E 100%);
+    border: 1.5px solid rgba(212, 175, 55, 0.32);
+    border-radius: 0.6rem;
     overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
     transition: border-color 0.2s ease;
 }
 
-.jd-faq-item.is-open {
-    border-color: var(--jd-border-gold);
+.jd-faq-item:hover {
+    border-color: #D4AF37;
 }
 
 .jd-faq-question {
-    width: 100%;
-    padding: 1.25rem 1.5rem;
-    background: transparent;
-    border: none;
-    color: #ffffff;
+    padding: 1.35rem 1.6rem;
     font-size: 1.05rem;
     font-weight: 700;
-    text-align: left;
+    color: var(--jd-text-primary);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1254,7 +1568,7 @@ body.jd-landing-body {
 
 .jd-faq-icon {
     font-size: 1.15rem;
-    color: var(--jd-gold);
+    color: var(--jd-gold-bright);
     transition: transform 0.25s ease;
 }
 
@@ -1264,10 +1578,12 @@ body.jd-landing-body {
 
 .jd-faq-answer {
     display: none;
-    padding: 0 1.5rem 1.35rem;
-    font-size: 0.92rem;
+    padding: 0 1.6rem 1.4rem;
+    font-size: 0.94rem;
     color: var(--jd-text-secondary);
-    line-height: 1.65;
+    line-height: 1.68;
+    border-top: 1px dashed rgba(212, 175, 55, 0.25);
+    padding-top: 1rem;
 }
 
 .jd-faq-item.is-open .jd-faq-answer {
@@ -1275,50 +1591,15 @@ body.jd-landing-body {
 }
 
 /* --------------------------------------------------------------------------
-   11. Final CTA Banner
-   -------------------------------------------------------------------------- */
-.jd-final-cta-card {
-    background: linear-gradient(135deg, rgba(25, 35, 55, 0.9) 0%, rgba(15, 20, 32, 0.95) 100%);
-    border: 1px solid var(--jd-border-gold);
-    border-radius: 1.5rem;
-    padding: clamp(2.5rem, 5vw, 4rem) 2rem;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.6);
-}
-
-.jd-final-cta-card h2 {
-    font-size: clamp(2rem, 3.8vw, 3rem);
-    font-weight: 800;
-    letter-spacing: -0.025em;
-    color: #ffffff;
-    margin: 0 0 1rem;
-}
-
-.jd-final-cta-card p {
-    font-size: clamp(1rem, 1.3vw, 1.2rem);
-    color: var(--jd-text-secondary);
-    max-width: 680px;
-    margin: 0 auto 2.25rem;
-}
-
-.jd-final-cta-buttons {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1.25rem;
-    flex-wrap: wrap;
-}
-
-/* --------------------------------------------------------------------------
-   12. Footer
+   13. Footer
    -------------------------------------------------------------------------- */
 .jd-landing-footer {
-    border-top: 1px solid var(--jd-border);
-    background: #080b13;
-    padding: 4rem 0 2rem;
-    color: var(--jd-text-muted);
+    border-top: 2px solid rgba(212, 175, 55, 0.35);
+    background: linear-gradient(180deg, #1A120B 0%, #120C07 100%);
+    padding: 4.5rem 0 2.5rem;
+    color: var(--jd-text-secondary);
+    position: relative;
+    z-index: 1;
 }
 
 .jd-footer-grid {
@@ -1328,31 +1609,21 @@ body.jd-landing-body {
     margin-bottom: 3.5rem;
 }
 
-.jd-footer-brand h4 {
-    font-size: 1.25rem;
-    font-weight: 800;
-    color: #ffffff;
-    margin: 0 0 0.75rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
 .jd-footer-brand p {
-    font-size: 0.88rem;
-    color: var(--jd-text-secondary);
+    font-size: 0.92rem;
     line-height: 1.6;
-    margin: 0 0 1.25rem;
+    margin: 1rem 0 1.5rem;
+    color: var(--jd-text-secondary);
     max-width: 320px;
 }
 
 .jd-footer-col h5 {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 700;
-    color: #ffffff;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin: 0 0 1rem;
+    letter-spacing: 0.06em;
+    color: var(--jd-gold-light);
+    margin: 0 0 1.25rem;
 }
 
 .jd-footer-links {
@@ -1361,342 +1632,177 @@ body.jd-landing-body {
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.65rem;
+    gap: 0.75rem;
 }
 
 .jd-footer-links a {
-    color: var(--jd-text-secondary);
     text-decoration: none;
-    font-size: 0.88rem;
-    transition: color 0.2s ease;
+    color: var(--jd-text-secondary);
+    font-size: 0.9rem;
+    transition: color 0.15s ease;
 }
 
 .jd-footer-links a:hover {
-    color: var(--jd-gold);
+    color: var(--jd-gold-bright);
 }
 
 .jd-footer-bottom {
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    padding-top: 1.75rem;
+    border-top: 1px solid rgba(212, 175, 55, 0.15);
+    padding-top: 2rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 0.82rem;
+    gap: 1.5rem;
     flex-wrap: wrap;
-    gap: 1rem;
+    font-size: 0.85rem;
+    color: var(--jd-text-muted);
 }
 
 .jd-footer-tech-badges {
     display: flex;
     align-items: center;
-    gap: 1.25rem;
+    gap: 1.5rem;
+    flex-wrap: wrap;
 }
 
 .jd-footer-tech-badges span {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.4rem;
 }
 
 /* --------------------------------------------------------------------------
-   13. Responsive Media Queries
+   Responsive Media Queries
    -------------------------------------------------------------------------- */
-@media (max-width: 1199.98px) {
-    .jd-mockup-stats {
-        grid-template-columns: repeat(2, 1fr);
+@media (max-width: 1199px) {
+    .jd-comparison-grid {
+        grid-template-columns: repeat(3, 1fr);
     }
+}
+
+@media (max-width: 991px) {
+    .jd-nav-links,
+    .jd-nav-actions {
+        display: none;
+    }
+
+    .jd-mobile-toggle,
+    .jd-nav-mobile-right {
+        display: inline-flex;
+    }
+
+    .jd-hero-grid {
+        grid-template-columns: 1fr;
+        gap: 2.5rem;
+    }
+
+    .jd-hero-left {
+        align-items: center;
+        text-align: center;
+    }
+
+    .jd-hero-subtitle {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .jd-hero-ctas,
+    .jd-hero-trust-bar {
+        justify-content: center;
+    }
+
+    .jd-benefits-grid,
+    .jd-features-grid,
+    .jd-why-grid,
     .jd-steps-grid {
         grid-template-columns: repeat(2, 1fr);
     }
+
+    .jd-comparison-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .jd-mockup-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .jd-brochure-card {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .jd-brochure-right {
+        flex: 1 1 auto;
+    }
+
     .jd-footer-grid {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
-@media (max-width: 991.98px) {
-    .jd-nav-links {
-        display: none !important;
-    }
-    .jd-mobile-toggle {
-        display: grid;
-    }
-    .jd-features-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    .jd-why-grid {
-        grid-template-columns: 1fr;
-    }
-    .jd-brochure-card {
-        grid-template-columns: 1fr;
-    }
-    .jd-feedback-form {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 767.98px) {
-    /* Hide top nav action buttons on mobile — already available in drawer & hero */
-    .jd-nav-actions {
-        display: none !important;
-    }
-    .jd-nav-mobile-right {
-        display: inline-flex;
-    }
-    .jd-mobile-toggle {
-        display: grid;
-        width: 2.35rem;
-        height: 2.35rem;
-        font-size: 1.25rem;
-    }
-    .jd-logo-badge {
-        display: none;
-    }
-    .jd-landing-nav__inner {
-        padding: 0.65rem 1rem;
-        gap: 0.5rem;
+@media (max-width: 767px) {
+    .jd-container {
+        padding: 0 1rem;
     }
 
-    /* Top notification banner mobile optimization */
     .jd-top-banner__inner {
-        padding: 0.5rem 0.85rem;
-        gap: 0.5rem;
-    }
-    .jd-top-banner__content {
-        gap: 0.35rem;
-        width: 100%;
-    }
-    .jd-top-banner__badge {
-        font-size: 0.7rem;
-        padding: 0.15rem 0.45rem;
-    }
-    .jd-top-banner__text {
-        font-size: 0.78rem;
-        line-height: 1.35;
-    }
-    .jd-top-banner__actions {
-        width: 100%;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin-left: 0;
-    }
-    .jd-banner-btn {
-        flex: 1;
-        padding: 0.45rem 0.85rem;
-        font-size: 0.82rem;
-        white-space: nowrap;
-    }
-    .jd-banner-close {
-        flex-shrink: 0;
-        width: 2.2rem;
-        height: 2.2rem;
-        display: grid;
-        place-items: center;
+        padding: 0 1rem;
     }
 
-    /* Mockup window header & elements on mobile */
-    .jd-mockup-wrapper {
-        border-radius: 0.85rem;
-    }
-    .jd-mockup-topbar {
-        padding: 0.65rem 0.85rem;
-        gap: 0.5rem;
-    }
-    .jd-mockup-dots {
-        gap: 0.35rem;
-    }
-    .jd-mockup-dot {
-        width: 9px;
-        height: 9px;
-    }
-    .jd-mockup-title {
-        font-size: 0.74rem;
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        flex: 1;
-    }
-    .jd-mockup-tagline {
-        display: none;
-    }
-    .jd-mockup-badge {
-        font-size: 0.68rem;
-        padding: 0.15rem 0.45rem;
-        flex-shrink: 0;
-        white-space: nowrap;
-    }
-
-    /* Live metal rate ticker in mockup */
-    .jd-mockup-ticker {
-        flex-direction: column;
-        align-items: stretch;
-        padding: 0.75rem 0.85rem;
-        gap: 0.5rem;
-    }
-    .jd-ticker-label {
-        font-size: 0.76rem;
-    }
-    .jd-ticker-rates {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.4rem 0.75rem;
-        font-size: 0.78rem;
-        width: 100%;
+    .jd-benefits-grid,
+    .jd-features-grid,
+    .jd-why-grid,
+    .jd-steps-grid,
+    .jd-comparison-grid {
+        grid-template-columns: 1fr;
     }
 
     .jd-mockup-stats {
         grid-template-columns: 1fr;
-        gap: 0.75rem;
     }
-    .jd-features-grid {
-        grid-template-columns: 1fr;
-    }
-    .jd-steps-grid {
-        grid-template-columns: 1fr;
-    }
-    .jd-brochure-card {
-        padding: 1.5rem 1.25rem;
-        gap: 1.75rem;
-    }
-    .jd-brochure-left h3 {
-        font-size: 1.45rem;
-    }
+
     .jd-brochure-bullets {
         grid-template-columns: 1fr;
-        gap: 0.6rem;
-    }
-    .jd-brochure-actions {
-        flex-direction: column;
-        width: 100%;
-    }
-    .jd-brochure-actions .jd-btn {
-        width: 100%;
     }
 
-    /* Showcase tabs horizontal scroll */
-    .jd-showcase-tabs {
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        justify-content: flex-start;
-        padding: 0 0.25rem 0.65rem;
-        -webkit-overflow-scrolling: touch;
-        gap: 0.5rem;
-        scrollbar-width: none;
-    }
-    .jd-showcase-tabs::-webkit-scrollbar {
-        display: none;
-    }
-    .jd-tab-btn {
-        flex-shrink: 0;
-        white-space: nowrap;
-        font-size: 0.82rem;
-        padding: 0.5rem 0.95rem;
+    .jd-feedback-form {
+        grid-template-columns: 1fr;
     }
 
-    .jd-feedback-card {
-        padding: 1.5rem 1.25rem;
-    }
-    .jd-faq-question {
-        padding: 1rem 1.25rem;
-        font-size: 0.95rem;
-    }
-    .jd-faq-answer {
-        padding: 0 1.25rem 1rem;
-        font-size: 0.88rem;
-    }
-    .jd-final-cta-card {
-        padding: 2.25rem 1.25rem;
-    }
-    .jd-final-cta-card h2 {
-        font-size: 1.75rem;
-    }
-    .jd-final-cta-buttons {
+    .jd-hero-trust-bar {
+        gap: 1rem;
         flex-direction: column;
-        width: 100%;
+        align-items: flex-start;
     }
-    .jd-final-cta-buttons .jd-btn {
-        width: 100%;
-    }
+
     .jd-footer-grid {
         grid-template-columns: 1fr;
         gap: 2rem;
     }
+
     .jd-footer-bottom {
         flex-direction: column;
-        text-align: center;
-        justify-content: center;
-        gap: 0.75rem;
+        align-items: flex-start;
     }
 }
 
-@media (max-width: 575.98px) {
-    .jd-landing-nav__inner {
-        padding: 0.6rem 0.85rem;
-    }
-    .jd-logo-title {
-        font-size: 1.15rem;
-    }
-    .jd-logo-gem {
-        width: 2rem;
-        height: 2rem;
-        font-size: 1rem;
-    }
-    .jd-hero-badge {
-        font-size: 0.74rem;
-        padding: 0.35rem 0.85rem;
-        max-width: 100%;
-        line-height: 1.35;
-        margin-bottom: 1.25rem;
-    }
-    .jd-hero-title {
-        font-size: clamp(1.75rem, 7.5vw, 2.25rem);
-        line-height: 1.2;
-        margin-bottom: 1rem;
-    }
-    .jd-hero-subtitle {
-        font-size: 0.92rem;
-        line-height: 1.55;
-        margin-bottom: 1.75rem;
-        padding: 0 0.25rem;
-    }
-    .jd-hero-ctas {
-        flex-direction: column;
-        width: 100%;
-        max-width: 340px;
-        margin: 0 auto 2rem;
-        gap: 0.75rem;
-    }
-    .jd-btn-lg {
-        width: 100%;
-        min-height: 46px;
-        font-size: 0.95rem;
-    }
-    .jd-hero-trust-bar {
-        gap: 0.75rem;
-        flex-direction: column;
-        align-items: center;
-        font-size: 0.82rem;
-    }
-    .jd-mockup-content {
-        padding: 1rem 0.85rem;
-    }
-    .jd-mockup-stat-card {
-        padding: 0.75rem 0.85rem;
-    }
-    .jd-mockup-stat-val {
-        font-size: 1.05rem;
-    }
-    .jd-mockup-stat-lbl {
-        font-size: 0.7rem;
-    }
+/* --------------------------------------------------------------------------
+   Dark Theme Fail-Safe Overrides
+   -------------------------------------------------------------------------- */
+.jd-landing-body .text-dark {
+    color: var(--jd-text-primary) !important;
 }
 
-@media (max-width: 380px) {
-    .jd-ticker-rates {
-        grid-template-columns: 1fr;
-    }
-    .jd-hero-title {
-        font-size: 1.6rem;
-    }
+.jd-landing-body .bg-light {
+    background: #241A11 !important;
+    color: var(--jd-text-secondary) !important;
 }
+
+.jd-landing-body .text-muted {
+    color: var(--jd-text-muted) !important;
+}
+
+.jd-landing-body .border-warning-subtle {
+    border-color: rgba(212, 175, 55, 0.3) !important;
+}
+
