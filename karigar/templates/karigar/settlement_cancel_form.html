@@ -1,64 +1,77 @@
 {% extends 'base.html' %}
 
-{% block title %}Cancel Settlement {{ settlement.settlement_number }} — JewelDesk{% endblock %}
+{% block title %}Cancel Settlement {{ settlement.settlement_number }} — JewelDesk Atelier{% endblock %}
 
 {% block page_title %}Cancel Settlement Voucher{% endblock %}
 
 {% block page_actions %}
-<a href="{% url 'karigar:settlement_detail' settlement.id %}" class="btn btn-outline-secondary btn-sm">
+<a href="{% url 'karigar:settlement_detail' settlement.id %}" class="jd-btn-ghost btn-sm">
     <i class="bi bi-arrow-left me-1"></i> Back to Voucher
 </a>
 {% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-6">
-        <div class="card border-danger shadow-sm">
-            <div class="card-header bg-danger text-white py-3">
-                <h6 class="mb-0 fw-bold"><i class="bi bi-exclamation-triangle me-2"></i> Confirm Settlement Cancellation</h6>
-            </div>
-            <div class="card-body p-4">
-                <p class="text-danger fw-semibold">
-                    Warning: Cancelling voucher <strong>{{ settlement.settlement_number }}</strong> will permanently mark it as Cancelled and reverse all payment amounts credited to linked work assignments.
-                </p>
-
-                <div class="bg-light p-3 rounded mb-4 small">
-                    <div class="d-flex justify-content-between mb-1">
-                        <span class="text-muted">Artisan:</span>
-                        <span class="fw-bold">{{ settlement.karigar.name }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-1">
-                        <span class="text-muted">Settlement Amount:</span>
-                        <span class="fw-bold text-success">₹{{ settlement.amount|floatformat:2 }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span class="text-muted">Payment Date:</span>
-                        <span>{{ settlement.payment_date|date:"d M Y" }}</span>
+<div class="jd-canvas">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="jd-card p-4 p-md-5 text-center" style="border: 1px solid rgba(239, 68, 68, 0.35); box-shadow: 0 16px 48px rgba(239, 68, 68, 0.08);">
+                <div class="mb-4">
+                    <div style="width: 72px; height: 72px; border-radius: 50%; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); display: inline-flex; align-items: center; justify-content: center; color: #f87171; font-size: 2rem;">
+                        <i class="bi bi-exclamation-triangle"></i>
                     </div>
                 </div>
 
-                <form method="post" novalidate>
+                <div class="jd-badge mb-2" style="background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3);">Voucher Reversal</div>
+                <h3 class="font-serif fw-bold text-white mb-2" style="font-family: 'Cinzel', serif;">Cancel Settlement Voucher?</h3>
+                <p class="text-muted small mb-4">
+                    Cancelling voucher <strong class="text-white">{{ settlement.settlement_number }}</strong> will permanently mark it as Cancelled and reverse all payment amounts credited to linked work assignments.
+                </p>
+
+                <div class="p-3 rounded-3 text-start mb-4" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(236, 200, 106, 0.12);">
+                    <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
+                        <span class="text-muted small">Artisan:</span>
+                        <span class="text-white fw-bold">{{ settlement.karigar.name }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
+                        <span class="text-muted small">Settlement Amount:</span>
+                        <span class="text-success font-monospace fw-bold">₹{{ settlement.amount|floatformat:2 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1">
+                        <span class="text-muted small">Payment Date:</span>
+                        <span class="text-light">{{ settlement.payment_date|date:"d M Y" }}</span>
+                    </div>
+                </div>
+
+                <form method="post" novalidate class="text-start">
                     {% csrf_token %}
                     <div class="mb-4">
-                        <label class="form-label small fw-semibold required">Reason for Cancellation *</label>
+                        <label class="form-label text-gold small fw-bold">Reason for Cancellation <span class="text-danger">*</span></label>
                         {{ form.cancellation_reason }}
                         {% if form.cancellation_reason.errors %}
                         <div class="text-danger small mt-1">{{ form.cancellation_reason.errors.0 }}</div>
                         {% endif %}
-                        <div class="form-text small text-muted">This reason will be recorded permanently in the audit history.</div>
+                        <div class="form-text small text-muted">This justification will be permanently stored in the audit trail.</div>
                     </div>
 
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-danger">
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="{% url 'karigar:settlement_detail' settlement.id %}" class="jd-btn-ghost">
+                            Keep Voucher
+                        </a>
+                        <button type="submit" class="jd-btn-danger-ghost" style="background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #fee2e2;">
                             <i class="bi bi-x-circle me-1"></i> Confirm &amp; Cancel Settlement
                         </button>
-                        <a href="{% url 'karigar:settlement_detail' settlement.id %}" class="btn btn-outline-secondary">
-                            Abort
-                        </a>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('has-atelier-suite');
+    const pc = document.getElementById('page-content');
+    if (pc) pc.classList.add('jd-active');
+});
+</script>
 {% endblock %}

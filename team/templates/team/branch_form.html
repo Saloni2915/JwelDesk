@@ -1,49 +1,57 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}{{ form_title }} — JewelDesk{% endblock %}
+{% block title %}{{ form_title }} — JewelDesk Atelier{% endblock %}
 {% block page_title %}{{ form_title }}{% endblock %}
 
 {% block page_actions %}
-  <a href="{% url 'team:branch_list' %}" class="btn btn-outline-secondary btn-sm" id="btn-back-branches">
+  <a href="{% url 'team:branch_list' %}" class="jd-btn-ghost btn-sm" id="btn-back-branches">
     <i class="bi bi-arrow-left me-1"></i> Back to Branches
   </a>
 {% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-lg-7">
-    <div class="card shadow-sm">
-      <div class="card-header bg-white">
-        <h5 class="mb-0 fw-semibold">
-          <i class="bi bi-shop me-2 text-primary"></i>Branch Information
-        </h5>
-      </div>
+<div class="jd-canvas">
+  <!-- Header -->
+  <div class="jd-header">
+    <div>
+      <div class="jd-badge"><i class="bi bi-shop me-1"></i> Showroom Outlet Setup</div>
+      <h1 class="jd-title">{{ form_title }}</h1>
+      <p class="jd-subtitle">Configure branch showroom identity, contact numbers, and retail vault activation.</p>
+    </div>
+    <div>
+      <a href="{% url 'team:branch_list' %}" class="jd-btn-ghost">
+        <i class="bi bi-arrow-left me-1"></i> Cancel & Back
+      </a>
+    </div>
+  </div>
 
-      <div class="card-body">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="jd-card p-4 p-md-5">
         <form method="post" id="branch-form" novalidate>
           {% csrf_token %}
 
           {% if form.non_field_errors %}
-          <div class="alert alert-danger">
+          <div class="alert alert-danger py-2 mb-4" style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5;">
             {% for error in form.non_field_errors %}{{ error }}{% endfor %}
           </div>
           {% endif %}
 
-          <div class="mb-3">
-            <label for="{{ form.name.id_for_label }}" class="form-label fw-medium">
-              Branch Name <span class="text-danger">*</span>
+          <div class="mb-4">
+            <label for="{{ form.name.id_for_label }}" class="form-label text-gold small fw-bold">
+              Branch Outlet Name <span class="text-danger">*</span>
             </label>
             {{ form.name }}
             {% if form.name.errors %}
               <div class="text-danger small mt-1">{{ form.name.errors|join:", " }}</div>
             {% endif %}
-            <div class="form-text">e.g. Main Showroom, City Centre Branch, Central Vault</div>
+            <div class="form-text small text-muted mt-1">e.g. Flagship Atelier Showroom, High Street Branch, Central Bullion Vault</div>
           </div>
 
-          <div class="mb-3">
-            <label for="{{ form.phone.id_for_label }}" class="form-label fw-medium">
-              Contact Phone
+          <div class="mb-4">
+            <label for="{{ form.phone.id_for_label }}" class="form-label text-gold small fw-bold">
+              Outlet Contact Phone
             </label>
             {{ form.phone }}
             {% if form.phone.errors %}
@@ -51,9 +59,9 @@
             {% endif %}
           </div>
 
-          <div class="mb-3">
-            <label for="{{ form.address.id_for_label }}" class="form-label fw-medium">
-              Address
+          <div class="mb-4">
+            <label for="{{ form.address.id_for_label }}" class="form-label text-gold small fw-bold">
+              Physical Location &amp; Address
             </label>
             {{ form.address }}
             {% if form.address.errors %}
@@ -61,22 +69,22 @@
             {% endif %}
           </div>
 
-          <div class="mb-4">
-            <div class="form-check form-switch">
+          <div class="mb-5">
+            <div class="form-check form-switch p-3 rounded-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
               <input type="checkbox" name="is_active" class="form-check-input" id="{{ form.is_active.id_for_label }}"
                      {% if form.is_active.value %}checked{% endif %}>
-              <label class="form-check-label fw-medium" for="{{ form.is_active.id_for_label }}">
-                Active Branch
+              <label class="form-check-label text-light small fw-bold ms-2" for="{{ form.is_active.id_for_label }}">
+                Active Showroom Branch
               </label>
-              <div class="form-text">Inactive branches are hidden from selection when assigning employees or orders.</div>
+              <div class="form-text small text-muted ms-2 mt-1">Inactive branches are hidden from selection when assigning employees or orders.</div>
             </div>
           </div>
 
-          <div class="d-flex justify-content-between align-items-center">
-            <a href="{% url 'team:branch_list' %}" class="btn btn-secondary">
+          <div class="d-flex justify-content-end gap-3 pt-3 border-top" style="border-color: rgba(236,200,106,0.15) !important;">
+            <a href="{% url 'team:branch_list' %}" class="jd-btn-ghost">
               Cancel
             </a>
-            <button type="submit" class="btn btn-primary px-4" id="btn-save-branch">
+            <button type="submit" class="jd-btn-gold" id="btn-save-branch">
               <i class="bi bi-check2 me-1"></i> Save Branch
             </button>
           </div>
@@ -85,4 +93,12 @@
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('has-atelier-suite');
+    const pc = document.getElementById('page-content');
+    if (pc) pc.classList.add('jd-active');
+});
+</script>
 {% endblock %}

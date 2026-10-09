@@ -5,91 +5,133 @@
 {% block page_title %}Permissions: {{ employee.full_name }}{% endblock %}
 
 {% block page_actions %}
-  <a href="{% url 'team:employee_detail' employee.pk %}" class="btn btn-outline-secondary btn-sm" id="btn-back-detail">
+<a href="{% url 'team:employee_detail' employee.pk %}" class="jd-btn-ghost jd-btn-sm" id="btn-back-detail">
     <i class="bi bi-arrow-left me-1"></i> Back to Profile
-  </a>
+</a>
 {% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-lg-10">
-    <div class="card shadow-sm mb-4">
-      <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
-          <h5 class="mb-0 fw-semibold">
-            <i class="bi bi-shield-lock me-2 text-primary"></i>Fine-Grained Permissions
-          </h5>
-          <small class="text-muted">
-            Role: <strong>{{ employee.role.name }}</strong> | Employee ID: <strong>{{ employee.employee_id }}</strong>
-          </small>
+<div class="jd-canvas">
+
+    <!-- Atelier Header -->
+    <header class="jd-header">
+        <div class="jd-header-left">
+            <span class="jd-badge-pill">
+                <i class="bi bi-shield-check" aria-hidden="true"></i> Fine-Grained RBAC Security
+            </span>
+            <h1 class="jd-title">Module Authorization Matrix</h1>
+            <p class="jd-subtitle">
+                Customize granular module capabilities for <strong>{{ employee.full_name }}</strong> (Role: {{ employee.role.name }} &bull; Staff ID: {{ employee.employee_id }}).
+            </p>
         </div>
-        <div>
-          <form method="post" action="{% url 'team:employee_reset_permissions' employee.pk %}" class="d-inline"
-                onsubmit="return confirm('Reset all permissions to defaults for {{ employee.role.name }}? Any customizations will be overridden.');">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-outline-warning btn-sm" id="btn-reset-perms">
-              <i class="bi bi-arrow-counterclockwise me-1"></i> Reset to Role Defaults
-            </button>
-          </form>
-        </div>
-      </div>
-
-      <div class="card-body">
-        <p class="text-muted small mb-4">
-          Customize module-level access for <strong>{{ employee.full_name }}</strong>. Checked items allow the action, unchecked items restrict it.
-        </p>
-
-        <form method="post" id="permissions-form">
-          {% csrf_token %}
-
-          {% if form.errors %}
-          <div class="alert alert-danger">
-            Please correct the errors below.
-          </div>
-          {% endif %}
-
-          <div class="table-responsive">
-            <table class="table table-bordered align-middle text-center">
-              <thead class="table-light">
-                <tr>
-                  <th class="text-start ps-3" style="min-width: 180px;">Module</th>
-                  <th>View</th>
-                  <th>Add</th>
-                  <th>Edit</th>
-                  <th>Delete</th>
-                  <th>Export</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for row in rows %}
-                <tr>
-                  <td class="text-start ps-3 fw-semibold bg-light">
-                    {{ row.label }}
-                  </td>
-                  {% for act in row.actions %}
-                  <td>
-                    <div class="form-check d-flex justify-content-center m-0">
-                      {{ act.field }}
-                    </div>
-                  </td>
-                  {% endfor %}
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-
-          <div class="d-flex flex-column-reverse flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2 mt-4">
-            <a href="{% url 'team:employee_detail' employee.pk %}" class="btn btn-secondary">
-              Cancel
+        <div class="jd-header-actions">
+            <form method="post" action="{% url 'team:employee_reset_permissions' employee.pk %}" class="d-inline"
+                  onsubmit="return confirm('Reset all permissions to defaults for {{ employee.role.name }}? Any custom overrides will be replaced.');">
+                {% csrf_token %}
+                <button type="submit" class="jd-btn-ghost" id="btn-reset-perms" style="border-color: rgba(236, 200, 106, 0.4); color: var(--jd-gold);">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Reset to Role Defaults
+                </button>
+            </form>
+            <a href="{% url 'team:employee_detail' employee.pk %}" class="jd-btn-ghost">
+                <i class="bi bi-arrow-left" aria-hidden="true"></i> Back
             </a>
-            <button type="submit" class="btn btn-primary px-4" id="btn-save-perms">
-              <i class="bi bi-check2 me-1"></i> Save Permissions
-            </button>
-          </div>
-        </form>
-      </div>
+        </div>
+    </header>
+
+    <div class="jd-card mb-4">
+        <div class="jd-card-header">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 w-100">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="jd-kpi-icon" style="width: 36px; height: 36px; font-size: 1.1rem; color: var(--jd-gold); background: rgba(236, 200, 106, 0.12); border: 1px solid rgba(236, 200, 106, 0.3);">
+                        <i class="bi bi-sliders"></i>
+                    </div>
+                    <div>
+                        <h2 class="jd-card-title mb-0">Granular Access Privileges</h2>
+                        <small class="text-muted">Checked items grant action permissions; unchecked items restrict operation</small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="jd-stage-pill jd-stage-active">Custom Overrides Active</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="jd-card-body p-0">
+            <form method="post" id="permissions-form">
+                {% csrf_token %}
+
+                {% if form.errors %}
+                <div class="p-3 m-3 alert alert-danger d-flex align-items-center gap-2" role="alert" style="background: rgba(220, 53, 69, 0.15); border: 1px solid rgba(220, 53, 69, 0.35); color: #f87171;">
+                    <i class="bi bi-exclamation-octagon-fill fs-5"></i>
+                    <div>Please correct the errors indicated below.</div>
+                </div>
+                {% endif %}
+
+                <div class="table-responsive">
+                    <table class="jd-table align-middle text-center mb-0">
+                        <thead>
+                            <tr>
+                                <th class="text-start ps-4" style="min-width: 200px;">Module / Capability</th>
+                                <th style="width: 14%;">View</th>
+                                <th style="width: 14%;">Add</th>
+                                <th style="width: 14%;">Edit</th>
+                                <th style="width: 14%;">Delete</th>
+                                <th style="width: 14%;">Export</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in rows %}
+                            <tr>
+                                <td class="text-start ps-4 fw-semibold" style="color: var(--jd-ivory);">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-folder2 text-warning"></i>
+                                        <span>{{ row.label }}</span>
+                                    </div>
+                                </td>
+                                {% for act in row.actions %}
+                                <td>
+                                    <div class="d-flex justify-content-center m-0">
+                                        {{ act.field }}
+                                    </div>
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="p-4 d-flex flex-column-reverse flex-sm-row justify-content-end gap-3 border-top" style="border-color: rgba(236, 200, 106, 0.15) !important;">
+                    <a href="{% url 'team:employee_detail' employee.pk %}" class="jd-btn-ghost text-center">
+                        Cancel
+                    </a>
+                    <button type="submit" class="jd-btn-gold" id="btn-save-perms">
+                        <i class="bi bi-check2-circle me-1"></i> Save Permissions
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-  </div>
+
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('has-atelier-suite');
+    const pc = document.getElementById('page-content');
+    if (pc) pc.classList.add('jd-active');
+
+    // Make permission checkboxes responsive and gold-accented
+    const form = document.getElementById('permissions-form');
+    if (form) {
+        form.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.classList.add('form-check-input');
+            cb.style.cursor = 'pointer';
+            cb.style.width = '1.25rem';
+            cb.style.height = '1.25rem';
+            cb.style.accentColor = 'var(--jd-gold)';
+        });
+    }
+});
+</script>
 {% endblock %}

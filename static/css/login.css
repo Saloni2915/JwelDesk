@@ -6,20 +6,20 @@
    0. Independent CSS Custom Properties (Theme Tokens)
    -------------------------------------------------------------------------- */
 :root {
-    --bg-primary: #0e141f;
-    --bg-secondary: #121824;
-    --surface: #151d2c;
-    --surface-alt: rgba(255, 255, 255, 0.05);
-    --surface-hover: rgba(255, 255, 255, 0.08);
-    --text-primary: #f1f5f9;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
-    --border: rgba(255, 255, 255, 0.1);
-    --accent: #c59b27;
-    --accent-hover: #e0b43a;
-    --on-accent: #1a2232;
-    --input-bg: #0e1420;
-    --input-border: rgba(255, 255, 255, 0.14);
+    --bg-primary: #141009;
+    --bg-secondary: #1e180d;
+    --surface: #221c10;
+    --surface-alt: rgba(245, 206, 107, 0.08);
+    --surface-hover: rgba(245, 206, 107, 0.14);
+    --text-primary: #fef9ed;
+    --text-secondary: #d6caa8;
+    --text-muted: #9e9171;
+    --border: rgba(245, 206, 107, 0.22);
+    --accent: #e5b338;
+    --accent-hover: #f3ca58;
+    --on-accent: #141009;
+    --input-bg: #1a140b;
+    --input-border: rgba(245, 206, 107, 0.28);
     --danger: #ef4444;
 }
 
@@ -45,17 +45,17 @@
     --bg-primary: #141009;
     --bg-secondary: #1e180d;
     --surface: #221c10;
-    --surface-alt: rgba(245, 206, 107, 0.06);
-    --surface-hover: rgba(245, 206, 107, 0.12);
+    --surface-alt: rgba(245, 206, 107, 0.08);
+    --surface-hover: rgba(245, 206, 107, 0.14);
     --text-primary: #fef9ed;
     --text-secondary: #d6caa8;
     --text-muted: #9e9171;
-    --border: rgba(245, 206, 107, 0.2);
+    --border: rgba(245, 206, 107, 0.22);
     --accent: #e5b338;
     --accent-hover: #f3ca58;
     --on-accent: #141009;
     --input-bg: #1a140b;
-    --input-border: rgba(245, 206, 107, 0.25);
+    --input-border: rgba(245, 206, 107, 0.28);
     --danger: #ef4444;
 }
 
@@ -71,13 +71,13 @@ body.jd-login-page {
     padding: 0;
     min-height: 100vh;
     min-height: 100dvh;
-    background-color: #0c1017;
-    background-image: linear-gradient(135deg, rgba(12, 16, 23, 0.88), rgba(18, 24, 36, 0.82)), url("../images/branding/login_background.jpg");
+    background-color: #141009;
+    background-image: linear-gradient(135deg, rgba(20, 15, 9, 0.92), rgba(28, 20, 12, 0.88)), url("../images/branding/login_background.jpg");
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
     background-attachment: fixed;
-    color: var(--text-primary, #f1f5f9);
+    color: var(--text-primary, #fef9ed);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -146,8 +146,8 @@ img {
 .jd-login-header {
     width: 100%;
     padding: 1.15rem 1.75rem;
-    border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
-    background: rgba(18, 24, 36, 0.75);
+    border-bottom: 1px solid var(--border, rgba(245, 206, 107, 0.22));
+    background: rgba(20, 16, 9, 0.88);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     transition: background-color 0.25s ease, border-color 0.25s ease;
@@ -431,9 +431,9 @@ img {
     position: relative;
     border-radius: 1.1rem;
     overflow: hidden;
-    background: #121824;
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
-    box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.45);
+    background: #1a140b;
+    border: 1px solid var(--border, rgba(245, 206, 107, 0.22));
+    box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.55);
     width: 100%;
     max-width: 100%;
 }
@@ -464,7 +464,7 @@ img {
 .jd-showcase-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(14, 20, 31, 0.2) 0%, rgba(14, 20, 31, 0.85) 100%);
+    background: linear-gradient(180deg, rgba(20, 16, 9, 0.2) 0%, rgba(20, 16, 9, 0.90) 100%);
 }
 
 .jd-showcase-badge {
@@ -474,13 +474,13 @@ img {
     right: 1.25rem;
     display: flex;
     align-items: center;
-    background: rgba(18, 24, 36, 0.88);
+    background: rgba(28, 22, 13, 0.92);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(197, 155, 39, 0.35);
+    border: 1px solid rgba(229, 179, 56, 0.35);
     border-radius: 0.75rem;
     padding: 0.75rem 1rem;
-    color: #f1f5f9;
+    color: #fef9ed;
 }
 
 .jd-showcase-badge .fw-semibold {
@@ -505,13 +505,13 @@ img {
 .jd-login-card {
     width: 100%;
     max-width: 440px;
-    background: rgba(21, 29, 44, 0.94);
+    background: rgba(34, 28, 16, 0.94);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+    border: 1px solid var(--border, rgba(245, 206, 107, 0.25));
     border-radius: 1.25rem;
     padding: clamp(1.75rem, 3vw, 2.5rem);
-    box-shadow: 0 24px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(197, 155, 39, 0.12);
+    box-shadow: 0 24px 50px -12px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(229, 179, 56, 0.16);
     transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 

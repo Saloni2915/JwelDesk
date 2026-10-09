@@ -1,210 +1,234 @@
 {% extends 'base.html' %}
 
-{% block title %}{% if is_edit %}Edit {{ order.order_number }}{% else %}New Custom Order{% endif %} — JewelDesk{% endblock %}
+{% block title %}{% if is_edit %}Edit {{ order.order_number }}{% else %}New Bespoke Order{% endif %} — JewelDesk Atelier{% endblock %}
 
 {% block page_title %}{{ page_title }}{% endblock %}
 
-{% block page_actions %}
-<a href="{% if is_edit %}{% url 'custom_orders:custom_order_detail' order.id %}{% else %}{% url 'custom_orders:custom_order_list' %}{% endif %}" class="btn btn-outline-secondary btn-sm">
-    <i class="bi bi-arrow-left me-1"></i> Back
-</a>
-{% endblock %}
-
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-10">
-        <div class="card">
-            <div class="card-header bg-white border-bottom py-3">
-                <h6 class="mb-0 fw-semibold text-dark">
-                    <i class="bi bi-hammer me-2"></i> Custom Order Details
-                </h6>
-            </div>
-            <div class="card-body p-4">
+<div class="jd-canvas">
+    <!-- Header -->
+    <div class="jd-header">
+        <div>
+            <div class="jd-badge"><i class="bi bi-hammer me-1"></i> Bespoke Atelier Creation</div>
+            <h1 class="jd-title">{% if is_edit %}Edit {{ order.order_number }}{% else %}New Bespoke Order{% endif %}</h1>
+            <p class="jd-subtitle">Configure customer specifications, CAD drawings, metals, and real-time live bullion pricing.</p>
+        </div>
+        <div>
+            <a href="{% if is_edit %}{% url 'custom_orders:custom_order_detail' order.id %}{% else %}{% url 'custom_orders:custom_order_list' %}{% endif %}" class="jd-btn-ghost">
+                <i class="bi bi-arrow-left me-1"></i> Cancel & Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Form Container -->
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="jd-card p-4 p-md-5">
                 <form method="post" enctype="multipart/form-data" novalidate>
                     {% csrf_token %}
 
                     {% if form.non_field_errors %}
-                    <div class="alert alert-danger py-2">
+                    <div class="alert alert-danger py-2 mb-4" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5;">
                         {% for error in form.non_field_errors %}
                         <small class="d-block">{{ error }}</small>
                         {% endfor %}
                     </div>
                     {% endif %}
 
-                    <h6 class="fw-semibold text-dark mb-3">Customer</h6>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-12">
-                            <label for="{{ form.customer.id_for_label }}" class="form-label">
-                                Customer <span class="text-danger">*</span>
-                            </label>
-                            {{ form.customer }}
-                            {% if form.customer.errors %}
-                            <div class="text-danger small mt-1">{{ form.customer.errors.0 }}</div>
-                            {% endif %}
-                            <div class="form-text">
-                                Don't see the customer? <a href="{% url 'customer_add' %}" target="_blank">Add Customer</a>
+                    <!-- Section: Patron -->
+                    <div class="mb-5">
+                        <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
+                            <span class="text-gold fw-bold"><i class="bi bi-person-circle me-1"></i> Patron Details</span>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label for="{{ form.customer.id_for_label }}" class="form-label text-gold small fw-bold">
+                                    Customer Patron <span class="text-danger">*</span>
+                                </label>
+                                {{ form.customer }}
+                                {% if form.customer.errors %}
+                                <div class="text-danger small mt-1">{{ form.customer.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text small text-muted mt-1">
+                                    Patron not in directory yet? <a href="{% url 'customer_add' %}" target="_blank" class="text-gold text-decoration-none"><i class="bi bi-plus"></i> Register New Customer</a>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <h6 class="fw-semibold text-dark mb-3">Jewellery Design</h6>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-6">
-                            <label for="{{ form.category.id_for_label }}" class="form-label">
-                                Jewellery Type <span class="text-danger">*</span>
-                            </label>
-                            {{ form.category }}
-                            {% if form.category.errors %}
-                            <div class="text-danger small mt-1">{{ form.category.errors.0 }}</div>
-                            {% endif %}
+                    <!-- Section: Design & Reference -->
+                    <div class="mb-5">
+                        <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
+                            <span class="text-gold fw-bold"><i class="bi bi-gem me-1"></i> Design & CAD Specifications</span>
                         </div>
-                        <div class="col-md-6">
-                            <label for="{{ form.reference_image.id_for_label }}" class="form-label">
-                                Reference Photo
-                            </label>
-                            {{ form.reference_image }}
-                            {% if form.reference_image.errors %}
-                            <div class="text-danger small mt-1">{{ form.reference_image.errors.0 }}</div>
-                            {% endif %}
-                            {% if is_edit and order.reference_image %}
-                            <div class="form-text">
-                                Currently: <a href="{{ order.reference_image.url }}" target="_blank">view uploaded file</a>
-                                (uploading a new file replaces it).
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.category.id_for_label }}" class="form-label text-gold small fw-bold">
+                                    Jewellery Type <span class="text-danger">*</span>
+                                </label>
+                                {{ form.category }}
+                                {% if form.category.errors %}
+                                <div class="text-danger small mt-1">{{ form.category.errors.0 }}</div>
+                                {% endif %}
                             </div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-12">
-                            <label for="{{ form.design_description.id_for_label }}" class="form-label">
-                                Design Description <span class="text-danger">*</span>
-                            </label>
-                            {{ form.design_description }}
-                            {% if form.design_description.errors %}
-                            <div class="text-danger small mt-1">{{ form.design_description.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <h6 class="fw-semibold text-dark mb-3">Metal &amp; Weight</h6>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-6">
-                            <label for="{{ form.metal_type.id_for_label }}" class="form-label">
-                                Metal Type <span class="text-danger">*</span>
-                            </label>
-                            {{ form.metal_type }}
-                            {% if form.metal_type.errors %}
-                            <div class="text-danger small mt-1">{{ form.metal_type.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-6">
-                            <label for="{{ form.purity.id_for_label }}" class="form-label">
-                                Purity <span class="text-danger">*</span>
-                            </label>
-                            {{ form.purity }}
-                            {% if form.purity.errors %}
-                            <div class="text-danger small mt-1">{{ form.purity.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-6">
-                            <label for="{{ form.approx_gross_weight.id_for_label }}" class="form-label">
-                                Approx. Gross Weight (g) <span class="text-danger">*</span>
-                            </label>
-                            {{ form.approx_gross_weight }}
-                            {% if form.approx_gross_weight.errors %}
-                            <div class="text-danger small mt-1">{{ form.approx_gross_weight.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-6">
-                            <label for="{{ form.approx_net_weight.id_for_label }}" class="form-label">
-                                Approx. Net Weight (g) <span class="text-danger">*</span>
-                            </label>
-                            {{ form.approx_net_weight }}
-                            {% if form.approx_net_weight.errors %}
-                            <div class="text-danger small mt-1">{{ form.approx_net_weight.errors.0 }}</div>
-                            {% endif %}
+                            <div class="col-md-6">
+                                <label for="{{ form.reference_image.id_for_label }}" class="form-label text-gold small fw-bold">
+                                    Reference Photo / CAD Drawing
+                                </label>
+                                {{ form.reference_image }}
+                                {% if form.reference_image.errors %}
+                                <div class="text-danger small mt-1">{{ form.reference_image.errors.0 }}</div>
+                                {% endif %}
+                                {% if is_edit and order.reference_image %}
+                                <div class="form-text small text-muted mt-1">
+                                    Current attachment: <a href="{{ order.reference_image.url }}" target="_blank" class="text-gold">view file</a> (uploading replaces it).
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-12">
+                                <label for="{{ form.design_description.id_for_label }}" class="form-label text-gold small fw-bold">
+                                    Detailed Design Description <span class="text-danger">*</span>
+                                </label>
+                                {{ form.design_description }}
+                                {% if form.design_description.errors %}
+                                <div class="text-danger small mt-1">{{ form.design_description.errors.0 }}</div>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
 
-                    <h6 class="fw-semibold text-dark mb-3">Price &amp; Delivery</h6>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-6">
-                            <label for="{{ form.making_charge.id_for_label }}" class="form-label">
-                                Est. Making Charge (₹)
-                            </label>
-                            {{ form.making_charge }}
-                            {% if form.making_charge.errors %}
-                            <div class="text-danger small mt-1">{{ form.making_charge.errors.0 }}</div>
-                            {% endif %}
+                    <!-- Section: Metal & Weight -->
+                    <div class="mb-5">
+                        <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
+                            <span class="text-gold fw-bold"><i class="bi bi-minecart-loaded me-1"></i> Precious Metal & Purity</span>
                         </div>
-                        <div class="col-md-6">
-                            <label for="{{ form.estimated_price.id_for_label }}" class="form-label d-flex justify-content-between align-items-center">
-                                <span>Estimated Total Price (₹) <span class="text-danger">*</span></span>
-                                <button type="button" class="btn btn-sm btn-link p-0 text-warning text-decoration-none fw-bold" onclick="calculateCustomOrderEstimate()">
-                                    <i class="bi bi-magic me-1"></i> Calculate Estimate
-                                </button>
-                            </label>
-                            {{ form.estimated_price }}
-                            {% if form.estimated_price.errors %}
-                            <div class="text-danger small mt-1">{{ form.estimated_price.errors.0 }}</div>
-                            {% endif %}
-                            <div class="form-text small" id="co-estimate-hint">Inclusive of metal, making &amp; 3% GST.</div>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="{{ form.customer_budget.id_for_label }}" class="form-label">
-                                Customer Budget (₹)
-                            </label>
-                            {{ form.customer_budget }}
-                            {% if form.customer_budget.errors %}
-                            <div class="text-danger small mt-1">{{ form.customer_budget.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-6">
-                            <label for="{{ form.advance_amount.id_for_label }}" class="form-label">
-                                Advance Received (₹)
-                            </label>
-                            {{ form.advance_amount }}
-                            {% if form.advance_amount.errors %}
-                            <div class="text-danger small mt-1">{{ form.advance_amount.errors.0 }}</div>
-                            {% endif %}
-                            <div class="form-text">Remaining amount is calculated automatically.</div>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="{{ form.expected_delivery_date.id_for_label }}" class="form-label">
-                                Expected Delivery Date
-                            </label>
-                            {{ form.expected_delivery_date }}
-                            {% if form.expected_delivery_date.errors %}
-                            <div class="text-danger small mt-1">{{ form.expected_delivery_date.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-6">
-                            <label for="{{ form.actual_delivery_date.id_for_label }}" class="form-label">
-                                Actual Delivery Date
-                            </label>
-                            {{ form.actual_delivery_date }}
-                            {% if form.actual_delivery_date.errors %}
-                            <div class="text-danger small mt-1">{{ form.actual_delivery_date.errors.0 }}</div>
-                            {% endif %}
-                            <div class="form-text">Leave empty until delivered.</div>
-                        </div>
-                        <div class="col-md-12">
-                            <label for="{{ form.notes.id_for_label }}" class="form-label">
-                                Notes
-                            </label>
-                            {{ form.notes }}
-                            {% if form.notes.errors %}
-                            <div class="text-danger small mt-1">{{ form.notes.errors.0 }}</div>
-                            {% endif %}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.metal_type.id_for_label }}" class="form-label text-gold small fw-bold">
+                                    Metal Alloy <span class="text-danger">*</span>
+                                </label>
+                                {{ form.metal_type }}
+                                {% if form.metal_type.errors %}
+                                <div class="text-danger small mt-1">{{ form.metal_type.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.purity.id_for_label }}" class="form-label text-gold small fw-bold">
+                                    Purity Hallmark <span class="text-danger">*</span>
+                                </label>
+                                {{ form.purity }}
+                                {% if form.purity.errors %}
+                                <div class="text-danger small mt-1">{{ form.purity.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.approx_gross_weight.id_for_label }}" class="form-label text-gold small fw-bold">
+                                    Approx. Gross Weight (g) <span class="text-danger">*</span>
+                                </label>
+                                {{ form.approx_gross_weight }}
+                                {% if form.approx_gross_weight.errors %}
+                                <div class="text-danger small mt-1">{{ form.approx_gross_weight.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.approx_net_weight.id_for_label }}" class="form-label text-gold small fw-bold">
+                                    Approx. Net Metal Weight (g) <span class="text-danger">*</span>
+                                </label>
+                                {{ form.approx_net_weight }}
+                                {% if form.approx_net_weight.errors %}
+                                <div class="text-danger small mt-1">{{ form.approx_net_weight.errors.0 }}</div>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
 
-                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                    <!-- Section: Pricing & Schedule -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
+                            <span class="text-gold fw-bold"><i class="bi bi-cash-stack me-1"></i> Commercial Terms & Delivery</span>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.making_charge.id_for_label }}" class="form-label text-gold small fw-bold">
+                                    Making Charge (₹)
+                                </label>
+                                {{ form.making_charge }}
+                                {% if form.making_charge.errors %}
+                                <div class="text-danger small mt-1">{{ form.making_charge.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.estimated_price.id_for_label }}" class="form-label text-gold small fw-bold d-flex justify-content-between align-items-center">
+                                    <span>Estimated Total Price (₹) <span class="text-danger">*</span></span>
+                                    <button type="button" class="btn btn-sm p-0 text-gold fw-bold" onclick="calculateCustomOrderEstimate()" style="text-decoration: underline;">
+                                        <i class="bi bi-stars me-1"></i> Live Estimate
+                                    </button>
+                                </label>
+                                {{ form.estimated_price }}
+                                {% if form.estimated_price.errors %}
+                                <div class="text-danger small mt-1">{{ form.estimated_price.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text small mt-1 text-muted" id="co-estimate-hint">Inclusive of metal, craftsmanship &amp; 3% GST.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.customer_budget.id_for_label }}" class="form-label text-gold small fw-bold">
+                                    Patron Budget Target (₹)
+                                </label>
+                                {{ form.customer_budget }}
+                                {% if form.customer_budget.errors %}
+                                <div class="text-danger small mt-1">{{ form.customer_budget.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.advance_amount.id_for_label }}" class="form-label text-gold small fw-bold">
+                                    Advance Retainer Received (₹)
+                                </label>
+                                {{ form.advance_amount }}
+                                {% if form.advance_amount.errors %}
+                                <div class="text-danger small mt-1">{{ form.advance_amount.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text small text-muted">Remaining balance calculated upon billing.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.expected_delivery_date.id_for_label }}" class="form-label text-gold small fw-bold">
+                                    Target Delivery Date
+                                </label>
+                                {{ form.expected_delivery_date }}
+                                {% if form.expected_delivery_date.errors %}
+                                <div class="text-danger small mt-1">{{ form.expected_delivery_date.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.actual_delivery_date.id_for_label }}" class="form-label text-gold small fw-bold">
+                                    Actual Delivery Handover Date
+                                </label>
+                                {{ form.actual_delivery_date }}
+                                {% if form.actual_delivery_date.errors %}
+                                <div class="text-danger small mt-1">{{ form.actual_delivery_date.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text small text-muted">Leave empty until handover is executed.</div>
+                            </div>
+                            <div class="col-md-12">
+                                <label for="{{ form.notes.id_for_label }}" class="form-label text-gold small fw-bold">
+                                    Workshop & Karigar Notes
+                                </label>
+                                {{ form.notes }}
+                                {% if form.notes.errors %}
+                                <div class="text-danger small mt-1">{{ form.notes.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="d-flex justify-content-end gap-3 pt-4 border-top" style="border-color: rgba(236,200,106,0.15) !important;">
                         {% if is_edit %}
-                        <a href="{% url 'custom_orders:custom_order_detail' order.id %}" class="btn btn-outline-secondary">Cancel</a>
+                        <a href="{% url 'custom_orders:custom_order_detail' order.id %}" class="jd-btn-ghost">Cancel</a>
                         {% else %}
-                        <a href="{% url 'custom_orders:custom_order_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                        <a href="{% url 'custom_orders:custom_order_list' %}" class="jd-btn-ghost">Cancel</a>
                         {% endif %}
-                        <button type="submit" class="btn btn-dark">
-                            <i class="bi bi-check-lg me-1"></i> {% if is_edit %}Update Order{% else %}Create Order{% endif %}
+                        <button type="submit" class="jd-btn-gold">
+                            <i class="bi bi-check2-circle me-1"></i> {% if is_edit %}Save Changes{% else %}Commit Bespoke Order{% endif %}
                         </button>
                     </div>
                 </form>
@@ -212,9 +236,14 @@
         </div>
     </div>
 </div>
-</div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('has-atelier-suite');
+    const pc = document.getElementById('page-content');
+    if (pc) pc.classList.add('jd-active');
+});
+
 function calculateCustomOrderEstimate() {
     const payload = {
         metal_type: document.getElementById('id_metal_type') ? document.getElementById('id_metal_type').value : 'Gold',
@@ -227,7 +256,7 @@ function calculateCustomOrderEstimate() {
     };
 
     const hint = document.getElementById('co-estimate-hint');
-    if (hint) hint.innerHTML = '<span class="text-primary"><i class="bi bi-hourglass-split"></i> Calculating live estimate...</span>';
+    if (hint) hint.innerHTML = '<span class="text-gold"><i class="bi bi-hourglass-split"></i> Querying live bullion board rates...</span>';
 
     fetch("{% url 'api_calculate_price' %}", {
         method: 'POST',
@@ -242,15 +271,15 @@ function calculateCustomOrderEstimate() {
         if (data.ok && data.breakdown) {
             document.getElementById('id_estimated_price').value = data.breakdown.final_price.toFixed(2);
             if (hint) {
-                hint.innerHTML = `<span class="text-success"><i class="bi bi-check-circle"></i> Estimated at today board rate: Metal ₹${data.breakdown.metal_value.toFixed(2)} + Making ₹${data.breakdown.making_charge_amount.toFixed(2)} + GST ₹${data.breakdown.tax_amount.toFixed(2)} = <strong>₹${data.breakdown.final_price.toFixed(2)}</strong></span>`;
+                hint.innerHTML = `<span class="text-success"><i class="bi bi-check-circle"></i> Today's Rate Breakdown: Metal ₹${data.breakdown.metal_value.toFixed(2)} + Making ₹${data.breakdown.making_charge_amount.toFixed(2)} + GST ₹${data.breakdown.tax_amount.toFixed(2)} = <strong class="text-gold">₹${data.breakdown.final_price.toFixed(2)}</strong></span>`;
             }
         } else {
-            if (hint) hint.innerHTML = '<span class="text-danger">Unable to calculate estimate. Please check weights and purity.</span>';
+            if (hint) hint.innerHTML = '<span class="text-danger">Unable to calculate estimate. Please verify weight inputs and purity.</span>';
         }
     })
     .catch(err => {
         console.error('Estimate calc error:', err);
-        if (hint) hint.innerHTML = '<span class="text-danger">Failed to calculate estimate.</span>';
+        if (hint) hint.innerHTML = '<span class="text-danger">Failed to connect to bullion calculator.</span>';
     });
 }
 </script>

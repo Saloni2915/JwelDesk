@@ -1,36 +1,44 @@
 {% extends 'base.html' %}
 
-{% block title %}Pending &amp; Overdue Work — JewelDesk{% endblock %}
+{% block title %}Pending &amp; Overdue Work — JewelDesk Atelier{% endblock %}
 
 {% block page_title %}Pending &amp; Overdue Work Assignments{% endblock %}
 
-{% block page_actions %}
-<div class="d-flex gap-2">
-    <a href="{% url 'karigar:assignment_list' %}" class="btn btn-outline-dark btn-sm">
-        <i class="bi bi-list me-1"></i> All Assignments
-    </a>
-    <a href="{% url 'karigar:dashboard' %}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-speedometer2 me-1"></i> Dashboard
-    </a>
-</div>
-{% endblock %}
-
 {% block content %}
-<!-- Overdue Section -->
-<div class="card mb-4 border-danger shadow-sm">
-    <div class="card-header bg-danger text-white py-3 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-bold"><i class="bi bi-exclamation-octagon me-2"></i> Overdue Deadlines ({{ overdue_list.count }})</h6>
-        <span class="badge bg-white text-danger">Immediate Action Required</span>
+<div class="jd-canvas">
+    <!-- Header -->
+    <div class="jd-header">
+        <div>
+            <div class="jd-badge" style="background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3);">
+                <i class="bi bi-alarm me-1"></i> Workshop Time Watch
+            </div>
+            <h1 class="jd-title">Pending &amp; Overdue Assignments</h1>
+            <p class="jd-subtitle">Urgent artisan deadlines, delayed goldsmith deliveries, and work in progress tracking.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'karigar:assignment_list' %}" class="jd-btn-gold">
+                <i class="bi bi-list-task me-1"></i> All Assignments
+            </a>
+            <a href="{% url 'karigar:dashboard' %}" class="jd-btn-ghost">
+                <i class="bi bi-speedometer2 me-1"></i> Workshop Cockpit
+            </a>
+        </div>
     </div>
-    <div class="card-body p-0">
+
+    <!-- Overdue Section -->
+    <div class="jd-card mb-4 p-0 overflow-hidden" style="border: 1px solid rgba(239, 68, 68, 0.45); box-shadow: 0 16px 40px rgba(239, 68, 68, 0.08);">
+        <div class="p-3 px-4 d-flex justify-content-between align-items-center" style="background: rgba(239, 68, 68, 0.15); border-bottom: 1px solid rgba(239, 68, 68, 0.3);">
+            <h6 class="mb-0 fw-bold text-danger"><i class="bi bi-exclamation-octagon me-2"></i> Overdue Workshop Deadlines ({{ overdue_list.count }})</h6>
+            <span class="badge bg-danger text-white">Immediate Attention Required</span>
+        </div>
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light small">
+            <table class="jd-table">
+                <thead>
                     <tr>
                         <th>Job Ref</th>
                         <th>Artisan</th>
                         <th>Work Type</th>
-                        <th>Target Customer / Ref</th>
+                        <th>Target Customer / Item</th>
                         <th>Expected Date</th>
                         <th>Priority</th>
                         <th>Status</th>
@@ -39,39 +47,41 @@
                 </thead>
                 <tbody>
                     {% for asg in overdue_list %}
-                    <tr class="table-danger">
+                    <tr style="background: rgba(239, 68, 68, 0.06);">
                         <td>
                             <a href="{% url 'karigar:assignment_detail' asg.id %}" class="fw-bold font-monospace text-danger text-decoration-none">
                                 {{ asg.assignment_number }}
                             </a>
                         </td>
                         <td>
-                            <a href="{% url 'karigar:karigar_detail' asg.karigar.id %}" class="text-dark fw-bold text-decoration-none">
+                            <a href="{% url 'karigar:karigar_detail' asg.karigar.id %}" class="text-white fw-bold text-decoration-none">
                                 {{ asg.karigar.name }}
                             </a>
-                            <small class="text-muted d-block">{{ asg.karigar.mobile }}</small>
+                            <small class="text-muted font-monospace d-block">{{ asg.karigar.mobile }}</small>
                         </td>
-                        <td><span class="badge bg-light text-dark border">{{ asg.work_type }}</span></td>
+                        <td><span class="jd-tag">{{ asg.work_type }}</span></td>
                         <td>
-                            {% if asg.customer %}{{ asg.customer.name }} ({{ asg.customer.mobile }})
-                            {% elif asg.inventory_item %}Stock Piece: {{ asg.inventory_item.item_code }}
-                            {% else %}Showroom Piece{% endif %}
+                            {% if asg.customer %}<span class="text-light">{{ asg.customer.name }} ({{ asg.customer.mobile }})</span>
+                            {% elif asg.inventory_item %}<span class="text-light">Stock Piece: {{ asg.inventory_item.item_code }}</span>
+                            {% else %}<span class="text-muted">Showroom Piece</span>{% endif %}
                         </td>
-                        <td class="text-danger fw-bold">{{ asg.expected_completion_date|date:"d M Y" }}</td>
+                        <td class="text-danger fw-bold font-monospace">{{ asg.expected_completion_date|date:"d M Y" }}</td>
                         <td><span class="badge bg-danger">{{ asg.priority }}</span></td>
-                        <td><span class="badge bg-secondary">{{ asg.status }}</span></td>
+                        <td><span class="jd-stage-pill">{{ asg.status }}</span></td>
                         <td class="text-end pe-3">
-                            <a href="{% url 'karigar:assignment_detail' asg.id %}" class="btn btn-danger btn-sm py-0 px-2">Inspect</a>
-                            {% if user_perms.karigar.can_edit %}
-                            <a href="{% url 'karigar:assignment_receive' asg.id %}" class="btn btn-outline-success btn-sm py-0 px-2">Receive</a>
-                            {% endif %}
+                            <div class="d-flex justify-content-end gap-1">
+                                <a href="{% url 'karigar:assignment_detail' asg.id %}" class="jd-btn-danger-ghost btn-sm py-1 px-2">Inspect</a>
+                                {% if user_perms.karigar.can_edit %}
+                                <a href="{% url 'karigar:assignment_receive' asg.id %}" class="btn btn-sm py-1 px-2" style="background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); color: #6ee7b7;">Receive</a>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
                         <td colspan="8" class="text-center py-4 text-success fw-medium">
-                            <i class="bi bi-check-circle fs-3 d-block mb-1"></i>
-                            Excellent! There are no overdue jobs in the workshop.
+                            <i class="bi bi-check-circle fs-3 d-block mb-1 text-success"></i>
+                            Excellent! There are no overdue assignments in the workshop.
                         </td>
                     </tr>
                     {% endfor %}
@@ -79,17 +89,17 @@
             </table>
         </div>
     </div>
-</div>
 
-<!-- All Pending In-Progress Jobs -->
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-white py-3 border-bottom">
-        <h6 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2 text-dark"></i> Active Workshop Jobs (Assigned &amp; In-Progress)</h6>
-    </div>
-    <div class="card-body p-0">
+    <!-- All Pending In-Progress Jobs -->
+    <div class="jd-table-card">
+        <div class="p-4 border-bottom" style="border-color: rgba(236,200,106,0.12) !important;">
+            <h5 class="font-serif fw-bold text-white mb-0" style="font-family: 'Cinzel', serif;">
+                <i class="bi bi-clock-history text-gold me-2"></i> Active Workshop Jobs (Assigned &amp; In-Progress)
+            </h5>
+        </div>
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light small">
+            <table class="jd-table">
+                <thead>
                     <tr>
                         <th>Job Ref</th>
                         <th>Artisan</th>
@@ -106,17 +116,17 @@
                     {% for asg in pending_list %}
                     <tr>
                         <td>
-                            <a href="{% url 'karigar:assignment_detail' asg.id %}" class="fw-bold font-monospace text-decoration-none text-dark">
+                            <a href="{% url 'karigar:assignment_detail' asg.id %}" class="text-gold font-monospace fw-bold text-decoration-none">
                                 {{ asg.assignment_number }}
                             </a>
                         </td>
                         <td>
-                            <a href="{% url 'karigar:karigar_detail' asg.karigar.id %}" class="text-decoration-none text-dark fw-medium">
+                            <a href="{% url 'karigar:karigar_detail' asg.karigar.id %}" class="text-white fw-semibold text-decoration-none">
                                 {{ asg.karigar.name }}
                             </a>
                         </td>
-                        <td><span class="badge bg-light text-dark border">{{ asg.work_type }}</span></td>
-                        <td class="fw-semibold">{{ asg.net_weight_issued|floatformat:3 }} g</td>
+                        <td><span class="jd-tag">{{ asg.work_type }}</span></td>
+                        <td class="text-white font-monospace">{{ asg.net_weight_issued|floatformat:3 }} g</td>
                         <td class="text-muted small">{{ asg.issue_date|date:"d M Y" }}</td>
                         <td class="small">{{ asg.expected_completion_date|date:"d M Y"|default:"-" }}</td>
                         <td>
@@ -132,22 +142,24 @@
                         </td>
                         <td>
                             {% if asg.status == 'Assigned' %}
-                            <span class="badge bg-secondary">Assigned</span>
+                            <span class="jd-stage-pill" style="background: rgba(255,255,255,0.06); color: rgba(250,244,234,0.7); border: 1px solid rgba(255,255,255,0.15);">Assigned</span>
                             {% elif asg.status == 'In Progress' %}
-                            <span class="badge bg-info text-dark">In Progress</span>
+                            <span class="jd-stage-pill" style="background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.35);">In Progress</span>
                             {% elif asg.status == 'Completed' %}
-                            <span class="badge bg-primary">Completed</span>
+                            <span class="jd-stage-pill" style="background: rgba(168,85,247,0.15); color: #d8b4fe; border: 1px solid rgba(168,85,247,0.35);">Completed</span>
                             {% endif %}
                         </td>
                         <td class="text-end pe-3">
-                            <a href="{% url 'karigar:assignment_detail' asg.id %}" class="btn btn-outline-dark btn-sm py-0 px-2">
-                                Details
-                            </a>
-                            {% if user_perms.karigar.can_edit %}
-                            <a href="{% url 'karigar:assignment_receive' asg.id %}" class="btn btn-outline-success btn-sm py-0 px-2">
-                                Receive
-                            </a>
-                            {% endif %}
+                            <div class="d-flex justify-content-end gap-1">
+                                <a href="{% url 'karigar:assignment_detail' asg.id %}" class="jd-btn-ghost btn-sm py-1 px-2">
+                                    Details
+                                </a>
+                                {% if user_perms.karigar.can_edit %}
+                                <a href="{% url 'karigar:assignment_receive' asg.id %}" class="btn btn-sm py-1 px-2" style="background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); color: #6ee7b7;">
+                                    Receive
+                                </a>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
@@ -162,4 +174,12 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('has-atelier-suite');
+    const pc = document.getElementById('page-content');
+    if (pc) pc.classList.add('jd-active');
+});
+</script>
 {% endblock %}

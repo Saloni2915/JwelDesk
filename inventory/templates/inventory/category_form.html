@@ -1,65 +1,90 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}{{ page_title }} — JewelDesk{% endblock %}
+{% block title %}{{ page_title|default:"Edit Category" }} — JewelDesk Atelier{% endblock %}
 
-{% block page_title %}{{ page_title }}{% endblock %}
-
-{% block page_actions %}
-<a href="{% url 'category_list' %}" class="btn btn-outline-secondary btn-sm">
-    <i class="bi bi-arrow-left me-1"></i> Back to Categories
-</a>
+{% block extra_css %}
+<link href="{% static 'css/inventory_atelier.css' %}?v={% now "U" %}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-header bg-white border-bottom py-3">
-                <h6 class="mb-0 fw-semibold text-dark">
-                    <i class="bi bi-tag me-2"></i> Category Details
-                </h6>
-            </div>
-            <div class="card-body p-4">
-                <form method="post" novalidate>
-                    {% csrf_token %}
+<div class="jd-inv-canvas">
 
+    <div class="jd-inv-header">
+        <div class="jd-inv-title-wrap">
+            <h1><i class="bi bi-tag text-warning me-2"></i>{{ page_title|default:"Edit Category" }}</h1>
+            <p class="jd-inv-subtitle">Modify collection designation and catalog taxonomy</p>
+        </div>
+        <div class="jd-inv-header-actions">
+            <a href="{% url 'category_list' %}" class="jd-btn-ghost">
+                <i class="bi bi-arrow-left"></i> Back to Categories
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="jd-form-card">
+                <div class="jd-form-card-header">
+                    <h2>
+                        <i class="bi bi-pencil-square text-warning"></i>
+                        Category Specifications
+                    </h2>
+                </div>
+                <div class="jd-form-card-body">
                     {% if form.non_field_errors %}
-                    <div class="alert alert-danger py-2">
+                    <div class="alert alert-danger py-2 mb-3 bg-danger bg-opacity-20 border-danger text-light">
                         {% for error in form.non_field_errors %}
-                        <small class="d-block">{{ error }}</small>
+                        <div class="small"><i class="bi bi-exclamation-triangle-fill me-1"></i> {{ error }}</div>
                         {% endfor %}
                     </div>
                     {% endif %}
 
-                    <div class="mb-3">
-                        <label for="{{ form.name.id_for_label }}" class="form-label">
-                            Category Name <span class="text-danger">*</span>
-                        </label>
-                        {{ form.name }}
-                        {% if form.name.errors %}
-                        <div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>
-                        {% endif %}
-                    </div>
+                    <form method="post" id="catEditForm" novalidate>
+                        {% csrf_token %}
 
-                    <div class="mb-3">
-                        <label for="{{ form.description.id_for_label }}" class="form-label">
-                            Description
-                        </label>
-                        {{ form.description }}
-                        {% if form.description.errors %}
-                        <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>
-                        {% endif %}
-                    </div>
+                        <div class="mb-3">
+                            <label class="jd-field-label">Category Name <span class="text-danger">*</span></label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                            <div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
 
-                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-                        <a href="{% url 'category_list' %}" class="btn btn-outline-secondary">Cancel</a>
-                        <button type="submit" class="btn btn-dark">
-                            <i class="bi bi-check-lg me-1"></i> Update Category
-                        </button>
-                    </div>
-                </form>
+                        <div class="mb-4">
+                            <label class="jd-field-label">Description / Scope</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                            <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="jd-btn-gold flex-grow-1 py-2 fs-6">
+                                <i class="bi bi-check-circle-fill"></i> Update Category
+                            </button>
+                            <a href="{% url 'category_list' %}" class="jd-btn-ghost py-2">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
+
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.body.classList.add('has-inventory-suite');
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) mainContent.classList.add('jd-inv-active');
+        const pageContent = document.getElementById('page-content');
+        if (pageContent) pageContent.classList.add('jd-inv-active');
+
+        const inputs = document.querySelectorAll('#catEditForm input, #catEditForm textarea');
+        inputs.forEach(el => el.classList.add('jd-inv-input'));
+    });
+</script>
 {% endblock %}

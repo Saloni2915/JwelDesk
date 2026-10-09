@@ -1,33 +1,53 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Jewellery Categories — JewelDesk{% endblock %}
+{% block title %}Jewellery Categories & Collections — JewelDesk Atelier{% endblock %}
 
-{% block page_title %}Jewellery Categories{% endblock %}
-
-{% block page_actions %}
-<a href="{% url 'inventory_list' %}" class="btn btn-outline-secondary btn-sm">
-    <i class="bi bi-arrow-left me-1"></i> Back to Inventory
-</a>
+{% block extra_css %}
+<link href="{% static 'css/inventory_atelier.css' %}?v={% now "U" %}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
-<div class="row g-4">
-    <!-- Categories List Table -->
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header bg-white border-bottom py-3">
-                <h6 class="mb-0 fw-semibold text-dark">
-                    <i class="bi bi-tags me-1"></i> Existing Categories ({{ categories.count }})
-                </h6>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
+<div class="jd-inv-canvas">
+
+    <!-- 1. Header & Actions -->
+    <div class="jd-inv-header">
+        <div class="jd-inv-title-wrap">
+            <h1><i class="bi bi-tags text-warning me-2"></i>Jewellery Categories &amp; Collections</h1>
+            <p class="jd-inv-subtitle">Taxonomy management for showroom showcases, ring trays, necklace vaults &amp; loose gemstones</p>
+        </div>
+        <div class="jd-inv-header-actions">
+            <a href="{% url 'inventory_list' %}" class="jd-btn-gold">
+                <i class="bi bi-gem"></i> Inventory Register
+            </a>
+            <a href="{% url 'inventory_add' %}" class="jd-btn-ghost">
+                <i class="bi bi-plus-circle"></i> + Add Jewellery
+            </a>
+        </div>
+    </div>
+
+    <!-- 2. Main Content Grid -->
+    <div class="row g-4">
+
+        <!-- LEFT COLUMN: Categories Table -->
+        <div class="col-lg-8">
+            <div class="jd-inv-table-card">
+                <div class="jd-inv-table-header">
+                    <h2>
+                        <i class="bi bi-collection text-warning"></i>
+                        Active Showroom Categories
+                    </h2>
+                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 font-monospace">
+                        {{ categories.count }} Categories
+                    </span>
+                </div>
+                <div class="jd-inv-table-scroll">
+                    <table class="jd-inv-table">
+                        <thead>
                             <tr>
                                 <th>Category Name</th>
                                 <th>Description</th>
-                                <th>Items Count</th>
+                                <th>In Vault</th>
                                 <th class="text-end pe-3">Actions</th>
                             </tr>
                         </thead>
@@ -35,36 +55,38 @@
                             {% for cat in categories %}
                             <tr>
                                 <td>
-                                    <span class="fw-semibold text-dark">{{ cat.name }}</span>
+                                    <span class="fw-bold text-light fs-6">{{ cat.name }}</span>
                                 </td>
                                 <td>
                                     <small class="text-muted">{{ cat.description|default:"—"|truncatechars:60 }}</small>
                                 </td>
                                 <td>
-                                    <a href="{% url 'inventory_list' %}?category={{ cat.id }}" class="badge bg-light text-dark border text-decoration-none">
-                                        {{ cat.items_count }} items
+                                    <a href="{% url 'inventory_list' %}?category={{ cat.id }}" class="jd-tag-pill">
+                                        {{ cat.items_count }} piece(s)
                                     </a>
                                 </td>
                                 <td class="text-end pe-3">
-                                    <a href="{% url 'category_edit' cat.id %}" class="btn btn-outline-primary btn-sm py-0 px-2" title="Edit">
-                                        <i class="bi bi-pencil"></i> Edit
-                                    </a>
-                                    {% if cat.items_count == 0 %}
-                                    <a href="{% url 'category_delete' cat.id %}" class="btn btn-outline-danger btn-sm py-0 px-2" title="Delete">
-                                        <i class="bi bi-trash"></i> Delete
-                                    </a>
-                                    {% else %}
-                                    <button class="btn btn-outline-secondary btn-sm py-0 px-2" disabled title="Cannot delete: contains items">
-                                        <i class="bi bi-lock"></i>
-                                    </button>
-                                    {% endif %}
+                                    <div class="d-inline-flex gap-1">
+                                        <a href="{% url 'category_edit' cat.id %}" class="jd-tbl-btn" title="Edit Category">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        {% if cat.items_count == 0 %}
+                                        <a href="{% url 'category_delete' cat.id %}" class="jd-tbl-btn jd-tbl-btn-danger" title="Delete Category">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                        {% else %}
+                                        <span class="jd-tbl-btn text-muted opacity-50" title="Cannot delete: active items in vault">
+                                            <i class="bi bi-lock"></i>
+                                        </span>
+                                        {% endif %}
+                                    </div>
                                 </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="4" class="text-center py-4 text-muted">
-                                    <i class="bi bi-tags fs-3 d-block mb-2"></i>
-                                    No categories defined yet. Use the form on the right to add your first category.
+                                <td colspan="4" class="text-center py-5 text-muted">
+                                    <i class="bi bi-tags fs-2 d-block mb-2 opacity-50"></i>
+                                    No categories defined yet. Use the card on the right to create your first category.
                                 </td>
                             </tr>
                             {% endfor %}
@@ -73,46 +95,59 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Quick Add Category Form -->
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header bg-white border-bottom py-3">
-                <h6 class="mb-0 fw-semibold text-dark">
-                    <i class="bi bi-plus-circle me-1"></i> Add New Category
-                </h6>
-            </div>
-            <div class="card-body p-4">
-                <form method="post" action="{% url 'category_add' %}" novalidate>
-                    {% csrf_token %}
+        <!-- RIGHT COLUMN: Quick Add Category Form -->
+        <div class="col-lg-4">
+            <div class="jd-form-card">
+                <div class="jd-form-card-header">
+                    <h2>
+                        <i class="bi bi-plus-circle text-warning"></i>
+                        Add New Category
+                    </h2>
+                </div>
+                <div class="jd-form-card-body">
+                    <form method="post" action="{% url 'category_add' %}" id="quickCatForm" novalidate>
+                        {% csrf_token %}
 
-                    <div class="mb-3">
-                        <label for="{{ form.name.id_for_label }}" class="form-label">
-                            Category Name <span class="text-danger">*</span>
-                        </label>
-                        {{ form.name }}
-                        {% if form.name.errors %}
-                        <div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>
-                        {% endif %}
-                    </div>
+                        <div class="mb-3">
+                            <label class="jd-field-label">Category Name <span class="text-danger">*</span></label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                            <div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>
+                            {% endif %}
+                            <div class="jd-field-help">e.g. Bridal Necklaces, Solitaire Rings, Kada Bangles.</div>
+                        </div>
 
-                    <div class="mb-3">
-                        <label for="{{ form.description.id_for_label }}" class="form-label">
-                            Description
-                        </label>
-                        {{ form.description }}
-                        {% if form.description.errors %}
-                        <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>
-                        {% endif %}
-                    </div>
+                        <div class="mb-4">
+                            <label class="jd-field-label">Description / Scope</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                            <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>
+                            {% endif %}
+                        </div>
 
-                    <button type="submit" class="btn btn-dark w-100">
-                        <i class="bi bi-plus-lg me-1"></i> Save Category
-                    </button>
-                </form>
+                        <button type="submit" class="jd-btn-gold w-100 py-2 fs-6">
+                            <i class="bi bi-check-circle-fill"></i> Save Category
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
+
     </div>
+
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.body.classList.add('has-inventory-suite');
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) mainContent.classList.add('jd-inv-active');
+        const pageContent = document.getElementById('page-content');
+        if (pageContent) pageContent.classList.add('jd-inv-active');
+
+        const inputs = document.querySelectorAll('#quickCatForm input, #quickCatForm textarea');
+        inputs.forEach(el => el.classList.add('jd-inv-input'));
+    });
+</script>
 {% endblock %}

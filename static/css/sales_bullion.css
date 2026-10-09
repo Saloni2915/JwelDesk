@@ -1,0 +1,703 @@
+/* ==========================================================================
+   JewelDesk Sales & Old Gold Bullion Operations — Luxury Atelier Styles
+   Theme: Dark Roast Chocolate (#15130E, #20160E) & Champagne Gold (#ECC86A)
+   Responsive for Desktop/Laptops, Tablets, and Mobile Devices
+   ========================================================================== */
+
+:root,
+[data-theme="gold"] {
+    --jd-sb-bg: var(--jd-bg, #15130E);
+    --jd-sb-card: var(--jd-card, #20160E);
+    --jd-sb-card-header: var(--jd-card-header, #261B11);
+    --jd-sb-card-high: var(--jd-card-high, #2C2A24);
+    --jd-sb-card-highest: var(--jd-card-highest, #37352E);
+    --jd-sb-border: var(--jd-border, rgba(212, 175, 55, 0.28));
+    --jd-sb-border-strong: var(--jd-border-strong, rgba(212, 175, 55, 0.48));
+    --jd-sb-gold: var(--jd-gold, #ECC86A);
+    --jd-sb-gold-bright: var(--jd-gold-bright, #F5D77F);
+    --jd-sb-gold-dark: var(--jd-gold-dark, #B8860B);
+    --jd-sb-gold-glow: var(--jd-gold-glow, rgba(212, 175, 55, 0.16));
+    --jd-sb-ivory: var(--jd-ivory, #FAF4EA);
+    --jd-sb-ivory-dim: var(--jd-ivory-dim, #D4C5B0);
+    --jd-sb-muted: var(--jd-muted, #8E8271);
+    --jd-sb-table-th: var(--jd-table-th, #19120B);
+    --jd-sb-input-bg: var(--jd-input-bg, #14100A);
+    --jd-sb-card-bg: var(--jd-card, #20160E);
+    --jd-sb-header-bg: var(--jd-card-header, #261B11);
+    --jd-sb-voucher-bg: linear-gradient(145deg, #2B1D13 0%, #1F150D 100%);
+    --jd-sb-font-headline: 'Cinzel', 'Playfair Display', Georgia, serif;
+    --jd-sb-font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+[data-theme="dark"] {
+    --jd-sb-bg: var(--jd-bg, #0A0D14);
+    --jd-sb-card: var(--jd-card, #121620);
+    --jd-sb-card-header: var(--jd-card-header, #171D2A);
+    --jd-sb-card-high: var(--jd-card-high, #1C2332);
+    --jd-sb-card-highest: var(--jd-card-highest, #242D40);
+    --jd-sb-border: var(--jd-border, rgba(236, 200, 106, 0.22));
+    --jd-sb-border-strong: var(--jd-border-strong, rgba(236, 200, 106, 0.42));
+    --jd-sb-gold: var(--jd-gold, #ECC86A);
+    --jd-sb-gold-bright: var(--jd-gold-bright, #F5D77F);
+    --jd-sb-gold-dark: var(--jd-gold-dark, #B8860B);
+    --jd-sb-gold-glow: var(--jd-gold-glow, rgba(236, 200, 106, 0.16));
+    --jd-sb-ivory: var(--jd-ivory, #F1F5F9);
+    --jd-sb-ivory-dim: var(--jd-ivory-dim, #94A3B8);
+    --jd-sb-muted: var(--jd-muted, #64748B);
+    --jd-sb-table-th: var(--jd-table-th, #151B28);
+    --jd-sb-input-bg: var(--jd-input-bg, #0E121A);
+    --jd-sb-card-bg: var(--jd-card, #121620);
+    --jd-sb-header-bg: var(--jd-card-header, #171D2A);
+    --jd-sb-voucher-bg: linear-gradient(145deg, #161D2B 0%, #101520 100%);
+}
+
+[data-theme="light"] {
+    --jd-sb-bg: var(--jd-bg, #F7F5EF);
+    --jd-sb-card: var(--jd-card, #FFFFFF);
+    --jd-sb-card-header: var(--jd-card-header, #FAF7F2);
+    --jd-sb-card-high: var(--jd-card-high, #F1EDE4);
+    --jd-sb-card-highest: var(--jd-card-highest, #E8E2D5);
+    --jd-sb-border: var(--jd-border, rgba(180, 133, 22, 0.20));
+    --jd-sb-border-strong: var(--jd-border-strong, rgba(180, 133, 22, 0.42));
+    --jd-sb-gold: var(--jd-gold, #B48516);
+    --jd-sb-gold-bright: var(--jd-gold-bright, #C99A27);
+    --jd-sb-gold-dark: var(--jd-gold-dark, #8F660E);
+    --jd-sb-gold-glow: var(--jd-gold-glow, rgba(180, 133, 22, 0.14));
+    --jd-sb-ivory: var(--jd-ivory, #1C1917);
+    --jd-sb-ivory-dim: var(--jd-ivory-dim, #57534E);
+    --jd-sb-muted: var(--jd-muted, #8A7E72);
+    --jd-sb-table-th: var(--jd-table-th, #F5F0E6);
+    --jd-sb-input-bg: var(--jd-input-bg, #FFFFFF);
+    --jd-sb-card-bg: #FFFFFF;
+    --jd-sb-header-bg: #FAF7F2;
+    --jd-sb-voucher-bg: #FFFFFF;
+}
+
+/* Seamless atelier background overrides */
+body:has(.jd-sb-canvas),
+body.has-sales-suite,
+.jd-sb-canvas {
+    background-color: var(--jd-sb-bg) !important;
+    --bs-heading-color: var(--jd-sb-ivory) !important;
+    --bs-body-color: var(--jd-sb-ivory) !important;
+}
+
+.main-content:has(.jd-sb-canvas),
+.main-content.jd-sb-active,
+#page-content:has(.jd-sb-canvas) {
+    background-color: var(--jd-sb-bg) !important;
+}
+
+body:has(.jd-sb-canvas) .top-navbar,
+body.has-sales-suite .top-navbar {
+    background-color: var(--jd-navbar-bg) !important;
+    border-bottom: 1px solid var(--jd-border) !important;
+}
+
+body:has(.jd-sb-canvas) .sidebar,
+body.has-sales-suite .sidebar {
+    background-color: var(--jd-sidebar-bg) !important;
+    border-right: 1px solid var(--jd-border) !important;
+}
+
+/* Hide default page header to use luxury header */
+.main-content:has(.jd-sb-canvas) .page-header-wrapper,
+.main-content.jd-sb-active .page-header-wrapper {
+    display: none !important;
+}
+
+/* Canvas Wrapper */
+.jd-sb-canvas {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    color: var(--jd-sb-ivory);
+    font-family: var(--jd-sb-font-body);
+    box-sizing: border-box;
+    padding-bottom: max(2.5rem, env(safe-area-inset-bottom, 2.5rem));
+    overflow-x: clip;
+}
+
+/* --------------------------------------------------------------------------
+   1. Luxury Module Header & Action CTAs
+   -------------------------------------------------------------------------- */
+.jd-sb-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.jd-sb-title-wrap h1 {
+    font-family: var(--jd-sb-font-headline);
+    font-size: clamp(1.4rem, 2.6vw, 2rem);
+    font-weight: 700;
+    color: var(--jd-sb-ivory);
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.jd-sb-subtitle {
+    color: var(--jd-sb-ivory-dim);
+    font-size: 0.88rem;
+    margin: 0.35rem 0 0;
+}
+
+.jd-sb-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.jd-btn-gold {
+    background: var(--jd-btn-primary-bg, var(--jd-sb-gold));
+    border: 1px solid var(--jd-sb-gold);
+    color: var(--jd-btn-primary-color, #140D07) !important;
+    padding: 0.55rem 1.35rem;
+    font-size: 0.88rem;
+    font-weight: 700;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    box-shadow: 0 4px 16px var(--jd-sb-gold-glow);
+    transition: all 0.2s ease;
+}
+
+.jd-btn-gold:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px var(--jd-sb-gold-glow);
+    color: var(--jd-btn-primary-color, #140D07) !important;
+}
+
+.jd-btn-ghost {
+    background: var(--jd-btn-ghost-bg, var(--jd-sb-card-high));
+    border: 1.5px solid var(--jd-sb-border);
+    color: var(--jd-sb-gold);
+    padding: 0.55rem 1.15rem;
+    font-size: 0.86rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    transition: all 0.2s ease;
+}
+
+.jd-btn-ghost:hover {
+    background: var(--jd-sb-card-highest);
+    border-color: var(--jd-sb-gold);
+    color: var(--jd-sb-ivory);
+    transform: translateY(-1px);
+}
+
+/* --------------------------------------------------------------------------
+   2. KPI Summary Cards Grid
+   -------------------------------------------------------------------------- */
+.jd-sb-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.jd-sb-kpi-card {
+    background: var(--jd-card, var(--jd-sb-card));
+    border: 1.5px solid var(--jd-sb-border);
+    border-radius: 0.85rem;
+    padding: 1.15rem 1.25rem;
+    box-shadow: var(--jd-kpi-shadow, 0 8px 24px rgba(0, 0, 0, 0.4));
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.jd-sb-kpi-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--jd-sb-border-strong);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55), 0 0 15px var(--jd-sb-gold-glow);
+}
+
+.jd-sb-kpi-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.65rem;
+}
+
+.jd-sb-kpi-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    background: rgba(212, 175, 55, 0.15);
+    color: var(--jd-sb-gold-bright);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.jd-sb-kpi-icon.icon-green {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ADE80;
+    border-color: rgba(34, 197, 94, 0.35);
+}
+
+.jd-sb-kpi-icon.icon-amber {
+    background: rgba(245, 158, 11, 0.15);
+    color: #FBBF24;
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
+.jd-sb-kpi-icon.icon-purple {
+    background: rgba(168, 85, 247, 0.15);
+    color: #C084FC;
+    border-color: rgba(168, 85, 247, 0.35);
+}
+
+.jd-sb-kpi-label {
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: var(--jd-sb-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.25rem;
+}
+
+.jd-sb-kpi-val {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--jd-sb-ivory);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+}
+
+.jd-sb-kpi-sub {
+    font-size: 0.72rem;
+    color: var(--jd-sb-ivory-dim);
+    margin-top: 0.25rem;
+}
+
+/* --------------------------------------------------------------------------
+   3. Search & Filter Bar Card
+   -------------------------------------------------------------------------- */
+.jd-sb-filter-card {
+    background: var(--jd-sb-card);
+    border: 1px solid var(--jd-sb-border);
+    border-radius: 0.75rem;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--jd-shadow);
+}
+
+.jd-sb-filter-input {
+    background: var(--jd-sb-input-bg) !important;
+    border: 1px solid var(--jd-sb-border) !important;
+    border-radius: 0.45rem;
+    color: var(--jd-sb-ivory) !important;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.86rem;
+}
+
+.jd-sb-filter-input:focus {
+    border-color: var(--jd-sb-gold) !important;
+    outline: none;
+    box-shadow: 0 0 0 3px var(--jd-sb-gold-glow) !important;
+    background: var(--jd-sb-input-bg) !important;
+}
+
+.jd-sb-filter-select {
+    background: var(--jd-sb-input-bg) !important;
+    border: 1px solid var(--jd-sb-border) !important;
+    border-radius: 0.45rem;
+    color: var(--jd-sb-ivory) !important;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.86rem;
+}
+
+.jd-sb-filter-select:focus {
+    border-color: var(--jd-sb-gold) !important;
+    outline: none;
+    box-shadow: 0 0 0 3px var(--jd-sb-gold-glow) !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. Luxury Ledger Tables & Containers
+   -------------------------------------------------------------------------- */
+.jd-sb-table-card {
+    background: var(--jd-sb-card);
+    border: 1px solid var(--jd-sb-border);
+    border-radius: 0.85rem;
+    box-shadow: var(--jd-shadow);
+    overflow: hidden;
+}
+
+.jd-sb-table-scroll-hint {
+    background: var(--jd-sb-gold-glow);
+    border-bottom: 1px solid var(--jd-sb-border);
+    color: var(--jd-sb-gold);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.45rem 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.jd-sb-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.jd-sb-table {
+    width: 100%;
+    min-width: 680px;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    color: var(--jd-sb-ivory);
+}
+
+.jd-sb-table thead {
+    background: var(--jd-sb-table-th);
+    border-bottom: 1.5px solid var(--jd-sb-border-strong);
+}
+
+.jd-sb-table th {
+    padding: 0.85rem 1.15rem;
+    font-weight: 700;
+    font-size: 0.76rem;
+    color: var(--jd-sb-gold);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.jd-sb-table tbody tr {
+    border-bottom: 1px solid var(--jd-sb-border);
+    transition: background-color 0.15s ease;
+}
+
+.jd-sb-table tbody tr:hover {
+    background-color: var(--jd-sb-gold-glow);
+}
+
+.jd-sb-table td {
+    padding: 0.95rem 1.15rem;
+    vertical-align: middle;
+    color: var(--jd-sb-ivory);
+}
+
+/* Links & Badges */
+.jd-sb-link-gold {
+    color: var(--jd-sb-gold);
+    font-weight: 700;
+    text-decoration: none;
+    font-family: monospace;
+    font-size: 0.86rem;
+}
+
+.jd-sb-link-gold:hover {
+    color: var(--jd-sb-gold-bright);
+    text-decoration: underline;
+}
+
+.jd-badge-paid {
+    background: rgba(34, 197, 94, 0.16);
+    color: #4ADE80;
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+
+.jd-badge-partial {
+    background: rgba(245, 158, 11, 0.16);
+    color: #FBBF24;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+
+.jd-badge-due {
+    background: rgba(239, 68, 68, 0.16);
+    color: #F87171;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+
+.jd-badge-exchange {
+    background: var(--jd-sb-gold-glow);
+    color: var(--jd-sb-gold);
+    border: 1px solid var(--jd-sb-border);
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+
+.jd-badge-buyback {
+    background: rgba(59, 130, 246, 0.16);
+    color: #60A5FA;
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+
+.jd-badge-method {
+    background: var(--jd-sb-card-high);
+    border: 1px solid var(--jd-sb-border);
+    color: var(--jd-sb-ivory-dim);
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.35rem;
+    font-size: 0.74rem;
+    font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   5. Old Gold Exchange & Buyback Forms Layout
+   -------------------------------------------------------------------------- */
+.jd-og-form-grid {
+    display: grid;
+    grid-template-columns: 7fr 5fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.jd-og-card {
+    background: var(--jd-sb-card-bg);
+    border: 1px solid var(--jd-sb-border);
+    border-radius: 0.85rem;
+    box-shadow: var(--jd-shadow);
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+}
+
+.jd-og-card-header {
+    background: var(--jd-sb-header-bg);
+    border-bottom: 1px solid var(--jd-sb-border);
+    padding: 0.85rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.jd-og-card-header h2,
+.jd-og-card-header h6 {
+    font-family: var(--jd-sb-font-headline);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--jd-sb-ivory);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.jd-og-card-body {
+    padding: 1.25rem;
+}
+
+.jd-og-field-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--jd-sb-ivory-dim);
+    margin-bottom: 0.35rem;
+    display: block;
+}
+
+.jd-og-input,
+.form-control,
+.form-select {
+    background: var(--jd-sb-input-bg) !important;
+    border: 1px solid var(--jd-sb-border) !important;
+    border-radius: 0.5rem;
+    color: var(--jd-sb-ivory) !important;
+    padding: 0.6rem 0.85rem;
+    font-size: 0.88rem;
+}
+
+.jd-og-input:focus,
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--jd-sb-gold) !important;
+    box-shadow: 0 0 0 3px var(--jd-sb-gold-glow) !important;
+    background: var(--jd-sb-input-bg) !important;
+    color: var(--jd-sb-ivory) !important;
+    outline: none;
+}
+
+/* Sticky Valuation Voucher */
+.jd-og-voucher-card {
+    background: var(--jd-sb-voucher-bg);
+    border: 1.5px solid var(--jd-sb-border-strong);
+    border-radius: 0.85rem;
+    padding: 1.35rem;
+    box-shadow: var(--jd-shadow);
+    position: sticky;
+    top: 72px;
+}
+
+.jd-og-voucher-title {
+    font-family: var(--jd-sb-font-headline);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--jd-sb-ivory);
+    margin: 0 0 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.jd-og-calc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.88rem;
+    color: var(--jd-sb-ivory-dim);
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--jd-sb-border);
+}
+
+.jd-og-calc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.jd-og-calc-row strong {
+    color: var(--jd-sb-ivory);
+}
+
+.jd-og-final-box {
+    padding-top: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.jd-og-final-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    color: var(--jd-sb-ivory-dim);
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+}
+
+.jd-og-final-val {
+    font-family: var(--jd-sb-font-headline);
+    font-size: clamp(2rem, 3.2vw, 2.75rem);
+    font-weight: 700;
+    color: var(--jd-sb-gold);
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 2px 10px var(--jd-sb-gold-glow);
+}
+
+/* --------------------------------------------------------------------------
+   6. RESPONSIVE BREAKPOINTS (Desktop, Tablet, Mobile)
+   -------------------------------------------------------------------------- */
+
+/* Large Tablets & Medium Screens (max-width: 1199px) */
+@media (max-width: 1199px) {
+    .jd-sb-kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .jd-og-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .jd-og-voucher-card {
+        position: static;
+        margin-top: 1rem;
+    }
+}
+
+/* Mobile Devices (max-width: 767px) */
+@media (max-width: 767px) {
+    .jd-sb-canvas {
+        padding-bottom: max(2rem, env(safe-area-inset-bottom, 2rem));
+    }
+
+    .jd-sb-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    .jd-sb-header-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+
+    .jd-btn-gold,
+    .jd-btn-ghost {
+        width: 100%;
+        justify-content: center;
+        padding: 0.65rem 0.75rem;
+        min-height: 44px;
+    }
+
+    .jd-sb-kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.65rem;
+    }
+
+    .jd-sb-kpi-card {
+        padding: 0.85rem 0.75rem;
+    }
+
+    .jd-sb-kpi-val {
+        font-size: 1.25rem;
+    }
+
+    .jd-sb-filter-card {
+        padding: 0.85rem;
+    }
+
+    .jd-sb-table {
+        min-width: 580px;
+    }
+
+    .jd-sb-table th,
+    .jd-sb-table td {
+        padding: 0.75rem 0.85rem;
+    }
+}
+
+/* Compact Smartphones (max-width: 440px) */
+@media (max-width: 440px) {
+    .jd-sb-header-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .jd-sb-kpi-grid {
+        gap: 0.5rem;
+    }
+
+    .jd-sb-kpi-card {
+        padding: 0.75rem 0.6rem;
+    }
+
+    .jd-sb-kpi-val {
+        font-size: 1.05rem;
+    }
+}

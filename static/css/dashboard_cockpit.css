@@ -1,0 +1,1102 @@
+/* ==========================================================================
+   JewelDesk Showroom Cockpit — Luxury Atelier Dashboard Styles
+   Theme: Dark Roast Chocolate (#160F09, #20160E) & Champagne Gold (#ECC86A)
+   Responsive for Desktop/Laptops, Tablets, and Mobile Devices
+   ========================================================================== */
+
+:root,
+[data-theme="gold"] {
+    --jd-cockpit-bg: var(--jd-bg, #15130E);
+    --jd-cockpit-card: var(--jd-card, #20160E);
+    --jd-cockpit-card-header: var(--jd-card-header, #261B11);
+    --jd-cockpit-border: var(--jd-border, rgba(212, 175, 55, 0.28));
+    --jd-cockpit-border-strong: var(--jd-border-strong, rgba(212, 175, 55, 0.48));
+    --jd-cockpit-gold: var(--jd-gold, #ECC86A);
+    --jd-cockpit-gold-bright: var(--jd-gold-bright, #F5D77F);
+    --jd-cockpit-gold-dark: var(--jd-gold-dark, #B8860B);
+    --jd-cockpit-gold-glow: var(--jd-gold-glow, rgba(212, 175, 55, 0.16));
+    --jd-cockpit-ivory: var(--jd-ivory, #FAF4EA);
+    --jd-cockpit-ivory-dim: var(--jd-ivory-dim, #D4C5B0);
+    --jd-cockpit-muted: var(--jd-muted, #8E8271);
+    --jd-cockpit-ribbon-bg: linear-gradient(90deg, #100E09 0%, #1A130C 50%, #100E09 100%);
+    --jd-cockpit-kpi-bg: linear-gradient(145deg, #241A11 0%, #1E150D 100%);
+    --jd-cockpit-pill-bg: rgba(36, 26, 17, 0.75);
+    --jd-cockpit-shortcuts-bg: #1F150D;
+    --jd-cockpit-shortcut-tile-bg: #2A1D12;
+    --jd-cockpit-ghost-btn-bg: rgba(36, 26, 17, 0.85);
+    --jd-cockpit-gold-btn-bg: linear-gradient(135deg, #F5D77F 0%, #D4AF37 40%, #B8860B 100%);
+    --jd-cockpit-gold-btn-color: #140D07;
+    --jd-navbar-bg: #100E09;
+    --jd-sidebar-bg: #14100A;
+    --jd-cockpit-font-headline: 'Cinzel', 'Playfair Display', Georgia, serif;
+    --jd-cockpit-font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+[data-theme="dark"] {
+    --jd-cockpit-bg: var(--jd-bg, #0A0D14);
+    --jd-cockpit-card: var(--jd-card, #121620);
+    --jd-cockpit-card-header: var(--jd-card-header, #171D2A);
+    --jd-cockpit-border: var(--jd-border, rgba(148, 163, 184, 0.16));
+    --jd-cockpit-border-strong: var(--jd-border-strong, rgba(148, 163, 184, 0.30));
+    --jd-cockpit-gold: #38BDF8;
+    --jd-cockpit-gold-bright: #7DD3FC;
+    --jd-cockpit-gold-dark: #0284C7;
+    --jd-cockpit-gold-glow: rgba(56, 189, 248, 0.16);
+    --jd-cockpit-ivory: #F8FAFC;
+    --jd-cockpit-ivory-dim: #94A3B8;
+    --jd-cockpit-muted: #64748B;
+    --jd-cockpit-ribbon-bg: linear-gradient(90deg, #0A0D14 0%, #131A26 50%, #0A0D14 100%);
+    --jd-cockpit-kpi-bg: linear-gradient(145deg, #151B26 0%, #111620 100%);
+    --jd-cockpit-pill-bg: #171D2A;
+    --jd-cockpit-shortcuts-bg: #121620;
+    --jd-cockpit-shortcut-tile-bg: #1A2234;
+    --jd-cockpit-ghost-btn-bg: #1C2332;
+    --jd-cockpit-gold-btn-bg: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+    --jd-cockpit-gold-btn-color: #FFFFFF;
+    --jd-navbar-bg: #0B0E14;
+    --jd-sidebar-bg: #0A0D14;
+}
+
+[data-theme="light"] {
+    --jd-cockpit-bg: var(--jd-bg, #F4F6F9);
+    --jd-cockpit-card: var(--jd-card, #FFFFFF);
+    --jd-cockpit-card-header: var(--jd-card-header, #F8FAFC);
+    --jd-cockpit-border: var(--jd-border, #E2E8F0);
+    --jd-cockpit-border-strong: var(--jd-border-strong, #CBD5E1);
+    --jd-cockpit-gold: #B48516;
+    --jd-cockpit-gold-bright: #C99A27;
+    --jd-cockpit-gold-dark: #8F660E;
+    --jd-cockpit-gold-glow: rgba(180, 133, 22, 0.12);
+    --jd-cockpit-ivory: #0F172A;
+    --jd-cockpit-ivory-dim: #475569;
+    --jd-cockpit-muted: #64748B;
+    --jd-cockpit-ribbon-bg: #FFFFFF;
+    --jd-cockpit-kpi-bg: #FFFFFF;
+    --jd-cockpit-pill-bg: #F8FAFC;
+    --jd-cockpit-shortcuts-bg: #FFFFFF;
+    --jd-cockpit-shortcut-tile-bg: #F8FAFC;
+    --jd-cockpit-ghost-btn-bg: #F1F5F9;
+    --jd-cockpit-gold-btn-bg: #1E293B;
+    --jd-cockpit-gold-btn-color: #FFFFFF;
+    --jd-navbar-bg: #FFFFFF;
+    --jd-sidebar-bg: #FFFFFF;
+}
+
+/* Seamless atelier background overrides */
+body:has(.jd-cockpit-canvas),
+body.has-cockpit,
+.jd-cockpit-canvas {
+    background-color: var(--jd-cockpit-bg) !important;
+    --bs-heading-color: var(--jd-cockpit-ivory) !important;
+    --bs-body-color: var(--jd-cockpit-ivory) !important;
+}
+
+.main-content:has(.jd-cockpit-canvas),
+.main-content.jd-cockpit-active,
+#page-content:has(.jd-cockpit-canvas) {
+    background-color: var(--jd-cockpit-bg) !important;
+}
+
+body:has(.jd-cockpit-canvas) .top-navbar,
+body.has-cockpit .top-navbar {
+    background-color: var(--jd-navbar-bg) !important;
+    border-bottom: 1px solid var(--jd-border) !important;
+}
+
+body:has(.jd-cockpit-canvas) .sidebar,
+body.has-cockpit .sidebar {
+    background-color: var(--jd-sidebar-bg) !important;
+    border-right: 1px solid var(--jd-border) !important;
+}
+
+/* Hide default page header on dashboard to use custom luxury cockpit header */
+.main-content:has(.jd-cockpit-canvas) .page-header-wrapper,
+.main-content.jd-cockpit-active .page-header-wrapper {
+    display: none !important;
+}
+
+/* Dashboard Outer Canvas */
+.jd-cockpit-canvas {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    color: var(--jd-cockpit-ivory);
+    font-family: var(--jd-cockpit-font-body);
+    box-sizing: border-box;
+    padding-bottom: max(2rem, env(safe-area-inset-bottom, 2rem));
+    overflow-x: clip;
+}
+
+/* --------------------------------------------------------------------------
+   1. Live Bullion Rates Ticker Ribbon (Top Bar)
+   -------------------------------------------------------------------------- */
+.jd-bullion-ribbon {
+    background: var(--jd-cockpit-ribbon-bg);
+    border: 1px solid var(--jd-cockpit-border);
+    border-radius: 0.75rem;
+    padding: 0.65rem 1.15rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    box-shadow: var(--jd-kpi-shadow, 0 4px 18px rgba(0, 0, 0, 0.45));
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+}
+
+.jd-bullion-ribbon::-webkit-scrollbar {
+    height: 3px;
+}
+.jd-bullion-ribbon::-webkit-scrollbar-thumb {
+    background: var(--jd-cockpit-border);
+    border-radius: 9999px;
+}
+
+.jd-bullion-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: var(--jd-cockpit-gold);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+.jd-bullion-rates-group {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex-shrink: 0;
+    font-size: 0.84rem;
+}
+
+.jd-bullion-rate-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: var(--jd-cockpit-pill-bg);
+    padding: 0.25rem 0.65rem;
+    border-radius: 0.35rem;
+    border: 1px solid var(--jd-cockpit-border);
+    color: var(--jd-cockpit-ivory-dim);
+}
+
+.jd-bullion-rate-pill strong {
+    color: var(--jd-cockpit-gold-bright);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+}
+
+.jd-bullion-delta-up {
+    color: #4ADE80;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.jd-bullion-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    color: var(--jd-cockpit-muted);
+}
+
+.jd-bullion-refresh-btn {
+    background: transparent;
+    border: none;
+    color: var(--jd-cockpit-gold);
+    cursor: pointer;
+    padding: 0.2rem 0.45rem;
+    border-radius: 0.25rem;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.jd-bullion-refresh-btn:hover {
+    color: #FFFFFF;
+    transform: rotate(45deg);
+}
+
+/* --------------------------------------------------------------------------
+   2. Cockpit Header & Action CTAs
+   -------------------------------------------------------------------------- */
+.jd-cockpit-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    margin-bottom: 1.75rem;
+    flex-wrap: wrap;
+}
+
+.jd-cockpit-title-wrap h1 {
+    font-family: var(--jd-cockpit-font-headline);
+    font-size: clamp(1.5rem, 2.6vw, 2.15rem);
+    font-weight: 700;
+    color: var(--jd-cockpit-ivory);
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.jd-cockpit-subtitle {
+    color: var(--jd-cockpit-ivory-dim);
+    font-size: 0.88rem;
+    margin: 0.3rem 0 0;
+    font-weight: 400;
+}
+
+.jd-cockpit-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.jd-btn-cockpit-ghost {
+    background: var(--jd-cockpit-ghost-btn-bg);
+    border: 1.5px solid var(--jd-cockpit-border);
+    color: var(--jd-cockpit-gold);
+    padding: 0.55rem 1.15rem;
+    font-size: 0.86rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    transition: all 0.2s ease;
+}
+
+.jd-btn-cockpit-ghost:hover {
+    background: var(--jd-cockpit-shortcut-tile-bg);
+    border-color: var(--jd-cockpit-gold);
+    color: var(--jd-cockpit-ivory);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+.jd-btn-cockpit-gold {
+    background: var(--jd-cockpit-gold-btn-bg);
+    border: 1px solid var(--jd-cockpit-gold);
+    color: var(--jd-cockpit-gold-btn-color) !important;
+    padding: 0.55rem 1.35rem;
+    font-size: 0.88rem;
+    font-weight: 700;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    box-shadow: 0 4px 16px var(--jd-cockpit-gold-glow);
+    transition: all 0.2s ease;
+}
+
+.jd-btn-cockpit-gold:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px var(--jd-cockpit-gold-glow);
+    color: var(--jd-cockpit-gold-btn-color) !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. Executive KPI Cards (Top Metrics Grid)
+   -------------------------------------------------------------------------- */
+.jd-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 1.75rem;
+}
+
+.jd-kpi-card {
+    background: var(--jd-cockpit-kpi-bg);
+    border: 1.5px solid var(--jd-cockpit-border);
+    border-radius: 0.85rem;
+    padding: 1.25rem;
+    box-shadow: var(--jd-kpi-shadow, 0 8px 24px rgba(0, 0, 0, 0.4));
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.jd-kpi-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--jd-cockpit-border-strong);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55), 0 0 15px var(--jd-cockpit-gold-glow);
+}
+
+.jd-kpi-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.85rem;
+}
+
+.jd-kpi-icon {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.5rem;
+    display: grid;
+    place-items: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.jd-kpi-icon-gold {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(184, 134, 11, 0.15) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.45);
+    color: var(--jd-cockpit-gold-bright);
+}
+
+.jd-kpi-icon-green {
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    color: #4ADE80;
+}
+
+.jd-kpi-icon-amber {
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #FBBF24;
+}
+
+.jd-kpi-icon-purple {
+    background: rgba(168, 85, 247, 0.15);
+    border: 1px solid rgba(168, 85, 247, 0.35);
+    color: #C084FC;
+}
+
+.jd-kpi-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.2rem 0.55rem;
+    border-radius: 9999px;
+    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.jd-kpi-badge-green {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ADE80;
+    border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.jd-kpi-badge-amber {
+    background: rgba(245, 158, 11, 0.15);
+    color: #FBBF24;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.jd-kpi-badge-purple {
+    background: rgba(168, 85, 247, 0.15);
+    color: #C084FC;
+    border: 1px solid rgba(168, 85, 247, 0.35);
+}
+
+.jd-kpi-label {
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--jd-cockpit-muted);
+    margin-bottom: 0.25rem;
+}
+
+.jd-kpi-val {
+    font-size: clamp(1.28rem, 2vw, 1.7rem);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--jd-cockpit-ivory);
+    line-height: 1.2;
+    margin-bottom: 0.35rem;
+}
+
+.jd-kpi-sub {
+    font-size: 0.78rem;
+    color: var(--jd-cockpit-ivory-dim);
+}
+
+/* --------------------------------------------------------------------------
+   4. Quick Shortcuts Bar
+   -------------------------------------------------------------------------- */
+.jd-shortcuts-bar {
+    background: var(--jd-cockpit-shortcuts-bg);
+    border: 1.5px solid var(--jd-cockpit-border);
+    border-radius: 0.75rem;
+    padding: 0.85rem 1.25rem;
+    margin-bottom: 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    box-shadow: var(--jd-kpi-shadow, 0 4px 16px rgba(0, 0, 0, 0.2));
+}
+
+.jd-shortcuts-label {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--jd-cockpit-ivory);
+    flex-shrink: 0;
+}
+
+.jd-shortcuts-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    flex-grow: 1;
+}
+
+.jd-shortcut-tile {
+    background: var(--jd-cockpit-shortcut-tile-bg);
+    border: 1px solid var(--jd-cockpit-border);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.95rem;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--jd-cockpit-ivory);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    transition: all 0.18s ease;
+}
+
+.jd-shortcut-tile i {
+    color: var(--jd-cockpit-gold);
+    font-size: 1rem;
+}
+
+.jd-shortcut-tile:hover {
+    background: var(--jd-cockpit-card-header);
+    border-color: var(--jd-cockpit-gold);
+    color: var(--jd-cockpit-gold);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* --------------------------------------------------------------------------
+   5. Main 2-Column Split Workspace
+   -------------------------------------------------------------------------- */
+.jd-cockpit-main-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.jd-cockpit-col-left,
+.jd-cockpit-col-right {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    min-width: 0;
+    width: 100%;
+}
+
+/* Common Cockpit Card Container */
+.jd-card {
+    background: var(--jd-cockpit-card);
+    border: 1.5px solid var(--jd-cockpit-border);
+    border-radius: 0.85rem;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    min-width: 0;
+}
+
+.jd-card-header {
+    background: var(--jd-cockpit-card-header);
+    border-bottom: 1.5px solid var(--jd-cockpit-border);
+    padding: 0.95rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.jd-card-title-group h3 {
+    font-family: var(--jd-cockpit-font-headline);
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--jd-cockpit-ivory);
+    margin: 0;
+}
+
+.jd-card-title-group p {
+    font-size: 0.78rem;
+    color: var(--jd-cockpit-muted);
+    margin: 0.2rem 0 0;
+}
+
+.jd-card-header-link {
+    color: var(--jd-cockpit-gold);
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: color 0.15s ease;
+    white-space: nowrap;
+}
+
+.jd-card-header-link:hover {
+    color: #FFFFFF;
+    text-decoration: underline;
+}
+
+.jd-card-body {
+    padding: 1.25rem;
+    min-width: 0;
+}
+
+/* --------------------------------------------------------------------------
+   6. 7-Day Revenue Analytics Visual Chart
+   -------------------------------------------------------------------------- */
+.jd-chart-container {
+    height: 180px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.65rem;
+    padding: 1.5rem 0.5rem 0.5rem;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.jd-bar-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-end;
+    gap: 0.45rem;
+    min-width: 0;
+    position: relative;
+}
+
+.jd-bar-amount {
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--jd-cockpit-gold-bright);
+    opacity: 0.75;
+    font-weight: 700;
+    transition: opacity 0.15s ease;
+    white-space: nowrap;
+}
+
+.jd-bar-track {
+    width: 100%;
+    max-width: 48px;
+    background: var(--jd-cockpit-shortcut-tile-bg);
+    border-radius: 0.35rem 0.35rem 0 0;
+    border: 1px solid var(--jd-cockpit-border);
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.jd-bar-column:hover .jd-bar-track {
+    background: var(--jd-cockpit-card-header);
+    border-color: var(--jd-cockpit-gold);
+}
+
+.jd-bar-column:hover .jd-bar-amount {
+    opacity: 1;
+    color: #FFFFFF;
+}
+
+.jd-bar-fill {
+    width: 100%;
+    min-height: 4px;
+    background: linear-gradient(180deg, #F5D77F 0%, #D4AF37 50%, #B8860B 100%);
+    border-radius: 0.3rem 0.3rem 0 0;
+    transition: height 0.4s ease;
+}
+
+.jd-bar-fill.is-peak {
+    background: linear-gradient(180deg, #FFFFFF 0%, #FBE092 40%, #D4AF37 100%);
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.45);
+}
+
+.jd-bar-label {
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--jd-cockpit-ivory-dim);
+}
+
+.jd-chart-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 0.85rem;
+    font-size: 0.82rem;
+    color: var(--jd-cockpit-muted);
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+/* --------------------------------------------------------------------------
+   7. Recent Showroom Sales Table
+   -------------------------------------------------------------------------- */
+.jd-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+}
+
+.jd-sales-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.86rem;
+    text-align: left;
+    min-width: 580px;
+}
+
+.jd-sales-table th {
+    background: var(--jd-cockpit-card-header);
+    color: var(--jd-cockpit-gold);
+    font-weight: 700;
+    padding: 0.75rem 1rem;
+    border-bottom: 1.5px solid var(--jd-cockpit-border);
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.jd-sales-table td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--jd-cockpit-border);
+    color: var(--jd-cockpit-ivory);
+    vertical-align: middle;
+}
+
+.jd-sales-table tr:hover td {
+    background: var(--jd-cockpit-gold-glow);
+}
+
+.jd-invoice-link {
+    font-family: var(--jd-font-mono, monospace);
+    font-weight: 700;
+    color: var(--jd-cockpit-gold);
+    text-decoration: none;
+}
+
+.jd-invoice-link:hover {
+    color: #FFFFFF;
+    text-decoration: underline;
+}
+
+.jd-item-huid {
+    font-family: var(--jd-font-mono, monospace);
+    font-size: 0.72rem;
+    color: var(--jd-cockpit-muted);
+}
+
+.jd-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.74rem;
+    font-weight: 700;
+    padding: 0.2rem 0.65rem;
+    border-radius: 9999px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.jd-status-paid {
+    background: rgba(34, 197, 94, 0.16);
+    color: #4ADE80;
+    border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.jd-status-partial {
+    background: rgba(245, 158, 11, 0.16);
+    color: #FBBF24;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.jd-status-unpaid {
+    background: rgba(239, 68, 68, 0.16);
+    color: #F87171;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+/* --------------------------------------------------------------------------
+   8. Right Column Telemetry: Low Stock, Custom Orders, Bullion
+   -------------------------------------------------------------------------- */
+.jd-stock-list,
+.jd-orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.jd-stock-item,
+.jd-order-item {
+    background: var(--jd-cockpit-card-header);
+    border: 1px solid var(--jd-cockpit-border);
+    border-radius: 0.6rem;
+    padding: 0.75rem 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    color: inherit;
+}
+
+.jd-stock-item:hover,
+.jd-order-item:hover {
+    background: var(--jd-cockpit-shortcut-tile-bg);
+    border-color: var(--jd-cockpit-gold);
+    color: inherit;
+}
+
+.jd-stock-item-info,
+.jd-order-item-info {
+    min-width: 0;
+}
+
+.jd-stock-meta,
+.jd-order-meta {
+    font-size: 0.72rem;
+    color: var(--jd-cockpit-muted);
+}
+
+.jd-stock-name,
+.jd-order-name {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--jd-cockpit-ivory);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 0.15rem;
+}
+
+.jd-alert-pill {
+    padding: 0.2rem 0.55rem;
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+
+.jd-alert-pill-red {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    color: #FCA5A5;
+}
+
+.jd-alert-pill-amber {
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid rgba(245, 158, 11, 0.45);
+    color: #FCD34D;
+}
+
+.jd-stage-pill {
+    background: rgba(212, 175, 55, 0.18);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    color: var(--jd-cockpit-gold-bright);
+    padding: 0.18rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+/* Bullion Breakdown Rows */
+.jd-breakdown-row {
+    background: var(--jd-cockpit-card-header);
+    border: 1px solid var(--jd-cockpit-border);
+    border-radius: 0.6rem;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.6rem;
+}
+
+.jd-breakdown-row:last-child {
+    margin-bottom: 0;
+}
+
+.jd-breakdown-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--jd-cockpit-ivory);
+}
+
+.jd-breakdown-sub {
+    font-size: 0.72rem;
+    color: var(--jd-cockpit-muted);
+}
+
+.jd-breakdown-price {
+    font-weight: 800;
+    font-size: 0.95rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--jd-cockpit-gold-bright);
+    text-align: right;
+}
+
+/* Empty State */
+.jd-cockpit-empty {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--jd-cockpit-muted);
+}
+
+.jd-cockpit-empty i {
+    font-size: 2rem;
+    color: var(--jd-cockpit-gold);
+    display: block;
+    margin-bottom: 0.5rem;
+    opacity: 0.85;
+}
+
+/* Mobile Table Scroll Hint */
+.jd-table-scroll-hint {
+    background: var(--jd-cockpit-gold-glow);
+    border-bottom: 1px solid var(--jd-cockpit-border);
+    color: var(--jd-cockpit-gold);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.45rem 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    letter-spacing: 0.01em;
+}
+
+/* --------------------------------------------------------------------------
+   9. RESPONSIVE BREAKPOINTS (Desktop, Tablet, Mobile)
+   -------------------------------------------------------------------------- */
+
+/* Large Tablets & Medium Screens (max-width: 1199px) */
+@media (max-width: 1199px) {
+    .jd-kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .jd-cockpit-main-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Mobile Devices & Small Tablets (max-width: 767px) */
+@media (max-width: 767px) {
+    .jd-cockpit-canvas {
+        padding-bottom: max(2rem, env(safe-area-inset-bottom, 2rem));
+    }
+
+    .jd-bullion-ribbon {
+        padding: 0.5rem 0.75rem;
+        gap: 0.75rem;
+        margin-bottom: 1.15rem;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .jd-bullion-ribbon > .d-flex {
+        flex-shrink: 0;
+        flex-wrap: nowrap;
+    }
+
+    .jd-bullion-rates-group {
+        gap: 0.6rem;
+        flex-wrap: nowrap;
+    }
+
+    .jd-bullion-rate-pill {
+        padding: 0.2rem 0.5rem;
+        font-size: 0.78rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .jd-cockpit-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.85rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .jd-cockpit-title-wrap h1 {
+        font-size: clamp(1.4rem, 5vw, 1.75rem);
+    }
+
+    .jd-cockpit-subtitle {
+        font-size: 0.8rem;
+    }
+
+    .jd-cockpit-header-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+
+    .jd-btn-cockpit-ghost,
+    .jd-btn-cockpit-gold {
+        width: 100%;
+        justify-content: center;
+        padding: 0.65rem 0.75rem;
+        min-height: 44px;
+        font-size: 0.84rem;
+    }
+
+    .jd-kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.65rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .jd-kpi-card {
+        padding: 0.85rem 0.75rem;
+    }
+
+    .jd-kpi-top {
+        margin-bottom: 0.5rem;
+    }
+
+    .jd-kpi-icon {
+        width: 2.25rem;
+        height: 2.25rem;
+        font-size: 1.1rem;
+    }
+
+    .jd-kpi-badge {
+        font-size: 0.65rem;
+        padding: 0.15rem 0.45rem;
+    }
+
+    .jd-kpi-label {
+        font-size: 0.72rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .jd-kpi-val {
+        font-size: clamp(1.1rem, 3.8vw, 1.25rem);
+        margin-bottom: 0.2rem;
+    }
+
+    .jd-kpi-sub {
+        font-size: 0.68rem;
+        line-height: 1.25;
+    }
+
+    .jd-shortcuts-bar {
+        padding: 0.75rem;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .jd-shortcuts-label {
+        font-size: 0.75rem;
+    }
+
+    .jd-shortcuts-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .jd-shortcut-tile {
+        justify-content: center;
+        padding: 0.6rem 0.5rem;
+        font-size: 0.78rem;
+        min-height: 44px;
+    }
+
+    .jd-chart-container {
+        height: 135px;
+        gap: 0.25rem;
+        padding: 0.75rem 0.25rem 0.25rem;
+    }
+
+    .jd-bar-track {
+        max-width: 24px;
+    }
+
+    .jd-bar-amount {
+        font-size: 0.62rem;
+    }
+
+    .jd-bar-label {
+        font-size: 0.68rem;
+    }
+
+    .jd-card {
+        margin-bottom: 1.25rem;
+    }
+
+    .jd-card-header {
+        padding: 0.75rem 0.95rem;
+    }
+
+    .jd-card-body {
+        padding: 0.85rem;
+    }
+
+    .jd-table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .jd-sales-table {
+        min-width: 540px;
+    }
+
+    .jd-stock-item,
+    .jd-order-item {
+        padding: 0.65rem 0.75rem;
+        min-height: 44px;
+    }
+
+    .jd-breakdown-row {
+        padding: 0.65rem 0.75rem;
+    }
+}
+
+/* Compact Smartphones (max-width: 440px) */
+@media (max-width: 440px) {
+    .jd-cockpit-header-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .jd-kpi-grid {
+        gap: 0.5rem;
+    }
+
+    .jd-kpi-card {
+        padding: 0.75rem 0.6rem;
+    }
+
+    .jd-kpi-val {
+        font-size: 1.05rem;
+    }
+
+    .jd-kpi-sub {
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+}

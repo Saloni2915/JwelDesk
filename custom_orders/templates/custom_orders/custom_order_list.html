@@ -1,64 +1,73 @@
 {% extends 'base.html' %}
 
-{% block title %}Custom Orders — JewelDesk{% endblock %}
+{% block title %}Bespoke & Custom Orders — JewelDesk Atelier{% endblock %}
 
 {% block page_title %}Custom Orders{% endblock %}
 
-{% block page_actions %}
-<div class="d-flex gap-2">
-    <a href="{% url 'custom_orders:custom_order_add' %}" class="btn btn-dark btn-sm">
-        <i class="bi bi-plus-lg me-1"></i> New Custom Order
-    </a>
-</div>
-{% endblock %}
-
 {% block content %}
-<!-- Search & Filter Card -->
-<div class="card mb-4">
-    <div class="card-body">
-        <form method="get" class="row g-2 align-items-center">
-            <div class="col-md-4">
-                <input type="text" name="q" value="{{ selected_q }}" class="form-control form-control-sm"
-                       placeholder="Search by customer, order no. or design...">
+<div class="jd-canvas">
+    <!-- Header -->
+    <div class="jd-header">
+        <div>
+            <div class="jd-badge"><i class="bi bi-gem me-1"></i> Bespoke Commissions & Atelier Work</div>
+            <h1 class="jd-title">Custom Jewellery Orders</h1>
+            <p class="jd-subtitle">Track bespoke artisan orders, CAD models, metal allocations, and customer milestones.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'custom_orders:custom_order_add' %}" class="jd-btn-gold">
+                <i class="bi bi-plus-lg"></i> New Custom Order
+            </a>
+        </div>
+    </div>
+
+    <!-- Search & Filter Card -->
+    <div class="jd-filter-card mb-4">
+        <form method="get" class="row g-3 align-items-center">
+            <div class="col-lg-4 col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-end-0 text-gold" style="border-color: rgba(236,200,106,0.2);"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" value="{{ selected_q }}" class="jd-input border-start-0"
+                           placeholder="Search customer, order no., or design...">
+                </div>
             </div>
-            <div class="col-md-3">
-                <select name="status" class="form-select form-select-sm">
+            <div class="col-lg-3 col-md-3">
+                <select name="status" class="jd-select">
                     <option value="">All Statuses</option>
                     {% for key, val in status_choices %}
                     <option value="{{ key }}" {% if selected_status == key %}selected{% endif %}>{{ val }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-3">
-                <select name="delivery" class="form-select form-select-sm">
+            <div class="col-lg-3 col-md-2">
+                <select name="delivery" class="jd-select">
                     <option value="">Any Delivery Date</option>
                     <option value="due_this_week" {% if selected_delivery == 'due_this_week' %}selected{% endif %}>Due This Week</option>
                     <option value="overdue" {% if selected_delivery == 'overdue' %}selected{% endif %}>Overdue</option>
                 </select>
             </div>
-            <div class="col-md-2 d-flex gap-1">
-                <button type="submit" class="btn btn-outline-dark btn-sm w-100" title="Apply Filters">
+            <div class="col-lg-2 col-md-2 d-flex gap-2">
+                <button type="submit" class="jd-btn-gold flex-grow-1" title="Apply Filters">
                     <i class="bi bi-funnel"></i> Filter
                 </button>
-                <a href="{% url 'custom_orders:custom_order_list' %}" class="btn btn-outline-secondary btn-sm" title="Clear Filters">
+                {% if selected_q or selected_status or selected_delivery %}
+                <a href="{% url 'custom_orders:custom_order_list' %}" class="jd-btn-ghost px-3" title="Clear Filters">
                     <i class="bi bi-x-lg"></i>
                 </a>
+                {% endif %}
             </div>
         </form>
     </div>
-</div>
 
-<!-- Orders Table -->
-<div class="card">
-    <div class="card-body p-0">
+    <!-- Orders Table -->
+    <div class="jd-table-card">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+            <table class="jd-table">
+                <thead>
                     <tr>
                         <th>Order No.</th>
                         <th>Customer</th>
                         <th>Jewellery Type</th>
-                        <th>Metal</th>
+                        <th>Metal & Purity</th>
                         <th>Est. Price</th>
                         <th>Status</th>
                         <th>Expected Delivery</th>
@@ -69,42 +78,74 @@
                     {% for order in orders %}
                     <tr>
                         <td>
-                            <a href="{% url 'custom_orders:custom_order_detail' order.id %}" class="fw-semibold text-decoration-none text-dark font-monospace">
+                            <a href="{% url 'custom_orders:custom_order_detail' order.id %}" class="text-gold font-monospace fw-bold text-decoration-none" style="letter-spacing: 0.05em;">
                                 {{ order.order_number }}
                             </a>
                         </td>
                         <td>
-                            <a href="{% url 'customer_detail' order.customer.id %}" class="text-decoration-none text-dark fw-medium">
+                            <a href="{% url 'customer_detail' order.customer.id %}" class="text-white fw-semibold text-decoration-none d-block">
                                 {{ order.customer.name }}
                             </a>
-                            <small class="text-muted d-block">{{ order.customer.mobile }}</small>
+                            <div class="d-flex align-items-center gap-2 mt-1">
+                                <span class="text-muted small font-monospace">{{ order.customer.mobile }}</span>
+                                <a href="https://wa.me/91{{ order.customer.mobile|cut:' ' }}" target="_blank" class="text-success small" title="WhatsApp Customer">
+                                    <i class="bi bi-whatsapp"></i>
+                                </a>
+                            </div>
                         </td>
-                        <td><span class="badge bg-light text-dark border">{{ order.category.name }}</span></td>
+                        <td>
+                            <span class="jd-tag"><i class="bi bi-tag me-1"></i>{{ order.category.name }}</span>
+                        </td>
                         <td>
                             {% if order.metal_type == 'Gold' %}
-                            <span class="badge badge-gold">{{ order.metal_type }}</span>
+                            <span class="jd-badge" style="background: rgba(236,200,106,0.15); color: #ECC86A; border-color: rgba(236,200,106,0.3);">
+                                <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i>Gold {{ order.purity|default:"" }}
+                            </span>
                             {% elif order.metal_type == 'Silver' %}
-                            <span class="badge badge-silver">{{ order.metal_type }}</span>
+                            <span class="jd-badge" style="background: rgba(203, 213, 225, 0.15); color: #e2e8f0; border-color: rgba(203, 213, 225, 0.3);">
+                                <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i>Silver {{ order.purity|default:"" }}
+                            </span>
                             {% elif order.metal_type == 'Diamond' %}
-                            <span class="badge badge-diamond">{{ order.metal_type }}</span>
+                            <span class="jd-badge" style="background: rgba(147, 197, 253, 0.15); color: #93c5fd; border-color: rgba(147, 197, 253, 0.3);">
+                                <i class="bi bi-gem me-1"></i>Diamond
+                            </span>
                             {% else %}
-                            <span class="badge bg-secondary">{{ order.metal_type }}</span>
+                            <span class="jd-badge">{{ order.metal_type }} {{ order.purity|default:"" }}</span>
+                            {% endif %}
+                            <small class="text-muted d-block mt-1 font-monospace">{{ order.approx_gross_weight }}g gross</small>
+                        </td>
+                        <td>
+                            <span class="text-gold fw-bold font-monospace">₹{{ order.estimated_price }}</span>
+                            {% if order.advance_amount %}
+                            <small class="d-block text-muted" style="font-size: 0.75rem;">Adv: ₹{{ order.advance_amount }}</small>
                             {% endif %}
                         </td>
-                        <td class="fw-semibold">₹{{ order.estimated_price }}</td>
-                        <td>{% include 'custom_orders/includes/status_badge.html' with status=order.status %}</td>
-                        <td>{{ order.expected_delivery_date|date:"M d, Y" }}</td>
+                        <td>
+                            {% include 'custom_orders/includes/status_badge.html' with status=order.status %}
+                        </td>
+                        <td>
+                            <span class="text-light">{{ order.expected_delivery_date|date:"M d, Y" }}</span>
+                            {% if order.expected_delivery_date < today and order.status != 'Delivered' and order.status != 'Cancelled' %}
+                            <span class="badge bg-danger ms-1" style="font-size: 0.65rem;">Overdue</span>
+                            {% endif %}
+                        </td>
                         <td class="text-end pe-3">
-                            <a href="{% url 'custom_orders:custom_order_detail' order.id %}" class="btn btn-outline-info btn-sm py-0 px-2" title="View">
-                                <i class="bi bi-eye"></i> View
+                            <a href="{% url 'custom_orders:custom_order_detail' order.id %}" class="jd-btn-ghost btn-sm" title="View Order Atelier">
+                                <i class="bi bi-eye me-1"></i> View
                             </a>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="text-center py-4 text-muted">
-                            <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-                            No custom orders found. Click "+ New Custom Order" to create the first one.
+                        <td colspan="8" class="text-center py-5">
+                            <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(236, 200, 106, 0.08); display: inline-flex; align-items: center; justify-content: center; color: var(--gold-primary); font-size: 1.75rem; margin-bottom: 1rem;">
+                                <i class="bi bi-gem"></i>
+                            </div>
+                            <h5 class="text-white fw-bold mb-1">No Custom Orders Found</h5>
+                            <p class="text-muted small mb-3">Begin tailoring bespoke jewellery orders for your patrons.</p>
+                            <a href="{% url 'custom_orders:custom_order_add' %}" class="jd-btn-gold">
+                                <i class="bi bi-plus-lg me-1"></i> New Custom Order
+                            </a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -114,4 +155,12 @@
         {% include 'includes/pagination.html' with page_obj=page_obj %}
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('has-atelier-suite');
+    const pc = document.getElementById('page-content');
+    if (pc) pc.classList.add('jd-active');
+});
+</script>
 {% endblock %}

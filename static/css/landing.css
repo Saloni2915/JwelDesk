@@ -298,15 +298,14 @@ body.jd-landing-body {
 }
 
 .jd-landing-logo-img {
-    height: 38px;
+    height: 40px;
     width: auto;
-    max-width: 165px;
+    max-width: 180px;
     object-fit: contain;
-    background: #241A11;
-    padding: 3px 8px;
-    border-radius: 6px;
-    border: 1px solid rgba(212, 175, 55, 0.35);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    background: transparent;
+    padding: 0;
+    border: none;
+    box-shadow: none;
 }
 
 .jd-nav-links {

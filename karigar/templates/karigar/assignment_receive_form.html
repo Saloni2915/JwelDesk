@@ -1,134 +1,142 @@
 {% extends 'base.html' %}
 
-{% block title %}Receive Work: {{ assignment.assignment_number }} — JewelDesk{% endblock %}
+{% block title %}Receive Work: {{ assignment.assignment_number }} — JewelDesk Atelier{% endblock %}
 
 {% block page_title %}Receive Completed Work: {{ assignment.assignment_number }}{% endblock %}
 
 {% block page_actions %}
-<a href="{% url 'karigar:assignment_detail' assignment.id %}" class="btn btn-outline-secondary btn-sm">
+<a href="{% url 'karigar:assignment_detail' assignment.id %}" class="jd-btn-ghost btn-sm">
     <i class="bi bi-arrow-left me-1"></i> Back to Job Card
 </a>
 {% endblock %}
 
 {% block content %}
-<form method="post" novalidate class="mb-5">
-    {% csrf_token %}
-
-    {% if form.non_field_errors %}
-    <div class="alert alert-danger shadow-sm">
-        {% for error in form.non_field_errors %}
-        <div><i class="bi bi-exclamation-circle me-1"></i> {{ error }}</div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    <!-- Top Issued Baseline Banner -->
-    <div class="card mb-4 border-0 shadow-sm bg-light">
-        <div class="card-body">
-            <div class="row align-items-center">
-                <div class="col-md-3">
-                    <span class="text-muted small fw-semibold text-uppercase d-block">Artisan</span>
-                    <h6 class="fw-bold mb-0 text-dark">{{ assignment.karigar.name }}</h6>
-                    <small class="text-muted">{{ assignment.work_type }}</small>
-                </div>
-                <div class="col-md-3 border-start">
-                    <span class="text-muted small fw-semibold text-uppercase d-block">Precious Metal</span>
-                    <span class="fw-bold fs-6">{{ assignment.metal_type }} ({{ assignment.purity }})</span>
-                </div>
-                <div class="col-md-3 border-start">
-                    <span class="text-muted small fw-semibold text-uppercase d-block">Issued Net Weight</span>
-                    <span class="fw-bold fs-5 text-dark" id="base-net-issued" data-val="{{ assignment.net_weight_issued }}">{{ assignment.net_weight_issued|floatformat:3 }} g</span>
-                    <small class="text-muted d-block">Gross: {{ assignment.gross_weight_issued|floatformat:3 }}g &bull; Stones: {{ assignment.stone_weight_issued|floatformat:3 }}g</small>
-                </div>
-                <div class="col-md-3 border-start">
-                    <span class="text-muted small fw-semibold text-uppercase d-block">Allowed Wastage</span>
-                    <span class="fw-bold fs-6 text-dark" id="base-allowed-pct" data-val="{{ assignment.wastage_allowed_percent }}">{{ assignment.wastage_allowed_percent }}%</span>
-                    <small class="text-muted d-block">Max Loss: {{ assignment.wastage_weight_allowed|floatformat:3 }} g</small>
-                </div>
-            </div>
+<div class="jd-canvas">
+    <!-- Header -->
+    <div class="jd-header">
+        <div>
+            <div class="jd-badge"><i class="bi bi-box-arrow-in-down me-1"></i> Quality &amp; Metal Audit Receipt</div>
+            <h1 class="jd-title">Receive Completed Work: <span class="text-gold font-monospace">{{ assignment.assignment_number }}</span></h1>
+            <p class="jd-subtitle">Record finished weight scales, verify manufacturing wastage against tolerance limits, and finalize artisan dues.</p>
+        </div>
+        <div>
+            <a href="{% url 'karigar:assignment_detail' assignment.id %}" class="jd-btn-ghost">
+                <i class="bi bi-arrow-left me-1"></i> Cancel & Back
+            </a>
         </div>
     </div>
 
-    <div class="row g-4">
-        <!-- Input Form Column -->
-        <div class="col-lg-8">
-            <!-- Received Weights -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-bold"><i class="bi bi-scale me-2 text-warning"></i> Finished Weights &amp; Material Returned</h6>
-                    <span class="badge bg-light text-dark border">Grams (0.001g precision)</span>
+    <form method="post" novalidate class="mb-5">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger py-2 mb-4" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5;">
+            {% for error in form.non_field_errors %}
+            <div><i class="bi bi-exclamation-circle me-1"></i> {{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Top Issued Baseline Banner -->
+        <div class="jd-card p-4 mb-4" style="background: linear-gradient(135deg, rgba(236,200,106,0.06) 0%, rgba(32,22,14,0.4) 100%); border: 1px solid rgba(236,200,106,0.25);">
+            <div class="row align-items-center g-3">
+                <div class="col-md-3">
+                    <span class="text-gold small fw-bold text-uppercase d-block mb-1">Master Artisan</span>
+                    <h5 class="fw-bold mb-0 text-white">{{ assignment.karigar.name }}</h5>
+                    <small class="text-muted">{{ assignment.work_type }}</small>
                 </div>
-                <div class="card-body">
+                <div class="col-md-3 border-start" style="border-color: rgba(236,200,106,0.15) !important;">
+                    <span class="text-gold small fw-bold text-uppercase d-block mb-1">Precious Metal</span>
+                    <span class="fw-bold fs-6 text-white">{{ assignment.metal_type }} ({{ assignment.purity }})</span>
+                </div>
+                <div class="col-md-3 border-start" style="border-color: rgba(236,200,106,0.15) !important;">
+                    <span class="text-gold small fw-bold text-uppercase d-block mb-1">Issued Net Weight</span>
+                    <span class="fw-bold fs-5 text-white font-monospace" id="base-net-issued" data-val="{{ assignment.net_weight_issued }}">{{ assignment.net_weight_issued|floatformat:3 }} g</span>
+                    <small class="text-muted d-block mt-1 font-monospace" style="font-size: 0.75rem;">Gross: {{ assignment.gross_weight_issued|floatformat:3 }}g &bull; St: {{ assignment.stone_weight_issued|floatformat:3 }}g</small>
+                </div>
+                <div class="col-md-3 border-start" style="border-color: rgba(236,200,106,0.15) !important;">
+                    <span class="text-gold small fw-bold text-uppercase d-block mb-1">Allowed Wastage</span>
+                    <span class="fw-bold fs-6 text-white font-monospace" id="base-allowed-pct" data-val="{{ assignment.wastage_allowed_percent }}">{{ assignment.wastage_allowed_percent }}%</span>
+                    <small class="text-muted d-block mt-1 font-monospace" style="font-size: 0.75rem;">Max Loss: {{ assignment.wastage_weight_allowed|floatformat:3 }} g</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Input Form Column -->
+            <div class="col-lg-8">
+                <!-- Received Weights -->
+                <div class="jd-card p-4 mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
+                        <span class="text-gold fw-bold"><i class="bi bi-scale me-1"></i> Finished Weights &amp; Material Returned</span>
+                        <span class="jd-badge" style="background: rgba(236,200,106,0.15); color: #ECC86A;">0.001g Precision Scale</span>
+                    </div>
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <label class="form-label small fw-semibold required">Gross Weight Received (g) *</label>
+                            <label class="form-label text-gold small fw-bold">Gross Weight Received (g) <span class="text-danger">*</span></label>
                             {{ form.gross_weight_received }}
                             {% if form.gross_weight_received.errors %}
                             <div class="text-danger small mt-1">{{ form.gross_weight_received.errors.0 }}</div>
                             {% endif %}
-                            <small class="text-muted">Total weight of finished piece</small>
+                            <small class="text-muted d-block mt-1">Total weight of finished piece</small>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Stones / Pearls Wt (g)</label>
+                            <label class="form-label text-gold small fw-bold">Stones / Pearls Wt (g)</label>
                             {{ form.stone_weight_received }}
                             {% if form.stone_weight_received.errors %}
                             <div class="text-danger small mt-1">{{ form.stone_weight_received.errors.0 }}</div>
                             {% endif %}
-                            <small class="text-muted">Stones embedded in piece</small>
+                            <small class="text-muted d-block mt-1">Embedded stones weight</small>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Scrap Gold Returned (g)</label>
+                            <label class="form-label text-gold small fw-bold">Scrap Gold Returned (g)</label>
                             {{ form.scrap_weight_returned }}
                             {% if form.scrap_weight_returned.errors %}
                             <div class="text-danger small mt-1">{{ form.scrap_weight_returned.errors.0 }}</div>
                             {% endif %}
-                            <small class="text-muted">Filings, cut pieces, or unused scrap</small>
+                            <small class="text-muted d-block mt-1">Filings, cut pieces, or scrap</small>
                         </div>
                     </div>
 
                     <!-- Live Accountability Card -->
-                    <div class="card bg-light border mt-4">
-                        <div class="card-body p-3">
-                            <h6 class="fw-bold small text-uppercase text-muted mb-3">Live Material Accountability Verification</h6>
-                            <div class="row g-2 text-center">
-                                <div class="col-md-3">
-                                    <span class="text-muted small d-block">Finished Net Wt</span>
-                                    <span class="fw-bold fs-6 text-success" id="calc-net-received">0.000 g</span>
-                                </div>
-                                <div class="col-md-3">
-                                    <span class="text-muted small d-block">Actual Loss</span>
-                                    <span class="fw-bold fs-6 text-danger" id="calc-actual-loss">0.000 g</span>
-                                </div>
-                                <div class="col-md-3">
-                                    <span class="text-muted small d-block">Allowed Loss</span>
-                                    <span class="fw-bold fs-6" id="calc-allowed-loss">0.000 g</span>
-                                </div>
-                                <div class="col-md-3">
-                                    <span class="text-muted small d-block">Variance Difference</span>
-                                    <span class="fw-bold fs-6" id="calc-variance">0.000 g</span>
-                                </div>
+                    <div class="p-4 rounded-3 mt-4" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(236,200,106,0.2);">
+                        <h6 class="fw-bold small text-uppercase text-gold mb-3"><i class="bi bi-stars me-1"></i> Live Material Audit Verification</h6>
+                        <div class="row g-3 text-center">
+                            <div class="col-sm-6 col-md-3">
+                                <span class="text-muted small d-block mb-1">Finished Net Wt</span>
+                                <span class="fw-bold fs-5 text-success font-monospace" id="calc-net-received">0.000 g</span>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <span class="text-muted small d-block mb-1">Actual Loss</span>
+                                <span class="fw-bold fs-5 text-danger font-monospace" id="calc-actual-loss">0.000 g</span>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <span class="text-muted small d-block mb-1">Allowed Loss</span>
+                                <span class="fw-bold fs-5 text-white font-monospace" id="calc-allowed-loss">0.000 g</span>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <span class="text-muted small d-block mb-1">Variance Difference</span>
+                                <span class="fw-bold fs-5 font-monospace" id="calc-variance">0.000 g</span>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Labour Charges Finalization -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white py-3 border-bottom">
-                    <h6 class="mb-0 fw-bold"><i class="bi bi-cash-coin me-2 text-success"></i> Finalize Labour / Making Charges</h6>
-                </div>
-                <div class="card-body">
+                <!-- Labour Charges Finalization -->
+                <div class="jd-card p-4 mb-4">
+                    <div class="d-flex align-items-center gap-2 mb-4 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
+                        <span class="text-gold fw-bold"><i class="bi bi-cash-coin me-1"></i> Finalize Craftsmanship / Making Charges</span>
+                    </div>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label small fw-semibold">Making Charge Type</label>
+                            <label class="form-label text-gold small fw-bold">Making Charge Type</label>
                             {{ form.making_charge_type }}
                             {% if form.making_charge_type.errors %}
                             <div class="text-danger small mt-1">{{ form.making_charge_type.errors.0 }}</div>
                             {% endif %}
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label small fw-semibold">Rate (₹)</label>
+                            <label class="form-label text-gold small fw-bold">Rate (₹)</label>
                             {{ form.making_charge_rate }}
                             {% if form.making_charge_rate.errors %}
                             <div class="text-danger small mt-1">{{ form.making_charge_rate.errors.0 }}</div>
@@ -136,45 +144,41 @@
                         </div>
 
                         <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Stone Setting Charges (₹)</label>
+                            <label class="form-label text-gold small fw-bold">Stone Setting Charges (₹)</label>
                             {{ form.stone_charges }}
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Other Approved Charges (₹)</label>
+                            <label class="form-label text-gold small fw-bold">Other Approved Charges (₹)</label>
                             {{ form.other_charges }}
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label small fw-semibold">Other Charges Description</label>
+                            <label class="form-label text-gold small fw-bold">Other Charges Description</label>
                             {{ form.other_charges_description }}
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Inspection Notes -->
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3 border-bottom">
-                    <h6 class="mb-0 fw-bold"><i class="bi bi-check2-circle me-2 text-dark"></i> Inspection &amp; Receipt Notes</h6>
-                </div>
-                <div class="card-body">
+                <!-- Inspection Notes -->
+                <div class="jd-card p-4">
+                    <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
+                        <span class="text-gold fw-bold"><i class="bi bi-check2-circle me-1"></i> Quality &amp; Hallmarking Notes</span>
+                    </div>
                     <div class="mb-0">
-                        <label class="form-label small fw-semibold">Quality &amp; Weight Verification Notes</label>
+                        <label class="form-label text-gold small fw-bold">Quality &amp; Weight Verification Notes</label>
                         {{ form.notes }}
-                        <small class="text-muted">Record verification results, finish quality, hallmarking stamp, or reasons for any weight discrepancy.</small>
+                        <small class="text-muted d-block mt-1">Record finish quality, BIS hallmarking stamp presence, or reasons for any weight discrepancy.</small>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Sidebar Column -->
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white py-3 border-bottom">
-                    <h6 class="mb-0 fw-bold"><i class="bi bi-calendar-check me-2 text-dark"></i> Completion Date</h6>
-                </div>
-                <div class="card-body">
+            <!-- Sidebar Column -->
+            <div class="col-lg-4">
+                <div class="jd-card p-4 mb-4">
+                    <div class="border-bottom pb-2 mb-3" style="border-color: rgba(236,200,106,0.12) !important;">
+                        <h6 class="text-gold fw-bold mb-0"><i class="bi bi-calendar-check me-1"></i> Completion Handover</h6>
+                    </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold required">Actual Completion Date *</label>
+                        <label class="form-label text-gold small fw-bold">Actual Completion Date <span class="text-danger">*</span></label>
                         {{ form.actual_completion_date }}
                         {% if form.actual_completion_date.errors %}
                         <div class="text-danger small mt-1">{{ form.actual_completion_date.errors.0 }}</div>
@@ -182,39 +186,41 @@
                     </div>
 
                     {% if form.return_to_inventory %}
-                    <div class="form-check form-switch mb-3 p-2 bg-light rounded border">
+                    <div class="form-check form-switch mb-3 p-3 rounded-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
                         {{ form.return_to_inventory }}
-                        <label class="form-check-label small fw-semibold ms-2" for="{{ form.return_to_inventory.id_for_label }}">
+                        <label class="form-check-label text-light small fw-bold ms-2" for="{{ form.return_to_inventory.id_for_label }}">
                             {{ form.return_to_inventory.label }}
                         </label>
                         <div class="form-text small text-muted ms-2">{{ form.return_to_inventory.help_text }}</div>
                     </div>
                     {% endif %}
                 </div>
-            </div>
 
-            <!-- Confirmation & Submit -->
-            <div class="card border-0 shadow-sm bg-light mb-4">
-                <div class="card-body">
-                    <div class="alert alert-info py-2 px-3 small mb-3">
-                        <i class="bi bi-info-circle me-1"></i> Submitting will mark this assignment as <strong>Received</strong>, verify accountability, and update artisan balances.
+                <!-- Confirmation & Submit -->
+                <div class="jd-card p-4">
+                    <div class="p-3 rounded-3 mb-3 small" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #6ee7b7;">
+                        <i class="bi bi-info-circle me-1"></i> Submitting marks this assignment as <strong>Received</strong>, settles metal custody passbooks, and credits the artisan's ledger.
                     </div>
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-success btn-lg fs-6">
+                    <div class="d-flex flex-column gap-2">
+                        <button type="submit" class="jd-btn-gold justify-content-center">
                             <i class="bi bi-check2-all me-1"></i> Verify &amp; Receive Work
                         </button>
-                        <a href="{% url 'karigar:assignment_detail' assignment.id %}" class="btn btn-outline-secondary">
+                        <a href="{% url 'karigar:assignment_detail' assignment.id %}" class="jd-btn-ghost text-center">
                             Cancel
                         </a>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-</form>
+    </form>
+</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('has-atelier-suite');
+    const pc = document.getElementById('page-content');
+    if (pc) pc.classList.add('jd-active');
+
     const grossIn = document.getElementById('id_gross_weight_received');
     const stoneIn = document.getElementById('id_stone_weight_received');
     const scrapIn = document.getElementById('id_scrap_weight_returned');
@@ -246,9 +252,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (varianceEl) {
             varianceEl.textContent = diff.toFixed(3) + ' g';
             if (diff > 0.0001) {
-                varianceEl.className = 'fw-bold fs-6 text-danger';
+                varianceEl.className = 'fw-bold fs-5 text-danger font-monospace';
             } else {
-                varianceEl.className = 'fw-bold fs-6 text-success';
+                varianceEl.className = 'fw-bold fs-5 text-success font-monospace';
             }
         }
     }

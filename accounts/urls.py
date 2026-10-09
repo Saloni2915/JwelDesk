@@ -10,6 +10,7 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('company-settings/', views.company_settings, name='company_settings'),
     path('settings/themes/', views.themes, name='themes'),
+    path('themes/', views.themes, name='themes_alias'),
 
     # Password reset flow
     path('password-reset/', views.password_reset_view, name='password_reset'),

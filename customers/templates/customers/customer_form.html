@@ -1,87 +1,114 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}{{ page_title }} — JewelDesk{% endblock %}
-
-{% block page_title %}{{ page_title }}{% endblock %}
-
-{% block page_actions %}
-<a href="{% url 'customer_list' %}" class="btn btn-outline-secondary btn-sm">
-    <i class="bi bi-arrow-left me-1"></i> Back to Customers
-</a>
-{% endblock %}
+{% block title %}{{ page_title|default:"Register Patron" }} — JewelDesk Atelier{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header bg-white border-bottom py-3">
-                <h6 class="mb-0 fw-semibold text-dark">
-                    <i class="bi bi-person me-2"></i> Customer Details
-                </h6>
-            </div>
-            <div class="card-body p-4">
-                <form method="post" novalidate>
-                    {% csrf_token %}
+<div class="jd-canvas">
 
-                    {% if form.non_field_errors %}
-                    <div class="alert alert-danger py-2">
-                        {% for error in form.non_field_errors %}
-                        <small class="d-block">{{ error }}</small>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
+    <!-- 1. Header & Actions -->
+    <div class="jd-header">
+        <div class="jd-title-wrap">
+            <h1><i class="bi bi-person-plus text-warning me-2"></i>{{ page_title|default:"Patron Registration" }}</h1>
+            <p class="jd-subtitle">Record client contact profile, KYC identification &amp; billing address</p>
+        </div>
+        <div class="jd-header-actions">
+            <a href="{% url 'customer_list' %}" class="jd-btn-ghost">
+                <i class="bi bi-arrow-left"></i> Client Directory
+            </a>
+        </div>
+    </div>
 
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label for="{{ form.name.id_for_label }}" class="form-label">
-                                Full Name <span class="text-danger">*</span>
-                            </label>
-                            {{ form.name }}
-                            {% if form.name.errors %}
-                            <div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>
-                            {% endif %}
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="jd-card">
+                <div class="jd-card-header">
+                    <h2>
+                        <i class="bi bi-person-lines-fill text-warning"></i>
+                        Patron Information &amp; Contact Details
+                    </h2>
+                </div>
+                <div class="jd-card-body">
+                    <form method="post" id="customerForm" novalidate>
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger py-2 mb-3 bg-danger bg-opacity-20 border-danger text-light small">
+                            {% for error in form.non_field_errors %}
+                            <div><i class="bi bi-exclamation-triangle-fill me-1"></i> {{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="jd-field-label">Full Legal Name <span class="text-danger">*</span></label>
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                <div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="jd-field-label">Primary Mobile Number <span class="text-danger">*</span></label>
+                                {{ form.mobile }}
+                                {% if form.mobile.errors %}
+                                <div class="text-danger small mt-1">{{ form.mobile.errors.0 }}</div>
+                                {% endif %}
+                                <div class="jd-field-help">10-digit mobile number for WhatsApp invoicing.</div>
+                            </div>
                         </div>
 
-                        <div class="col-md-6">
-                            <label for="{{ form.mobile.id_for_label }}" class="form-label">
-                                Mobile Number <span class="text-danger">*</span>
-                            </label>
-                            {{ form.mobile }}
-                            {% if form.mobile.errors %}
-                            <div class="text-danger small mt-1">{{ form.mobile.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-
-                        <div class="col-md-12">
-                            <label for="{{ form.email.id_for_label }}" class="form-label">
-                                Email Address
-                            </label>
+                        <div class="mb-3">
+                            <label class="jd-field-label">Email Address</label>
                             {{ form.email }}
                             {% if form.email.errors %}
                             <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
                             {% endif %}
+                            <div class="jd-field-help">Optional email for PDF billing invoices.</div>
                         </div>
 
-                        <div class="col-md-12">
-                            <label for="{{ form.address.id_for_label }}" class="form-label">
-                                Address
-                            </label>
+                        <div class="mb-3">
+                            <label class="jd-field-label">Physical / Street Address</label>
                             {{ form.address }}
                             {% if form.address.errors %}
                             <div class="text-danger small mt-1">{{ form.address.errors.0 }}</div>
                             {% endif %}
+                            <div class="jd-field-help">Residence or business shipping address for invoice dispatch.</div>
                         </div>
-                    </div>
 
-                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-                        <a href="{% url 'customer_list' %}" class="btn btn-outline-secondary">Cancel</a>
-                        <button type="submit" class="btn btn-dark">
-                            <i class="bi bi-check-lg me-1"></i> {% if is_edit %}Update Customer{% else %}Save Customer{% endif %}
-                        </button>
-                    </div>
-                </form>
+                        <div class="d-flex gap-2 pt-3 border-top border-secondary border-opacity-25">
+                            <button type="submit" class="jd-btn-gold flex-grow-1 py-2 fs-6">
+                                <i class="bi bi-check-circle-fill"></i> Save Patron Profile
+                            </button>
+                            <a href="{% url 'customer_list' %}" class="jd-btn-ghost py-2">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
+
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.body.classList.add('has-atelier-suite');
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) mainContent.classList.add('jd-active');
+        const pageContent = document.getElementById('page-content');
+        if (pageContent) pageContent.classList.add('jd-active');
+
+        const inputs = document.querySelectorAll('#customerForm input, #customerForm textarea, #customerForm select');
+        inputs.forEach(el => {
+            if (el.tagName === 'SELECT') {
+                el.classList.add('jd-select');
+            } else {
+                el.classList.add('jd-input');
+            }
+        });
+    });
+</script>
 {% endblock %}

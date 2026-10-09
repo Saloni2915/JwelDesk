@@ -1,0 +1,896 @@
+/* ==========================================================================
+   JewelDesk Inventory & Vault Stock Operations — Luxury Atelier Styles
+   Theme: Dark Roast Chocolate (#15130E, #20160E) & Champagne Gold (#ECC86A)
+   Responsive for Desktop/Laptops, Tablets, and Mobile Devices
+   ========================================================================== */
+
+:root,
+[data-theme="gold"] {
+    --jd-inv-bg: var(--jd-bg, #15130E);
+    --jd-inv-card: var(--jd-card, #20160E);
+    --jd-inv-card-header: var(--jd-card-header, #261B11);
+    --jd-inv-card-high: var(--jd-card-high, #2C2A24);
+    --jd-inv-card-highest: var(--jd-card-highest, #37352E);
+    --jd-inv-border: var(--jd-border, rgba(212, 175, 55, 0.28));
+    --jd-inv-border-strong: var(--jd-border-strong, rgba(212, 175, 55, 0.48));
+    --jd-inv-gold: var(--jd-gold, #ECC86A);
+    --jd-inv-gold-bright: var(--jd-gold-bright, #F5D77F);
+    --jd-inv-gold-dark: var(--jd-gold-dark, #B8860B);
+    --jd-inv-gold-glow: var(--jd-gold-glow, rgba(212, 175, 55, 0.16));
+    --jd-inv-ivory: var(--jd-ivory, #FAF4EA);
+    --jd-inv-ivory-dim: var(--jd-ivory-dim, #D4C5B0);
+    --jd-inv-muted: var(--jd-muted, #8E8271);
+    --jd-inv-table-th: var(--jd-table-th, #19120B);
+    --jd-inv-input-bg: var(--jd-input-bg, #14100A);
+    --jd-inv-font-headline: 'Cinzel', 'Playfair Display', Georgia, serif;
+    --jd-inv-font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+[data-theme="dark"] {
+    --jd-inv-bg: var(--jd-bg, #0A0D14);
+    --jd-inv-card: var(--jd-card, #121620);
+    --jd-inv-card-header: var(--jd-card-header, #171D2A);
+    --jd-inv-card-high: var(--jd-card-high, #1C2332);
+    --jd-inv-card-highest: var(--jd-card-highest, #242D40);
+    --jd-inv-border: var(--jd-border, rgba(236, 200, 106, 0.22));
+    --jd-inv-border-strong: var(--jd-border-strong, rgba(236, 200, 106, 0.42));
+    --jd-inv-gold: var(--jd-gold, #ECC86A);
+    --jd-inv-gold-bright: var(--jd-gold-bright, #F5D77F);
+    --jd-inv-gold-dark: var(--jd-gold-dark, #B8860B);
+    --jd-inv-gold-glow: var(--jd-gold-glow, rgba(236, 200, 106, 0.16));
+    --jd-inv-ivory: var(--jd-ivory, #F1F5F9);
+    --jd-inv-ivory-dim: var(--jd-ivory-dim, #94A3B8);
+    --jd-inv-muted: var(--jd-muted, #64748B);
+    --jd-inv-table-th: var(--jd-table-th, #151B28);
+    --jd-inv-input-bg: var(--jd-input-bg, #0E121A);
+}
+
+[data-theme="light"] {
+    --jd-inv-bg: var(--jd-bg, #F7F5EF);
+    --jd-inv-card: var(--jd-card, #FFFFFF);
+    --jd-inv-card-header: var(--jd-card-header, #FAF7F2);
+    --jd-inv-card-high: var(--jd-card-high, #F1EDE4);
+    --jd-inv-card-highest: var(--jd-card-highest, #E8E2D5);
+    --jd-inv-border: var(--jd-border, rgba(180, 133, 22, 0.20));
+    --jd-inv-border-strong: var(--jd-border-strong, rgba(180, 133, 22, 0.42));
+    --jd-inv-gold: var(--jd-gold, #B48516);
+    --jd-inv-gold-bright: var(--jd-gold-bright, #C99A27);
+    --jd-inv-gold-dark: var(--jd-gold-dark, #8F660E);
+    --jd-inv-gold-glow: var(--jd-gold-glow, rgba(180, 133, 22, 0.14));
+    --jd-inv-ivory: var(--jd-ivory, #1C1917);
+    --jd-inv-ivory-dim: var(--jd-ivory-dim, #57534E);
+    --jd-inv-muted: var(--jd-muted, #8A7E72);
+    --jd-inv-table-th: var(--jd-table-th, #F5F0E6);
+    --jd-inv-input-bg: var(--jd-input-bg, #FFFFFF);
+}
+
+/* Seamless atelier background overrides */
+body:has(.jd-inv-canvas),
+body.has-inventory-suite,
+.jd-inv-canvas {
+    background-color: var(--jd-inv-bg) !important;
+    --bs-heading-color: var(--jd-inv-ivory) !important;
+    --bs-body-color: var(--jd-inv-ivory) !important;
+}
+
+.main-content:has(.jd-inv-canvas),
+.main-content.jd-inv-active,
+#page-content:has(.jd-inv-canvas) {
+    background-color: var(--jd-inv-bg) !important;
+}
+
+body:has(.jd-inv-canvas) .top-navbar,
+body.has-inventory-suite .top-navbar {
+    background-color: var(--jd-navbar-bg) !important;
+    border-bottom: 1px solid var(--jd-border) !important;
+}
+
+body:has(.jd-inv-canvas) .sidebar,
+body.has-inventory-suite .sidebar {
+    background-color: var(--jd-sidebar-bg) !important;
+    border-right: 1px solid var(--jd-border) !important;
+}
+
+/* Hide default page header to use luxury header */
+.main-content:has(.jd-inv-canvas) .page-header-wrapper,
+.main-content.jd-inv-active .page-header-wrapper {
+    display: none !important;
+}
+
+/* Canvas Wrapper */
+.jd-inv-canvas {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    color: var(--jd-inv-ivory);
+    font-family: var(--jd-inv-font-body);
+    box-sizing: border-box;
+    padding-bottom: max(2.5rem, env(safe-area-inset-bottom, 2.5rem));
+    overflow-x: clip;
+}
+
+/* --------------------------------------------------------------------------
+   1. Luxury Module Header & Action CTAs
+   -------------------------------------------------------------------------- */
+.jd-inv-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.jd-inv-title-wrap h1 {
+    font-family: var(--jd-inv-font-headline);
+    font-size: clamp(1.4rem, 2.8vw, 1.95rem);
+    font-weight: 600;
+    color: var(--jd-inv-ivory);
+    letter-spacing: -0.01em;
+    margin: 0 0 0.3rem 0;
+}
+
+.jd-inv-title-wrap h1 i {
+    color: var(--jd-inv-gold);
+    margin-right: 0.5rem;
+}
+
+.jd-inv-subtitle {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--jd-inv-ivory-dim);
+}
+
+.jd-inv-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+/* Button styles */
+.jd-btn-gold {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    background: linear-gradient(135deg, #ECC86A 0%, #D4AF37 100%);
+    color: #15130E !important;
+    font-weight: 700;
+    font-size: 0.86rem;
+    padding: 0.55rem 1.15rem;
+    border-radius: 8px;
+    border: 1px solid #ECC86A;
+    text-decoration: none;
+    box-shadow: 0 4px 14px rgba(212, 175, 55, 0.28);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.jd-btn-gold:hover {
+    background: linear-gradient(135deg, #F5D77F 0%, #E2BE46 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(212, 175, 55, 0.38);
+    color: #100E09 !important;
+}
+
+.jd-btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    background: var(--jd-btn-ghost-bg, var(--jd-inv-card-high));
+    color: var(--jd-inv-ivory) !important;
+    font-weight: 600;
+    font-size: 0.86rem;
+    padding: 0.55rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--jd-inv-border);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.jd-btn-ghost:hover {
+    background: var(--jd-inv-card-highest);
+    border-color: var(--jd-inv-gold);
+    color: var(--jd-inv-gold) !important;
+}
+
+.jd-btn-danger-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    background: rgba(185, 28, 28, 0.12);
+    color: #fca5a5 !important;
+    font-weight: 600;
+    font-size: 0.86rem;
+    padding: 0.55rem 1rem;
+    border-radius: 8px;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.jd-btn-danger-ghost:hover {
+    background: rgba(185, 28, 28, 0.25);
+    border-color: #ef4444;
+    color: #fee2e2 !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. KPI Grid (Atelier Vault Metrics)
+   -------------------------------------------------------------------------- */
+.jd-inv-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 1400px) {
+    .jd-inv-kpi-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+    .jd-inv-kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 540px) {
+    .jd-inv-kpi-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.jd-inv-kpi-card {
+    background: var(--jd-inv-card);
+    border: 1px solid var(--jd-inv-border);
+    border-radius: 12px;
+    padding: 1.1rem 1.15rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.jd-inv-kpi-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--jd-inv-gold);
+}
+
+.jd-inv-kpi-card.has-alert {
+    border-color: rgba(245, 158, 11, 0.6);
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.08) 0%, var(--jd-inv-card) 100%);
+}
+
+.jd-inv-kpi-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+}
+
+.jd-inv-kpi-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+}
+
+.icon-gold {
+    background: rgba(236, 200, 106, 0.18);
+    color: var(--jd-inv-gold);
+}
+
+.icon-green {
+    background: rgba(34, 197, 94, 0.16);
+    color: #4ade80;
+}
+
+.icon-blue {
+    background: rgba(59, 130, 246, 0.16);
+    color: #60a5fa;
+}
+
+.icon-silver {
+    background: rgba(203, 213, 225, 0.16);
+    color: #cbd5e1;
+}
+
+.icon-amber {
+    background: rgba(245, 158, 11, 0.18);
+    color: #fbbf24;
+}
+
+.icon-purple {
+    background: rgba(168, 85, 247, 0.16);
+    color: #c084fc;
+}
+
+.jd-inv-kpi-label {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--jd-inv-ivory-dim);
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+}
+
+.jd-inv-kpi-val {
+    font-family: var(--jd-inv-font-headline);
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: var(--jd-inv-ivory);
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+}
+
+.jd-inv-kpi-sub {
+    font-size: 0.78rem;
+    color: var(--jd-inv-muted);
+    margin-top: 0.25rem;
+}
+
+/* --------------------------------------------------------------------------
+   3. Search & Filter Bar
+   -------------------------------------------------------------------------- */
+.jd-inv-filter-card {
+    background: var(--jd-inv-card);
+    border: 1px solid var(--jd-inv-border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.jd-inv-filter-grid {
+    display: grid;
+    grid-template-columns: 2.2fr 1fr 1fr 1fr 1fr auto;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.jd-inv-filter-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1.2fr 0.8fr auto auto;
+    gap: 0.75rem;
+    align-items: center;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(212, 175, 55, 0.12);
+}
+
+@media (max-width: 1200px) {
+    .jd-inv-filter-grid {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+    .jd-inv-filter-grid-2 {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .jd-inv-filter-grid,
+    .jd-inv-filter-grid-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+.jd-inv-input,
+.jd-inv-select {
+    width: 100%;
+    background: var(--jd-inv-input-bg) !important;
+    border: 1px solid var(--jd-inv-border) !important;
+    color: var(--jd-inv-ivory) !important;
+    border-radius: 8px !important;
+    padding: 0.48rem 0.75rem !important;
+    font-size: 0.86rem !important;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.jd-inv-input:focus,
+.jd-inv-select:focus {
+    border-color: var(--jd-inv-gold) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px var(--jd-inv-gold-glow) !important;
+    background: var(--jd-inv-input-bg) !important;
+    color: var(--jd-inv-ivory) !important;
+}
+
+.jd-inv-select option {
+    background-color: var(--jd-inv-card);
+    color: var(--jd-inv-ivory);
+}
+
+/* --------------------------------------------------------------------------
+   4. Luxury Inventory Ledger Table
+   -------------------------------------------------------------------------- */
+.jd-inv-table-card {
+    background: var(--jd-inv-card);
+    border: 1px solid var(--jd-inv-border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+    margin-bottom: 2rem;
+}
+
+.jd-inv-table-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--jd-inv-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--jd-inv-card-header);
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.jd-inv-table-header h2 {
+    font-family: var(--jd-inv-font-headline);
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--jd-inv-ivory);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.jd-inv-table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+}
+
+.jd-inv-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.86rem;
+    color: var(--jd-inv-ivory);
+    min-width: 980px;
+}
+
+.jd-inv-table th {
+    background: var(--jd-inv-table-th) !important;
+    color: var(--jd-inv-gold) !important;
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--jd-inv-border-strong) !important;
+    white-space: nowrap;
+    text-align: left;
+}
+
+.jd-inv-table td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--jd-inv-border);
+    vertical-align: middle;
+    color: var(--jd-inv-ivory);
+}
+
+.jd-inv-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.jd-inv-table tbody tr:hover {
+    background-color: var(--jd-table-hover, rgba(236, 200, 106, 0.05));
+}
+
+.jd-inv-table tbody tr:nth-child(even) {
+    background-color: var(--jd-table-zebra, rgba(0, 0, 0, 0.15));
+}
+
+/* Badges & Pills */
+.jd-tag-pill {
+    display: inline-block;
+    font-family: monospace;
+    font-weight: 700;
+    color: var(--jd-inv-gold);
+    background: var(--jd-inv-gold-glow);
+    border: 1px solid var(--jd-inv-border);
+    border-radius: 6px;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.82rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.jd-tag-pill:hover {
+    background: rgba(236, 200, 106, 0.25);
+    color: #FFF;
+    border-color: var(--jd-inv-gold);
+}
+
+.jd-badge-gold {
+    background: rgba(212, 175, 55, 0.18);
+    color: var(--jd-inv-gold);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: 6px;
+    padding: 0.18rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.jd-badge-silver {
+    background: rgba(203, 213, 225, 0.15);
+    color: #cbd5e1;
+    border: 1px solid rgba(203, 213, 225, 0.35);
+    border-radius: 6px;
+    padding: 0.18rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.jd-badge-diamond {
+    background: rgba(168, 85, 247, 0.18);
+    color: #d8b4fe;
+    border: 1px solid rgba(168, 85, 247, 0.4);
+    border-radius: 6px;
+    padding: 0.18rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.jd-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 9999px;
+    padding: 0.22rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.jd-status-available {
+    background: rgba(34, 197, 94, 0.18);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.jd-status-reserved {
+    background: rgba(245, 158, 11, 0.18);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.jd-status-sold {
+    background: rgba(239, 68, 68, 0.18);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.jd-status-low {
+    background: rgba(245, 158, 11, 0.25);
+    color: #fde68a;
+    border: 1px solid #f59e0b;
+}
+
+/* Action button icons in table */
+.jd-tbl-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    color: var(--jd-inv-ivory);
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.jd-tbl-btn:hover {
+    background: rgba(236, 200, 106, 0.2);
+    border-color: var(--jd-inv-gold);
+    color: var(--jd-inv-gold);
+}
+
+.jd-tbl-btn-danger:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: #ef4444;
+    color: #fca5a5;
+}
+
+/* --------------------------------------------------------------------------
+   5. Item Detail & Specifications View
+   -------------------------------------------------------------------------- */
+.jd-detail-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 992px) {
+    .jd-detail-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.jd-detail-card {
+    background: var(--jd-inv-card);
+    border: 1px solid var(--jd-inv-border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    margin-bottom: 1.5rem;
+}
+
+.jd-detail-card-header {
+    padding: 1rem 1.25rem;
+    background: var(--jd-inv-card-header);
+    border-bottom: 1px solid var(--jd-inv-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.jd-detail-card-header h2,
+.jd-detail-card-header h3 {
+    font-family: var(--jd-inv-font-headline);
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--jd-inv-ivory);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.jd-detail-card-body {
+    padding: 1.25rem;
+}
+
+.jd-spec-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+}
+
+@media (max-width: 768px) {
+    .jd-spec-list {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .jd-spec-list {
+        grid-template-columns: 1fr;
+    }
+}
+
+.jd-spec-item {
+    border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+    padding-bottom: 0.65rem;
+}
+
+.jd-spec-label {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--jd-inv-ivory-dim);
+    margin-bottom: 0.2rem;
+}
+
+.jd-spec-val {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--jd-inv-ivory);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Printable Jewellery Tag Container */
+.jd-jewel-tag-card {
+    background: #FFF;
+    color: #111;
+    border-radius: 8px;
+    padding: 1.25rem;
+    text-align: center;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+    border: 2px dashed #999;
+}
+
+/* --------------------------------------------------------------------------
+   6. Form & Intake Styling (Item Form / Category Form / Stock Adjust)
+   -------------------------------------------------------------------------- */
+.jd-form-card {
+    background: var(--jd-inv-card);
+    border: 1px solid var(--jd-inv-border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+    margin-bottom: 1.5rem;
+}
+
+.jd-form-card-header {
+    background: var(--jd-inv-card-header);
+    border-bottom: 1px solid var(--jd-inv-border);
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.jd-form-card-header h2 {
+    font-family: var(--jd-inv-font-headline);
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--jd-inv-ivory);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.jd-form-card-body {
+    padding: 1.5rem;
+}
+
+.jd-field-group {
+    margin-bottom: 1.25rem;
+}
+
+.jd-field-label {
+    display: block;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--jd-inv-ivory-dim);
+    margin-bottom: 0.35rem;
+}
+
+.jd-field-help {
+    font-size: 0.76rem;
+    color: var(--jd-inv-muted);
+    margin-top: 0.25rem;
+}
+
+.jd-form-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.jd-form-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .jd-form-grid-3,
+    .jd-form-grid-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   7. Live Pricing Engine & Metal Rates Board
+   -------------------------------------------------------------------------- */
+.jd-pricing-grid {
+    display: grid;
+    grid-template-columns: 1.6fr 1.2fr;
+    gap: 1.5rem;
+}
+
+@media (max-width: 992px) {
+    .jd-pricing-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.jd-rate-ticker-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 900px) {
+    .jd-rate-ticker-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 500px) {
+    .jd-rate-ticker-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.jd-rate-pill-card {
+    background: var(--jd-inv-card);
+    border: 1px solid var(--jd-inv-border);
+    border-radius: 12px;
+    padding: 1rem;
+    transition: transform 0.2s ease;
+}
+
+.jd-rate-pill-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--jd-inv-gold);
+}
+
+.jd-rate-pill-gold {
+    background: linear-gradient(135deg, rgba(236, 200, 106, 0.15) 0%, rgba(32, 22, 14, 0.95) 100%);
+    border-color: var(--jd-inv-gold);
+}
+
+/* Live Quotation Summary Card */
+.jd-quote-summary-card {
+    background: linear-gradient(180deg, #241A12 0%, #1A130C 100%);
+    border: 2px solid var(--jd-inv-gold);
+    border-radius: 14px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55), 0 0 20px rgba(212, 175, 55, 0.15);
+    position: sticky;
+    top: 85px;
+}
+
+.jd-quote-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.12);
+    font-size: 0.9rem;
+}
+
+.jd-quote-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1rem;
+    margin-top: 0.5rem;
+    border-top: 2px solid var(--jd-inv-gold);
+    font-family: var(--jd-inv-font-headline);
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: var(--jd-inv-gold);
+}
+
+/* --------------------------------------------------------------------------
+   8. Mobile Specific Tweaks & PWA
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+    .jd-inv-canvas {
+        padding-left: 0.25rem;
+        padding-right: 0.25rem;
+    }
+
+    .jd-inv-header {
+        margin-bottom: 1rem;
+    }
+
+    .jd-inv-header-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+
+    .jd-btn-gold,
+    .jd-btn-ghost,
+    .jd-btn-danger-ghost {
+        width: 100%;
+        min-height: 44px;
+        font-size: 0.82rem;
+    }
+
+    .jd-inv-table-card {
+        border-radius: 10px;
+    }
+}

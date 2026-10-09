@@ -1,364 +1,321 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}{{ page_title }} — JewelDesk{% endblock %}
+{% block title %}{{ page_title|default:"Add Jewellery Piece" }} — JewelDesk Atelier{% endblock %}
 
-{% block page_title %}{{ page_title }}{% endblock %}
-
-{% block page_actions %}
-<a href="{% url 'inventory_list' %}" class="btn btn-outline-secondary btn-sm">
-    <i class="bi bi-arrow-left me-1"></i> Back to Inventory
-</a>
+{% block extra_css %}
+<link href="{% static 'css/inventory_atelier.css' %}?v={% now "U" %}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-10">
-        <div class="card">
-            <div class="card-header bg-white border-bottom py-3">
-                <h6 class="mb-0 fw-semibold text-dark">
-                    <i class="bi bi-gem me-2"></i> Jewellery Item Information
-                </h6>
-            </div>
-            <div class="card-body p-4">
-                <form method="post" novalidate>
-                    {% csrf_token %}
+<div class="jd-inv-canvas">
 
-                    {% if form.non_field_errors %}
-                    <div class="alert alert-danger py-2">
-                        {% for error in form.non_field_errors %}
-                        <small class="d-block">{{ error }}</small>
-                        {% endfor %}
+    <!-- 1. Header & Actions -->
+    <div class="jd-inv-header">
+        <div class="jd-inv-title-wrap">
+            <h1><i class="bi bi-gem text-warning me-2"></i>{{ page_title|default:"Jewellery Item Specification" }}</h1>
+            <p class="jd-inv-subtitle">Record physical piece specifications, hallmark verification, gold weight assays &amp; showroom pricing</p>
+        </div>
+        <div class="jd-inv-header-actions">
+            <a href="{% url 'inventory_list' %}" class="jd-btn-ghost">
+                <i class="bi bi-arrow-left"></i> Back to Inventory
+            </a>
+            <a href="{% url 'pricing_calculator' %}" class="jd-btn-ghost" target="_blank">
+                <i class="bi bi-calculator"></i> Open Pricing Engine
+            </a>
+        </div>
+    </div>
+
+    <form method="post" id="jewelleryItemForm" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger py-2 mb-4 bg-danger bg-opacity-20 border-danger text-light">
+            {% for error in form.non_field_errors %}
+            <div class="small"><i class="bi bi-exclamation-triangle-fill me-1"></i> {{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="row g-4">
+
+            <!-- LEFT COLUMN: Identity, Metal & Authentication -->
+            <div class="col-lg-7">
+
+                <!-- 1. Jewellery Identity Card -->
+                <div class="jd-form-card">
+                    <div class="jd-form-card-header">
+                        <h2>
+                            <i class="bi bi-tag-fill text-warning"></i>
+                            1. Jewellery Identity &amp; Cataloging
+                        </h2>
                     </div>
-                    {% endif %}
-
-                    <div class="row g-3">
-                        <!-- Jewellery Identity -->
-                        <div class="col-12">
-                            <h6 class="text-uppercase text-muted fw-bold border-bottom pb-2 small">
-                                <i class="bi bi-tag me-1"></i> Jewellery Identity
-                            </h6>
+                    <div class="jd-form-card-body">
+                        <div class="jd-form-grid-2 mb-3">
+                            <div>
+                                <label class="jd-field-label">Jewellery Tag Number</label>
+                                {{ form.tag_number }}
+                                {% if form.tag_number.errors %}
+                                <div class="text-danger small mt-1">{{ form.tag_number.errors.0 }}</div>
+                                {% endif %}
+                                <div class="jd-field-help">Unique physical tag (e.g. JWL-000001). Leave blank to auto-generate.</div>
+                            </div>
+                            <div>
+                                <label class="jd-field-label">Piece ID / Item Code <span class="text-danger">*</span></label>
+                                {{ form.item_code }}
+                                {% if form.item_code.errors %}
+                                <div class="text-danger small mt-1">{{ form.item_code.errors.0 }}</div>
+                                {% endif %}
+                                <div class="jd-field-help">Physical barcode ID (e.g. GLD-RN-001-A).</div>
+                            </div>
                         </div>
 
-                        <!-- Tag Number -->
-                        <div class="col-md-4">
-                            <label for="{{ form.tag_number.id_for_label }}" class="form-label">
-                                Jewellery Tag Number
-                            </label>
-                            {{ form.tag_number }}
-                            {% if form.tag_number.errors %}
-                            <div class="text-danger small mt-1">{{ form.tag_number.errors.0 }}</div>
-                            {% endif %}
-                            <div class="form-text small">Unique piece tag (e.g. JWL-000001). Leave blank to auto-generate.</div>
+                        <div class="jd-form-grid-2 mb-3">
+                            <div>
+                                <label class="jd-field-label">Design / Model Code</label>
+                                {{ form.design_code }}
+                                {% if form.design_code.errors %}
+                                <div class="text-danger small mt-1">{{ form.design_code.errors.0 }}</div>
+                                {% endif %}
+                                <div class="jd-field-help">Shared design code for duplicate pieces (e.g. DSN-RN-001).</div>
+                            </div>
+                            <div>
+                                <label class="jd-field-label">Category / Collection <span class="text-danger">*</span></label>
+                                {{ form.category }}
+                                {% if form.category.errors %}
+                                <div class="text-danger small mt-1">{{ form.category.errors.0 }}</div>
+                                {% endif %}
+                            </div>
                         </div>
 
-                        <!-- Item Code (Piece ID) -->
-                        <div class="col-md-4">
-                            <label for="{{ form.item_code.id_for_label }}" class="form-label">
-                                Piece ID / Item Code <span class="text-danger">*</span>
-                            </label>
-                            {{ form.item_code }}
-                            {% if form.item_code.errors %}
-                            <div class="text-danger small mt-1">{{ form.item_code.errors.0 }}</div>
-                            {% endif %}
-                            <div class="form-text small">Internal piece identifier / SKU.</div>
-                        </div>
-
-                        <!-- Design Code -->
-                        <div class="col-md-4">
-                            <label for="{{ form.design_code.id_for_label }}" class="form-label">
-                                Design / Model Code
-                            </label>
-                            {{ form.design_code }}
-                            {% if form.design_code.errors %}
-                            <div class="text-danger small mt-1">{{ form.design_code.errors.0 }}</div>
-                            {% endif %}
-                            <div class="form-text small">Shared across pieces of same design.</div>
-                        </div>
-
-                        <!-- Name -->
-                        <div class="col-md-6">
-                            <label for="{{ form.name.id_for_label }}" class="form-label">
-                                Item Name <span class="text-danger">*</span>
-                            </label>
+                        <div class="jd-field-group">
+                            <label class="jd-field-label">Ornament Name <span class="text-danger">*</span></label>
                             {{ form.name }}
                             {% if form.name.errors %}
                             <div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>
                             {% endif %}
+                            <div class="jd-field-help">Descriptive name for invoices and display (e.g. 22K Traditional Bridal Choker).</div>
                         </div>
+                    </div>
+                </div>
 
-                        <!-- Category -->
-                        <div class="col-md-6">
-                            <label for="{{ form.category.id_for_label }}" class="form-label">
-                                Category <span class="text-danger">*</span>
-                            </label>
-                            {{ form.category }}
-                            {% if form.category.errors %}
-                            <div class="text-danger small mt-1">{{ form.category.errors.0 }}</div>
-                            {% endif %}
-                            <div class="form-text">
-                                <a href="{% url 'category_list' %}" target="_blank" class="small"><i class="bi bi-tags"></i> Manage Categories</a>
+                <!-- 2. Authentication & BIS Hallmarking Card -->
+                <div class="jd-form-card">
+                    <div class="jd-form-card-header">
+                        <h2>
+                            <i class="bi bi-shield-lock-fill text-warning"></i>
+                            2. Authentication &amp; BIS Hallmarking
+                        </h2>
+                    </div>
+                    <div class="jd-form-card-body">
+                        <div class="jd-form-grid-3 mb-3">
+                            <div>
+                                <label class="jd-field-label">HUID (6-char Alpha)</label>
+                                {{ form.huid }}
+                                {% if form.huid.errors %}
+                                <div class="text-danger small mt-1">{{ form.huid.errors.0 }}</div>
+                                {% endif %}
+                                <div class="jd-field-help">e.g. AB1234 from BIS assay center.</div>
+                            </div>
+                            <div>
+                                <label class="jd-field-label">HUID Status</label>
+                                {{ form.huid_status }}
+                                {% if form.huid_status.errors %}
+                                <div class="text-danger small mt-1">{{ form.huid_status.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <label class="jd-field-label">Hallmark Status</label>
+                                {{ form.hallmark_status }}
+                                {% if form.hallmark_status.errors %}
+                                <div class="text-danger small mt-1">{{ form.hallmark_status.errors.0 }}</div>
+                                {% endif %}
                             </div>
                         </div>
-                        <!-- Authentication & Hallmarking -->
-                        <div class="col-12 mt-3">
-                            <h6 class="text-uppercase text-muted fw-bold border-bottom pb-2 small">
-                                <i class="bi bi-patch-check me-1"></i> Authentication &amp; Hallmark
-                            </h6>
-                        </div>
 
-                        <!-- HUID -->
-                        <div class="col-md-3">
-                            <label for="{{ form.huid.id_for_label }}" class="form-label">
-                                HUID (BIS Hallmark ID)
-                            </label>
-                            {{ form.huid }}
-                            {% if form.huid.errors %}
-                            <div class="text-danger small mt-1">{{ form.huid.errors.0 }}</div>
-                            {% endif %}
-                            <div class="form-text small">6-char alphanumeric code (e.g. AB1234).</div>
-                        </div>
-
-                        <!-- HUID Status -->
-                        <div class="col-md-3">
-                            <label for="{{ form.huid_status.id_for_label }}" class="form-label">
-                                HUID Status
-                            </label>
-                            {{ form.huid_status }}
-                            {% if form.huid_status.errors %}
-                            <div class="text-danger small mt-1">{{ form.huid_status.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-
-                        <!-- Hallmark Status -->
-                        <div class="col-md-3">
-                            <label for="{{ form.hallmark_status.id_for_label }}" class="form-label">
-                                Hallmark Status
-                            </label>
-                            {{ form.hallmark_status }}
-                            {% if form.hallmark_status.errors %}
-                            <div class="text-danger small mt-1">{{ form.hallmark_status.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-
-                        <!-- Hallmark Details -->
-                        <div class="col-md-3">
-                            <label for="{{ form.hallmark_details.id_for_label }}" class="form-label">
-                                Hallmark Details
-                            </label>
+                        <div class="jd-field-group">
+                            <label class="jd-field-label">Assay &amp; Certification Remarks</label>
                             {{ form.hallmark_details }}
                             {% if form.hallmark_details.errors %}
                             <div class="text-danger small mt-1">{{ form.hallmark_details.errors.0 }}</div>
                             {% endif %}
-                        </div>
-
-                        <!-- Metal & Weights -->
-                        <div class="col-12 mt-3">
-                            <h6 class="text-uppercase text-muted fw-bold border-bottom pb-2 small">
-                                <i class="bi bi-gem me-1"></i> Metal &amp; Weights
-                            </h6>
-                        </div>
-
-
-                        <!-- Metal Type -->
-                        <div class="col-md-3">
-                            <label for="{{ form.metal_type.id_for_label }}" class="form-label">
-                                Metal Type <span class="text-danger">*</span>
-                            </label>
-                            {{ form.metal_type }}
-                            {% if form.metal_type.errors %}
-                            <div class="text-danger small mt-1">{{ form.metal_type.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-
-                        <!-- Purity -->
-                        <div class="col-md-3">
-                            <label for="{{ form.purity.id_for_label }}" class="form-label">
-                                Purity <span class="text-danger">*</span>
-                            </label>
-                            {{ form.purity }}
-                            {% if form.purity.errors %}
-                            <div class="text-danger small mt-1">{{ form.purity.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-
-                        <!-- Gross Weight -->
-                        <div class="col-md-2">
-                            <label for="{{ form.gross_weight.id_for_label }}" class="form-label">
-                                Gross Wt. (g) <span class="text-danger">*</span>
-                            </label>
-                            {{ form.gross_weight }}
-                            {% if form.gross_weight.errors %}
-                            <div class="text-danger small mt-1">{{ form.gross_weight.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-
-                        <!-- Stone Weight -->
-                        <div class="col-md-2">
-                            <label for="{{ form.stone_weight.id_for_label }}" class="form-label">
-                                Stone Wt. (g)
-                            </label>
-                            {{ form.stone_weight }}
-                            {% if form.stone_weight.errors %}
-                            <div class="text-danger small mt-1">{{ form.stone_weight.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-
-                        <!-- Net Weight -->
-                        <div class="col-md-2">
-                            <label for="{{ form.net_weight.id_for_label }}" class="form-label">
-                                Net Wt. (g)
-                            </label>
-                            {{ form.net_weight }}
-                            {% if form.net_weight.errors %}
-                            <div class="text-danger small mt-1">{{ form.net_weight.errors.0 }}</div>
-                            {% endif %}
-                            <div class="form-text small">Auto = Gross - Stone</div>
-                        </div>
-                        <!-- Pricing & Stock -->
-                        <div class="col-12 mt-3">
-                            <h6 class="text-uppercase text-muted fw-bold border-bottom pb-2 small">
-                                <i class="bi bi-currency-rupee me-1"></i> Pricing &amp; Status
-                            </h6>
-                        </div>
-
-
-                        <!-- Making Charge Type -->
-                        <div class="col-md-3">
-                            <label for="{{ form.making_charge_type.id_for_label }}" class="form-label">
-                                Making Charge Type
-                            </label>
-                            {{ form.making_charge_type }}
-                            {% if form.making_charge_type.errors %}
-                            <div class="text-danger small mt-1">{{ form.making_charge_type.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-
-                        <!-- Making Charge -->
-                        <div class="col-md-3">
-                            <label for="{{ form.making_charge.id_for_label }}" class="form-label">
-                                Making Charge Value (₹ or %)
-                            </label>
-                            {{ form.making_charge }}
-                            {% if form.making_charge.errors %}
-                            <div class="text-danger small mt-1">{{ form.making_charge.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-
-                        <!-- Wastage -->
-                        <div class="col-md-3">
-                            <label for="{{ form.wastage_percent.id_for_label }}" class="form-label">
-                                Wastage (%)
-                            </label>
-                            {{ form.wastage_percent }}
-                            {% if form.wastage_percent.errors %}
-                            <div class="text-danger small mt-1">{{ form.wastage_percent.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-
-                        <!-- Stone Charges -->
-                        <div class="col-md-3">
-                            <label for="{{ form.stone_charges.id_for_label }}" class="form-label">
-                                Stone / Diamond Charges (₹)
-                            </label>
-                            {{ form.stone_charges }}
-                            {% if form.stone_charges.errors %}
-                            <div class="text-danger small mt-1">{{ form.stone_charges.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-
-                        <!-- Other Charges -->
-                        <div class="col-md-3">
-                            <label for="{{ form.other_charges.id_for_label }}" class="form-label">
-                                Other Charges (₹)
-                            </label>
-                            {{ form.other_charges }}
-                            {% if form.other_charges.errors %}
-                            <div class="text-danger small mt-1">{{ form.other_charges.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-
-                        <!-- Selling Price with Auto-Calculate -->
-                        <div class="col-md-5">
-                            <label for="{{ form.selling_price.id_for_label }}" class="form-label d-flex justify-content-between align-items-center">
-                                <span>Tag Selling Price (₹) <span class="text-danger">*</span></span>
-                                <button type="button" class="btn btn-sm btn-link p-0 text-warning text-decoration-none fw-bold" onclick="calculateLiveSellingPrice()">
-                                    <i class="bi bi-magic me-1"></i> Auto-Calculate Price
-                                </button>
-                            </label>
-                            {{ form.selling_price }}
-                            {% if form.selling_price.errors %}
-                            <div class="text-danger small mt-1">{{ form.selling_price.errors.0 }}</div>
-                            {% endif %}
-                            <div class="form-text small" id="pricing-hint">Total inclusive of metal, wastage, making, stones &amp; GST.</div>
-                        </div>
-
-                        <!-- Status -->
-                        <div class="col-md-4">
-                            <label for="{{ form.status.id_for_label }}" class="form-label">
-                                Status <span class="text-danger">*</span>
-                            </label>
-                            {{ form.status }}
-                            {% if form.status.errors %}
-                            <div class="text-danger small mt-1">{{ form.status.errors.0 }}</div>
-                            {% endif %}
+                            <div class="jd-field-help">Assaying center name, laser inscription ID, or diamond certificate (GIA/IGI).</div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-                        <a href="{% url 'inventory_list' %}" class="btn btn-outline-secondary">Cancel</a>
-                        <button type="submit" class="btn btn-dark">
-                            <i class="bi bi-check-lg me-1"></i> {% if is_edit %}Update Item{% else %}Save Item{% endif %}
-                        </button>
-                    </div>
-                </form>
             </div>
+
+            <!-- RIGHT COLUMN: Weights, Pricing & Status -->
+            <div class="col-lg-5">
+
+                <!-- 3. Precious Metal & Weight Assay Card -->
+                <div class="jd-form-card">
+                    <div class="jd-form-card-header">
+                        <h2>
+                            <i class="bi bi-speedometer2 text-warning"></i>
+                            3. Metal &amp; Weight Specifications
+                        </h2>
+                    </div>
+                    <div class="jd-form-card-body">
+                        <div class="jd-form-grid-2 mb-3">
+                            <div>
+                                <label class="jd-field-label">Metal Type <span class="text-danger">*</span></label>
+                                {{ form.metal_type }}
+                                {% if form.metal_type.errors %}
+                                <div class="text-danger small mt-1">{{ form.metal_type.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <label class="jd-field-label">Purity / Karat <span class="text-danger">*</span></label>
+                                {{ form.purity }}
+                                {% if form.purity.errors %}
+                                <div class="text-danger small mt-1">{{ form.purity.errors.0 }}</div>
+                                {% endif %}
+                                <div class="jd-field-help">e.g. 22K (916), 18K (750), 925.</div>
+                            </div>
+                        </div>
+
+                        <div class="jd-form-grid-3 mb-3">
+                            <div>
+                                <label class="jd-field-label">Gross Weight (g) <span class="text-danger">*</span></label>
+                                {{ form.gross_weight }}
+                                {% if form.gross_weight.errors %}
+                                <div class="text-danger small mt-1">{{ form.gross_weight.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <label class="jd-field-label">Stone Wt (g)</label>
+                                {{ form.stone_weight }}
+                                {% if form.stone_weight.errors %}
+                                <div class="text-danger small mt-1">{{ form.stone_weight.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <label class="jd-field-label">Net Metal Wt (g)</label>
+                                {{ form.net_weight }}
+                                {% if form.net_weight.errors %}
+                                <div class="text-danger small mt-1">{{ form.net_weight.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Pricing, Making Charges & Vault Status Card -->
+                <div class="jd-form-card">
+                    <div class="jd-form-card-header">
+                        <h2>
+                            <i class="bi bi-currency-rupee text-warning"></i>
+                            4. Showroom Pricing &amp; Charges
+                        </h2>
+                    </div>
+                    <div class="jd-form-card-body">
+                        <div class="jd-form-grid-2 mb-3">
+                            <div>
+                                <label class="jd-field-label">Making Charge Type</label>
+                                {{ form.making_charge_type }}
+                            </div>
+                            <div>
+                                <label class="jd-field-label">Making Charge Amount</label>
+                                {{ form.making_charge }}
+                            </div>
+                        </div>
+
+                        <div class="jd-form-grid-3 mb-3">
+                            <div>
+                                <label class="jd-field-label">Wastage %</label>
+                                {{ form.wastage_percent }}
+                            </div>
+                            <div>
+                                <label class="jd-field-label">Stone Charges (₹)</label>
+                                {{ form.stone_charges }}
+                            </div>
+                            <div>
+                                <label class="jd-field-label">Other Charges (₹)</label>
+                                {{ form.other_charges }}
+                            </div>
+                        </div>
+
+                        <div class="jd-form-grid-2 mb-3">
+                            <div>
+                                <label class="jd-field-label">Fixed Retail Tag Price (₹) <span class="text-danger">*</span></label>
+                                {{ form.selling_price }}
+                                {% if form.selling_price.errors %}
+                                <div class="text-danger small mt-1">{{ form.selling_price.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <label class="jd-field-label">Showroom Stock Status <span class="text-danger">*</span></label>
+                                {{ form.status }}
+                                {% if form.status.errors %}
+                                <div class="text-danger small mt-1">{{ form.status.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Submit CTA Group -->
+                        <div class="mt-4 pt-3 border-top border-secondary border-opacity-25 d-flex gap-2">
+                            <button type="submit" class="jd-btn-gold flex-grow-1 py-2 fs-6">
+                                <i class="bi bi-check-circle-fill"></i> Save Piece to Vault
+                            </button>
+                            <a href="{% url 'inventory_list' %}" class="jd-btn-ghost py-2">
+                                Cancel
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
         </div>
-    </div>
-</div>
+    </form>
+
 </div>
 
 <script>
-function calculateLiveSellingPrice() {
-    const payload = {
-        metal_type: document.getElementById('id_metal_type') ? document.getElementById('id_metal_type').value : 'Gold',
-        purity: document.getElementById('id_purity') ? document.getElementById('id_purity').value : '22K',
-        gross_weight: document.getElementById('id_gross_weight') ? document.getElementById('id_gross_weight').value : '0',
-        stone_weight: document.getElementById('id_stone_weight') ? document.getElementById('id_stone_weight').value : '0',
-        net_weight: document.getElementById('id_net_weight') ? document.getElementById('id_net_weight').value : '',
-        making_charge: document.getElementById('id_making_charge') ? document.getElementById('id_making_charge').value : '0',
-        making_charge_type: document.getElementById('id_making_charge_type') ? document.getElementById('id_making_charge_type').value : 'Fixed Amount',
-        wastage_percent: document.getElementById('id_wastage_percent') ? document.getElementById('id_wastage_percent').value : '0',
-        stone_charges: document.getElementById('id_stone_charges') ? document.getElementById('id_stone_charges').value : '0',
-        other_charges: document.getElementById('id_other_charges') ? document.getElementById('id_other_charges').value : '0',
-        tax_percent: 3.0
-    };
+    document.addEventListener('DOMContentLoaded', function() {
+        document.body.classList.add('has-inventory-suite');
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) mainContent.classList.add('jd-inv-active');
+        const pageContent = document.getElementById('page-content');
+        if (pageContent) pageContent.classList.add('jd-inv-active');
 
-    const hint = document.getElementById('pricing-hint');
-    if (hint) hint.innerHTML = '<span class="text-primary"><i class="bi bi-hourglass-split"></i> Calculating price at today board rate...</span>';
-
-    fetch("{% url 'api_calculate_price' %}", {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-        },
-        body: JSON.stringify(payload)
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.ok && data.breakdown) {
-            document.getElementById('id_selling_price').value = data.breakdown.final_price.toFixed(2);
-            if (hint) {
-                hint.innerHTML = `<span class="text-success"><i class="bi bi-check-circle"></i> Auto-calculated: Metal ₹${data.breakdown.metal_value.toFixed(2)} + MC ₹${data.breakdown.making_charge_amount.toFixed(2)} + Wastage ₹${data.breakdown.wastage_amount.toFixed(2)} + GST ₹${data.breakdown.tax_amount.toFixed(2)} = <strong>₹${data.breakdown.final_price.toFixed(2)}</strong></span>`;
+        // Style raw inputs with luxury dark classes
+        const inputs = document.querySelectorAll('#jewelleryItemForm input, #jewelleryItemForm select, #jewelleryItemForm textarea');
+        inputs.forEach(el => {
+            if (el.tagName === 'SELECT') {
+                el.classList.add('jd-inv-select');
+            } else {
+                el.classList.add('jd-inv-input');
             }
-        } else {
-            if (hint) hint.innerHTML = '<span class="text-danger">Unable to calculate price. Please verify weights and purity.</span>';
+        });
+
+        // Real-time Net Weight Calculation (Net = Gross - Stone)
+        const grossInput = document.querySelector('input[name="gross_weight"]');
+        const stoneInput = document.querySelector('input[name="stone_weight"]');
+        const netInput = document.querySelector('input[name="net_weight"]');
+
+        function updateNetWeight() {
+            if (!grossInput || !netInput) return;
+            const gross = parseFloat(grossInput.value) || 0;
+            const stone = parseFloat(stoneInput ? stoneInput.value : 0) || 0;
+            const net = Math.max(0, gross - stone);
+            if (gross > 0) {
+                netInput.value = net.toFixed(3);
+            }
         }
-    })
-    .catch(err => {
-        console.error('Pricing calc error:', err);
-        if (hint) hint.innerHTML = '<span class="text-danger">Calculation request failed.</span>';
+
+        if (grossInput) grossInput.addEventListener('input', updateNetWeight);
+        if (stoneInput) stoneInput.addEventListener('input', updateNetWeight);
+
+        // Auto uppercase HUID input
+        const huidInput = document.querySelector('input[name="huid"]');
+        if (huidInput) {
+            huidInput.addEventListener('input', function() {
+                this.value = this.value.toUpperCase();
+            });
+        }
     });
-}
 </script>
 {% endblock %}

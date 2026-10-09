@@ -1,34 +1,43 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Store Branches — JewelDesk{% endblock %}
+{% block title %}Store Branches — JewelDesk Atelier{% endblock %}
 {% block page_title %}Store Branches{% endblock %}
 
 {% block page_actions %}
-  <a href="{% url 'team:employee_list' %}" class="btn btn-outline-secondary btn-sm" id="btn-back-team">
+  <a href="{% url 'team:employee_list' %}" class="jd-btn-ghost btn-sm" id="btn-back-team">
     <i class="bi bi-people me-1"></i> Back to Team
   </a>
   {% if user.is_staff or user.is_superuser or user_perms.team.can_edit or user_perms.team.can_add or not user.employee_profile %}
-  <a href="{% url 'team:branch_create' %}" class="btn btn-primary btn-sm ms-2" id="btn-add-branch">
+  <a href="{% url 'team:branch_create' %}" class="jd-btn-gold btn-sm ms-2" id="btn-add-branch">
     <i class="bi bi-plus-circle me-1"></i> Add Branch
   </a>
   {% endif %}
 {% endblock %}
 
 {% block content %}
-<div class="card shadow-sm">
-  <div class="card-header bg-white d-flex justify-content-between align-items-center">
-    <h5 class="mb-0 fw-semibold">
-      <i class="bi bi-shop me-2 text-primary"></i>All Branches
-      <span class="badge bg-secondary ms-2">{{ branches.count }}</span>
-    </h5>
+<div class="jd-canvas">
+  <!-- Header -->
+  <div class="jd-header">
+    <div>
+      <div class="jd-badge"><i class="bi bi-shop me-1"></i> Showroom &amp; Vault Locations</div>
+      <h1 class="jd-title">Store &amp; Showroom Branches</h1>
+      <p class="jd-subtitle">Manage physical retail showrooms, flagship boutiques, and manufacturing workshop hubs.</p>
+    </div>
+    <div>
+      {% if user.is_staff or user.is_superuser or user_perms.team.can_edit or user_perms.team.can_add or not user.employee_profile %}
+      <a href="{% url 'team:branch_create' %}" class="jd-btn-gold">
+        <i class="bi bi-plus-circle me-1"></i> Add Branch
+      </a>
+      {% endif %}
+    </div>
   </div>
 
-  <div class="card-body p-0">
+  <div class="jd-table-card">
     {% if branches %}
     <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0" id="branches-table">
-        <thead class="table-light">
+      <table class="jd-table" id="branches-table">
+        <thead>
           <tr>
             <th>Branch Name</th>
             <th>Contact Phone</th>
@@ -41,23 +50,23 @@
         <tbody>
           {% for b in branches %}
           <tr>
-            <td class="fw-semibold">
-              <i class="bi bi-geo-alt-fill text-danger me-1"></i> {{ b.name }}
+            <td class="fw-semibold text-white">
+              <i class="bi bi-geo-alt-fill text-gold me-2"></i> {{ b.name }}
             </td>
-            <td>{{ b.phone|default:"—" }}</td>
-            <td class="text-muted small" style="max-width: 250px;">{{ b.address|default:"—"|truncatechars:60 }}</td>
+            <td><span class="text-gold font-monospace">{{ b.phone|default:"—" }}</span></td>
+            <td><span class="text-light small text-truncate d-inline-block" style="max-width: 280px;">{{ b.address|default:"—"|truncatechars:60 }}</span></td>
             <td>
               {% if b.is_active %}
-                <span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
+                <span class="jd-stage-pill" style="background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.35);">Active</span>
               {% else %}
-                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Inactive</span>
+                <span class="jd-stage-pill" style="background: rgba(255,255,255,0.06); color: rgba(250,244,234,0.6); border: 1px solid rgba(255,255,255,0.15);">Inactive</span>
               {% endif %}
             </td>
             <td class="text-muted small">{{ b.created_at|date:"d M Y" }}</td>
             <td class="text-end pe-3">
               {% if user.is_staff or user.is_superuser or user_perms.team.can_edit or not user.employee_profile %}
-              <a href="{% url 'team:branch_edit' b.pk %}" class="btn btn-outline-secondary btn-sm" title="Edit Branch">
-                <i class="bi bi-pencil"></i> Edit
+              <a href="{% url 'team:branch_edit' b.pk %}" class="jd-btn-ghost btn-sm py-1 px-2" title="Edit Branch">
+                <i class="bi bi-pencil me-1"></i> Edit
               </a>
               {% endif %}
             </td>
@@ -68,11 +77,13 @@
     </div>
     {% else %}
     <div class="text-center py-5">
-      <i class="bi bi-shop display-4 text-muted mb-3 d-block"></i>
-      <h6 class="text-muted">No branches created yet</h6>
-      <p class="text-muted small">Add your main showroom, flagship store, or warehouse branch.</p>
+      <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(236, 200, 106, 0.08); display: inline-flex; align-items: center; justify-content: center; color: var(--gold-primary); font-size: 1.75rem; margin-bottom: 1rem;">
+        <i class="bi bi-shop"></i>
+      </div>
+      <h5 class="text-white fw-bold mb-1">No Branches Created Yet</h5>
+      <p class="text-muted small mb-3">Add your main showroom, flagship boutique, or atelier workshop hub.</p>
       {% if user.is_staff or user.is_superuser or user_perms.team.can_edit or user_perms.team.can_add or not user.employee_profile %}
-      <a href="{% url 'team:branch_create' %}" class="btn btn-primary btn-sm">
+      <a href="{% url 'team:branch_create' %}" class="jd-btn-gold">
         <i class="bi bi-plus-circle me-1"></i> Add First Branch
       </a>
       {% endif %}
@@ -80,4 +91,12 @@
     {% endif %}
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('has-atelier-suite');
+    const pc = document.getElementById('page-content');
+    if (pc) pc.classList.add('jd-active');
+});
+</script>
 {% endblock %}

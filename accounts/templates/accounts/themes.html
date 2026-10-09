@@ -2,84 +2,112 @@
 {% block title %}Themes — JewelDesk{% endblock %}
 {% block page_title %}Themes{% endblock %}
 {% block content %}
-<p class="text-muted mb-3">Choose how JewelDesk looks</p>
-
-<div class="theme-grid">
-    <div class="theme-card{% if current_theme == 'light' %} is-selected{% endif %}" data-theme-card="light">
-        <div class="p-2">
-            <div class="tp-window tp-light">
-                <div class="tp-topbar"><span class="tp-dot"></span><span class="tp-dot"></span><span class="tp-dot"></span></div>
-                <div class="tp-body">
-                    <div class="tp-side"><span class="tp-pill on"></span><span class="tp-pill"></span><span class="tp-pill"></span><span class="tp-pill"></span></div>
-                    <div class="tp-main">
-                        <div class="tp-card"><span class="tp-line w60"></span><span class="tp-line w40"></span></div>
-                        <div class="tp-table">
-                            <div class="tp-thead"><i class="tdot w70"></i><i class="tdot w50"></i><i class="tdot w60"></i></div>
-                            <div class="trow"><div class="tcell"><i class="tdot w70"></i></div><div class="tcell"><i class="tdot w50"></i></div><div class="tcell"><i class="tdot w60"></i></div></div>
-                        </div>
-                        <div class="tp-actions"><span class="tp-btn"></span><span class="tp-stat s-red"></span><span class="tp-stat s-green"></span><span class="tp-stat s-amber"></span></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="p-3 pt-2">
-            <h6 class="theme-name mb-1">Light</h6>
-            <p class="theme-desc mb-3">Clean, neutral surfaces for everyday work.</p>
-            <button type="button" class="btn btn-sm w-100 theme-apply-btn" data-theme="light">{% if current_theme == 'light' %}✓ Selected{% else %}Apply{% endif %}</button>
+<div class="jd-canvas">
+    <!-- Header -->
+    <div class="jd-header">
+        <div class="jd-title-wrap">
+            <span class="jd-badge"><i class="bi bi-palette2"></i> Appearance &amp; Personalization</span>
+            <h1 class="jd-title"><i class="bi bi-brush"></i> Themes &amp; Visual Style</h1>
+            <p class="jd-subtitle">Choose how JewelDesk looks across all modules, counter terminals, and reports</p>
         </div>
     </div>
 
-    <div class="theme-card{% if current_theme == 'dark' %} is-selected{% endif %}" data-theme-card="dark">
-        <div class="p-2">
-            <div class="tp-window tp-dark">
-                <div class="tp-topbar"><span class="tp-dot"></span><span class="tp-dot"></span><span class="tp-dot"></span></div>
-                <div class="tp-body">
-                    <div class="tp-side"><span class="tp-pill on"></span><span class="tp-pill"></span><span class="tp-pill"></span><span class="tp-pill"></span></div>
-                    <div class="tp-main">
-                        <div class="tp-card"><span class="tp-line w60"></span><span class="tp-line w40"></span></div>
-                        <div class="tp-table">
-                            <div class="tp-thead"><i class="tdot w70"></i><i class="tdot w50"></i><i class="tdot w60"></i></div>
-                            <div class="trow"><div class="tcell"><i class="tdot w70"></i></div><div class="tcell"><i class="tdot w50"></i></div><div class="tcell"><i class="tdot w60"></i></div></div>
-                        </div>
-                        <div class="tp-actions"><span class="tp-btn"></span><span class="tp-stat s-red"></span><span class="tp-stat s-green"></span><span class="tp-stat s-amber"></span></div>
-                    </div>
+    <!-- Active Theme Live Indicator Banner -->
+    <div class="jd-card p-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-3" style="background: var(--jd-card); border: 1px solid var(--jd-border); border-radius: 12px;">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px; background: var(--jd-gold-glow); color: var(--jd-gold); font-size: 1.3rem; border: 1px solid var(--jd-border-strong);">
+                <i class="bi bi-palette"></i>
+            </div>
+            <div>
+                <div class="text-uppercase fw-bold" style="color: var(--jd-ivory-dim); letter-spacing: 0.05em; font-size: 0.72rem;">Current Active Theme</div>
+                <div class="h5 mb-0 fw-bold" id="currentActiveThemeLabel" style="color: var(--jd-ivory); font-family: var(--jd-font-headline);">
+                    {% if current_theme == 'gold' %}Gold / Premium (Chocolate &amp; Champagne Gold){% elif current_theme == 'dark' %}Dark (Obsidian Midnight Titanium){% else %}Light (Royal Alabaster Showroom){% endif %}
                 </div>
             </div>
         </div>
-        <div class="p-3 pt-2">
-            <h6 class="theme-name mb-1">Dark</h6>
-            <p class="theme-desc mb-3">Reduced glare for long sessions and low light.</p>
-            <button type="button" class="btn btn-sm w-100 theme-apply-btn" data-theme="dark">{% if current_theme == 'dark' %}✓ Selected{% else %}Apply{% endif %}</button>
+        <div class="badge px-3 py-2" id="currentActiveThemePill" style="background: var(--jd-gold-glow); color: var(--jd-gold); border: 1px solid var(--jd-border-strong); font-size: 0.78rem;">
+            <i class="bi bi-check-circle-fill me-1"></i> Live in Browser
         </div>
     </div>
-    <div class="theme-card{% if current_theme == 'gold' %} is-selected{% endif %}" data-theme-card="gold">
-        <div class="p-2">
-            <div class="tp-window tp-gold">
-                <div class="tp-topbar"><span class="tp-dot"></span><span class="tp-dot"></span><span class="tp-dot"></span></div>
-                <div class="tp-body">
-                    <div class="tp-side"><span class="tp-pill on"></span><span class="tp-pill"></span><span class="tp-pill"></span><span class="tp-pill"></span></div>
-                    <div class="tp-main">
-                        <div class="tp-card"><span class="tp-line w60"></span><span class="tp-line w40"></span></div>
-                        <div class="tp-table">
-                            <div class="tp-thead"><i class="tdot w70"></i><i class="tdot w50"></i><i class="tdot w60"></i></div>
-                            <div class="trow"><div class="tcell"><i class="tdot w70"></i></div><div class="tcell"><i class="tdot w50"></i></div><div class="tcell"><i class="tdot w60"></i></div></div>
+
+    <div class="theme-grid">
+        <div class="theme-card{% if current_theme == 'light' %} is-selected{% endif %}" data-theme-card="light">
+            <div class="p-2">
+                <div class="tp-window tp-light">
+                    <div class="tp-topbar"><span class="tp-dot"></span><span class="tp-dot"></span><span class="tp-dot"></span></div>
+                    <div class="tp-body">
+                        <div class="tp-side"><span class="tp-pill on"></span><span class="tp-pill"></span><span class="tp-pill"></span><span class="tp-pill"></span></div>
+                        <div class="tp-main">
+                            <div class="tp-card"><span class="tp-line w60"></span><span class="tp-line w40"></span></div>
+                            <div class="tp-table">
+                                <div class="tp-thead"><i class="tdot w70"></i><i class="tdot w50"></i><i class="tdot w60"></i></div>
+                                <div class="trow"><div class="tcell"><i class="tdot w70"></i></div><div class="tcell"><i class="tdot w50"></i></div><div class="tcell"><i class="tdot w60"></i></div></div>
+                            </div>
+                            <div class="tp-actions"><span class="tp-btn"></span><span class="tp-stat s-red"></span><span class="tp-stat s-green"></span><span class="tp-stat s-amber"></span></div>
                         </div>
-                        <div class="tp-actions"><span class="tp-btn"></span><span class="tp-stat s-red"></span><span class="tp-stat s-green"></span><span class="tp-stat s-amber"></span></div>
                     </div>
                 </div>
             </div>
+            <div class="p-3 pt-2">
+                <h6 class="theme-name mb-1">Light</h6>
+                <p class="theme-desc mb-3">Royal Alabaster porcelain surfaces with burnished gold accents and crisp high-contrast text.</p>
+                <button type="button" class="btn btn-sm w-100 theme-apply-btn" data-theme="light">{% if current_theme == 'light' %}✓ Selected{% else %}Apply{% endif %}</button>
+            </div>
         </div>
-        <div class="p-3 pt-2">
-            <h6 class="theme-name mb-1">Gold / Premium</h6>
-            <p class="theme-desc mb-3">Warm cream tones with a refined gold accent.</p>
-            <button type="button" class="btn btn-sm w-100 theme-apply-btn" data-theme="gold">{% if current_theme == 'gold' %}✓ Selected{% else %}Apply{% endif %}</button>
+
+        <div class="theme-card{% if current_theme == 'dark' %} is-selected{% endif %}" data-theme-card="dark">
+            <div class="p-2">
+                <div class="tp-window tp-dark">
+                    <div class="tp-topbar"><span class="tp-dot"></span><span class="tp-dot"></span><span class="tp-dot"></span></div>
+                    <div class="tp-body">
+                        <div class="tp-side"><span class="tp-pill on"></span><span class="tp-pill"></span><span class="tp-pill"></span><span class="tp-pill"></span></div>
+                        <div class="tp-main">
+                            <div class="tp-card"><span class="tp-line w60"></span><span class="tp-line w40"></span></div>
+                            <div class="tp-table">
+                                <div class="tp-thead"><i class="tdot w70"></i><i class="tdot w50"></i><i class="tdot w60"></i></div>
+                                <div class="trow"><div class="tcell"><i class="tdot w70"></i></div><div class="tcell"><i class="tdot w50"></i></div><div class="tcell"><i class="tdot w60"></i></div></div>
+                            </div>
+                            <div class="tp-actions"><span class="tp-btn"></span><span class="tp-stat s-red"></span><span class="tp-stat s-green"></span><span class="tp-stat s-amber"></span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-3 pt-2">
+                <h6 class="theme-name mb-1">Dark</h6>
+                <p class="theme-desc mb-3">Obsidian midnight surfaces with electric gold accents and crisp starlight white text.</p>
+                <button type="button" class="btn btn-sm w-100 theme-apply-btn" data-theme="dark">{% if current_theme == 'dark' %}✓ Selected{% else %}Apply{% endif %}</button>
+            </div>
+        </div>
+
+        <div class="theme-card{% if current_theme == 'gold' %} is-selected{% endif %}" data-theme-card="gold">
+            <div class="p-2">
+                <div class="tp-window tp-gold">
+                    <div class="tp-topbar"><span class="tp-dot"></span><span class="tp-dot"></span><span class="tp-dot"></span></div>
+                    <div class="tp-body">
+                        <div class="tp-side"><span class="tp-pill on"></span><span class="tp-pill"></span><span class="tp-pill"></span><span class="tp-pill"></span></div>
+                        <div class="tp-main">
+                            <div class="tp-card"><span class="tp-line w60"></span><span class="tp-line w40"></span></div>
+                            <div class="tp-table">
+                                <div class="tp-thead"><i class="tdot w70"></i><i class="tdot w50"></i><i class="tdot w60"></i></div>
+                                <div class="trow"><div class="tcell"><i class="tdot w70"></i></div><div class="tcell"><i class="tdot w50"></i></div><div class="tcell"><i class="tdot w60"></i></div></div>
+                            </div>
+                            <div class="tp-actions"><span class="tp-btn"></span><span class="tp-stat s-red"></span><span class="tp-stat s-green"></span><span class="tp-stat s-amber"></span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-3 pt-2">
+                <h6 class="theme-name mb-1">Gold / Premium</h6>
+                <p class="theme-desc mb-3">Signature dark roast chocolate & mocha surfaces with champagne gold accents and warm ivory text.</p>
+                <button type="button" class="btn btn-sm w-100 theme-apply-btn" data-theme="gold">{% if current_theme == 'gold' %}✓ Selected{% else %}Apply{% endif %}</button>
+            </div>
         </div>
     </div>
+
+    <p class="mt-4 mb-0 small" style="color: var(--jd-ivory-dim);">
+        <i class="bi bi-shield-check me-1" style="color: var(--jd-gold);"></i> Theme is stored in your browser (jd-theme) and restored automatically on your next visit.
+    </p>
 </div>
-
-<p class="mt-4 mb-0 small text-muted">
-    <i class="bi bi-shield-check me-1"></i> Theme is stored in your browser (jd-theme) and restored automatically on your next visit.
-</p>
 {% endblock %}
 
 {% block extra_js %}
@@ -87,17 +115,46 @@
 document.addEventListener('DOMContentLoaded', function () {
     var cards = document.querySelectorAll('.theme-card');
     var btns = document.querySelectorAll('.theme-apply-btn');
-    btns.forEach(function (b) {
-        b.addEventListener('click', function () {
-            var t = b.getAttribute('data-theme');
-            if (!t) { return; }
+    var labelEl = document.getElementById('currentActiveThemeLabel');
+
+    function updateSelectedUI(theme) {
+        cards.forEach(function (c) { 
+            c.classList.toggle('is-selected', c.getAttribute('data-theme-card') === theme); 
+        });
+        btns.forEach(function (x) {
+            var on = x.getAttribute('data-theme') === theme;
+            x.classList.toggle('is-current', on);
+            x.textContent = on ? '✓ Selected' : 'Apply';
+        });
+        if (labelEl) {
+            if (theme === 'gold') labelEl.textContent = 'Gold / Premium (Chocolate & Champagne Gold)';
+            else if (theme === 'dark') labelEl.textContent = 'Dark (Obsidian Midnight Titanium)';
+            else labelEl.textContent = 'Light (Royal Alabaster Showroom)';
+        }
+    }
+
+    // Sync UI with active document theme on load
+    var activeTheme = document.documentElement.getAttribute('data-theme') || localStorage.getItem('jd-theme') || '{{ current_theme }}';
+    if (activeTheme) {
+        updateSelectedUI(activeTheme);
+    }
+
+    cards.forEach(function (card) {
+        card.addEventListener('click', function (e) {
+            var t = card.getAttribute('data-theme-card');
+            if (!t) return;
             jdApplyTheme(t);
-            cards.forEach(function (c) { c.classList.toggle('is-selected', c.getAttribute('data-theme-card') === t); });
-            btns.forEach(function (x) {
-                var on = x.getAttribute('data-theme') === t;
-                x.classList.toggle('is-current', on);
-                x.textContent = on ? '✓ Selected' : 'Apply';
-            });
+            updateSelectedUI(t);
+        });
+    });
+
+    btns.forEach(function (b) {
+        b.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var t = b.getAttribute('data-theme');
+            if (!t) return;
+            jdApplyTheme(t);
+            updateSelectedUI(t);
         });
     });
 });

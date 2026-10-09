@@ -1,31 +1,49 @@
 {% extends 'base.html' %}
 
-{% block title %}Delete Customer — JewelDesk{% endblock %}
+{% block title %}Delete Customer — {{ customer.name }} | JewelDesk Atelier{% endblock %}
 
 {% block page_title %}Delete Customer{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card border-danger">
-            <div class="card-header bg-danger text-white py-3">
-                <h6 class="mb-0 fw-semibold">
-                    <i class="bi bi-exclamation-triangle me-2"></i> Confirm Delete Customer
-                </h6>
-            </div>
-            <div class="card-body p-4 text-center">
-                <p class="fs-5 mb-3">Are you sure you want to delete this customer?</p>
-                <div class="alert alert-light border text-start mb-4">
-                    <p class="mb-1"><strong>Customer Name:</strong> {{ customer.name }}</p>
-                    <p class="mb-1"><strong>Mobile:</strong> {{ customer.mobile }}</p>
-                    <p class="mb-1"><strong>Email:</strong> {{ customer.email|default:"—" }}</p>
-                    <p class="mb-0 text-danger"><strong>Warning:</strong> Deleting this customer will also delete their related enquiries and sales history.</p>
+<div class="jd-canvas">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="jd-card p-4 p-md-5 border-danger-subtle text-center" style="border: 1px solid rgba(239, 68, 68, 0.35); box-shadow: 0 16px 48px rgba(239, 68, 68, 0.08);">
+                <div class="mb-4">
+                    <div style="width: 72px; height: 72px; border-radius: 50%; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); display: inline-flex; align-items: center; justify-content: center; color: #f87171; font-size: 2rem;">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
                 </div>
+
+                <div class="jd-badge mb-2" style="background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3);">Permanent Action</div>
+                <h3 class="font-serif fw-bold text-white mb-2" style="font-family: 'Cinzel', serif;">Delete Customer Record?</h3>
+                <p class="text-muted small mb-4">You are about to remove this patron from your atelier database. Please review the details below before proceeding.</p>
+
+                <div class="p-3 rounded-3 text-start mb-4" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(236, 200, 106, 0.12);">
+                    <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
+                        <span class="text-muted small">Patron Name:</span>
+                        <span class="text-white fw-semibold">{{ customer.name }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
+                        <span class="text-muted small">Mobile:</span>
+                        <span class="text-white font-monospace">{{ customer.mobile }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
+                        <span class="text-muted small">Email:</span>
+                        <span class="text-white">{{ customer.email|default:"—" }}</span>
+                    </div>
+                    <div class="pt-2 text-danger small">
+                        <i class="bi bi-info-circle me-1"></i> Warning: Deleting this patron will also delete their related enquiries and link history.
+                    </div>
+                </div>
+
                 <form method="post">
                     {% csrf_token %}
                     <div class="d-flex justify-content-center gap-3">
-                        <a href="{% url 'customer_detail' customer.id %}" class="btn btn-outline-secondary">Cancel</a>
-                        <button type="submit" class="btn btn-danger">
+                        <a href="{% url 'customer_detail' customer.id %}" class="jd-btn-ghost">
+                            <i class="bi bi-arrow-left me-1"></i> Cancel & Keep Record
+                        </a>
+                        <button type="submit" class="jd-btn-danger-ghost" style="background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #fee2e2;">
                             <i class="bi bi-trash me-1"></i> Confirm Delete
                         </button>
                     </div>
@@ -34,4 +52,12 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('has-atelier-suite');
+    const pc = document.getElementById('page-content');
+    if (pc) pc.classList.add('jd-active');
+});
+</script>
 {% endblock %}

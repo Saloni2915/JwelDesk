@@ -1,43 +1,52 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}{{ form_title }} — JewelDesk{% endblock %}
+{% block title %}{{ form_title }} — JewelDesk Atelier{% endblock %}
 {% block page_title %}{{ form_title }}{% endblock %}
 
 {% block page_actions %}
-<a href="{% url 'team:employee_list' %}" class="btn btn-outline-secondary btn-sm">
+<a href="{% url 'team:employee_list' %}" class="jd-btn-ghost btn-sm">
   <i class="bi bi-arrow-left me-1"></i> Back to Team
 </a>
 {% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-lg-10">
-    <div class="card shadow-sm border-0">
-      <div class="card-header bg-white border-bottom py-3">
-        <h5 class="mb-0 fw-bold text-dark">
-          <i class="bi bi-person-lines-fill text-primary me-2"></i>{{ form_title }}
-        </h5>
-      </div>
-      <div class="card-body p-4">
+<div class="jd-canvas">
+  <!-- Header -->
+  <div class="jd-header">
+    <div>
+      <div class="jd-badge"><i class="bi bi-person-lines-fill me-1"></i> Human Resources Dossier</div>
+      <h1 class="jd-title">{{ form_title }}</h1>
+      <p class="jd-subtitle">Configure associate profile, organizational designation, branch privileges, and login credentials.</p>
+    </div>
+    <div>
+      <a href="{% url 'team:employee_list' %}" class="jd-btn-ghost">
+        <i class="bi bi-arrow-left me-1"></i> Cancel & Back
+      </a>
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="jd-card p-4 p-md-5">
         <form method="post" enctype="multipart/form-data" id="employee-form" novalidate>
           {% csrf_token %}
 
           {% if form.non_field_errors %}
-          <div class="alert alert-danger mb-4">
+          <div class="alert alert-danger mb-4 py-2" style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5;">
             {% for err in form.non_field_errors %}<div><i class="bi bi-exclamation-triangle me-1"></i>{{ err }}</div>{% endfor %}
           </div>
           {% endif %}
 
           <!-- Section 1: Personal & Professional Identity -->
-          <div class="mb-4">
-            <h6 class="fw-bold text-uppercase text-secondary small tracking-wider mb-3">
-              <i class="bi bi-person-badge text-primary me-1"></i> 1. Personal &amp; Professional Details
-            </h6>
+          <div class="mb-5">
+            <div class="d-flex align-items-center gap-2 mb-4 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
+              <span class="text-gold fw-bold"><i class="bi bi-person-badge me-1"></i> 1. Personal &amp; Professional Details</span>
+            </div>
             <div class="row g-3">
               <div class="col-md-6">
-                <label for="{{ form.full_name.id_for_label }}" class="form-label fw-semibold">
-                  Full Name <span class="text-danger">*</span>
+                <label for="{{ form.full_name.id_for_label }}" class="form-label text-gold small fw-bold">
+                  Full Legal Name <span class="text-danger">*</span>
                 </label>
                 {{ form.full_name }}
                 {% if form.full_name.errors %}
@@ -45,51 +54,49 @@
                 {% endif %}
               </div>
               <div class="col-md-6">
-                <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">
-                  Email Address <span class="text-danger">*</span>
+                <label for="{{ form.email.id_for_label }}" class="form-label text-gold small fw-bold">
+                  Official Email Address <span class="text-danger">*</span>
                 </label>
                 {{ form.email }}
                 {% if form.email.errors %}
                   <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
                 {% endif %}
-                <small class="text-muted">Used for correspondence and account notifications.</small>
+                <small class="text-muted d-block mt-1">Used for correspondence and account notifications.</small>
               </div>
 
               <div class="col-md-4">
-                <label for="{{ form.mobile.id_for_label }}" class="form-label fw-semibold">Phone / Mobile</label>
+                <label for="{{ form.mobile.id_for_label }}" class="form-label text-gold small fw-bold">Phone / Mobile</label>
                 {{ form.mobile }}
                 {% if form.mobile.errors %}
                   <div class="text-danger small mt-1">{{ form.mobile.errors.0 }}</div>
                 {% endif %}
               </div>
               <div class="col-md-4">
-                <label for="{{ form.designation.id_for_label }}" class="form-label fw-semibold">Designation / Title</label>
+                <label for="{{ form.designation.id_for_label }}" class="form-label text-gold small fw-bold">Designation / Atelier Title</label>
                 {{ form.designation }}
                 {% if form.designation.errors %}
                   <div class="text-danger small mt-1">{{ form.designation.errors.0 }}</div>
                 {% endif %}
               </div>
               <div class="col-md-4">
-                <label for="{{ form.photo.id_for_label }}" class="form-label fw-semibold">Profile Photo</label>
+                <label for="{{ form.photo.id_for_label }}" class="form-label text-gold small fw-bold">Staff Profile Photo</label>
                 {{ form.photo }}
                 {% if form.photo.errors %}
                   <div class="text-danger small mt-1">{{ form.photo.errors.0 }}</div>
                 {% endif %}
-                <small class="text-muted">PNG, JPG, WEBP formats.</small>
+                <small class="text-muted d-block mt-1">PNG, JPG, WEBP formats.</small>
               </div>
             </div>
           </div>
 
-          <hr class="my-4">
-
           <!-- Section 2: Organisation, Role & Branches -->
-          <div class="mb-4">
-            <h6 class="fw-bold text-uppercase text-secondary small tracking-wider mb-3">
-              <i class="bi bi-building text-primary me-1"></i> 2. Department &amp; Role Assignment
-            </h6>
+          <div class="mb-5">
+            <div class="d-flex align-items-center gap-2 mb-4 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
+              <span class="text-gold fw-bold"><i class="bi bi-building me-1"></i> 2. Department &amp; Role Assignment</span>
+            </div>
             <div class="row g-3">
               <div class="col-md-4">
-                <label for="{{ form.department.id_for_label }}" class="form-label fw-semibold">Department</label>
+                <label for="{{ form.department.id_for_label }}" class="form-label text-gold small fw-bold">Department</label>
                 {{ form.department }}
                 {% if form.department.errors %}
                   <div class="text-danger small mt-1">{{ form.department.errors.0 }}</div>
@@ -97,10 +104,10 @@
               </div>
               <div class="col-md-4">
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                  <label for="{{ form.role.id_for_label }}" class="form-label fw-semibold mb-0">
+                  <label for="{{ form.role.id_for_label }}" class="form-label text-gold small fw-bold mb-0">
                     Role <span class="text-danger">*</span>
                   </label>
-                  <a href="{% url 'team:role_create' %}" class="small text-decoration-none" title="Create a new custom role" target="_blank">
+                  <a href="{% url 'team:role_create' %}" class="small text-gold text-decoration-none" title="Create a new custom role" target="_blank">
                     <i class="bi bi-plus-circle me-1"></i>New Role
                   </a>
                 </div>
@@ -108,18 +115,18 @@
                 {% if form.role.errors %}
                   <div class="text-danger small mt-1">{{ form.role.errors.0 }}</div>
                 {% endif %}
-                <small class="text-muted">Determines baseline permissions across JewelDesk.</small>
+                <small class="text-muted d-block mt-1">Determines baseline permissions across JewelDesk.</small>
                 {% if not form.fields.role.queryset.exists %}
-                <div class="alert alert-warning p-2 mt-2 small d-flex justify-content-between align-items-center">
+                <div class="alert alert-warning p-2 mt-2 small d-flex justify-content-between align-items-center" style="background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #fcd34d;">
                   <span><i class="bi bi-exclamation-triangle me-1"></i>No roles yet.</span>
-                  <a href="{% url 'team:role_seed' %}" class="btn btn-sm btn-primary py-0 px-2">
+                  <a href="{% url 'team:role_seed' %}" class="jd-btn-gold btn-sm py-0 px-2">
                     <i class="bi bi-magic me-1"></i>Seed Roles
                   </a>
                 </div>
                 {% endif %}
               </div>
               <div class="col-md-4">
-                <label for="{{ form.status.id_for_label }}" class="form-label fw-semibold">Employment Status</label>
+                <label for="{{ form.status.id_for_label }}" class="form-label text-gold small fw-bold">Employment Status</label>
                 {{ form.status }}
                 {% if form.status.errors %}
                   <div class="text-danger small mt-1">{{ form.status.errors.0 }}</div>
@@ -127,7 +134,7 @@
               </div>
 
               <div class="col-md-4">
-                <label for="{{ form.joining_date.id_for_label }}" class="form-label fw-semibold">Joining Date</label>
+                <label for="{{ form.joining_date.id_for_label }}" class="form-label text-gold small fw-bold">Joining Date</label>
                 {{ form.joining_date }}
                 {% if form.joining_date.errors %}
                   <div class="text-danger small mt-1">{{ form.joining_date.errors.0 }}</div>
@@ -135,47 +142,44 @@
               </div>
 
               <div class="col-md-8">
-                <label class="form-label fw-semibold d-block">Branch Access</label>
-                <div class="p-3 bg-light rounded border">
+                <label class="form-label text-gold small fw-bold d-block">Branch Access Privileges</label>
+                <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(236,200,106,0.15);">
                   <div class="row">
                     {% for checkbox in form.branches %}
                     <div class="col-md-6 mb-1">
                       <div class="form-check">
                         {{ checkbox.tag }}
-                        <label class="form-check-label small" for="{{ checkbox.id_for_label }}">
+                        <label class="form-check-label text-light small ms-1" for="{{ checkbox.id_for_label }}">
                           {{ checkbox.choice_label }}
                         </label>
                       </div>
                     </div>
                     {% empty %}
                     <div class="col-12 text-muted small">
-                      No branches defined. Leave blank for all-branches access.
+                      No branches defined. Leave unchecked for universal all-branches access.
                     </div>
                     {% endfor %}
                   </div>
-                  <small class="text-muted d-block mt-2">Unchecked = employee has access to all branches.</small>
+                  <small class="text-muted d-block mt-2 font-italic">Unchecked = associate has access across all showroom locations.</small>
                 </div>
               </div>
             </div>
           </div>
 
-          <hr class="my-4">
-
           <!-- Section 3: Authentication & Login Account (Create only) -->
           {% if is_create %}
-          <div class="mb-4">
-            <h6 class="fw-bold text-uppercase text-secondary small tracking-wider mb-3">
-              <i class="bi bi-shield-lock text-primary me-1"></i> 3. Login Account Configuration
-            </h6>
+          <div class="mb-5">
+            <div class="d-flex align-items-center gap-2 mb-4 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
+              <span class="text-gold fw-bold"><i class="bi bi-shield-lock me-1"></i> 3. System Login Account Setup</span>
+            </div>
 
             <!-- Account Mode Selector -->
             <div class="mb-3">
-              <label class="form-label fw-semibold">Login Access Setup</label>
-              <div class="d-flex flex-wrap gap-4 p-3 bg-light rounded border">
+              <div class="d-flex flex-wrap gap-4 p-3 rounded-3" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(236,200,106,0.15);">
                 {% for radio in form.account_mode %}
                 <div class="form-check">
                   {{ radio.tag }}
-                  <label class="form-check-label fw-medium" for="{{ radio.id_for_label }}">
+                  <label class="form-check-label text-white fw-medium ms-1" for="{{ radio.id_for_label }}">
                     {{ radio.choice_label }}
                   </label>
                 </div>
@@ -187,28 +191,28 @@
             </div>
 
             <!-- New Account Fields -->
-            <div id="section-new-account" class="p-3 border rounded bg-white mt-3">
+            <div id="section-new-account" class="p-4 rounded-3 mt-3" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(236,200,106,0.2);">
               <div class="row g-3">
                 <div class="col-md-4">
-                  <label for="{{ form.username.id_for_label }}" class="form-label fw-semibold">Login Username</label>
+                  <label for="{{ form.username.id_for_label }}" class="form-label text-gold small fw-bold">Login Username</label>
                   {{ form.username }}
                   {% if form.username.errors %}
                     <div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>
                   {% endif %}
-                  <small class="text-muted">Leave empty to use email as username.</small>
+                  <small class="text-muted d-block mt-1">Leave empty to use email as username.</small>
                 </div>
                 <div class="col-md-4">
-                  <label for="{{ form.password1.id_for_label }}" class="form-label fw-semibold">
+                  <label for="{{ form.password1.id_for_label }}" class="form-label text-gold small fw-bold">
                     Password <span class="text-danger">*</span>
                   </label>
                   {{ form.password1 }}
                   {% if form.password1.errors %}
                     <div class="text-danger small mt-1">{{ form.password1.errors.0 }}</div>
                   {% endif %}
-                  <small class="text-muted">Minimum 8 characters.</small>
+                  <small class="text-muted d-block mt-1">Minimum 8 characters.</small>
                 </div>
                 <div class="col-md-4">
-                  <label for="{{ form.password2.id_for_label }}" class="form-label fw-semibold">
+                  <label for="{{ form.password2.id_for_label }}" class="form-label text-gold small fw-bold">
                     Confirm Password <span class="text-danger">*</span>
                   </label>
                   {{ form.password2 }}
@@ -220,32 +224,32 @@
             </div>
 
             <!-- Link Existing User Field -->
-            <div id="section-link-existing" class="p-3 border rounded bg-white mt-3" style="display:none;">
+            <div id="section-link-existing" class="p-4 rounded-3 mt-3" style="display:none; background: rgba(255,255,255,0.02); border: 1px solid rgba(236,200,106,0.2);">
               <div class="col-md-8">
-                <label for="{{ form.existing_user.id_for_label }}" class="form-label fw-semibold">
+                <label for="{{ form.existing_user.id_for_label }}" class="form-label text-gold small fw-bold">
                   Select Existing Django User
                 </label>
                 {{ form.existing_user }}
                 {% if form.existing_user.errors %}
                   <div class="text-danger small mt-1">{{ form.existing_user.errors.0 }}</div>
                 {% endif %}
-                <small class="text-muted">Only unlinked user accounts appear in this list.</small>
+                <small class="text-muted d-block mt-1">Only unlinked user accounts appear in this list.</small>
               </div>
             </div>
 
             <!-- No Account Notice -->
-            <div id="section-no-account" class="alert alert-secondary mt-3 mb-0" style="display:none;">
-              <i class="bi bi-info-circle me-1"></i> This employee will be stored as a staff record without system login credentials. You can enable login access anytime later from the employee profile.
+            <div id="section-no-account" class="p-3 rounded-3 mt-3 small" style="display:none; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: rgba(250,244,234,0.7);">
+              <i class="bi bi-info-circle me-1 text-gold"></i> This employee will be created without login credentials. You can enable access later from the profile page.
             </div>
           </div>
           {% endif %}
 
-          <div class="d-flex gap-2 pt-3 border-top">
-            <button type="submit" class="btn btn-primary px-4 shadow-sm" id="btn-save-employee">
+          <div class="d-flex justify-content-end gap-3 pt-4 border-top" style="border-color: rgba(236,200,106,0.15) !important;">
+            <a href="{% url 'team:employee_list' %}" class="jd-btn-ghost">Cancel</a>
+            <button type="submit" class="jd-btn-gold" id="btn-save-employee">
               <i class="bi bi-check-lg me-1"></i>
               {% if is_create %}Create Employee{% else %}Save Changes{% endif %}
             </button>
-            <a href="{% url 'team:employee_list' %}" class="btn btn-outline-secondary px-4">Cancel</a>
           </div>
         </form>
       </div>
@@ -253,28 +257,30 @@
   </div>
 </div>
 
-{% if is_create %}
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const modeRadios = document.querySelectorAll('input[name="account_mode"]');
-    const secNew = document.getElementById('section-new-account');
-    const secLink = document.getElementById('section-link-existing');
-    const secNone = document.getElementById('section-no-account');
+document.addEventListener('DOMContentLoaded', function() {
+  document.body.classList.add('has-atelier-suite');
+  const pc = document.getElementById('page-content');
+  if (pc) pc.classList.add('jd-active');
 
-    function updateSections() {
-      let selectedMode = 'create_new';
-      modeRadios.forEach(r => {
-        if (r.checked) selectedMode = r.value;
-      });
+  const modeRadios = document.querySelectorAll('input[name="account_mode"]');
+  const secNew = document.getElementById('section-new-account');
+  const secLink = document.getElementById('section-link-existing');
+  const secNone = document.getElementById('section-no-account');
 
-      if (secNew) secNew.style.display = (selectedMode === 'create_new') ? 'block' : 'none';
-      if (secLink) secLink.style.display = (selectedMode === 'link_existing') ? 'block' : 'none';
-      if (secNone) secNone.style.display = (selectedMode === 'no_account') ? 'block' : 'none';
-    }
+  function updateSections() {
+    let selectedMode = 'create_new';
+    modeRadios.forEach(r => {
+      if (r.checked) selectedMode = r.value;
+    });
 
-    modeRadios.forEach(r => r.addEventListener('change', updateSections));
-    updateSections();
-  });
+    if (secNew) secNew.style.display = (selectedMode === 'create_new') ? 'block' : 'none';
+    if (secLink) secLink.style.display = (selectedMode === 'link_existing') ? 'block' : 'none';
+    if (secNone) secNone.style.display = (selectedMode === 'no_account') ? 'block' : 'none';
+  }
+
+  modeRadios.forEach(r => r.addEventListener('change', updateSections));
+  updateSections();
+});
 </script>
-{% endif %}
 {% endblock %}

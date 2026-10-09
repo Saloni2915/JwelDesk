@@ -1,183 +1,205 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}{{ customer.name }} — JewelDesk{% endblock %}
-
-{% block page_title %}{{ customer.name }}{% endblock %}
-
-{% block page_actions %}
-<div class="d-flex gap-2">
-    <a href="{% url 'customer_edit' customer.id %}" class="btn btn-outline-primary btn-sm">
-        <i class="bi bi-pencil me-1"></i> Edit
-    </a>
-    <a href="{% url 'customer_delete' customer.id %}" class="btn btn-outline-danger btn-sm">
-        <i class="bi bi-trash me-1"></i> Delete
-    </a>
-    <a href="{% url 'customer_list' %}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left me-1"></i> Back
-    </a>
-</div>
-{% endblock %}
+{% block title %}{{ customer.name }} — Patron Profile | JewelDesk Atelier{% endblock %}
 
 {% block content %}
+<div class="jd-canvas">
 
-<!-- Financial Summary -->
-<div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="card stat-card p-3">
-            <div class="d-flex align-items-center">
-                <div class="stat-icon bg-primary bg-opacity-10 text-primary me-3">
-                    <i class="bi bi-cart-check"></i>
-                </div>
-                <div>
-                    <div class="stat-value">₹{{ total_purchase|floatformat:2 }}</div>
-                    <div class="stat-label">Total Purchase</div>
-                </div>
-            </div>
+    <!-- 1. Header & Quick Actions -->
+    <div class="jd-header">
+        <div class="jd-title-wrap">
+            <h1>
+                <i class="bi bi-person-badge text-warning me-2"></i>{{ customer.name }}
+                <span class="badge bg-secondary bg-opacity-25 text-warning font-monospace fs-6 ms-2">VIP Patron #{{ customer.id }}</span>
+            </h1>
+            <p class="jd-subtitle">
+                Mobile: <strong class="text-light">{{ customer.mobile }}</strong> &middot; Member since: <strong class="text-light">{{ customer.created_at|date:"d M Y" }}</strong>
+            </p>
+        </div>
+        <div class="jd-header-actions">
+            {% if customer.mobile %}
+            <a href="https://wa.me/91{{ customer.mobile|cut:' ' }}" target="_blank" rel="noopener" class="jd-btn-gold" style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); border-color: #25D366; color: #FFF !important;">
+                <i class="bi bi-whatsapp"></i> WhatsApp Concierge
+            </a>
+            {% endif %}
+            <a href="{% url 'sale_add' %}?customer={{ customer.id }}" class="jd-btn-gold">
+                <i class="bi bi-cart-plus-fill"></i> + Bill at POS
+            </a>
+            <a href="{% url 'customer_edit' customer.id %}" class="jd-btn-ghost">
+                <i class="bi bi-pencil"></i> Edit Profile
+            </a>
+            <a href="{% url 'customer_delete' customer.id %}" class="jd-btn-danger-ghost">
+                <i class="bi bi-trash"></i> Delete
+            </a>
+            <a href="{% url 'customer_list' %}" class="jd-btn-ghost">
+                <i class="bi bi-arrow-left"></i> Client Directory
+            </a>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card stat-card p-3">
-            <div class="d-flex align-items-center">
-                <div class="stat-icon bg-success bg-opacity-10 text-success me-3">
-                    <i class="bi bi-cash-coin"></i>
-                </div>
-                <div>
-                    <div class="stat-value">₹{{ total_paid|floatformat:2 }}</div>
-                    <div class="stat-label">Total Paid</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card stat-card p-3">
-            <div class="d-flex align-items-center">
-                <div class="stat-icon bg-warning bg-opacity-10 text-warning me-3">
-                    <i class="bi bi-exclamation-circle"></i>
-                </div>
-                <div>
-                    <div class="stat-value {% if outstanding > 0 %}text-danger{% endif %}">₹{{ outstanding|floatformat:2 }}</div>
-                    <div class="stat-label">Outstanding</div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<div class="row g-4">
-    <!-- Customer Profile Card -->
-    <div class="col-lg-4">
-        <div class="card mb-4">
-            <div class="card-header bg-white border-bottom py-3">
-                <h6 class="mb-0 fw-semibold text-dark">
-                    <i class="bi bi-person-lines-fill me-1"></i> Customer Information
-                </h6>
-            </div>
-            <div class="card-body p-4">
-                <div class="mb-3">
-                    <div class="text-muted small">Full Name</div>
-                    <div class="fs-5 fw-semibold">{{ customer.name }}</div>
+    <!-- 2. Financial Summary KPI Grid -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="jd-kpi-card">
+                <div class="jd-kpi-top">
+                    <div class="jd-kpi-icon icon-blue"><i class="bi bi-receipt"></i></div>
+                    <span class="badge bg-secondary bg-opacity-25 text-light">All-time</span>
                 </div>
-                <div class="mb-3">
-                    <div class="text-muted small">Mobile</div>
-                    <div class="fs-6">
-                        <a href="tel:{{ customer.mobile }}" class="text-decoration-none text-dark">
-                            <i class="bi bi-telephone me-1 text-primary"></i> {{ customer.mobile }}
-                        </a>
+                <div class="jd-kpi-label">Lifetime Purchases</div>
+                <div class="jd-kpi-val text-light">₹{{ total_purchase|floatformat:2 }}</div>
+                <div class="jd-kpi-sub">{{ sales.count }} completed showroom transactions</div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="jd-kpi-card">
+                <div class="jd-kpi-top">
+                    <div class="jd-kpi-icon icon-green"><i class="bi bi-cash-stack"></i></div>
+                    <span class="badge bg-success bg-opacity-25 text-success">Settled</span>
+                </div>
+                <div class="jd-kpi-label">Total Cleared Payments</div>
+                <div class="jd-kpi-val text-success">₹{{ total_paid|floatformat:2 }}</div>
+                <div class="jd-kpi-sub">Total cash, UPI &amp; bank receipts</div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="jd-kpi-card {% if outstanding > 0 %}border-danger{% endif %}">
+                <div class="jd-kpi-top">
+                    <div class="jd-kpi-icon {% if outstanding > 0 %}icon-amber{% else %}icon-green{% endif %}">
+                        <i class="bi bi-wallet2"></i>
+                    </div>
+                    <span class="badge {% if outstanding > 0 %}bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25{% else %}bg-success bg-opacity-25 text-success{% endif %}">
+                        {% if outstanding > 0 %}Balance Due{% else %}Cleared{% endif %}
+                    </span>
+                </div>
+                <div class="jd-kpi-label">Ledger Outstanding</div>
+                <div class="jd-kpi-val {% if outstanding > 0 %}text-danger{% else %}text-light{% endif %}">
+                    ₹{{ outstanding|floatformat:2 }}
+                </div>
+                <div class="jd-kpi-sub">Pending settlement across sales</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Profile & History Grid -->
+    <div class="row g-4">
+
+        <!-- LEFT COLUMN: Profile & Quick Links -->
+        <div class="col-lg-4">
+            <!-- Profile Card -->
+            <div class="jd-card mb-4">
+                <div class="jd-card-header">
+                    <h2>
+                        <i class="bi bi-person-lines-fill text-warning"></i>
+                        Client Profile
+                    </h2>
+                </div>
+                <div class="jd-card-body">
+                    <div class="mb-3">
+                        <div class="text-muted small text-uppercase">Full Legal Name</div>
+                        <div class="fs-5 fw-bold text-light">{{ customer.name }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="text-muted small text-uppercase">Primary Mobile</div>
+                        <div class="fs-6 font-monospace text-light">
+                            <a href="tel:{{ customer.mobile }}" class="text-decoration-none text-light">
+                                <i class="bi bi-telephone text-warning me-1"></i> {{ customer.mobile }}
+                            </a>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="text-muted small text-uppercase">Email Address</div>
+                        <div class="fs-6 text-light">{{ customer.email|default:"—" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="text-muted small text-uppercase">Address &amp; Location</div>
+                        <div class="fs-6 text-light">{{ customer.address|default:"—"|linebreaksbr }}</div>
+                    </div>
+                    <div>
+                        <div class="text-muted small text-uppercase">Patron Since</div>
+                        <div class="fs-6 font-monospace text-muted">{{ customer.created_at|date:"d F Y" }}</div>
                     </div>
                 </div>
-                <div class="mb-3">
-                    <div class="text-muted small">Email</div>
-                    <div class="fs-6">
-                        {% if customer.email %}
-                        <a href="mailto:{{ customer.email }}" class="text-decoration-none text-dark">
-                            <i class="bi bi-envelope me-1 text-primary"></i> {{ customer.email }}
-                        </a>
-                        {% else %}
-                        <span class="text-muted">—</span>
-                        {% endif %}
-                    </div>
+            </div>
+
+            <!-- Quick Engagement CTAs -->
+            <div class="jd-card">
+                <div class="jd-card-header">
+                    <h2>
+                        <i class="bi bi-lightning-charge text-warning"></i>
+                        New Engagement
+                    </h2>
                 </div>
-                <div class="mb-3">
-                    <div class="text-muted small">Address</div>
-                    <div class="fs-6">{{ customer.address|default:"—"|linebreaksbr }}</div>
-                </div>
-                <div class="mb-0">
-                    <div class="text-muted small">Customer Since</div>
-                    <div class="fs-6 text-muted">{{ customer.created_at|date:"M d, Y" }}</div>
+                <div class="jd-card-body d-flex flex-column gap-2">
+                    <a href="{% url 'sale_add' %}?customer={{ customer.id }}" class="jd-btn-gold">
+                        <i class="bi bi-cart-plus-fill"></i> New Showroom Sale POS
+                    </a>
+                    <a href="{% url 'custom_orders:custom_order_add' %}?customer={{ customer.id }}" class="jd-btn-ghost">
+                        <i class="bi bi-hammer"></i> New Custom Jewellery Order
+                    </a>
+                    <a href="{% url 'enquiry_add' %}?customer={{ customer.id }}" class="jd-btn-ghost">
+                        <i class="bi bi-chat-left-text"></i> Record Bridal Enquiry
+                    </a>
+                    <a href="{% url 'old_gold_exchange_create' %}?customer={{ customer.id }}" class="jd-btn-ghost">
+                        <i class="bi bi-arrow-repeat"></i> Old Gold Exchange
+                    </a>
                 </div>
             </div>
         </div>
 
-        <!-- Quick Actions Card -->
-        <div class="card">
-            <div class="card-header bg-white border-bottom py-3">
-                <h6 class="mb-0 fw-semibold text-dark">
-                    <i class="bi bi-lightning-charge me-1"></i> Quick Actions
-                </h6>
-            </div>
-            <div class="card-body d-flex flex-column gap-2">
-                <a href="{% url 'sale_add' %}?customer={{ customer.id }}" class="btn btn-dark btn-sm">
-                    <i class="bi bi-receipt me-1"></i> New Sale
-                </a>
-                <a href="{% url 'enquiry_add' %}?customer={{ customer.id }}" class="btn btn-outline-dark btn-sm">
-                    <i class="bi bi-chat-left-text me-1"></i> New Enquiry
-                </a>
-                <a href="{% url 'custom_orders:custom_order_add' %}?customer={{ customer.id }}" class="btn btn-outline-dark btn-sm">
-                    <i class="bi bi-hammer me-1"></i> New Custom Order
-                </a>
-            </div>
-        </div>
-    </div>
+        <!-- RIGHT COLUMN: Purchase History, Custom Orders, Enquiries -->
+        <div class="col-lg-8">
 
-    <!-- Purchase History & Enquiries -->
-    <div class="col-lg-8">
-        <!-- Purchase History -->
-        <div class="card mb-4">
-            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-semibold text-dark">
-                    <i class="bi bi-receipt me-1"></i> Purchase History ({{ sales.count }})
-                </h6>
-                <a href="{% url 'sale_add' %}?customer={{ customer.id }}" class="btn btn-outline-dark btn-sm">
-                    + Create Sale
-                </a>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
+            <!-- Purchase History Ledger Table -->
+            <div class="jd-table-card mb-4">
+                <div class="jd-table-header">
+                    <h2>
+                        <i class="bi bi-receipt text-warning"></i>
+                        Purchase Ledger ({{ sales.count }})
+                    </h2>
+                    <a href="{% url 'sale_add' %}?customer={{ customer.id }}" class="jd-btn-ghost py-1 px-2" style="font-size: 0.78rem;">
+                        + Bill Sale
+                    </a>
+                </div>
+                <div class="jd-table-scroll">
+                    <table class="jd-table">
+                        <thead>
                             <tr>
-                                <th>Sale ID</th>
-                                <th>Jewellery Item</th>
-                                <th>Price</th>
-                                <th>Payment</th>
+                                <th>Invoice #</th>
+                                <th>Jewellery Piece</th>
+                                <th>Sale Price</th>
+                                <th>Payment Method</th>
                                 <th>Date</th>
-                                <th class="text-end pe-3">Action</th>
+                                <th class="text-end pe-3">Receipt</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for sale in sales %}
                             <tr>
-                                <td><span class="fw-semibold">#{{ sale.id }}</span></td>
                                 <td>
-                                    <a href="{% url 'inventory_detail' sale.jewellery_item.id %}" class="text-decoration-none text-dark fw-medium">
+                                    <span class="font-monospace fw-bold text-warning">#{{ sale.id }}</span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'inventory_detail' sale.jewellery_item.id %}" class="fw-bold text-light text-decoration-none">
                                         {{ sale.jewellery_item.name }}
                                     </a>
-                                    <small class="text-muted d-block">{{ sale.jewellery_item.item_code }}</small>
+                                    <small class="text-muted d-block font-monospace">{{ sale.jewellery_item.item_code }}</small>
                                 </td>
-                                <td class="fw-semibold">₹{{ sale.sale_price }}</td>
-                                <td><span class="badge bg-light text-dark border">{{ sale.payment_method }}</span></td>
-                                <td>{{ sale.sale_date|date:"M d, Y" }}</td>
+                                <td class="font-monospace text-warning fw-bold fs-6">₹{{ sale.sale_price|floatformat:2 }}</td>
+                                <td><span class="badge bg-secondary font-monospace">{{ sale.payment_method }}</span></td>
+                                <td class="small text-muted font-monospace">{{ sale.sale_date|date:"d M Y" }}</td>
                                 <td class="text-end pe-3">
-                                    <a href="{% url 'sale_detail' sale.id %}" class="btn btn-outline-info btn-sm py-0 px-2">
-                                        <i class="bi bi-eye"></i> View
+                                    <a href="{% url 'sale_detail' sale.id %}" class="jd-tbl-btn" title="View Sale Memo">
+                                        <i class="bi bi-eye"></i>
                                     </a>
                                 </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="6" class="text-center py-4 text-muted">
-                                    <i class="bi bi-cart-x fs-4 d-block mb-1"></i>
-                                    No purchases recorded.
+                                <td colspan="6" class="text-center py-4 text-muted small">
+                                    No completed purchases recorded for this customer yet.
                                 </td>
                             </tr>
                             {% endfor %}
@@ -185,99 +207,26 @@
                     </table>
                 </div>
             </div>
-        </div>
 
-        <!-- Enquiries History -->
-        <div class="card">
-            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-semibold text-dark">
-                    <i class="bi bi-chat-left-text me-1"></i> Enquiries ({{ enquiries.count }})
-                </h6>
-                <a href="{% url 'enquiry_add' %}?customer={{ customer.id }}" class="btn btn-outline-dark btn-sm">
-                    + Add Enquiry
-                </a>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Interested In</th>
-                                <th>Budget</th>
-                                <th>Status</th>
-                                <th>Follow-up</th>
-                                <th class="text-end pe-3">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for enq in enquiries %}
-                            <tr>
-                                <td>
-                                    <span class="fw-medium">{{ enq.interested_item }}</span>
-                                    {% if enq.category %}
-                                    <small class="text-muted d-block">{{ enq.category.name }}</small>
-                                    {% endif %}
-                                </td>
-                                <td>{% if enq.budget %}₹{{ enq.budget }}{% else %}—{% endif %}</td>
-                                <td>
-                                    {% if enq.status == 'New' %}
-                                    <span class="badge bg-primary">New</span>
-                                    {% elif enq.status == 'Contacted' %}
-                                    <span class="badge bg-info text-dark">Contacted</span>
-                                    {% elif enq.status == 'Interested' %}
-                                    <span class="badge bg-warning text-dark">Interested</span>
-                                    {% elif enq.status == 'Purchased' %}
-                                    <span class="badge bg-success">Purchased</span>
-                                    {% elif enq.status == 'Closed' %}
-                                    <span class="badge bg-secondary">Closed</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if enq.next_followup_date %}
-                                    {{ enq.next_followup_date|date:"M d, Y" }}
-                                    {% else %}
-                                    —
-                                    {% endif %}
-                                </td>
-                                <td class="text-end pe-3">
-                                    <a href="{% url 'enquiry_detail' enq.id %}" class="btn btn-outline-info btn-sm py-0 px-2">
-                                        <i class="bi bi-eye"></i> View
-                                    </a>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="5" class="text-center py-4 text-muted">
-                                    <i class="bi bi-chat-square-dots fs-4 d-block mb-1"></i>
-                                    No enquiries recorded.
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <!-- Custom Orders Table -->
+            <div class="jd-table-card mb-4">
+                <div class="jd-table-header">
+                    <h2>
+                        <i class="bi bi-hammer text-warning"></i>
+                        Bespoke Custom Orders ({{ customer.custom_orders.count }})
+                    </h2>
+                    <a href="{% url 'custom_orders:custom_order_add' %}?customer={{ customer.id }}" class="jd-btn-ghost py-1 px-2" style="font-size: 0.78rem;">
+                        + New Order
+                    </a>
                 </div>
-            </div>
-        </div>
-
-        <!-- Custom Orders -->
-        <div class="card">
-            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-semibold text-dark">
-                    <i class="bi bi-hammer me-1"></i> Custom Orders ({{ customer.custom_orders.count }})
-                </h6>
-                <a href="{% url 'custom_orders:custom_order_add' %}?customer={{ customer.id }}" class="btn btn-outline-dark btn-sm">
-                    + New Custom Order
-                </a>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
+                <div class="jd-table-scroll">
+                    <table class="jd-table">
+                        <thead>
                             <tr>
-                                <th>Order No.</th>
-                                <th>Jewellery Type</th>
-                                <th>Est. Price</th>
-                                <th>Status</th>
+                                <th>Order #</th>
+                                <th>Jewellery Item</th>
+                                <th>Estimated Value</th>
+                                <th>Workshop Stage</th>
                                 <th>Expected Delivery</th>
                                 <th class="text-end pe-3">Action</th>
                             </tr>
@@ -285,26 +234,27 @@
                         <tbody>
                             {% for order in customer.custom_orders.all %}
                             <tr>
-                                <td>
-                                    <a href="{% url 'custom_orders:custom_order_detail' order.id %}" class="fw-semibold text-decoration-none text-dark font-monospace">
+                                <td class="font-monospace fw-bold text-warning">
+                                    <a href="{% url 'custom_orders:custom_order_detail' order.id %}" class="text-decoration-none text-warning">
                                         {{ order.order_number }}
                                     </a>
                                 </td>
-                                <td><span class="badge bg-light text-dark border">{{ order.category.name }}</span></td>
-                                <td class="fw-semibold">₹{{ order.estimated_price }}</td>
-                                <td>{% include 'custom_orders/includes/status_badge.html' with status=order.status %}</td>
-                                <td>{{ order.expected_delivery_date|date:"M d, Y" }}</td>
+                                <td class="fw-bold text-light">{{ order.category.name }}</td>
+                                <td class="font-monospace text-light">₹{{ order.estimated_price|floatformat:2 }}</td>
+                                <td>
+                                    <span class="badge bg-secondary font-monospace">{{ order.status }}</span>
+                                </td>
+                                <td class="small text-muted font-monospace">{{ order.expected_delivery_date|date:"d M Y" }}</td>
                                 <td class="text-end pe-3">
-                                    <a href="{% url 'custom_orders:custom_order_detail' order.id %}" class="btn btn-outline-info btn-sm py-0 px-2">
-                                        <i class="bi bi-eye"></i> View
+                                    <a href="{% url 'custom_orders:custom_order_detail' order.id %}" class="jd-tbl-btn" title="View Order Specifications">
+                                        <i class="bi bi-eye"></i>
                                     </a>
                                 </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="6" class="text-center py-4 text-muted">
-                                    <i class="bi bi-hammer fs-4 d-block mb-1"></i>
-                                    No custom orders for this customer yet.
+                                <td colspan="6" class="text-center py-4 text-muted small">
+                                    No custom manufacturing orders recorded for this customer yet.
                                 </td>
                             </tr>
                             {% endfor %}
@@ -312,7 +262,74 @@
                     </table>
                 </div>
             </div>
+
+            <!-- Enquiries Table -->
+            <div class="jd-table-card">
+                <div class="jd-table-header">
+                    <h2>
+                        <i class="bi bi-chat-left-text text-warning"></i>
+                        Bridal &amp; Showroom Enquiries ({{ enquiries.count }})
+                    </h2>
+                    <a href="{% url 'enquiry_add' %}?customer={{ customer.id }}" class="jd-btn-ghost py-1 px-2" style="font-size: 0.78rem;">
+                        + New Enquiry
+                    </a>
+                </div>
+                <div class="jd-table-scroll">
+                    <table class="jd-table">
+                        <thead>
+                            <tr>
+                                <th>Interested Piece</th>
+                                <th>Budget</th>
+                                <th>Status</th>
+                                <th>Follow-up Date</th>
+                                <th class="text-end pe-3">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for enq in enquiries %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold text-light">{{ enq.interested_item }}</div>
+                                    {% if enq.category %}
+                                    <small class="text-muted">{{ enq.category.name }}</small>
+                                    {% endif %}
+                                </td>
+                                <td class="font-monospace text-light">{% if enq.budget %}₹{{ enq.budget|floatformat:2 }}{% else %}—{% endif %}</td>
+                                <td>
+                                    <span class="badge bg-secondary font-monospace">{{ enq.status }}</span>
+                                </td>
+                                <td class="small text-muted font-monospace">{{ enq.next_followup_date|date:"d M Y"|default:"—" }}</td>
+                                <td class="text-end pe-3">
+                                    <a href="{% url 'enquiry_detail' enq.id %}" class="jd-tbl-btn" title="View Enquiry Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted small">
+                                    No showroom enquiries recorded for this patron yet.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
+
     </div>
+
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.body.classList.add('has-atelier-suite');
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) mainContent.classList.add('jd-active');
+        const pageContent = document.getElementById('page-content');
+        if (pageContent) pageContent.classList.add('jd-active');
+    });
+</script>
 {% endblock %}

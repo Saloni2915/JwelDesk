@@ -1,105 +1,731 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Create Sale — JewelDesk{% endblock %}
+{% block title %}Jewellery Showroom POS Terminal — JewelDesk Atelier{% endblock %}
 
-{% block page_title %}Create Sale{% endblock %}
-
-{% block page_actions %}
-<a href="{% url 'sale_list' %}" class="btn btn-outline-secondary btn-sm">
-    <i class="bi bi-arrow-left me-1"></i> Back to Sales
-</a>
+{% block extra_css %}
+<link href="{% static 'css/pos_terminal.css' %}?v={% now "U" %}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header bg-white border-bottom py-3">
-                <h6 class="mb-0 fw-semibold text-dark">
-                    <i class="bi bi-cart-plus me-2"></i> Sale Information
-                </h6>
+<div class="jd-pos-canvas">
+
+    <!-- 1. Live Bullion & Terminal Ticker Bar (Top Bar) -->
+    <div class="jd-pos-topbar" role="region" aria-label="POS Terminal Status">
+        <div class="jd-pos-brand-group">
+            <h1><i class="bi bi-shop text-warning me-2"></i>JewelDesk Showroom Counter POS</h1>
+            <div class="jd-pos-bullion-pills d-none d-md-flex">
+                <span class="jd-pos-bullion-item">
+                    <span class="jd-pos-pulse-dot"></span>
+                    <span>Gold 24K:</span>
+                    <strong>{% if metal_prices.gold_price_per_gram %}₹{{ metal_prices.gold_price_per_gram|floatformat:2 }}{% else %}₹7,250.00{% endif %}/g</strong>
+                </span>
+                <span class="text-secondary opacity-50">|</span>
+                <span class="jd-pos-bullion-item">
+                    <span>Gold 22K:</span>
+                    <strong>₹6,650.00/g</strong>
+                </span>
+                <span class="text-secondary opacity-50">|</span>
+                <span class="jd-pos-bullion-item">
+                    <span>Silver:</span>
+                    <strong>{% if metal_prices.silver_price_per_gram %}₹{{ metal_prices.silver_price_per_gram|floatformat:2 }}{% else %}₹88.50{% endif %}/g</strong>
+                </span>
             </div>
-            <div class="card-body p-4">
-                <div class="alert alert-info py-2 small mb-4">
-                    <i class="bi bi-info-circle me-1"></i>
-                    Only jewellery items with status <strong>Available</strong> are shown for selection. Once saved, the item status will automatically change to <strong>Sold</strong>.
+        </div>
+
+        <div class="jd-pos-terminal-meta">
+            <div class="jd-pos-terminal-badge">
+                <div class="cashier"><i class="bi bi-person-badge text-warning me-1"></i>Terminal #01 ({{ cashier_name }})</div>
+                <div class="invoice-id">Invoice: <span>{{ draft_invoice_number }}</span></div>
+            </div>
+            <a href="{% url 'sale_list' %}" class="jd-pos-btn-ghost d-none d-sm-inline-flex" title="View Sales History">
+                <i class="bi bi-receipt"></i> Sales History
+            </a>
+        </div>
+    </div>
+
+    <!-- Main POS Form -->
+    <form method="post" id="jdPosForm" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger py-2 mb-3 bg-danger bg-opacity-25 border-danger text-light">
+            {% for error in form.non_field_errors %}
+            <div class="small"><i class="bi bi-exclamation-triangle-fill me-1"></i> {{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if form.errors %}
+        <div class="alert alert-warning py-2 mb-3 bg-warning bg-opacity-20 border-warning text-light">
+            <div class="small fw-semibold text-warning mb-1"><i class="bi bi-exclamation-circle-fill me-1"></i> Please check form inputs:</div>
+            {% for field, errors in form.errors.items %}
+                {% for err in errors %}
+                <div class="small text-warning-emphasis">&bull; <strong>{{ field|title }}:</strong> {{ err }}</div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Main 2-Column POS Workspace -->
+        <div class="jd-pos-grid">
+
+            <!-- LEFT COLUMN (60%): Customer, Item Selection, Old Gold, Notes -->
+            <div class="jd-pos-col-left">
+
+                <!-- SECTION A: Customer Identification -->
+                <div class="jd-pos-card">
+                    <div class="jd-pos-card-header">
+                        <h2>
+                            <i class="bi bi-person-bounding-box text-warning"></i>
+                            Customer Identification
+                        </h2>
+                        <a href="{% url 'customer_add' %}" target="_blank" class="jd-pos-btn-ghost">
+                            <i class="bi bi-person-plus"></i> Add Customer
+                        </a>
+                    </div>
+                    <div class="jd-pos-card-body">
+                        <!-- Search & Fast Selector -->
+                        <div class="jd-pos-search-wrap">
+                            <i class="bi bi-search"></i>
+                            <input type="text"
+                                   id="customerSearchInput"
+                                   class="jd-pos-input"
+                                   placeholder="Search customer by Mobile, Name, or City..."
+                                   autocomplete="off">
+                        </div>
+
+                        <!-- Native Select (Hidden but bound to Django Form) -->
+                        <div class="mb-3 d-none">
+                            <label for="{{ form.customer.id_for_label }}" class="form-label text-warning small">Select Customer</label>
+                            {{ form.customer }}
+                        </div>
+
+                        <!-- Selected Customer Dynamic Card -->
+                        <div class="jd-pos-customer-card" id="selectedCustomerCard">
+                            <div>
+                                <div class="jd-pos-customer-name-group">
+                                    <span class="jd-pos-customer-name" id="custCardName">Select a Customer</span>
+                                    <span class="jd-pos-tier-badge" id="custCardTier">Showroom VIP</span>
+                                </div>
+                                <div class="jd-pos-customer-meta" id="custCardMeta">
+                                    Mobile: <span id="custCardMobile">—</span> &middot; Outstanding: <span class="text-warning" id="custCardDue">₹0</span>
+                                </div>
+                            </div>
+                            <div class="jd-pos-customer-stats">
+                                <div>
+                                    <div class="jd-pos-stat-label">Past Purchases</div>
+                                    <div class="jd-pos-stat-val text-light" id="custCardCount">0 bills</div>
+                                </div>
+                                <div>
+                                    <div class="jd-pos-stat-label">Outstanding Due</div>
+                                    <div class="jd-pos-stat-val" id="custCardDueLarge">₹0.00</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <form method="post" novalidate>
-                    {% csrf_token %}
-
-                    {% if form.non_field_errors %}
-                    <div class="alert alert-danger py-2">
-                        {% for error in form.non_field_errors %}
-                        <small class="d-block">{{ error }}</small>
-                        {% endfor %}
+                <!-- SECTION B: Item Selection & Barcode / HUID Scan -->
+                <div class="jd-pos-card">
+                    <div class="jd-pos-card-header">
+                        <h2>
+                            <i class="bi bi-upc-scan text-warning"></i>
+                            Item Selection &amp; HUID Scan
+                        </h2>
+                        <span class="text-secondary small font-monospace">Counter Inventory</span>
                     </div>
-                    {% endif %}
+                    <div class="jd-pos-card-body">
 
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label for="{{ form.customer.id_for_label }}" class="form-label">
-                                Customer <span class="text-danger">*</span>
+                        <!-- Scan Input -->
+                        <div class="jd-pos-scan-wrap">
+                            <div class="jd-pos-scan-input-box">
+                                <i class="bi bi-upc-scan"></i>
+                                <input type="text"
+                                       id="itemScanInput"
+                                       class="jd-pos-scan-input"
+                                       placeholder="Scan Tag / HUID Barcode or Enter SKU (e.g. TAG-001)..."
+                                       autocomplete="off">
+                            </div>
+                            <button type="button" class="jd-pos-btn-ghost" id="focusScanBtn" title="Activate Barcode Scanner">
+                                <i class="bi bi-camera"></i> Scan
+                            </button>
+                        </div>
+
+                        <!-- Native Jewellery Item Form Field -->
+                        <div class="mb-3">
+                            <label for="{{ form.jewellery_item.id_for_label }}" class="form-label text-secondary small">
+                                Available Vault Inventory Item <span class="text-danger">*</span>
                             </label>
-                            {{ form.customer }}
-                            {% if form.customer.errors %}
-                            <div class="text-danger small mt-1">{{ form.customer.errors.0 }}</div>
-                            {% endif %}
-                            <div class="form-text">
-                                Don't see the customer? <a href="{% url 'customer_add' %}" target="_blank">Add Customer</a>
+                            {{ form.jewellery_item }}
+                        </div>
+
+                        <!-- Active Jewellery Item Specs Card -->
+                        <div class="jd-pos-active-item-card" id="activeItemCard">
+                            <div class="jd-pos-item-header">
+                                <div class="jd-pos-item-thumb" id="itemThumbBox">
+                                    <i class="bi bi-gem"></i>
+                                </div>
+                                <div class="jd-pos-item-info">
+                                    <h3 class="jd-pos-item-title" id="itemCardTitle">Choose an item to inspect details</h3>
+                                    <div class="jd-pos-item-badges">
+                                        <span class="jd-pos-pill-tag" id="itemCardTag">TAG-XXXX</span>
+                                        <span class="jd-pos-pill-tag" id="itemCardHuid">HUID: PENDING</span>
+                                        <span class="jd-pos-pill-hallmark" id="itemCardHallmark">
+                                            <i class="bi bi-patch-check-fill"></i> BIS 916 Hallmarked
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Specs 4-Column Grid -->
+                            <div class="jd-pos-specs-grid">
+                                <div class="jd-pos-spec-box">
+                                    <span class="jd-pos-spec-label">Metal Purity</span>
+                                    <span class="jd-pos-spec-val" id="specPurity">22K Gold 91.6%</span>
+                                </div>
+                                <div class="jd-pos-spec-box">
+                                    <span class="jd-pos-spec-label">Gross Weight</span>
+                                    <span class="jd-pos-spec-val" id="specGross">0.000g</span>
+                                </div>
+                                <div class="jd-pos-spec-box">
+                                    <span class="jd-pos-spec-label">Net Gold Wt</span>
+                                    <span class="jd-pos-spec-val highlight-gold" id="specNet">0.000g</span>
+                                </div>
+                                <div class="jd-pos-spec-box">
+                                    <span class="jd-pos-spec-label">Stone/Bead Wt</span>
+                                    <span class="jd-pos-spec-val" id="specStone">0.000g</span>
+                                </div>
+                            </div>
+
+                            <!-- Item Financial Breakdown -->
+                            <div class="jd-pos-calc-rows">
+                                <div class="jd-pos-calc-row">
+                                    <span id="goldCalcLabel">Metal Valuation:</span>
+                                    <strong id="goldCalcVal">₹0.00</strong>
+                                </div>
+                                <div class="jd-pos-calc-row">
+                                    <span>Making Charges &amp; Craftsmanship:</span>
+                                    <strong id="makingCalcVal">₹0.00</strong>
+                                </div>
+                                <div class="jd-pos-calc-row">
+                                    <span>Precious Gemstones / Enamel:</span>
+                                    <strong id="stoneCalcVal">₹0.00</strong>
+                                </div>
+                                <div class="jd-pos-calc-row">
+                                    <span>Hallmarking / Certification Fee:</span>
+                                    <strong>₹45.00</strong>
+                                </div>
+                                <div class="jd-pos-calc-total-row">
+                                    <span>Item Subtotal:</span>
+                                    <span id="itemTotalVal">₹0.00</span>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="col-md-6">
-                            <label for="{{ form.jewellery_item.id_for_label }}" class="form-label">
-                                Jewellery Item <span class="text-danger">*</span>
-                            </label>
-                            {{ form.jewellery_item }}
-                            {% if form.jewellery_item.errors %}
-                            <div class="text-danger small mt-1">{{ form.jewellery_item.errors.0 }}</div>
-                            {% endif %}
-                        </div>
+                    </div>
+                </div>
 
-                        <div class="col-md-6">
-                            <label for="{{ form.sale_price.id_for_label }}" class="form-label">
-                                Final Sale Price (₹) <span class="text-danger">*</span>
-                            </label>
-                            {{ form.sale_price }}
-                            {% if form.sale_price.errors %}
-                            <div class="text-danger small mt-1">{{ form.sale_price.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="{{ form.payment_method.id_for_label }}" class="form-label">
-                                Payment Method <span class="text-danger">*</span>
-                            </label>
-                            {{ form.payment_method }}
-                            {% if form.payment_method.errors %}
-                            <div class="text-danger small mt-1">{{ form.payment_method.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-
-                        <div class="col-md-12">
-                            <label for="{{ form.notes.id_for_label }}" class="form-label">
-                                Sale Notes / Bill Reference
-                            </label>
-                            {{ form.notes }}
-                            {% if form.notes.errors %}
-                            <div class="text-danger small mt-1">{{ form.notes.errors.0 }}</div>
-                            {% endif %}
+                <!-- SECTION C: Old Gold Exchange & Adjustment (Collapsible) -->
+                <div class="jd-pos-card">
+                    <div class="jd-pos-card-header">
+                        <label class="jd-pos-exchange-toggle-wrap w-100 m-0" for="exchange_toggle">
+                            <span class="d-flex align-items-center gap-2">
+                                <input type="checkbox" id="exchange_toggle" class="jd-pos-exchange-checkbox">
+                                <span class="fw-bold text-light"><i class="bi bi-arrow-repeat text-warning me-1"></i> Exchange Old Gold</span>
+                            </span>
+                            <span class="text-danger fw-bold font-monospace" id="exchangeDeductionBadge">0.00 Deduction</span>
+                        </label>
+                    </div>
+                    <div class="jd-pos-card-body d-none" id="exchangePanelBody">
+                        <div class="jd-pos-exchange-grid">
+                            <div>
+                                <label class="jd-pos-spec-label">Scrap Description</label>
+                                <input type="text" id="ogDesc" class="jd-pos-input py-1 px-2" value="18K Scrap Gold" placeholder="Item description">
+                            </div>
+                            <div>
+                                <label class="jd-pos-spec-label">Gross Weight (g)</label>
+                                <input type="number" step="0.001" id="ogGross" class="jd-pos-input py-1 px-2" value="0.000">
+                            </div>
+                            <div>
+                                <label class="jd-pos-spec-label">Melt / Dross Loss (g)</label>
+                                <input type="number" step="0.001" id="ogLoss" class="jd-pos-input py-1 px-2" value="0.000">
+                            </div>
+                            <div>
+                                <label class="jd-pos-spec-label">Rate / g (₹)</label>
+                                <input type="number" step="0.01" id="ogRate" class="jd-pos-input py-1 px-2" value="5000.00">
+                            </div>
+                            <div>
+                                <label class="jd-pos-spec-label">Exchange Credit</label>
+                                <div class="deduction-val pt-1 fs-6" id="ogNetVal">-₹0.00</div>
+                            </div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-                        <a href="{% url 'sale_list' %}" class="btn btn-outline-secondary">Cancel</a>
-                        <button type="submit" class="btn btn-dark">
-                            <i class="bi bi-check-lg me-1"></i> Complete Sale
-                        </button>
+                <!-- SECTION D: Bill Notes & Salesperson Commission -->
+                <div class="jd-pos-card">
+                    <div class="jd-pos-card-body">
+                        <div class="jd-pos-notes-grid">
+                            <div>
+                                <label for="{{ form.notes.id_for_label }}" class="jd-pos-spec-label mb-1">
+                                    Bill Notes / Sizing / Custom Instructions
+                                </label>
+                                {{ form.notes }}
+                            </div>
+                            <div>
+                                <label class="jd-pos-spec-label mb-1">Sales Counter Staff</label>
+                                <select class="jd-pos-select" id="salespersonSelect">
+                                    <option selected>{{ cashier_name }} (Counter #01)</option>
+                                    <option>Priya Verma (Senior Jeweller)</option>
+                                    <option>Rahul Mehta (Floor Manager)</option>
+                                    <option>Ananya Roy (Gemologist)</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
-                </form>
+                </div>
+
             </div>
+
+            <!-- RIGHT COLUMN (40%): Sticky Tax Invoice Summary & Payment Tender -->
+            <div class="jd-pos-col-right">
+
+                <!-- SECTION E: Tax Invoice Calculation Ledger -->
+                <div class="jd-pos-invoice-summary-card">
+                    <div class="jd-pos-invoice-header">
+                        <h2>Tax Invoice Summary</h2>
+                        <span class="jd-pos-pill-tag text-warning border-warning">B2C Retail GST</span>
+                    </div>
+
+                    <div class="jd-pos-invoice-ledger">
+                        <div class="jd-pos-ledger-row">
+                            <span>Subtotal Items (1)</span>
+                            <span class="text-light" id="billSubtotal">₹0.00</span>
+                        </div>
+                        <div class="jd-pos-ledger-row is-deduction">
+                            <span>Less Old Gold Exchange</span>
+                            <span id="billOldGold">-₹0.00</span>
+                        </div>
+                        <div class="jd-pos-ledger-row is-taxable">
+                            <span>Taxable Amount</span>
+                            <span id="billTaxable">₹0.00</span>
+                        </div>
+                        <div class="jd-pos-ledger-row is-sub">
+                            <span>CGST (1.5%)</span>
+                            <span id="billCgst">₹0.00</span>
+                        </div>
+                        <div class="jd-pos-ledger-row is-sub">
+                            <span>SGST (1.5%)</span>
+                            <span id="billSgst">₹0.00</span>
+                        </div>
+                        <div class="jd-pos-ledger-row is-gst-total">
+                            <span>Total GST (3.0%)</span>
+                            <span id="billGst">₹0.00</span>
+                        </div>
+                        <div class="jd-pos-ledger-row is-sub">
+                            <span>Round Off</span>
+                            <span id="billRoundOff">₹0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Grand Total Payable -->
+                    <div class="jd-pos-grand-total-box">
+                        <div class="jd-pos-grand-total-label">Grand Total Payable</div>
+                        <div class="jd-pos-grand-total-val" id="billGrandTotal">₹0.00</div>
+                    </div>
+
+                    <!-- Hidden native sale_price field that Django processes -->
+                    <div class="d-none">
+                        {{ form.sale_price }}
+                    </div>
+                </div>
+
+                <!-- SECTION F: Payment Tender & Split Payment -->
+                <div class="jd-pos-card">
+                    <div class="jd-pos-card-header">
+                        <h2>
+                            <i class="bi bi-wallet2 text-warning"></i>
+                            Payment Tender &amp; Split Mode
+                        </h2>
+                    </div>
+                    <div class="jd-pos-card-body">
+
+                        <!-- Payment Method Buttons (Selectable Pills) -->
+                        <div class="jd-pos-methods-grid">
+                            <button type="button" class="jd-pos-method-btn active" data-method="Cash">Cash</button>
+                            <button type="button" class="jd-pos-method-btn" data-method="UPI">UPI QR</button>
+                            <button type="button" class="jd-pos-method-btn" data-method="Card">Card</button>
+                            <button type="button" class="jd-pos-method-btn" data-method="Bank Transfer">Bank</button>
+                            <button type="button" class="jd-pos-method-btn" data-method="Exchange">Khata</button>
+                        </div>
+
+                        <!-- Native Form Select (Hidden, kept synced) -->
+                        <div class="d-none">
+                            {{ form.payment_method }}
+                        </div>
+
+                        <!-- Split Tender Inputs -->
+                        <div>
+                            <div class="jd-pos-tender-row">
+                                <span class="jd-pos-tender-label">
+                                    <i class="bi bi-cash-stack text-warning"></i>
+                                    <span>Primary Tendered Amount</span>
+                                </span>
+                                <input type="number" step="0.01" class="jd-pos-tender-input" id="tenderPrimaryInput" placeholder="0.00">
+                            </div>
+
+                            <div class="jd-pos-tender-row">
+                                <span class="jd-pos-tender-label">
+                                    <i class="bi bi-qr-code-scan text-warning"></i>
+                                    <span>Secondary / UPI Tender</span>
+                                </span>
+                                <input type="number" step="0.01" class="jd-pos-tender-input" id="tenderSecondaryInput" value="0.00">
+                            </div>
+
+                            <div class="jd-pos-balance-due-row">
+                                <span class="text-secondary">Balance Customer Due:</span>
+                                <span class="due-val" id="tenderDueVal">₹0.00</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- SECTION G: Primary POS Actions -->
+                <div class="jd-pos-actions-wrap">
+                    <button type="submit" class="jd-pos-btn-submit" id="btnCompleteSale">
+                        <i class="bi bi-patch-check-fill"></i>
+                        <span>Complete Sale &amp; Generate Tax Invoice</span>
+                    </button>
+
+                    <div class="jd-pos-secondary-actions-grid">
+                        <button type="button" class="jd-pos-btn-action-tile" onclick="alert('WhatsApp tax invoice receipt will be sent automatically to customer mobile after invoice completion.')">
+                            <i class="bi bi-whatsapp text-success"></i>
+                            <span>WhatsApp Bill</span>
+                        </button>
+                        <button type="button" class="jd-pos-btn-action-tile" onclick="window.print()">
+                            <i class="bi bi-printer"></i>
+                            <span>Thermal Slip</span>
+                        </button>
+                        <a href="{% url 'sale_list' %}" class="jd-pos-btn-action-tile">
+                            <i class="bi bi-arrow-left-circle"></i>
+                            <span>Cancel POS</span>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+
         </div>
-    </div>
+    </form>
+
 </div>
+
+<!-- Client-side POS Interactivity Engine -->
+<script>
+(function() {
+    // 1. Mark body and wrapper for seamless dark background
+    document.body.classList.add('has-pos-terminal');
+    var pc = document.getElementById('page-content');
+    if (pc) pc.classList.add('jd-pos-active');
+
+    // 2. Parse Server JSON datasets
+    var items = [];
+    var customers = [];
+    try {
+        items = {{ items_json|safe }};
+    } catch(e) { items = []; }
+
+    try {
+        customers = {{ customers_json|safe }};
+    } catch(e) { customers = []; }
+
+    // Elements
+    var custSelect = document.getElementById('{{ form.customer.id_for_label }}');
+    var custSearch = document.getElementById('customerSearchInput');
+    var itemSelect = document.getElementById('{{ form.jewellery_item.id_for_label }}');
+    var itemScanInput = document.getElementById('itemScanInput');
+    var priceInput = document.getElementById('{{ form.sale_price.id_for_label }}');
+    var methodSelect = document.getElementById('{{ form.payment_method.id_for_label }}');
+    var exchangeToggle = document.getElementById('exchange_toggle');
+    var exchangePanel = document.getElementById('exchangePanelBody');
+
+    // Live metal rate
+    var goldRate = {% if metal_prices.gold_price_per_gram %}{{ metal_prices.gold_price_per_gram }}{% else %}6650.00{% endif %};
+
+    // Customer Card elements
+    var custCardName = document.getElementById('custCardName');
+    var custCardMobile = document.getElementById('custCardMobile');
+    var custCardDue = document.getElementById('custCardDue');
+    var custCardCount = document.getElementById('custCardCount');
+    var custCardDueLarge = document.getElementById('custCardDueLarge');
+
+    // Item Card elements
+    var itemCardTitle = document.getElementById('itemCardTitle');
+    var itemCardTag = document.getElementById('itemCardTag');
+    var itemCardHuid = document.getElementById('itemCardHuid');
+    var itemCardHallmark = document.getElementById('itemCardHallmark');
+    var specPurity = document.getElementById('specPurity');
+    var specGross = document.getElementById('specGross');
+    var specNet = document.getElementById('specNet');
+    var specStone = document.getElementById('specStone');
+    var goldCalcVal = document.getElementById('goldCalcVal');
+    var makingCalcVal = document.getElementById('makingCalcVal');
+    var stoneCalcVal = document.getElementById('stoneCalcVal');
+    var itemTotalVal = document.getElementById('itemTotalVal');
+    var itemThumbBox = document.getElementById('itemThumbBox');
+
+    // Bill elements
+    var billSubtotal = document.getElementById('billSubtotal');
+    var billOldGold = document.getElementById('billOldGold');
+    var billTaxable = document.getElementById('billTaxable');
+    var billCgst = document.getElementById('billCgst');
+    var billSgst = document.getElementById('billSgst');
+    var billGst = document.getElementById('billGst');
+    var billRoundOff = document.getElementById('billRoundOff');
+    var billGrandTotal = document.getElementById('billGrandTotal');
+
+    // Tender elements
+    var tenderPrimary = document.getElementById('tenderPrimaryInput');
+    var tenderSecondary = document.getElementById('tenderSecondaryInput');
+    var tenderDueVal = document.getElementById('tenderDueVal');
+
+    // Old Gold inputs
+    var ogGross = document.getElementById('ogGross');
+    var ogLoss = document.getElementById('ogLoss');
+    var ogRate = document.getElementById('ogRate');
+    var ogNetVal = document.getElementById('ogNetVal');
+    var exchangeDeductionBadge = document.getElementById('exchangeDeductionBadge');
+
+    function formatInr(val) {
+        return '₹' + Number(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // Customer selection handler
+    function updateCustomerView(custId) {
+        var cust = customers.find(function(c) { return c.id == custId; });
+        if (cust) {
+            custCardName.textContent = cust.name;
+            custCardMobile.textContent = cust.mobile || 'No mobile';
+            custCardDue.textContent = formatInr(cust.outstanding);
+            custCardDueLarge.textContent = formatInr(cust.outstanding);
+            custCardCount.textContent = (cust.purchases_count || 0) + ' bill' + ((cust.purchases_count || 0) === 1 ? '' : 's');
+            custSearch.value = cust.name + ' (' + (cust.mobile || '') + ')';
+        } else {
+            custCardName.textContent = 'Select a Customer';
+            custCardMobile.textContent = '—';
+            custCardDue.textContent = '₹0.00';
+            custCardDueLarge.textContent = '₹0.00';
+            custCardCount.textContent = '0 bills';
+        }
+    }
+
+    if (custSelect) {
+        custSelect.addEventListener('change', function() {
+            updateCustomerView(this.value);
+        });
+        if (custSelect.value) {
+            updateCustomerView(custSelect.value);
+        } else if (customers.length > 0) {
+            custSelect.value = customers[0].id;
+            updateCustomerView(customers[0].id);
+        }
+    }
+
+    // Customer search typing autocomplete / filter
+    if (custSearch) {
+        custSearch.addEventListener('input', function() {
+            var q = this.value.toLowerCase().trim();
+            if (!q) return;
+            var match = customers.find(function(c) {
+                return (c.name && c.name.toLowerCase().includes(q)) ||
+                       (c.mobile && c.mobile.includes(q));
+            });
+            if (match && custSelect) {
+                custSelect.value = match.id;
+                updateCustomerView(match.id);
+            }
+        });
+    }
+
+    // Item selection handler
+    var currentItem = null;
+
+    function updateItemView(itemId) {
+        currentItem = items.find(function(it) { return it.id == itemId; });
+        if (currentItem) {
+            itemCardTitle.textContent = currentItem.name;
+            itemCardTag.textContent = currentItem.tag_number || ('TAG-' + currentItem.id);
+            itemCardHuid.textContent = currentItem.huid ? ('HUID: ' + currentItem.huid) : 'TAGGED VAULT';
+            specPurity.textContent = (currentItem.metal_type || 'Gold') + ' ' + (currentItem.purity || '22K');
+            specGross.textContent = currentItem.gross_weight.toFixed(3) + 'g';
+            specNet.textContent = currentItem.net_weight.toFixed(3) + 'g';
+            specStone.textContent = (currentItem.stone_weight || 0).toFixed(3) + 'g';
+
+            var baseGoldVal = currentItem.net_weight * goldRate;
+            var makingVal = currentItem.making_charge ? (currentItem.making_charge * (currentItem.gross_weight || 1)) : (currentItem.gross_weight * 350);
+            var stoneVal = currentItem.stone_price || 0;
+            var subtotal = currentItem.selling_price || (baseGoldVal + makingVal + stoneVal + 45);
+
+            goldCalcVal.textContent = formatInr(baseGoldVal);
+            makingCalcVal.textContent = formatInr(makingVal);
+            stoneCalcVal.textContent = formatInr(stoneVal);
+            itemTotalVal.textContent = formatInr(subtotal);
+
+            if (currentItem.image_url) {
+                itemThumbBox.innerHTML = '<img src="' + currentItem.image_url + '" alt="item">';
+            } else {
+                itemThumbBox.innerHTML = '<i class="bi bi-gem"></i>';
+            }
+
+            if (itemScanInput) {
+                itemScanInput.value = currentItem.tag_number || currentItem.item_code || '';
+            }
+
+            recalculateBill();
+        } else {
+            itemCardTitle.textContent = 'Choose an item to inspect details';
+            itemCardTag.textContent = 'TAG-XXXX';
+            itemCardHuid.textContent = 'HUID: PENDING';
+            specPurity.textContent = '22K Gold 91.6%';
+            specGross.textContent = '0.000g';
+            specNet.textContent = '0.000g';
+            specStone.textContent = '0.000g';
+            goldCalcVal.textContent = '₹0.00';
+            makingCalcVal.textContent = '₹0.00';
+            stoneCalcVal.textContent = '₹0.00';
+            itemTotalVal.textContent = '₹0.00';
+            itemThumbBox.innerHTML = '<i class="bi bi-gem"></i>';
+            recalculateBill();
+        }
+    }
+
+    if (itemSelect) {
+        itemSelect.addEventListener('change', function() {
+            updateItemView(this.value);
+        });
+        if (itemSelect.value) {
+            updateItemView(itemSelect.value);
+        } else if (items.length > 0) {
+            itemSelect.value = items[0].id;
+            updateItemView(items[0].id);
+        }
+    }
+
+    // Barcode scanner input event
+    if (itemScanInput) {
+        itemScanInput.addEventListener('input', function() {
+            var q = this.value.toUpperCase().trim();
+            if (!q) return;
+            var match = items.find(function(it) {
+                return (it.tag_number && it.tag_number.toUpperCase().includes(q)) ||
+                       (it.huid && it.huid.toUpperCase().includes(q)) ||
+                       (it.item_code && it.item_code.toUpperCase().includes(q));
+            });
+            if (match && itemSelect) {
+                itemSelect.value = match.id;
+                updateItemView(match.id);
+            }
+        });
+    }
+
+    // Old Gold Calculation
+    function getOldGoldDeduction() {
+        if (!exchangeToggle || !exchangeToggle.checked) return 0;
+        var gross = parseFloat(ogGross.value) || 0;
+        var loss = parseFloat(ogLoss.value) || 0;
+        var rate = parseFloat(ogRate.value) || 0;
+        var net = Math.max(0, gross - loss);
+        var credit = net * rate;
+        ogNetVal.textContent = '-' + formatInr(credit);
+        exchangeDeductionBadge.textContent = '-' + formatInr(credit) + ' Deduction';
+        return credit;
+    }
+
+    if (exchangeToggle) {
+        exchangeToggle.addEventListener('change', function() {
+            if (this.checked) {
+                exchangePanel.classList.remove('d-none');
+            } else {
+                exchangePanel.classList.add('d-none');
+                exchangeDeductionBadge.textContent = '0.00 Deduction';
+            }
+            recalculateBill();
+        });
+    }
+
+    [ogGross, ogLoss, ogRate].forEach(function(el) {
+        if (el) el.addEventListener('input', recalculateBill);
+    });
+
+    // Bill Grand Total Calculation
+    function recalculateBill() {
+        var subtotal = 0;
+        if (currentItem) {
+            subtotal = currentItem.selling_price || 0;
+        }
+
+        var oldGoldCredit = getOldGoldDeduction();
+        var taxable = Math.max(0, subtotal - oldGoldCredit);
+        var cgst = taxable * 0.015;
+        var sgst = taxable * 0.015;
+        var totalGst = cgst + sgst;
+        var rawTotal = taxable + totalGst;
+        var grandTotal = Math.round(rawTotal);
+        var roundOff = grandTotal - rawTotal;
+
+        billSubtotal.textContent = formatInr(subtotal);
+        billOldGold.textContent = '-' + formatInr(oldGoldCredit);
+        billTaxable.textContent = formatInr(taxable);
+        billCgst.textContent = formatInr(cgst);
+        billSgst.textContent = formatInr(sgst);
+        billGst.textContent = formatInr(totalGst);
+        billRoundOff.textContent = (roundOff >= 0 ? '+' : '') + formatInr(roundOff);
+        billGrandTotal.textContent = formatInr(grandTotal);
+
+        // Keep form.sale_price synced
+        if (priceInput) {
+            priceInput.value = grandTotal.toFixed(2);
+        }
+
+        // Keep tender synced
+        if (tenderPrimary) {
+            tenderPrimary.value = grandTotal.toFixed(2);
+        }
+        updateTenderDue();
+    }
+
+    // Tender & Split Payment
+    function updateTenderDue() {
+        var grand = parseFloat(priceInput ? priceInput.value : 0) || 0;
+        var t1 = parseFloat(tenderPrimary ? tenderPrimary.value : 0) || 0;
+        var t2 = parseFloat(tenderSecondary ? tenderSecondary.value : 0) || 0;
+        var tendered = t1 + t2;
+        var due = Math.max(0, grand - tendered);
+        if (tenderDueVal) {
+            tenderDueVal.textContent = formatInr(due);
+        }
+    }
+
+    if (tenderPrimary) tenderPrimary.addEventListener('input', updateTenderDue);
+    if (tenderSecondary) tenderSecondary.addEventListener('input', updateTenderDue);
+
+    // Payment Method Pills Switcher
+    var methodBtns = document.querySelectorAll('.jd-pos-method-btn');
+    methodBtns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            methodBtns.forEach(function(b) { b.classList.remove('active'); });
+            this.classList.add('active');
+            var method = this.getAttribute('data-method');
+            if (methodSelect) {
+                methodSelect.value = method;
+            }
+        });
+    });
+
+    // Initial calculation on page load
+    recalculateBill();
+})();
+</script>
 {% endblock %}

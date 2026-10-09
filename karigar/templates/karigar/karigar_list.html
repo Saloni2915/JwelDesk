@@ -1,68 +1,74 @@
 {% extends 'base.html' %}
 
-{% block title %}Karigars / Artisans Directory — JewelDesk{% endblock %}
+{% block title %}Artisans & Karigars Directory — JewelDesk Atelier{% endblock %}
 
 {% block page_title %}Artisans &amp; Karigars Directory{% endblock %}
 
-{% block page_actions %}
-<div class="d-flex gap-2">
-    {% if user_perms.karigar.can_add %}
-    <a href="{% url 'karigar:karigar_create' %}" class="btn btn-dark btn-sm">
-        <i class="bi bi-person-plus me-1"></i> Add New Karigar
-    </a>
-    {% endif %}
-    <a href="{% url 'karigar:dashboard' %}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-speedometer2 me-1"></i> Dashboard
-    </a>
-</div>
-{% endblock %}
-
 {% block content %}
-<!-- Search & Filter Card -->
-<div class="card mb-4 border-0 shadow-sm">
-    <div class="card-body">
-        <form method="get" class="row g-2 align-items-center">
-            <div class="col-md-5">
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                    <input type="text" name="q" value="{{ q }}" class="form-control"
-                           placeholder="Search by code (e.g. KRG-0001), name, mobile or skill...">
+<div class="jd-canvas">
+    <!-- Header -->
+    <div class="jd-header">
+        <div>
+            <div class="jd-badge"><i class="bi bi-person-badge me-1"></i> Master Craftsmen & Workshops</div>
+            <h1 class="jd-title">Karigars & Artisans Directory</h1>
+            <p class="jd-subtitle">Manage goldsmiths, diamond setters, polishers, stone artisans, and workshop partners.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            {% if user_perms.karigar.can_add %}
+            <a href="{% url 'karigar:karigar_create' %}" class="jd-btn-gold">
+                <i class="bi bi-person-plus me-1"></i> Add New Karigar
+            </a>
+            {% endif %}
+            <a href="{% url 'karigar:dashboard' %}" class="jd-btn-ghost">
+                <i class="bi bi-speedometer2 me-1"></i> Workshop Cockpit
+            </a>
+        </div>
+    </div>
+
+    <!-- Search & Filter Card -->
+    <div class="jd-filter-card mb-4">
+        <form method="get" class="row g-3 align-items-center">
+            <div class="col-lg-5 col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-end-0 text-gold" style="border-color: rgba(236,200,106,0.2);"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" value="{{ q }}" class="jd-input border-start-0"
+                           placeholder="Search code (e.g. KRG-0001), name, mobile or skill...">
                 </div>
             </div>
-            <div class="col-md-3">
-                <select name="specialization" class="form-select form-select-sm">
+            <div class="col-lg-3 col-md-3">
+                <select name="specialization" class="jd-select">
                     <option value="">All Specializations</option>
                     {% for key, val in specialization_choices %}
                     <option value="{{ key }}" {% if selected_specialization == key %}selected{% endif %}>{{ val }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-2">
-                <select name="status" class="form-select form-select-sm">
+            <div class="col-lg-2 col-md-2">
+                <select name="status" class="jd-select">
                     <option value="">All Statuses</option>
                     {% for key, val in status_choices %}
                     <option value="{{ key }}" {% if selected_status == key %}selected{% endif %}>{{ val }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-2 d-flex gap-1">
-                <button type="submit" class="btn btn-dark btn-sm w-100">
+            <div class="col-lg-2 col-md-2 d-flex gap-2">
+                <button type="submit" class="jd-btn-gold flex-grow-1">
                     <i class="bi bi-funnel"></i> Filter
                 </button>
-                <a href="{% url 'karigar:karigar_list' %}" class="btn btn-outline-secondary btn-sm" title="Clear Filters">
+                {% if q or selected_specialization or selected_status %}
+                <a href="{% url 'karigar:karigar_list' %}" class="jd-btn-ghost px-3" title="Clear Filters">
                     <i class="bi bi-x-lg"></i>
                 </a>
+                {% endif %}
             </div>
         </form>
     </div>
-</div>
 
-<!-- Karigar Directory Table -->
-<div class="card border-0 shadow-sm">
-    <div class="card-body p-0">
+    <!-- Karigar Directory Table Card -->
+    <div class="jd-table-card">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+            <table class="jd-table">
+                <thead>
                     <tr>
                         <th>Artisan Code</th>
                         <th>Name &amp; Workshop</th>
@@ -78,56 +84,67 @@
                     {% for k in karigars %}
                     <tr>
                         <td>
-                            <a href="{% url 'karigar:karigar_detail' k.id %}" class="fw-bold font-monospace text-dark text-decoration-none">
+                            <a href="{% url 'karigar:karigar_detail' k.id %}" class="text-gold font-monospace fw-bold text-decoration-none">
                                 {{ k.karigar_code }}
                             </a>
                         </td>
                         <td>
-                            <a href="{% url 'karigar:karigar_detail' k.id %}" class="text-dark fw-semibold text-decoration-none d-block">
+                            <a href="{% url 'karigar:karigar_detail' k.id %}" class="text-white fw-semibold text-decoration-none d-block">
                                 {{ k.name }}
                             </a>
                             {% if k.address %}
-                            <small class="text-muted text-truncate d-inline-block" style="max-width: 220px;">
+                            <small class="text-muted text-truncate d-inline-block" style="max-width: 240px;">
                                 {{ k.address }}
                             </small>
                             {% endif %}
                         </td>
                         <td>
-                            <span class="d-block fw-medium">{{ k.mobile }}</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-light font-monospace">{{ k.mobile }}</span>
+                                <a href="https://wa.me/91{{ k.mobile|cut:' ' }}" target="_blank" class="text-success small" title="WhatsApp Artisan">
+                                    <i class="bi bi-whatsapp"></i>
+                                </a>
+                            </div>
                             {% if k.alternate_contact %}
-                            <small class="text-muted">Alt: {{ k.alternate_contact }}</small>
+                            <small class="text-muted font-monospace d-block">Alt: {{ k.alternate_contact }}</small>
                             {% endif %}
                         </td>
                         <td>
-                            <span class="badge bg-light text-dark border">{{ k.specialization }}</span>
+                            <span class="jd-tag"><i class="bi bi-hammer me-1"></i>{{ k.specialization }}</span>
                         </td>
                         <td>
                             {% if k.active_work_count > 0 %}
-                            <span class="badge bg-info text-dark">{{ k.active_work_count }} in progress</span>
+                            <span class="jd-stage-pill" style="background: rgba(59, 130, 246, 0.15); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.35);">
+                                {{ k.active_work_count }} in progress
+                            </span>
                             {% else %}
-                            <span class="badge bg-light text-muted border">None</span>
+                            <span class="text-muted small">— None</span>
                             {% endif %}
                         </td>
                         <td>
                             {% if k.status == 'Active' %}
-                            <span class="badge bg-success">Active</span>
+                            <span class="jd-stage-pill" style="background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.35);">
+                                Active
+                            </span>
                             {% else %}
-                            <span class="badge bg-secondary">Inactive</span>
+                            <span class="jd-stage-pill" style="background: rgba(255, 255, 255, 0.06); color: rgba(250,244,234,0.6); border: 1px solid rgba(255,255,255,0.15);">
+                                Inactive
+                            </span>
                             {% endif %}
                         </td>
                         <td class="text-muted small">{{ k.joining_date|date:"d M Y" }}</td>
                         <td class="text-end pe-3">
-                            <div class="btn-group btn-group-sm">
-                                <a href="{% url 'karigar:karigar_detail' k.id %}" class="btn btn-outline-dark" title="View Profile">
+                            <div class="d-flex align-items-center justify-content-end gap-1">
+                                <a href="{% url 'karigar:karigar_detail' k.id %}" class="jd-btn-ghost btn-sm py-1 px-2" title="View Profile">
                                     <i class="bi bi-eye"></i>
                                 </a>
                                 {% if user_perms.karigar.can_edit %}
-                                <a href="{% url 'karigar:karigar_edit' k.id %}" class="btn btn-outline-secondary" title="Edit">
+                                <a href="{% url 'karigar:karigar_edit' k.id %}" class="jd-btn-ghost btn-sm py-1 px-2" title="Edit">
                                     <i class="bi bi-pencil"></i>
                                 </a>
                                 {% endif %}
                                 {% if user_perms.karigar.can_add %}
-                                <a href="{% url 'karigar:assignment_create' %}?karigar={{ k.id }}" class="btn btn-outline-primary" title="Assign Work">
+                                <a href="{% url 'karigar:assignment_create' %}?karigar={{ k.id }}" class="jd-btn-gold btn-sm py-1 px-2" title="Assign Work">
                                     <i class="bi bi-hammer"></i>
                                 </a>
                                 {% endif %}
@@ -136,9 +153,17 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="text-center py-5 text-muted">
-                            <i class="bi bi-people fs-1 d-block mb-2 text-secondary"></i>
-                            No karigars found. Click "+ Add New Karigar" to create your first artisan profile.
+                        <td colspan="8" class="text-center py-5">
+                            <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(236, 200, 106, 0.08); display: inline-flex; align-items: center; justify-content: center; color: var(--gold-primary); font-size: 1.75rem; margin-bottom: 1rem;">
+                                <i class="bi bi-person-workspace"></i>
+                            </div>
+                            <h5 class="text-white fw-bold mb-1">No Artisans Found</h5>
+                            <p class="text-muted small mb-3">Add karigars to assign precious metal job cards.</p>
+                            {% if user_perms.karigar.can_add %}
+                            <a href="{% url 'karigar:karigar_create' %}" class="jd-btn-gold">
+                                <i class="bi bi-person-plus me-1"></i> Add New Karigar
+                            </a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
@@ -148,4 +173,12 @@
         {% include 'includes/pagination.html' with page_obj=page_obj %}
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('has-atelier-suite');
+    const pc = document.getElementById('page-content');
+    if (pc) pc.classList.add('jd-active');
+});
+</script>
 {% endblock %}

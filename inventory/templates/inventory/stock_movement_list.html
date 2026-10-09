@@ -1,60 +1,86 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Stock Movements — JewelDesk{% endblock %}
+{% block title %}Stock Movements & Audit Trail — JewelDesk Atelier{% endblock %}
 
-{% block page_title %}Stock Movement History{% endblock %}
-
-{% block page_actions %}
-<div class="d-flex gap-2">
-    <a href="{% url 'inventory_list' %}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left me-1"></i> Back to Inventory
-    </a>
-</div>
+{% block extra_css %}
+<link href="{% static 'css/inventory_atelier.css' %}?v={% now "U" %}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
-<!-- Movement summary -->
-<div class="row g-3 mb-4">
-    <div class="col-6 col-md-4">
-        <div class="card h-100">
-            <div class="card-body py-3">
-                <div class="text-muted small text-uppercase">Movements</div>
-                <div class="fs-4 fw-semibold text-dark">{{ totals.movement_count }}</div>
-                <div class="text-muted small">matching the current filters</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-md-4">
-        <div class="card h-100">
-            <div class="card-body py-3">
-                <div class="text-muted small text-uppercase">Stock In</div>
-                <div class="fs-4 fw-semibold text-success">+{{ totals.stock_in }}</div>
-                <div class="text-muted small">piece(s) added</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-md-4">
-        <div class="card h-100">
-            <div class="card-body py-3">
-                <div class="text-muted small text-uppercase">Stock Out</div>
-                <div class="fs-4 fw-semibold text-danger">{{ totals.stock_out }}</div>
-                <div class="text-muted small">piece(s) removed (sales, damage, loss)</div>
-            </div>
-        </div>
-    </div>
-</div>
+<div class="jd-inv-canvas">
 
-<!-- Filters -->
-<div class="card mb-4">
-    <div class="card-body">
-        <form method="get">
+    <!-- 1. Header & Actions -->
+    <div class="jd-inv-header">
+        <div class="jd-inv-title-wrap">
+            <h1><i class="bi bi-arrow-left-right text-warning me-2"></i>Stock Movements &amp; Audit Trail</h1>
+            <p class="jd-inv-subtitle">Immutable log of all showroom additions, counter sales deductions, and physical vault adjustments</p>
+        </div>
+        <div class="jd-inv-header-actions">
+            <a href="{% url 'inventory_list' %}" class="jd-btn-gold">
+                <i class="bi bi-gem"></i> Inventory Register
+            </a>
+            <a href="{% url 'inventory_add' %}" class="jd-btn-ghost">
+                <i class="bi bi-plus-circle"></i> + Add Jewellery
+            </a>
+        </div>
+    </div>
+
+    <!-- 2. Movement Totals KPI Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4">
+            <div class="jd-inv-kpi-card">
+                <div class="jd-inv-kpi-top">
+                    <div class="jd-inv-kpi-icon icon-blue">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                    <span class="badge bg-secondary bg-opacity-25 text-light">Filtered</span>
+                </div>
+                <div class="jd-inv-kpi-label">Audit Movements</div>
+                <div class="jd-inv-kpi-val">{{ totals.movement_count }}</div>
+                <div class="jd-inv-kpi-sub">Total recorded events</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4">
+            <div class="jd-inv-kpi-card">
+                <div class="jd-inv-kpi-top">
+                    <div class="jd-inv-kpi-icon icon-green">
+                        <i class="bi bi-box-arrow-in-down"></i>
+                    </div>
+                    <span class="badge bg-success bg-opacity-25 text-success">Vault In</span>
+                </div>
+                <div class="jd-inv-kpi-label">Stock Inward</div>
+                <div class="jd-inv-kpi-val text-success">+{{ totals.stock_in }}</div>
+                <div class="jd-inv-kpi-sub">Pieces added to vault</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4">
+            <div class="jd-inv-kpi-card">
+                <div class="jd-inv-kpi-top">
+                    <div class="jd-inv-kpi-icon icon-amber">
+                        <i class="bi bi-box-arrow-up"></i>
+                    </div>
+                    <span class="badge bg-danger bg-opacity-25 text-danger">Vault Out</span>
+                </div>
+                <div class="jd-inv-kpi-label">Stock Outward</div>
+                <div class="jd-inv-kpi-val text-danger">{{ totals.stock_out }}</div>
+                <div class="jd-inv-kpi-sub">Pieces sold, damaged, or transferred</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Filter Card -->
+    <div class="jd-inv-filter-card">
+        <form method="get" id="movementFilterForm">
             <div class="row g-2 align-items-center">
-                <div class="col-12 col-md-3">
-                    <input type="text" name="q" value="{{ selected_q }}" class="form-control form-control-sm"
-                           placeholder="Search by piece ID, item name or notes...">
+                <div class="col-12 col-md-4">
+                    <input type="text" name="q" value="{{ selected_q }}" class="jd-inv-input"
+                           placeholder="Search piece ID, tag, item name or notes...">
                 </div>
                 <div class="col-6 col-md-2">
-                    <select name="type" class="form-select form-select-sm">
+                    <select name="type" class="jd-inv-select">
                         <option value="">All Movement Types</option>
                         {% for key, val in movement_types %}
                         <option value="{{ key }}" {% if selected_type == key %}selected{% endif %}>{{ val }}</option>
@@ -62,96 +88,125 @@
                     </select>
                 </div>
                 <div class="col-6 col-md-2">
-                    <input type="date" name="from" value="{{ selected_from }}" class="form-control form-control-sm"
+                    <input type="date" name="from" value="{{ selected_from }}" class="jd-inv-input"
                            aria-label="From date" title="From date">
                 </div>
                 <div class="col-6 col-md-2">
-                    <input type="date" name="to" value="{{ selected_to }}" class="form-control form-control-sm"
+                    <input type="date" name="to" value="{{ selected_to }}" class="jd-inv-input"
                            aria-label="To date" title="To date">
                 </div>
-                <div class="col-6 col-md-1 d-flex gap-1">
-                    <button type="submit" class="btn btn-outline-dark btn-sm w-100" title="Apply Filters">
-                        <i class="bi bi-funnel"></i>
+                <div class="col-6 col-md-2 d-flex gap-2">
+                    <button type="submit" class="jd-btn-gold w-100" title="Apply Filters">
+                        <i class="bi bi-funnel"></i> Filter
                     </button>
-                    <a href="{% url 'stock_movement_list' %}" class="btn btn-outline-secondary btn-sm" title="Clear Filters">
+                    {% if selected_q or selected_type or selected_from or selected_to %}
+                    <a href="{% url 'stock_movement_list' %}" class="jd-btn-ghost px-2" title="Clear Filters">
                         <i class="bi bi-x-lg"></i>
                     </a>
+                    {% endif %}
                 </div>
-                {% if is_item_filter %}
-                <div class="col-md-2 text-md-end">
-                    <span class="badge bg-light text-dark border">Filtered by one item</span>
-                </div>
-                {% endif %}
             </div>
+            {% if is_item_filter %}
+            <div class="mt-2 pt-2 border-top border-secondary border-opacity-25 small text-warning">
+                <i class="bi bi-funnel-fill me-1"></i> Filtered by single inventory piece
+            </div>
+            {% endif %}
         </form>
     </div>
-</div>
 
-<!-- Movement history -->
-<div class="card">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+    <!-- 4. Movements Table Card -->
+    <div class="jd-inv-table-card">
+        <div class="jd-inv-table-header">
+            <h2>
+                <i class="bi bi-journal-text text-warning"></i>
+                Stock Audit Ledger
+            </h2>
+            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 font-monospace">
+                {{ page_obj.paginator.count }} Recorded Events
+            </span>
+        </div>
+        <div class="jd-inv-table-scroll">
+            <table class="jd-inv-table">
+                <thead>
                     <tr>
                         <th>Date &amp; Time</th>
                         <th>Tag / Piece ID</th>
-                        <th>Item</th>
-                        <th>Movement</th>
-                        <th class="text-end">Qty</th>
-                        <th class="text-end">Previous</th>
-                        <th class="text-end">New</th>
+                        <th>Ornament Name</th>
+                        <th>Movement Type</th>
+                        <th class="text-end">Qty Change</th>
+                        <th class="text-end">Before &rarr; After</th>
                         <th>Reason</th>
                         <th>Notes</th>
-                        <th>Done By</th>
+                        <th class="text-end pe-3">Audited By</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for movement in movements %}
                     <tr>
-                        <td class="text-nowrap">{{ movement.created_at|date:"M d, Y h:i A" }}</td>
+                        <td class="text-nowrap small text-muted font-monospace">{{ movement.created_at|date:"d M Y, h:i A" }}</td>
                         <td>
-                            <a href="{% url 'inventory_detail' movement.item.id %}"
-                               class="fw-semibold text-decoration-none text-dark">
+                            <a href="{% url 'inventory_detail' movement.item.id %}" class="jd-tag-pill">
                                 {{ movement.item.tag_number|default:movement.item.item_code }}
                             </a>
                         </td>
                         <td>
-                            {{ movement.item.name }}
+                            <div class="fw-bold text-light">{{ movement.item.name }}</div>
                             {% if movement.sale_id %}
                             <div class="small">
-                                <a href="{% url 'sale_detail' movement.sale_id %}" class="text-decoration-none">
-                                    Sale #{{ movement.sale_id }}
+                                <a href="{% url 'sale_detail' movement.sale_id %}" class="text-warning text-decoration-none">
+                                    <i class="bi bi-receipt me-1"></i>Sale Invoice #{{ movement.sale_id }}
                                 </a>
                             </div>
                             {% endif %}
                         </td>
                         <td>
-                            <span class="badge {% if movement.is_stock_out %}bg-danger{% else %}bg-success{% endif %}">
-                                {{ movement.get_movement_type_display }}
-                            </span>
+                            {% if movement.is_stock_out %}
+                            <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25">{{ movement.get_movement_type_display }}</span>
+                            {% else %}
+                            <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25">{{ movement.get_movement_type_display }}</span>
+                            {% endif %}
                         </td>
-                        <td class="text-end fw-semibold {% if movement.is_stock_out %}text-danger{% else %}text-success{% endif %}">
+                        <td class="text-end font-monospace fw-bold fs-6 {% if movement.is_stock_out %}text-danger{% else %}text-success{% endif %}">
                             {{ movement.quantity_change }}
                         </td>
-                        <td class="text-end text-muted">{{ movement.stock_before }}</td>
-                        <td class="text-end fw-semibold">{{ movement.stock_after }}</td>
-                        <td>{{ movement.reason|default:"—" }}</td>
-                        <td class="text-muted small">{{ movement.notes|default:"" }}</td>
-                        <td>{{ movement.created_by.username|default:"System" }}</td>
+                        <td class="text-end font-monospace text-light text-nowrap">
+                            {{ movement.stock_before }} &rarr; <strong class="text-warning">{{ movement.stock_after }}</strong>
+                        </td>
+                        <td class="small">{{ movement.reason|default:"—" }}</td>
+                        <td class="small text-muted">{{ movement.notes|default:"—" }}</td>
+                        <td class="text-end pe-3 small text-muted font-monospace">
+                            <i class="bi bi-person me-1"></i>{{ movement.created_by.username|default:"System" }}
+                        </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="10" class="text-center py-4 text-muted">
-                            <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-                            No stock movements found. Adjust stock from an inventory item to start the history.
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
+                            No stock movements recorded matching your criteria.
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-        {% include 'includes/pagination.html' with page_obj=page_obj %}
+
+        <div class="p-3 border-top border-secondary border-opacity-25 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="text-muted small">
+                Showing {{ page_obj.start_index|default:0 }} to {{ page_obj.end_index|default:0 }} of {{ page_obj.paginator.count }} movements
+            </div>
+            {% include 'includes/pagination.html' with page_obj=page_obj %}
+        </div>
     </div>
+
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.body.classList.add('has-inventory-suite');
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) mainContent.classList.add('jd-inv-active');
+        const pageContent = document.getElementById('page-content');
+        if (pageContent) pageContent.classList.add('jd-inv-active');
+    });
+</script>
 {% endblock %}

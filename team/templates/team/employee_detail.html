@@ -1,31 +1,31 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}{{ employee.full_name }} — Team — JewelDesk{% endblock %}
+{% block title %}{{ employee.full_name }} — Team Atelier — JewelDesk{% endblock %}
 {% block page_title %}{{ employee.full_name }}{% endblock %}
 
 {% block page_actions %}
-  <a href="{% url 'team:employee_list' %}" class="btn btn-outline-secondary btn-sm" id="btn-back-team">
+  <a href="{% url 'team:employee_list' %}" class="jd-btn-ghost btn-sm" id="btn-back-team">
     <i class="bi bi-arrow-left me-1"></i> Back to Team
   </a>
   {% if can_edit or not user.employee_profile %}
-  <a href="{% url 'team:employee_edit' employee.pk %}" class="btn btn-primary btn-sm" id="btn-edit-emp">
+  <a href="{% url 'team:employee_edit' employee.pk %}" class="jd-btn-gold btn-sm" id="btn-edit-emp">
     <i class="bi bi-pencil me-1"></i> Edit Profile
   </a>
   {% if employee.user %}
-  <a href="{% url 'team:employee_password_reset' employee.pk %}" class="btn btn-outline-warning btn-sm" id="btn-reset-pw">
+  <a href="{% url 'team:employee_password_reset' employee.pk %}" class="jd-btn-ghost btn-sm text-warning" id="btn-reset-pw">
     <i class="bi bi-key me-1"></i> Reset Password
   </a>
   {% else %}
-  <a href="{% url 'team:employee_link_account' employee.pk %}" class="btn btn-outline-success btn-sm" id="btn-link-acc">
+  <a href="{% url 'team:employee_link_account' employee.pk %}" class="jd-btn-ghost btn-sm text-success" id="btn-link-acc">
     <i class="bi bi-person-check me-1"></i> Enable Login Access
   </a>
   {% endif %}
   {% if can_manage_perms or not user.employee_profile %}
-  <a href="{% url 'team:employee_permissions' employee.pk %}" class="btn btn-outline-dark btn-sm" id="btn-permissions">
+  <a href="{% url 'team:employee_permissions' employee.pk %}" class="jd-btn-ghost btn-sm" id="btn-permissions">
     <i class="bi bi-shield-lock me-1"></i> Permissions
   </a>
-  <a href="{% url 'team:employee_branches' employee.pk %}" class="btn btn-outline-info btn-sm" id="btn-branches">
+  <a href="{% url 'team:employee_branches' employee.pk %}" class="jd-btn-ghost btn-sm" id="btn-branches">
     <i class="bi bi-shop me-1"></i> Branch Access
   </a>
   {% endif %}
@@ -33,221 +33,200 @@
 {% endblock %}
 
 {% block content %}
-<div class="row g-4">
-  <!-- Left Column: Summary & Account Card -->
-  <div class="col-lg-4">
-    <!-- Profile Card -->
-    <div class="card shadow-sm border-0 mb-4">
-      <div class="card-body text-center py-4">
+<div class="jd-canvas">
+  <div class="row g-4">
+    <!-- Left Column: Summary & Account Card -->
+    <div class="col-lg-4">
+      <!-- Profile Card -->
+      <div class="jd-card p-4 text-center mb-4">
         {% if employee.photo %}
-          <img src="{{ employee.photo.url }}" alt="{{ employee.full_name }}" class="rounded-circle object-fit-cover shadow mb-3 border border-3 border-light" style="width: 100px; height: 100px;">
+          <img src="{{ employee.photo.url }}" alt="{{ employee.full_name }}" class="rounded-circle object-fit-cover shadow mb-3" style="width: 100px; height: 100px; border: 2px solid var(--gold-primary);">
         {% else %}
-          <div class="avatar-placeholder rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center fw-bold mb-3 shadow-sm" style="width: 100px; height: 100px; font-size: 2.5rem;">
+          <div class="rounded-circle fw-bold d-inline-flex align-items-center justify-content-center shadow mb-3" style="width: 100px; height: 100px; font-size: 2.5rem; background: rgba(236,200,106,0.15); border: 2px solid var(--gold-primary); color: var(--gold-primary);">
             {{ employee.full_name|slice:":1"|upper }}
           </div>
         {% endif %}
 
-        <h5 class="fw-bold mb-1">{{ employee.full_name }}</h5>
-        <p class="text-secondary mb-2 fw-medium">
+        <h4 class="fw-bold text-white mb-1">{{ employee.full_name }}</h4>
+        <p class="text-gold mb-2 fw-medium small">
           {{ employee.designation|default:"Staff Member" }} &bull; {{ employee.department|default:"Jewellery Operations" }}
         </p>
 
-        <div class="mb-2">
-          <span class="badge px-3 py-2 fs-6
-            {% if employee.role.name == 'Admin' %}bg-danger
-            {% elif employee.role.name == 'HR' %}bg-primary
-            {% elif employee.role.name == 'Manager' %}bg-warning text-dark
-            {% elif employee.role.name == 'Sales' or employee.role.name == 'Sales Executive' %}bg-success
-            {% elif employee.role.name == 'Inventory' or employee.role.name == 'Inventory Manager' %}bg-info text-dark
-            {% elif employee.role.name == 'Accountant' %}bg-dark
-            {% elif employee.role.name == 'Support' %}bg-info
-            {% else %}bg-secondary{% endif %}">
-            {{ employee.role.name }}
-          </span>
-        </div>
-
-        <div>
+        <div class="d-flex justify-content-center gap-2 mb-3">
+          <span class="jd-tag"><i class="bi bi-shield-check me-1"></i>{{ employee.role.name }}</span>
           {% if employee.status == 'Active' %}
-            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1">Active</span>
+            <span class="jd-stage-pill" style="background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.35);">Active</span>
           {% elif employee.status == 'Inactive' %}
-            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-1">Inactive</span>
+            <span class="jd-stage-pill" style="background: rgba(255,255,255,0.06); color: rgba(250,244,234,0.6); border: 1px solid rgba(255,255,255,0.15);">Inactive</span>
           {% else %}
-            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-1">{{ employee.status }}</span>
+            <span class="jd-stage-pill">{{ employee.status }}</span>
+          {% endif %}
+        </div>
+
+        <div class="p-3 rounded-3 text-start mb-3" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06);">
+          <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
+            <span class="text-muted small">Employee ID:</span>
+            <span class="text-gold font-monospace fw-bold">{{ employee.employee_id }}</span>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
+            <span class="text-muted small">Email:</span>
+            <span class="text-white small text-truncate" style="max-width: 170px;">{{ employee.email }}</span>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
+            <span class="text-muted small">Mobile / Phone:</span>
+            <span class="text-white font-monospace small">{{ employee.mobile|default:"—" }}</span>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
+            <span class="text-muted small">Department:</span>
+            <span class="text-light small">{{ employee.department }}</span>
+          </div>
+          <div class="d-flex justify-content-between pt-1">
+            <span class="text-muted small">Joining Date:</span>
+            <span class="text-light small">{{ employee.joining_date|date:"d M Y"|default:"—" }}</span>
+          </div>
+        </div>
+
+        <!-- Account Status Block -->
+        <div class="p-3 rounded-3 text-start" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(236,200,106,0.15);">
+          <span class="text-gold small fw-bold text-uppercase d-block mb-2"><i class="bi bi-key me-1"></i> Authentication Account</span>
+          {% if employee.user %}
+            <div class="d-flex justify-content-between align-items-center mb-1 small">
+              <span class="text-muted">Username:</span>
+              <span class="text-white font-monospace fw-bold">{{ employee.user.username }}</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mb-3 small">
+              <span class="text-muted">Login Status:</span>
+              {% if employee.user.is_active %}
+                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Active</span>
+              {% else %}
+                <span class="badge bg-danger"><i class="bi bi-lock me-1"></i>Suspended</span>
+              {% endif %}
+            </div>
+            {% if can_edit and not is_self %}
+            <form method="post" action="{% url 'team:employee_toggle_status' employee.pk %}" onsubmit="return confirm('Toggle active/inactive status for this employee?');">
+              {% csrf_token %}
+              {% if employee.status == 'Active' %}
+                <button type="submit" class="jd-btn-danger-ghost w-100 justify-content-center btn-sm" id="btn-toggle-deactivate">
+                  <i class="bi bi-person-x me-1"></i> Deactivate Staff Access
+                </button>
+              {% else %}
+                <button type="submit" class="btn btn-sm w-100 justify-content-center" style="background: rgba(16,185,129,0.2); border: 1px solid rgba(16,185,129,0.4); color: #6ee7b7;" id="btn-toggle-activate">
+                  <i class="bi bi-person-check me-1"></i> Restore Staff Access
+                </button>
+              {% endif %}
+            </form>
+            {% endif %}
+          {% else %}
+            <p class="text-muted small mb-2">No user authentication account is linked to this staff profile.</p>
+            {% if can_edit or not user.employee_profile %}
+            <a href="{% url 'team:employee_link_account' employee.pk %}" class="jd-btn-gold btn-sm w-100 justify-content-center">
+              <i class="bi bi-person-plus me-1"></i> Create Login Credentials
+            </a>
+            {% endif %}
           {% endif %}
         </div>
       </div>
 
-      <ul class="list-group list-group-flush small">
-        <li class="list-group-item d-flex justify-content-between align-items-center py-2">
-          <span class="text-muted">Employee ID</span>
-          <span class="fw-bold font-monospace bg-light px-2 py-1 rounded border">{{ employee.employee_id }}</span>
-        </li>
-        <li class="list-group-item d-flex justify-content-between align-items-center py-2">
-          <span class="text-muted">Email</span>
-          <span class="fw-medium">{{ employee.email }}</span>
-        </li>
-        <li class="list-group-item d-flex justify-content-between align-items-center py-2">
-          <span class="text-muted">Mobile / Phone</span>
-          <span>{{ employee.mobile|default:"—" }}</span>
-        </li>
-        <li class="list-group-item d-flex justify-content-between align-items-center py-2">
-          <span class="text-muted">Department</span>
-          <span>{{ employee.department }}</span>
-        </li>
-        <li class="list-group-item d-flex justify-content-between align-items-center py-2">
-          <span class="text-muted">Joining Date</span>
-          <span>{{ employee.joining_date|date:"d M Y"|default:"—" }}</span>
-        </li>
-      </ul>
-
-      <!-- Account Status Block -->
-      <div class="card-footer bg-light p-3 border-top">
-        <h6 class="fw-bold text-dark small mb-2"><i class="bi bi-key me-1 text-primary"></i>Django Login Access</h6>
-        {% if employee.user %}
-          <div class="d-flex justify-content-between align-items-center mb-2 small">
-            <span class="text-muted">Username:</span>
-            <span class="fw-bold">{{ employee.user.username }}</span>
-          </div>
-          <div class="d-flex justify-content-between align-items-center mb-3 small">
-            <span class="text-muted">Login Status:</span>
-            {% if employee.user.is_active %}
-              <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Active</span>
-            {% else %}
-              <span class="badge bg-danger"><i class="bi bi-lock me-1"></i>Suspended</span>
-            {% endif %}
-          </div>
-          {% if can_edit and not is_self %}
-          <form method="post" action="{% url 'team:employee_toggle_status' employee.pk %}" onsubmit="return confirm('Toggle active/inactive status for this employee?');">
-            {% csrf_token %}
-            {% if employee.status == 'Active' %}
-              <button type="submit" class="btn btn-outline-danger btn-sm w-100" id="btn-toggle-deactivate">
-                <i class="bi bi-person-x me-1"></i> Deactivate Employee &amp; Suspend Login
-              </button>
-            {% else %}
-              <button type="submit" class="btn btn-outline-success btn-sm w-100" id="btn-toggle-activate">
-                <i class="bi bi-person-check me-1"></i> Activate Employee &amp; Restore Login
-              </button>
-            {% endif %}
-          </form>
-          {% endif %}
-        {% else %}
-          <p class="text-muted small mb-2">No user authentication account is linked to this employee.</p>
+      <!-- Assigned Branches -->
+      <div class="jd-card p-4 mb-4">
+        <div class="border-bottom pb-2 mb-3 d-flex justify-content-between align-items-center" style="border-color: rgba(236,200,106,0.12) !important;">
+          <h6 class="text-gold fw-bold mb-0"><i class="bi bi-shop me-2"></i> Assigned Branches</h6>
           {% if can_edit or not user.employee_profile %}
-          <a href="{% url 'team:employee_link_account' employee.pk %}" class="btn btn-outline-success btn-sm w-100">
-            <i class="bi bi-person-plus me-1"></i> Create or Link Login Account
-          </a>
+          <a href="{% url 'team:employee_branches' employee.pk %}" class="text-gold text-decoration-none small">Manage &rarr;</a>
           {% endif %}
-        {% endif %}
-      </div>
-    </div>
-
-    <!-- Assigned Branches -->
-    <div class="card shadow-sm border-0 mb-4">
-      <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-shop me-2 text-primary"></i>Assigned Branches</h6>
-        {% if can_edit or not user.employee_profile %}
-        <a href="{% url 'team:employee_branches' employee.pk %}" class="btn btn-link btn-sm p-0">Manage</a>
-        {% endif %}
-      </div>
-      <div class="card-body">
+        </div>
         {% if employee.role.name == 'Admin' %}
-          <div class="alert alert-info py-2 px-3 small mb-0">
-            <i class="bi bi-info-circle me-1"></i> Role <strong>Admin</strong> has access to all branches.
+          <div class="p-2 rounded-3 small" style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd;">
+            <i class="bi bi-info-circle me-1"></i> Role <strong>Admin</strong> holds universal access to all showroom branches.
           </div>
         {% else %}
           {% if employee.branches.all %}
             <div class="d-flex flex-wrap gap-2">
               {% for b in employee.branches.all %}
-                <span class="badge bg-light text-dark border p-2">
-                  <i class="bi bi-geo-alt me-1 text-danger"></i> {{ b.name }}
-                </span>
+                <span class="jd-badge"><i class="bi bi-geo-alt me-1 text-danger"></i> {{ b.name }}</span>
               {% endfor %}
             </div>
           {% else %}
-            <p class="text-muted small mb-0"><i class="bi bi-check2-all text-success me-1"></i>Access to all branches (no restriction).</p>
+            <p class="text-muted small mb-0"><i class="bi bi-check2-all text-success me-1"></i>Universal access across all branches.</p>
           {% endif %}
         {% endif %}
       </div>
     </div>
-  </div>
 
-  <!-- Right Column: HR Documents & Module Permissions -->
-  <div class="col-lg-8">
-    <!-- Role Details -->
-    <div class="card shadow-sm border-0 mb-4">
-      <div class="card-header bg-white border-bottom">
-        <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-info-circle me-2 text-primary"></i>Role &amp; Responsibilities</h6>
-      </div>
-      <div class="card-body">
+    <!-- Right Column: HR Documents & Module Permissions -->
+    <div class="col-lg-8">
+      <!-- Role Details -->
+      <div class="jd-card p-4 mb-4">
+        <div class="border-bottom pb-2 mb-3" style="border-color: rgba(236,200,106,0.12) !important;">
+          <h6 class="text-gold fw-bold mb-0"><i class="bi bi-info-circle me-2"></i> Role &amp; Responsibilities</h6>
+        </div>
         <div class="row g-3">
           <div class="col-md-8">
-            <label class="form-label text-muted small mb-0">Role Description</label>
-            <p class="fw-medium mb-0">{{ employee.role.description|default:"Standard organizational role." }}</p>
+            <span class="text-muted small d-block">Role Description</span>
+            <p class="text-white fw-medium mb-0 mt-1">{{ employee.role.description|default:"Standard atelier organizational role." }}</p>
           </div>
           <div class="col-md-4">
-            <label class="form-label text-muted small mb-0">System Privilege</label>
-            <p class="mb-0">
+            <span class="text-muted small d-block">System Privilege Tier</span>
+            <div class="mt-1">
               {% if employee.role.name == 'Admin' %}
-                <span class="badge bg-danger"><i class="bi bi-shield-fill-check me-1"></i>Full Administrator</span>
+                <span class="jd-badge" style="background: rgba(239,68,68,0.2); color: #fca5a5; border-color: rgba(239,68,68,0.4);"><i class="bi bi-shield-fill-check me-1"></i>Full Administrator</span>
               {% else %}
-                <span class="badge bg-secondary">Modular Staff</span>
+                <span class="jd-badge">Modular Staff</span>
               {% endif %}
-            </p>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- HR Foundation: Employee Documents -->
-    <div class="card shadow-sm border-0 mb-4">
-      <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-        <div>
-          <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-folder2-open me-2 text-primary"></i>Employee Documents</h6>
-          <small class="text-muted">HR Foundation: ID proofs, contracts, certifications</small>
+      <!-- HR Foundation: Employee Documents -->
+      <div class="jd-card p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3" style="border-color: rgba(236,200,106,0.12) !important;">
+          <div>
+            <h6 class="text-gold fw-bold mb-0"><i class="bi bi-folder2-open me-2"></i> Employee Dossier &amp; KYC Documents</h6>
+            <small class="text-muted">ID proofs, employment agreements, and certifications</small>
+          </div>
+          {% if can_edit %}
+          <button class="jd-btn-gold btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#uploadDocCollapse">
+            <i class="bi bi-cloud-arrow-up me-1"></i> Upload Document
+          </button>
+          {% endif %}
         </div>
+
         {% if can_edit %}
-        <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#uploadDocCollapse">
-          <i class="bi bi-cloud-arrow-up me-1"></i> Upload Document
-        </button>
+        <!-- Document Upload Form (Collapsible) -->
+        <div class="collapse mb-3 p-3 rounded-3" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(236,200,106,0.2);" id="uploadDocCollapse">
+          <form method="post" action="{% url 'team:employee_document_upload' employee.pk %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label text-gold small fw-bold">Document Type</label>
+                {{ doc_form.document_type }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label text-gold small fw-bold">Title</label>
+                {{ doc_form.title }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label text-gold small fw-bold">File</label>
+                {{ doc_form.file }}
+              </div>
+              <div class="col-12">
+                {{ doc_form.notes }}
+              </div>
+              <div class="col-12 text-end">
+                <button type="submit" class="jd-btn-gold btn-sm px-3">Upload File</button>
+              </div>
+            </div>
+          </form>
+        </div>
         {% endif %}
-      </div>
 
-      {% if can_edit %}
-      <!-- Document Upload Form (Collapsible) -->
-      <div class="collapse border-bottom bg-light p-3" id="uploadDocCollapse">
-        <form method="post" action="{% url 'team:employee_document_upload' employee.pk %}" enctype="multipart/form-data">
-          {% csrf_token %}
-          <div class="row g-2">
-            <div class="col-md-4">
-              <label class="form-label small fw-semibold">Document Type</label>
-              {{ doc_form.document_type }}
-            </div>
-            <div class="col-md-4">
-              <label class="form-label small fw-semibold">Title</label>
-              {{ doc_form.title }}
-            </div>
-            <div class="col-md-4">
-              <label class="form-label small fw-semibold">File</label>
-              {{ doc_form.file }}
-            </div>
-            <div class="col-12 mt-2">
-              {{ doc_form.notes }}
-            </div>
-            <div class="col-12 text-end mt-2">
-              <button type="submit" class="btn btn-primary btn-sm px-3">Upload</button>
-            </div>
-          </div>
-        </form>
-      </div>
-      {% endif %}
-
-      <div class="card-body p-0">
         {% if documents %}
         <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0 small">
-            <thead class="table-light text-muted">
+          <table class="jd-table">
+            <thead>
               <tr>
-                <th class="ps-3">Title</th>
+                <th>Title</th>
                 <th>Type</th>
                 <th>Uploaded</th>
                 <th class="text-end pe-3">Action</th>
@@ -256,23 +235,25 @@
             <tbody>
               {% for doc in documents %}
               <tr>
-                <td class="ps-3 fw-semibold">
-                  <i class="bi bi-file-earmark-text text-secondary me-2"></i>{{ doc.title }}
+                <td class="fw-semibold text-white">
+                  <i class="bi bi-file-earmark-text text-gold me-2"></i>{{ doc.title }}
                 </td>
-                <td><span class="badge bg-light text-dark border">{{ doc.get_document_type_display }}</span></td>
-                <td>{{ doc.uploaded_at|date:"d M Y" }}</td>
+                <td><span class="jd-tag">{{ doc.get_document_type_display }}</span></td>
+                <td class="text-muted small">{{ doc.uploaded_at|date:"d M Y" }}</td>
                 <td class="text-end pe-3">
-                  <a href="{{ doc.file.url }}" target="_blank" class="btn btn-outline-secondary btn-sm py-0 px-2" title="Download / View">
-                    <i class="bi bi-download"></i>
-                  </a>
-                  {% if can_edit %}
-                  <form method="post" action="{% url 'team:employee_document_delete' employee.pk doc.pk %}" class="d-inline" onsubmit="return confirm('Delete document?');">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2" title="Delete">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </form>
-                  {% endif %}
+                  <div class="d-flex justify-content-end gap-1">
+                    <a href="{{ doc.file.url }}" target="_blank" class="jd-btn-ghost btn-sm py-0 px-2" title="Download">
+                      <i class="bi bi-download"></i>
+                    </a>
+                    {% if can_edit %}
+                    <form method="post" action="{% url 'team:employee_document_delete' employee.pk doc.pk %}" class="d-inline" onsubmit="return confirm('Delete document?');">
+                      {% csrf_token %}
+                      <button type="submit" class="jd-btn-danger-ghost btn-sm py-0 px-2" title="Delete">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
+                    {% endif %}
+                  </div>
                 </td>
               </tr>
               {% endfor %}
@@ -280,33 +261,33 @@
           </table>
         </div>
         {% else %}
-        <div class="p-4 text-center text-muted small">
-          <i class="bi bi-folder-x display-6 d-block mb-2 text-secondary opacity-50"></i>
-          No documents uploaded yet.
+        <div class="py-4 text-center text-muted small">
+          <i class="bi bi-folder-x fs-1 d-block mb-2 text-gold opacity-50"></i>
+          No KYC or employee documents uploaded yet.
         </div>
         {% endif %}
       </div>
-    </div>
 
-    <!-- Module Permissions Matrix -->
-    <div class="card shadow-sm border-0">
-      <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-        <div>
-          <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-shield-lock me-2 text-primary"></i>Granular Permissions Matrix</h6>
-          <small class="text-muted">Per-module action authorization</small>
+      <!-- Module Permissions Matrix -->
+      <div class="jd-table-card">
+        <div class="p-4 border-bottom d-flex justify-content-between align-items-center" style="border-color: rgba(236,200,106,0.12) !important;">
+          <div>
+            <h6 class="font-serif fw-bold text-white mb-0" style="font-family: 'Cinzel', serif;">
+              <i class="bi bi-shield-lock text-gold me-2"></i> Granular Permissions Matrix
+            </h6>
+            <small class="text-muted">Per-module action authorization for this associate</small>
+          </div>
+          {% if can_manage_perms %}
+          <a href="{% url 'team:employee_permissions' employee.pk %}" class="jd-btn-gold btn-sm" id="btn-manage-perms">
+            <i class="bi bi-sliders me-1"></i> Configure Matrix
+          </a>
+          {% endif %}
         </div>
-        {% if can_manage_perms %}
-        <a href="{% url 'team:employee_permissions' employee.pk %}" class="btn btn-outline-primary btn-sm" id="btn-manage-perms">
-          <i class="bi bi-sliders me-1"></i> Configure Permissions
-        </a>
-        {% endif %}
-      </div>
-      <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0 text-center small">
-            <thead class="table-light text-uppercase text-muted">
+          <table class="jd-table text-center">
+            <thead>
               <tr>
-                <th class="text-start ps-3">Module</th>
+                <th class="text-start">Module</th>
                 <th>View</th>
                 <th>Create / Add</th>
                 <th>Edit / Change</th>
@@ -317,7 +298,7 @@
             <tbody>
               {% for perm in permissions %}
               <tr>
-                <td class="text-start ps-3 fw-semibold">{{ perm.get_module_display }}</td>
+                <td class="text-start fw-semibold text-white">{{ perm.get_module_display }}</td>
                 <td>
                   {% if perm.can_view %}
                     <i class="bi bi-check-circle-fill text-success" title="Allowed"></i>
@@ -348,7 +329,7 @@
                 </td>
                 <td>
                   {% if perm.can_export %}
-                    <i class="bi bi-check-circle-fill text-primary" title="Allowed"></i>
+                    <i class="bi bi-check-circle-fill text-gold" title="Allowed"></i>
                   {% else %}
                     <i class="bi bi-dash-circle text-muted opacity-50" title="Denied"></i>
                   {% endif %}
@@ -357,7 +338,7 @@
               {% empty %}
               <tr>
                 <td colspan="6" class="text-center py-4 text-muted">
-                  No individual permissions set. Defaults for role "{{ employee.role.name }}" apply.
+                  No custom permission overrides defined. Defaults for role "{{ employee.role.name }}" apply.
                 </td>
               </tr>
               {% endfor %}
@@ -368,4 +349,12 @@
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('has-atelier-suite');
+    const pc = document.getElementById('page-content');
+    if (pc) pc.classList.add('jd-active');
+});
+</script>
 {% endblock %}

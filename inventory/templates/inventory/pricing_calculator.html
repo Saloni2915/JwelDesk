@@ -1,395 +1,365 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Jewellery Pricing Engine — JewelDesk{% endblock %}
+{% block title %}Jewellery Pricing Engine — JewelDesk Atelier{% endblock %}
 
-{% block page_title %}Jewellery Pricing Engine{% endblock %}
-
-{% block page_actions %}
-<div class="d-flex gap-2">
-    <a href="{% url 'metal_rates' %}" class="btn btn-outline-warning btn-sm text-dark">
-        <i class="bi bi-coin me-1 text-warning"></i> Today's Board Rates
-    </a>
-    <a href="{% url 'inventory_list' %}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-gem me-1"></i> Inventory Items
-    </a>
-</div>
+{% block extra_css %}
+<link href="{% static 'css/inventory_atelier.css' %}?v={% now "U" %}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
-<!-- Top Metal Rates Live Ticker -->
-<div class="row g-2 mb-4">
-    <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm bg-gradient text-white p-2 px-3" style="background: linear-gradient(135deg, #b8860b 0%, #d4af37 100%); border-radius: 10px;">
-            <div class="d-flex justify-content-between align-items-center">
-                <span class="small fw-semibold text-uppercase">24K Pure Gold</span>
-                <span class="badge bg-dark bg-opacity-25">100%</span>
-            </div>
-            <div class="fs-5 fw-bold mt-1">₹{{ rate_24k|floatformat:2 }} <span class="small fs-6 fw-normal">/g</span></div>
-            <div class="small opacity-75">₹{{ rate_24k|floatformat:2|default:"0" }}0 / 10g</div>
+<div class="jd-inv-canvas">
+
+    <!-- 1. Header & Actions -->
+    <div class="jd-inv-header">
+        <div class="jd-inv-title-wrap">
+            <h1><i class="bi bi-calculator text-warning me-2"></i>Dynamic Jewellery Pricing Engine</h1>
+            <p class="jd-inv-subtitle">Real-time bullion assay computation, making markup formulas, stone charges &amp; 3% statutory GST</p>
+        </div>
+        <div class="jd-inv-header-actions">
+            <a href="{% url 'metal_rates' %}" class="jd-btn-ghost">
+                <i class="bi bi-coin text-warning"></i> Today's Board Rates
+            </a>
+            <a href="{% url 'inventory_list' %}" class="jd-btn-ghost">
+                <i class="bi bi-gem"></i> Inventory Register
+            </a>
         </div>
     </div>
-    <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm text-dark p-2 px-3" style="background: #fff8e7; border: 1px solid #ffd700 !important; border-radius: 10px;">
-            <div class="d-flex justify-content-between align-items-center">
-                <span class="small fw-semibold text-uppercase text-muted">22K Standard (916)</span>
-                <span class="badge bg-warning text-dark">91.6%</span>
+
+    <!-- 2. Live Metal Ticker Bar -->
+    <div class="jd-rate-ticker-grid">
+        <!-- 24K Gold -->
+        <div class="jd-rate-pill-card jd-rate-pill-gold">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="small fw-bold text-uppercase text-warning">24K Pure Gold</span>
+                <span class="badge bg-warning text-dark font-monospace">100% Fine</span>
             </div>
-            <div class="fs-5 fw-bold text-dark mt-1">₹{{ rate_22k|floatformat:2 }} <span class="small fs-6 fw-normal text-muted">/g</span></div>
-            <div class="small text-muted">Standard Indian Hallmark Rate</div>
+            <div class="fs-4 fw-bold text-warning font-monospace">
+                ₹{{ rate_24k|floatformat:2 }} <span class="fs-6 fw-normal text-muted">/g</span>
+            </div>
+            <div class="small text-muted font-monospace">₹{{ rate_24k|floatformat:2 }}0 / 10g (Tola)</div>
         </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm text-dark p-2 px-3" style="background: #fdfaf0; border: 1px solid #e2d29b !important; border-radius: 10px;">
-            <div class="d-flex justify-content-between align-items-center">
-                <span class="small fw-semibold text-uppercase text-muted">18K Jewellery (750)</span>
-                <span class="badge bg-secondary text-white">75.0%</span>
+
+        <!-- 22K Hallmark -->
+        <div class="jd-rate-pill-card">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="small fw-bold text-uppercase text-light">22K Standard (916)</span>
+                <span class="badge bg-warning bg-opacity-25 text-warning font-monospace">91.6%</span>
             </div>
-            <div class="fs-5 fw-bold text-dark mt-1">₹{{ rate_18k|floatformat:2 }} <span class="small fs-6 fw-normal text-muted">/g</span></div>
+            <div class="fs-4 fw-bold text-light font-monospace">
+                ₹{{ rate_22k|floatformat:2 }} <span class="fs-6 fw-normal text-muted">/g</span>
+            </div>
+            <div class="small text-muted">Standard Indian BIS Hallmark</div>
+        </div>
+
+        <!-- 18K Diamond Setting -->
+        <div class="jd-rate-pill-card">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="small fw-bold text-uppercase text-light">18K Jewellery (750)</span>
+                <span class="badge bg-secondary font-monospace">75.0%</span>
+            </div>
+            <div class="fs-4 fw-bold text-light font-monospace">
+                ₹{{ rate_18k|floatformat:2 }} <span class="fs-6 fw-normal text-muted">/g</span>
+            </div>
             <div class="small text-muted">Diamond Setting Standard</div>
         </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm text-dark p-2 px-3" style="background: #f8f9fa; border: 1px solid #dee2e6 !important; border-radius: 10px;">
-            <div class="d-flex justify-content-between align-items-center">
-                <span class="small fw-semibold text-uppercase text-muted">999 Fine Silver</span>
-                <span class="badge bg-secondary">Fine</span>
+
+        <!-- Fine Silver 999 -->
+        <div class="jd-rate-pill-card">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="small fw-bold text-uppercase text-light">Fine Silver 999</span>
+                <span class="badge bg-light bg-opacity-25 text-light font-monospace">99.9%</span>
             </div>
-            <div class="fs-5 fw-bold text-dark mt-1">₹{{ rate_silver_999|floatformat:2 }} <span class="small fs-6 fw-normal text-muted">/g</span></div>
-            <div class="small text-muted">925 Sterling: ₹{{ rate_silver_925|floatformat:2 }}/g</div>
+            <div class="fs-4 fw-bold text-light font-monospace">
+                ₹{{ rate_silver_999|floatformat:2 }} <span class="fs-6 fw-normal text-muted">/g</span>
+            </div>
+            <div class="small text-muted font-monospace">925 Sterling: ₹{{ rate_silver_925|floatformat:2 }}/g</div>
         </div>
     </div>
-</div>
 
-<div class="row g-4">
-    <!-- Left Column: Pricing Calculator Form -->
-    <div class="col-lg-7">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-semibold text-dark">
-                    <i class="bi bi-sliders me-2 text-warning"></i> Pricing Parameters &amp; Specifications
-                </h6>
-                {% if selected_item %}
-                <span class="badge bg-success bg-opacity-10 text-success border border-success">
-                    <i class="bi bi-check2-circle me-1"></i> Loaded: {{ selected_item.item_code }}
-                </span>
-                {% endif %}
-            </div>
-            <div class="card-body p-4">
-                <!-- Quick Item Picker -->
-                <div class="p-3 mb-4 rounded border bg-light">
-                    <label for="item_loader" class="form-label small fw-bold text-uppercase text-muted mb-1">
-                        <i class="bi bi-box-arrow-in-down me-1"></i> Quick Load From Inventory Piece
+    <!-- 3. Main Interactive Pricing Grid -->
+    <div class="jd-pricing-grid">
+
+        <!-- LEFT COLUMN: Parameter Inputs & Item Loader -->
+        <div>
+
+            <!-- Item Loader Picker -->
+            <div class="jd-form-card mb-3">
+                <div class="jd-form-card-body p-3">
+                    <label class="jd-field-label small mb-1">
+                        <i class="bi bi-upc-scan text-warning me-1"></i> Pre-fill from Existing Vault Item
                     </label>
-                    <div class="input-group">
-                        <select id="item_loader" class="form-select">
-                            <option value="">-- Choose an item to calculate live price --</option>
-                            {% for itm in available_items %}
-                            <option value="{{ itm.pk }}" {% if selected_item and selected_item.pk == itm.pk %}selected{% endif %}>
-                                [{{ itm.tag_number|default:itm.item_code }}] {{ itm.name }} ({{ itm.metal_type }} {{ itm.purity }} - {{ itm.gross_weight }}g)
+                    <div class="d-flex gap-2">
+                        <select id="item_loader" class="jd-inv-select" onchange="loadSelectedPiece()">
+                            <option value="">-- Choose inventory item to calculate tag price --</option>
+                            {% for it in inventory_items %}
+                            <option value="{{ it.pk }}" {% if selected_item and selected_item.pk == it.pk %}selected{% endif %}>
+                                [{{ it.tag_number|default:it.item_code }}] {{ it.name }} ({{ it.metal_type }} {{ it.purity }}, {{ it.net_weight }}g) - Tag ₹{{ it.selling_price }}
                             </option>
                             {% endfor %}
                         </select>
-                        <button type="button" class="btn btn-dark" onclick="loadSelectedPiece()">
-                            <i class="bi bi-arrow-clockwise me-1"></i> Load
-                        </button>
-                    </div>
-                    {% if selected_item %}
-                    <div class="mt-2 small text-muted d-flex justify-content-between align-items-center">
-                        <span>Current Stored Price: <strong class="text-dark">₹{{ selected_item.selling_price|floatformat:2 }}</strong></span>
-                        <a href="{% url 'inventory_detail' selected_item.pk %}" target="_blank" class="text-decoration-none">
-                            View Item Details <i class="bi bi-box-arrow-up-right"></i>
+                        {% if selected_item %}
+                        <a href="{% url 'pricing_calculator' %}" class="jd-btn-ghost px-2" title="Clear selection">
+                            <i class="bi bi-x-lg"></i>
                         </a>
-                    </div>
-                    {% endif %}
-                </div>
-
-                <form method="post" id="pricing-engine-form">
-                    {% csrf_token %}
-                    <input type="hidden" name="selected_item_id" id="selected_item_id" value="{{ selected_item_id }}">
-
-                    <!-- Metal & Purity Selection -->
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold small">Metal Type <span class="text-danger">*</span></label>
-                            <select name="metal_type" id="id_metal_type" class="form-select form-select-lg" onchange="onMetalTypeChange()">
-                                <option value="Gold" {% if form_data.metal_type == 'Gold' %}selected{% endif %}>Gold</option>
-                                <option value="Silver" {% if form_data.metal_type == 'Silver' %}selected{% endif %}>Silver</option>
-                                <option value="Diamond" {% if form_data.metal_type == 'Diamond' %}selected{% endif %}>Diamond (Gold Base)</option>
-                                <option value="Platinum" {% if form_data.metal_type == 'Platinum' %}selected{% endif %}>Platinum</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold small">Purity / Fineness <span class="text-danger">*</span></label>
-                            <input type="text" name="purity" id="id_purity" class="form-control form-control-lg"
-                                   value="{{ form_data.purity }}" placeholder="e.g. 22K (916) or 18K" oninput="triggerRecalc()">
-                            <div class="mt-1 d-flex gap-1 flex-wrap" id="purity-pills">
-                                <button type="button" class="badge btn btn-sm btn-outline-warning text-dark border py-1" onclick="setPurity('22K (916)')">22K (916)</button>
-                                <button type="button" class="badge btn btn-sm btn-outline-secondary py-1" onclick="setPurity('18K (750)')">18K (750)</button>
-                                <button type="button" class="badge btn btn-sm btn-outline-secondary py-1" onclick="setPurity('24K (999)')">24K (999)</button>
-                                <button type="button" class="badge btn btn-sm btn-outline-secondary py-1" onclick="setPurity('14K (585)')">14K (585)</button>
-                                <button type="button" class="badge btn btn-sm btn-outline-secondary py-1" onclick="setPurity('925 Sterling')">925 Silver</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Weights -->
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold small">Gross Weight (grams) <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <input type="number" step="0.001" min="0" name="gross_weight" id="id_gross_weight"
-                                       class="form-control fw-bold" value="{{ form_data.gross_weight }}" oninput="onGrossOrStoneChange()">
-                                <span class="input-group-text">g</span>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold small">Stone / Wax Wt (g)</label>
-                            <div class="input-group">
-                                <input type="number" step="0.001" min="0" name="stone_weight" id="id_stone_weight"
-                                       class="form-control" value="{{ form_data.stone_weight }}" oninput="onGrossOrStoneChange()">
-                                <span class="input-group-text">g</span>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold small">Net Metal Wt (grams)</label>
-                            <div class="input-group">
-                                <input type="number" step="0.001" min="0" name="net_weight" id="id_net_weight"
-                                       class="form-control fw-bold bg-light" value="{{ form_data.net_weight }}" oninput="triggerRecalc()">
-                                <span class="input-group-text">g</span>
-                            </div>
-                            <small class="text-muted" style="font-size: 0.75rem;">Gross minus Stone wt</small>
-                        </div>
-                    </div>
-
-                    <!-- Base Metal Rate Override -->
-                    <div class="mb-3 p-3 rounded bg-light border">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label class="form-label fw-semibold small mb-0">Base Rate per Gram (₹)</label>
-                            <span class="badge bg-white text-dark border">24K Pure Gold / 999 Silver Rate</span>
-                        </div>
-                        <div class="input-group">
-                            <span class="input-group-text">₹</span>
-                            <input type="number" step="0.01" min="0" name="base_metal_rate" id="id_base_metal_rate"
-                                   class="form-control fw-bold" value="{{ form_data.base_metal_rate }}" oninput="triggerRecalc()">
-                            <button type="button" class="btn btn-outline-secondary" onclick="resetDefaultRate()">
-                                <i class="bi bi-arrow-repeat me-1"></i> Default Rate
-                            </button>
-                        </div>
-                        <small class="text-muted" style="font-size: 0.75rem;">
-                            Live purity rate will be automatically derived based on Karat / Fineness.
-                        </small>
-                    </div>
-
-                    <!-- Making Charges & Wastage -->
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold small">Making Charge Type</label>
-                            <select name="making_charge_type" id="id_making_charge_type" class="form-select" onchange="triggerRecalc()">
-                                <option value="Fixed Amount" {% if form_data.making_charge_type == 'Fixed Amount' %}selected{% endif %}>Fixed Amount (₹)</option>
-                                <option value="Per Gram" {% if form_data.making_charge_type == 'Per Gram' %}selected{% endif %}>Per Gram (₹/g)</option>
-                                <option value="Percentage" {% if form_data.making_charge_type == 'Percentage' %}selected{% endif %}>Percentage (%)</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold small">Making Charge Value</label>
-                            <div class="input-group">
-                                <span class="input-group-text" id="mc-unit-addon">₹</span>
-                                <input type="number" step="0.01" min="0" name="making_charge" id="id_making_charge"
-                                       class="form-control fw-bold" value="{{ form_data.making_charge }}" oninput="triggerRecalc()">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold small">Wastage (%)</label>
-                            <div class="input-group">
-                                <input type="number" step="0.01" min="0" name="wastage_percent" id="id_wastage_percent"
-                                       class="form-control" value="{{ form_data.wastage_percent }}" oninput="triggerRecalc()">
-                                <span class="input-group-text">%</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Stone & Other Charges -->
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold small">Stone / Diamond Charges</label>
-                            <div class="input-group">
-                                <span class="input-group-text">₹</span>
-                                <input type="number" step="0.01" min="0" name="stone_charges" id="id_stone_charges"
-                                       class="form-control" value="{{ form_data.stone_charges }}" oninput="triggerRecalc()">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold small">Other Charges (Hallmark/Cert)</label>
-                            <div class="input-group">
-                                <span class="input-group-text">₹</span>
-                                <input type="number" step="0.01" min="0" name="other_charges" id="id_other_charges"
-                                       class="form-control" value="{{ form_data.other_charges }}" oninput="triggerRecalc()">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold small">GST / Tax Rate (%)</label>
-                            <div class="input-group">
-                                <input type="number" step="0.01" min="0" name="tax_percent" id="id_tax_percent"
-                                       class="form-control fw-bold" value="{{ form_data.tax_percent }}" oninput="triggerRecalc()">
-                                <span class="input-group-text">%</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small">Charge Notes / Remarks</label>
-                        <input type="text" name="other_charges_description" id="id_other_charges_description"
-                               class="form-control" value="{{ form_data.other_charges_description }}"
-                               placeholder="e.g. BIS Hallmarking fee ₹45, Rhodium plating">
-                    </div>
-
-                    <!-- Action Buttons -->
-                    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
-                        <button type="submit" name="action" value="calculate" class="btn btn-dark">
-                            <i class="bi bi-calculator me-1"></i> Calculate Price Breakdown
-                        </button>
-                        {% if selected_item and can_edit_items %}
-                        <button type="submit" name="action" value="save_to_item" class="btn btn-success">
-                            <i class="bi bi-save me-1"></i> Update Selling Price for [{{ selected_item.item_code }}]
-                        </button>
                         {% endif %}
                     </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Right Column: Live Price Breakdown Cockpit -->
-    <div class="col-lg-5">
-        <div class="card shadow-sm border-0 sticky-top" style="top: 20px;">
-            <div class="card-header bg-dark text-white py-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-semibold text-white">
-                        <i class="bi bi-receipt-cutoff me-2 text-warning"></i> Live Price Breakdown
-                    </h6>
-                    <span class="badge bg-warning text-dark fw-bold">Live Breakdown</span>
                 </div>
             </div>
 
-            <!-- Grand Total Showcase Banner -->
-            <div class="p-4 text-center border-bottom" style="background: linear-gradient(180deg, #fffbf0 0%, #fff 100%);">
-                <div class="text-uppercase text-muted fw-bold small mb-1">Final Selling Price (Incl. GST)</div>
-                <div class="display-6 fw-bold text-dark text-success" id="disp-final-price">
-                    ₹{{ breakdown.final_price|floatformat:2 }}
-                </div>
-                <div class="text-muted small mt-1">
-                    Taxable Subtotal: <strong id="disp-subtotal-text">₹{{ breakdown.subtotal|floatformat:2 }}</strong> + GST: <strong id="disp-tax-text">₹{{ breakdown.tax_amount|floatformat:2 }}</strong>
-                </div>
-            </div>
-
-            <!-- Component Itemized Rows -->
-            <div class="card-body p-4">
-                <ul class="list-group list-group-flush mb-4">
-                    <!-- Metal Value -->
-                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-bottom">
-                        <div>
-                            <div class="fw-semibold text-dark">
-                                <i class="bi bi-gem text-warning me-1"></i> Metal Value
-                            </div>
-                            <small class="text-muted" id="disp-metal-formula">
-                                {{ breakdown.metal_weight|floatformat:3 }}g × ₹{{ breakdown.effective_rate_per_gram|floatformat:2 }}/g ({{ breakdown.purity }})
-                            </small>
-                        </div>
-                        <span class="fw-bold fs-6 text-dark" id="disp-metal-val">₹{{ breakdown.metal_value|floatformat:2 }}</span>
-                    </li>
-
-                    <!-- Wastage -->
-                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-bottom">
-                        <div>
-                            <div class="fw-semibold text-dark">
-                                <i class="bi bi-fire text-danger me-1"></i> Wastage
-                            </div>
-                            <small class="text-muted" id="disp-wastage-formula">
-                                {% if breakdown.wastage_percent > 0 %}{{ breakdown.wastage_percent|floatformat:2 }}% of metal value{% else %}None{% endif %}
-                            </small>
-                        </div>
-                        <span class="fw-bold text-dark" id="disp-wastage-amt">₹{{ breakdown.wastage_amount|floatformat:2 }}</span>
-                    </li>
-
-                    <!-- Making Charges -->
-                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-bottom">
-                        <div>
-                            <div class="fw-semibold text-dark">
-                                <i class="bi bi-hammer text-primary me-1"></i> Making Charges
-                            </div>
-                            <small class="text-muted" id="disp-mc-formula">
-                                {{ breakdown.making_charge_type }}: ₹{{ breakdown.making_charge_rate|floatformat:2 }}
-                            </small>
-                        </div>
-                        <span class="fw-bold text-dark" id="disp-mc-amt">₹{{ breakdown.making_charge_amount|floatformat:2 }}</span>
-                    </li>
-
-                    <!-- Stone / Diamond Charges -->
-                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-bottom">
-                        <div>
-                            <div class="fw-semibold text-dark">
-                                <i class="bi bi-diamond text-info me-1"></i> Stone &amp; Diamond Charges
-                            </div>
-                            <small class="text-muted" id="disp-stone-formula">
-                                Non-metal gemstones / diamonds
-                            </small>
-                        </div>
-                        <span class="fw-bold text-dark" id="disp-stone-amt">₹{{ breakdown.stone_charges|floatformat:2 }}</span>
-                    </li>
-
-                    <!-- Other Charges -->
-                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-bottom">
-                        <div>
-                            <div class="fw-semibold text-dark">
-                                <i class="bi bi-patch-check text-success me-1"></i> Other Charges
-                            </div>
-                            <small class="text-muted" id="disp-other-formula">
-                                {{ breakdown.other_charges_description|default:"Hallmarking, cert, finishing" }}
-                            </small>
-                        </div>
-                        <span class="fw-bold text-dark" id="disp-other-amt">₹{{ breakdown.other_charges|floatformat:2 }}</span>
-                    </li>
-
-                    <!-- Subtotal -->
-                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-bottom bg-light px-2 my-1 rounded">
-                        <span class="fw-bold text-dark">Taxable Subtotal</span>
-                        <span class="fw-bold text-dark" id="disp-subtotal">₹{{ breakdown.subtotal|floatformat:2 }}</span>
-                    </li>
-
-                    <!-- GST -->
-                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-bottom">
-                        <div>
-                            <div class="fw-semibold text-dark">
-                                <i class="bi bi-percent text-secondary me-1"></i> GST / Tax ({{ breakdown.tax_percent|floatformat:1 }}%)
-                            </div>
-                            <small class="text-muted">CGST (1.5%) + SGST (1.5%)</small>
-                        </div>
-                        <span class="fw-bold text-dark" id="disp-tax-amt">₹{{ breakdown.tax_amount|floatformat:2 }}</span>
-                    </li>
-                </ul>
-
-                <!-- Bottom Shortcut Actions -->
-                <div class="d-grid gap-2">
+            <!-- Parameters Form Card -->
+            <div class="jd-form-card">
+                <div class="jd-form-card-header">
+                    <h2>
+                        <i class="bi bi-sliders text-warning"></i>
+                        Quotation Parameters
+                    </h2>
                     {% if selected_item %}
-                    <a href="{% url 'sale_add' %}?item={{ selected_item.pk }}" class="btn btn-outline-dark">
-                        <i class="bi bi-cart-plus me-1"></i> Sell This Piece Now
+                    <span class="badge bg-warning text-dark font-monospace">
+                        Linked: {{ selected_item.tag_number|default:selected_item.item_code }}
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="jd-form-card-body">
+                    <form method="post" id="calcForm">
+                        {% csrf_token %}
+                        {% if selected_item %}
+                        <input type="hidden" name="item_id" value="{{ selected_item.pk }}">
+                        {% endif %}
+
+                        <!-- Metal & Purity Row -->
+                        <div class="jd-form-grid-2 mb-3">
+                            <div>
+                                <label class="jd-field-label">Precious Metal</label>
+                                <select name="metal_type" id="id_metal_type" class="jd-inv-select" onchange="onMetalTypeChange()">
+                                    <option value="Gold" {% if form_data.metal_type == 'Gold' %}selected{% endif %}>Gold</option>
+                                    <option value="Silver" {% if form_data.metal_type == 'Silver' %}selected{% endif %}>Silver</option>
+                                    <option value="Diamond" {% if form_data.metal_type == 'Diamond' %}selected{% endif %}>Diamond (Gold Mount)</option>
+                                    <option value="Platinum" {% if form_data.metal_type == 'Platinum' %}selected{% endif %}>Platinum</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="jd-field-label">Purity / Karatage Standard</label>
+                                <input type="text" name="purity" id="id_purity" class="jd-inv-input"
+                                       value="{{ form_data.purity }}" placeholder="e.g. 22K (916), 18K (750)" oninput="triggerRecalc()">
+                                <div class="mt-1 d-flex gap-1 flex-wrap">
+                                    <button type="button" class="btn btn-sm py-0 px-2 btn-outline-warning" style="font-size: 0.72rem;" onclick="setPurity('24K (999)')">24K</button>
+                                    <button type="button" class="btn btn-sm py-0 px-2 btn-outline-warning" style="font-size: 0.72rem;" onclick="setPurity('22K (916)')">22K 916</button>
+                                    <button type="button" class="btn btn-sm py-0 px-2 btn-outline-warning" style="font-size: 0.72rem;" onclick="setPurity('18K (750)')">18K 750</button>
+                                    <button type="button" class="btn btn-sm py-0 px-2 btn-outline-warning" style="font-size: 0.72rem;" onclick="setPurity('14K (585)')">14K</button>
+                                    <button type="button" class="btn btn-sm py-0 px-2 btn-outline-secondary text-light" style="font-size: 0.72rem;" onclick="setPurity('925 Sterling Silver')">925 Silver</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 24K Base Rate -->
+                        <div class="mb-3">
+                            <label class="jd-field-label">24K / Pure Metal Base Rate (₹/g)</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-black border-secondary text-warning">₹</span>
+                                <input type="number" step="0.01" min="0" name="base_metal_rate" id="id_base_metal_rate"
+                                       class="jd-inv-input text-warning fw-bold fs-6" value="{{ form_data.base_metal_rate }}" oninput="triggerRecalc()">
+                                <button type="button" class="jd-btn-ghost py-1 px-2" onclick="resetDefaultRate()" title="Reset to today's active board rate">
+                                    <i class="bi bi-arrow-clockwise"></i> Today's Rate
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Weights Grid -->
+                        <div class="jd-form-grid-3 mb-3">
+                            <div>
+                                <label class="jd-field-label">Gross Weight (g)</label>
+                                <input type="number" step="0.001" min="0" name="gross_weight" id="id_gross_weight"
+                                       class="jd-inv-input font-monospace" value="{{ form_data.gross_weight }}" oninput="onGrossOrStoneChange()">
+                            </div>
+                            <div>
+                                <label class="jd-field-label">Stone / Enamel Wt (g)</label>
+                                <input type="number" step="0.001" min="0" name="stone_weight" id="id_stone_weight"
+                                       class="jd-inv-input font-monospace text-danger" value="{{ form_data.stone_weight }}" oninput="onGrossOrStoneChange()">
+                            </div>
+                            <div>
+                                <label class="jd-field-label">Net Metal Weight (g)</label>
+                                <input type="number" step="0.001" min="0" name="net_weight" id="id_net_weight"
+                                       class="jd-inv-input font-monospace text-warning fw-bold" value="{{ form_data.net_weight }}" oninput="triggerRecalc()">
+                            </div>
+                        </div>
+
+                        <!-- Making Charges & Wastage -->
+                        <div class="jd-form-grid-3 mb-3">
+                            <div>
+                                <label class="jd-field-label">Making Charge Type</label>
+                                <select name="making_charge_type" id="id_making_charge_type" class="jd-inv-select" onchange="triggerRecalc()">
+                                    <option value="Percentage" {% if form_data.making_charge_type == 'Percentage' %}selected{% endif %}>Percentage (%)</option>
+                                    <option value="Per Gram" {% if form_data.making_charge_type == 'Per Gram' %}selected{% endif %}>Per Gram (₹/g)</option>
+                                    <option value="Flat" {% if form_data.making_charge_type == 'Flat' %}selected{% endif %}>Flat Amount (₹)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="jd-field-label">Making Charge Rate</label>
+                                <input type="number" step="0.01" min="0" name="making_charge" id="id_making_charge"
+                                       class="jd-inv-input font-monospace" value="{{ form_data.making_charge }}" oninput="triggerRecalc()">
+                            </div>
+                            <div>
+                                <label class="jd-field-label">Wastage (%)</label>
+                                <input type="number" step="0.01" min="0" name="wastage_percent" id="id_wastage_percent"
+                                       class="jd-inv-input font-monospace" value="{{ form_data.wastage_percent }}" oninput="triggerRecalc()">
+                            </div>
+                        </div>
+
+                        <!-- Stones, Other & Tax -->
+                        <div class="jd-form-grid-3 mb-3">
+                            <div>
+                                <label class="jd-field-label">Stone / Diamond (₹)</label>
+                                <input type="number" step="0.01" min="0" name="stone_charges" id="id_stone_charges"
+                                       class="jd-inv-input font-monospace" value="{{ form_data.stone_charges }}" oninput="triggerRecalc()">
+                            </div>
+                            <div>
+                                <label class="jd-field-label">Other / Cert Fees (₹)</label>
+                                <input type="number" step="0.01" min="0" name="other_charges" id="id_other_charges"
+                                       class="jd-inv-input font-monospace" value="{{ form_data.other_charges }}" oninput="triggerRecalc()">
+                            </div>
+                            <div>
+                                <label class="jd-field-label">Tax Rate (% GST)</label>
+                                <input type="number" step="0.01" min="0" name="tax_percent" id="id_tax_percent"
+                                       class="jd-inv-input font-monospace text-warning fw-bold" value="{{ form_data.tax_percent }}" oninput="triggerRecalc()">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="jd-field-label">Charge Notes / Remarks</label>
+                            <input type="text" name="other_charges_description" id="id_other_charges_description"
+                                   class="jd-inv-input" value="{{ form_data.other_charges_description }}"
+                                   placeholder="e.g. BIS Hallmarking fee ₹45, Rhodium plating">
+                        </div>
+
+                        <!-- Form Action Buttons -->
+                        <div class="pt-3 border-top border-secondary border-opacity-25 d-flex gap-2 flex-wrap">
+                            <button type="submit" name="action" value="calculate" class="jd-btn-ghost flex-grow-1">
+                                <i class="bi bi-calculator"></i> Calculate Price Breakdown
+                            </button>
+                            {% if selected_item and can_edit_items %}
+                            <button type="submit" name="action" value="save_to_item" class="jd-btn-gold flex-grow-1">
+                                <i class="bi bi-check-circle-fill"></i> Update Tag Price for [{{ selected_item.item_code }}]
+                            </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN: Sticky Live Quotation Breakdown Cockpit -->
+        <div>
+            <div class="jd-quote-summary-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-uppercase small text-warning fw-bold letter-spacing-1">
+                        <i class="bi bi-receipt-cutoff me-1"></i> Live Price Breakdown
+                    </span>
+                    <span class="badge bg-warning text-dark font-monospace">Real-time Calculation</span>
+                </div>
+
+                <!-- Grand Total Display -->
+                <div class="text-center p-3 mb-3 rounded bg-black bg-opacity-40 border border-warning border-opacity-25">
+                    <div class="text-uppercase small text-muted mb-1">Final Showroom Price (Incl. 3% GST)</div>
+                    <div class="display-6 fw-bold text-warning font-monospace" id="disp-final-price">
+                        ₹{{ breakdown.final_price|floatformat:2 }}
+                    </div>
+                    <div class="small text-muted mt-1">
+                        Subtotal: <strong class="text-light" id="disp-subtotal-text">₹{{ breakdown.subtotal|floatformat:2 }}</strong> &middot; GST: <strong class="text-light" id="disp-tax-text">₹{{ breakdown.tax_amount|floatformat:2 }}</strong>
+                    </div>
+                </div>
+
+                <!-- Itemized Breakdown Rows -->
+                <div class="jd-quote-row">
+                    <div>
+                        <div class="fw-bold text-light"><i class="bi bi-gem text-warning me-1"></i> Pure Metal Value</div>
+                        <div class="small text-muted" id="disp-metal-formula">
+                            {{ breakdown.metal_weight|floatformat:3 }}g &times; ₹{{ breakdown.effective_rate_per_gram|floatformat:2 }}/g ({{ breakdown.purity }})
+                        </div>
+                    </div>
+                    <span class="fw-bold font-monospace text-warning fs-6" id="disp-metal-val">₹{{ breakdown.metal_value|floatformat:2 }}</span>
+                </div>
+
+                <div class="jd-quote-row">
+                    <div>
+                        <div class="fw-bold text-light"><i class="bi bi-fire text-danger me-1"></i> Wastage</div>
+                        <div class="small text-muted" id="disp-wastage-formula">
+                            {% if breakdown.wastage_percent > 0 %}{{ breakdown.wastage_percent|floatformat:2 }}% of metal value{% else %}None{% endif %}
+                        </div>
+                    </div>
+                    <span class="fw-bold font-monospace text-light" id="disp-wastage-amt">₹{{ breakdown.wastage_amount|floatformat:2 }}</span>
+                </div>
+
+                <div class="jd-quote-row">
+                    <div>
+                        <div class="fw-bold text-light"><i class="bi bi-hammer text-warning me-1"></i> Making Charges</div>
+                        <div class="small text-muted" id="disp-mc-formula">
+                            {{ breakdown.making_charge_type }}: ₹{{ breakdown.making_charge_rate|floatformat:2 }}
+                        </div>
+                    </div>
+                    <span class="fw-bold font-monospace text-light" id="disp-mc-amt">₹{{ breakdown.making_charge_amount|floatformat:2 }}</span>
+                </div>
+
+                <div class="jd-quote-row">
+                    <div>
+                        <div class="fw-bold text-light"><i class="bi bi-diamond text-info me-1"></i> Stones / Diamonds</div>
+                        <div class="small text-muted" id="disp-stone-formula">Gemstones &amp; Solitaires</div>
+                    </div>
+                    <span class="fw-bold font-monospace text-light" id="disp-stone-amt">₹{{ breakdown.stone_charges|floatformat:2 }}</span>
+                </div>
+
+                <div class="jd-quote-row">
+                    <div>
+                        <div class="fw-bold text-light"><i class="bi bi-patch-check text-success me-1"></i> Other / Hallmarking</div>
+                        <div class="small text-muted" id="disp-other-formula">
+                            {{ breakdown.other_charges_description|default:"Assay & certification" }}
+                        </div>
+                    </div>
+                    <span class="fw-bold font-monospace text-light" id="disp-other-amt">₹{{ breakdown.other_charges|floatformat:2 }}</span>
+                </div>
+
+                <div class="jd-quote-row bg-black bg-opacity-20 px-2 my-2 rounded">
+                    <span class="fw-bold text-light">Taxable Subtotal</span>
+                    <span class="fw-bold font-monospace text-light fs-6" id="disp-subtotal">₹{{ breakdown.subtotal|floatformat:2 }}</span>
+                </div>
+
+                <div class="jd-quote-row">
+                    <div>
+                        <div class="fw-bold text-light"><i class="bi bi-percent text-secondary me-1"></i> GST ({{ breakdown.tax_percent|floatformat:1 }}%)</div>
+                        <div class="small text-muted">CGST (1.5%) + SGST (1.5%)</div>
+                    </div>
+                    <span class="fw-bold font-monospace text-light" id="disp-tax-amt">₹{{ breakdown.tax_amount|floatformat:2 }}</span>
+                </div>
+
+                <div class="jd-quote-total-row">
+                    <span>Grand Quotation</span>
+                    <span id="disp-final-price-footer">₹{{ breakdown.final_price|floatformat:2 }}</span>
+                </div>
+
+                <!-- Quick CTAs -->
+                <div class="mt-4 d-grid gap-2">
+                    {% if selected_item %}
+                    <a href="{% url 'sale_add' %}?item={{ selected_item.pk }}" class="jd-btn-gold">
+                        <i class="bi bi-cart-plus-fill"></i> Bill at Sales POS Now
                     </a>
                     {% else %}
-                    <a href="{% url 'inventory_add' %}" class="btn btn-outline-dark">
-                        <i class="bi bi-plus-circle me-1"></i> Create Inventory Piece With This Price
+                    <a href="{% url 'inventory_add' %}" class="jd-btn-gold">
+                        <i class="bi bi-plus-circle"></i> Create Inventory Piece With This Price
                     </a>
                     {% endif %}
-                    <a href="{% url 'custom_orders:custom_order_add' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-hammer me-1"></i> Create Custom Order Quote
+                    <a href="{% url 'custom_orders:custom_order_add' %}" class="jd-btn-ghost">
+                        <i class="bi bi-hammer"></i> Create Custom Order Quotation
                     </a>
                 </div>
             </div>
         </div>
+
     </div>
+
 </div>
 
 <script>
-// Default metal rates passed from backend
 const DEFAULT_RATES = {
     'Gold': parseFloat("{{ rate_24k|default:'7500.00' }}"),
     'Silver': parseFloat("{{ rate_silver_999|default:'95.00' }}"),
@@ -442,7 +412,6 @@ function loadSelectedPiece() {
     }
 }
 
-// Debounce helper
 let recalcTimeout = null;
 function triggerRecalc() {
     clearTimeout(recalcTimeout);
@@ -493,6 +462,8 @@ function formatINR(val) {
 
 function updateBreakdownUI(b) {
     document.getElementById('disp-final-price').innerText = formatINR(b.final_price);
+    const footer = document.getElementById('disp-final-price-footer');
+    if (footer) footer.innerText = formatINR(b.final_price);
     document.getElementById('disp-subtotal-text').innerText = formatINR(b.subtotal);
     document.getElementById('disp-tax-text').innerText = formatINR(b.tax_amount);
 
@@ -513,5 +484,13 @@ function updateBreakdownUI(b) {
     document.getElementById('disp-subtotal').innerText = formatINR(b.subtotal);
     document.getElementById('disp-tax-amt').innerText = formatINR(b.tax_amount);
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('has-inventory-suite');
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) mainContent.classList.add('jd-inv-active');
+    const pageContent = document.getElementById('page-content');
+    if (pageContent) pageContent.classList.add('jd-inv-active');
+});
 </script>
 {% endblock %}

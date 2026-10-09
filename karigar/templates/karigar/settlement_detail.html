@@ -1,47 +1,48 @@
 {% extends 'base.html' %}
 
-{% block title %}Settlement Voucher {{ settlement.settlement_number }} — JewelDesk{% endblock %}
+{% block title %}Settlement Voucher {{ settlement.settlement_number }} — JewelDesk Atelier{% endblock %}
 
 {% block page_title %}Settlement Voucher: {{ settlement.settlement_number }}{% endblock %}
 
 {% block page_actions %}
 <div class="d-flex gap-2">
-    <button onclick="window.print()" class="btn btn-outline-dark btn-sm">
+    <button onclick="window.print()" class="jd-btn-gold btn-sm">
         <i class="bi bi-printer me-1"></i> Print Receipt
     </button>
     {% if settlement.status == 'Completed' and user_perms.karigar.can_delete %}
-    <a href="{% url 'karigar:settlement_cancel' settlement.id %}" class="btn btn-outline-danger btn-sm">
+    <a href="{% url 'karigar:settlement_cancel' settlement.id %}" class="jd-btn-danger-ghost btn-sm">
         <i class="bi bi-x-circle me-1"></i> Cancel Voucher
     </a>
     {% endif %}
-    <a href="{% url 'karigar:settlement_list' %}" class="btn btn-outline-secondary btn-sm">
+    <a href="{% url 'karigar:settlement_list' %}" class="jd-btn-ghost btn-sm">
         <i class="bi bi-arrow-left me-1"></i> Settlements
     </a>
 </div>
 {% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <!-- Voucher Card -->
-        <div class="card border-0 shadow-sm print-area">
-            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="mb-0 fw-bold font-monospace fs-5">{{ settlement.settlement_number }}</h6>
-                    <small class="text-muted">Artisan Labour Payment Voucher</small>
+<div class="jd-canvas">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Voucher Card -->
+            <div class="jd-card p-4 p-md-5 print-area">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-4 mb-4" style="border-color: rgba(236,200,106,0.15) !important;">
+                    <div>
+                        <span class="text-gold small fw-bold text-uppercase" style="letter-spacing: 0.08em;">Artisan Labour Payment Voucher</span>
+                        <h3 class="mb-0 fw-bold font-monospace text-white mt-1">{{ settlement.settlement_number }}</h3>
+                    </div>
+                    <div>
+                        {% if settlement.status == 'Completed' %}
+                        <span class="jd-stage-pill" style="background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.35);">Paid / Settled</span>
+                        {% else %}
+                        <span class="jd-stage-pill" style="background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.35);">Cancelled Voucher</span>
+                        {% endif %}
+                    </div>
                 </div>
-                <div>
-                    {% if settlement.status == 'Completed' %}
-                    <span class="badge bg-success fs-6 px-3 py-2">Paid / Settled</span>
-                    {% else %}
-                    <span class="badge bg-danger fs-6 px-3 py-2">Cancelled Voucher</span>
-                    {% endif %}
-                </div>
-            </div>
-            <div class="card-body p-4">
+
                 <!-- Cancelled Alert if applicable -->
                 {% if settlement.status == 'Cancelled' %}
-                <div class="alert alert-danger shadow-sm mb-4">
+                <div class="alert alert-danger py-3 px-4 mb-4" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5;">
                     <h6 class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> This settlement has been cancelled</h6>
                     <div class="small">
                         Cancelled by: {{ settlement.cancelled_by.get_full_name|default:settlement.cancelled_by.username }}
@@ -54,23 +55,23 @@
                 {% endif %}
 
                 <!-- Top Voucher Overview -->
-                <div class="row g-4 mb-4 border-bottom pb-4">
+                <div class="row g-4 mb-4 border-bottom pb-4" style="border-color: rgba(236,200,106,0.12) !important;">
                     <div class="col-md-6">
-                        <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Payee (Artisan):</span>
-                        <h5 class="fw-bold mb-1 text-dark">
-                            <a href="{% url 'karigar:karigar_detail' settlement.karigar.id %}" class="text-dark text-decoration-none">
+                        <span class="text-gold small fw-bold text-uppercase d-block mb-1">Payee (Artisan):</span>
+                        <h4 class="fw-bold mb-1 text-white">
+                            <a href="{% url 'karigar:karigar_detail' settlement.karigar.id %}" class="text-white text-decoration-none">
                                 {{ settlement.karigar.name }}
                             </a>
-                        </h5>
-                        <div class="small text-muted">{{ settlement.karigar.karigar_code }} &bull; {{ settlement.karigar.mobile }}</div>
+                        </h4>
+                        <div class="small text-muted font-monospace">{{ settlement.karigar.karigar_code }} &bull; {{ settlement.karigar.mobile }}</div>
                         {% if settlement.karigar.address %}
-                        <div class="small text-muted mt-1">{{ settlement.karigar.address|linebreaksbr }}</div>
+                        <div class="small text-light mt-1">{{ settlement.karigar.address|linebreaksbr }}</div>
                         {% endif %}
                     </div>
                     <div class="col-md-6 text-md-end">
-                        <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Payment Amount:</span>
-                        <h2 class="fw-bold text-success mb-0">₹{{ settlement.amount|floatformat:2 }}</h2>
-                        <div class="small text-muted mt-1">Paid on {{ settlement.payment_date|date:"d M Y" }}</div>
+                        <span class="text-gold small fw-bold text-uppercase d-block mb-1">Disbursed Amount:</span>
+                        <h2 class="fw-bold text-success font-monospace mb-0">₹{{ settlement.amount|floatformat:2 }}</h2>
+                        <div class="small text-light mt-1">Cleared on {{ settlement.payment_date|date:"d M Y" }}</div>
                         <div class="small text-muted">{{ settlement.payment_method }} {% if settlement.payment_reference %}(Ref: {{ settlement.payment_reference }}){% endif %}</div>
                     </div>
                 </div>
@@ -78,22 +79,22 @@
                 <!-- Processed Info -->
                 <div class="row g-3 mb-4 small">
                     <div class="col-sm-6">
-                        <span class="text-muted d-block">Processed By:</span>
-                        <span class="fw-semibold">{{ settlement.processed_by.get_full_name|default:settlement.processed_by.username|default:"System" }}</span>
+                        <span class="text-muted d-block">Authorized By:</span>
+                        <span class="text-white fw-semibold">{{ settlement.processed_by.get_full_name|default:settlement.processed_by.username|default:"System" }}</span>
                     </div>
                     <div class="col-sm-6 text-sm-end">
-                        <span class="text-muted d-block">Created Timestamp:</span>
-                        <span>{{ settlement.created_at|date:"d M Y, H:i" }}</span>
+                        <span class="text-muted d-block">Creation Audit:</span>
+                        <span class="text-light font-monospace">{{ settlement.created_at|date:"d M Y, H:i" }}</span>
                     </div>
                 </div>
 
                 <!-- Allocated Assignments -->
                 {% if assignments %}
                 <div class="mb-4">
-                    <h6 class="fw-bold mb-3"><i class="bi bi-list-check me-2 text-dark"></i> Allocated Work Assignments</h6>
+                    <h6 class="fw-bold text-gold mb-3"><i class="bi bi-list-check me-2"></i> Allocated Work Assignments</h6>
                     <div class="table-responsive">
-                        <table class="table table-bordered table-sm align-middle mb-0">
-                            <thead class="table-light small">
+                        <table class="jd-table">
+                            <thead>
                                 <tr>
                                     <th>Job #</th>
                                     <th>Work Type</th>
@@ -103,18 +104,18 @@
                                     <th>Status</th>
                                 </tr>
                             </thead>
-                            <tbody class="small">
+                            <tbody>
                                 {% for asg in assignments %}
                                 <tr>
                                     <td>
-                                        <a href="{% url 'karigar:assignment_detail' asg.id %}" class="fw-bold font-monospace text-dark text-decoration-none">
+                                        <a href="{% url 'karigar:assignment_detail' asg.id %}" class="text-gold font-monospace fw-bold text-decoration-none">
                                             {{ asg.assignment_number }}
                                         </a>
                                     </td>
-                                    <td>{{ asg.work_type }}</td>
-                                    <td>{{ asg.net_weight_issued|floatformat:3 }} g</td>
-                                    <td class="fw-semibold">₹{{ asg.total_charge|floatformat:2 }}</td>
-                                    <td class="fw-semibold text-success">₹{{ asg.paid_amount|floatformat:2 }}</td>
+                                    <td><span class="jd-tag">{{ asg.work_type }}</span></td>
+                                    <td class="text-white font-monospace">{{ asg.net_weight_issued|floatformat:3 }} g</td>
+                                    <td class="text-white font-monospace">₹{{ asg.total_charge|floatformat:2 }}</td>
+                                    <td class="text-success font-monospace fw-bold">₹{{ asg.paid_amount|floatformat:2 }}</td>
                                     <td>
                                         {% if asg.payment_status == 'Paid' %}
                                         <span class="badge bg-success">Paid</span>
@@ -131,23 +132,31 @@
                 {% endif %}
 
                 {% if settlement.notes %}
-                <div class="p-3 bg-light rounded small">
-                    <strong class="d-block text-muted text-uppercase mb-1">Notes / Terms:</strong>
-                    {{ settlement.notes|linebreaksbr }}
+                <div class="p-3 rounded-3 small mb-4" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);">
+                    <strong class="d-block text-gold text-uppercase mb-1">Notes / Terms:</strong>
+                    <span class="text-light">{{ settlement.notes|linebreaksbr }}</span>
                 </div>
                 {% endif %}
 
                 <!-- Signature block for print -->
-                <div class="row pt-5 mt-4 border-top text-center small text-muted">
+                <div class="row pt-5 mt-4 border-top text-center small text-muted" style="border-color: rgba(255,255,255,0.1) !important;">
                     <div class="col-6">
-                        <div class="border-top pt-2 mx-4">Prepared By (JewelDesk)</div>
+                        <div class="border-top pt-2 mx-4" style="border-color: rgba(255,255,255,0.2) !important;">Authorized Atelier Signatory</div>
                     </div>
                     <div class="col-6">
-                        <div class="border-top pt-2 mx-4">Artisan Signature / Stamp</div>
+                        <div class="border-top pt-2 mx-4" style="border-color: rgba(255,255,255,0.2) !important;">Artisan Acknowledgment</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('has-atelier-suite');
+    const pc = document.getElementById('page-content');
+    if (pc) pc.classList.add('jd-active');
+});
+</script>
 {% endblock %}

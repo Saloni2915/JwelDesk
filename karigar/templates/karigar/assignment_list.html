@@ -1,84 +1,93 @@
 {% extends 'base.html' %}
 
-{% block title %}Work Assignments — JewelDesk{% endblock %}
+{% block title %}Work Assignments — JewelDesk Atelier{% endblock %}
 
 {% block page_title %}Karigar Work Assignments{% endblock %}
 
-{% block page_actions %}
-<div class="d-flex gap-2">
-    {% if user_perms.karigar.can_add %}
-    <a href="{% url 'karigar:assignment_create' %}" class="btn btn-dark btn-sm">
-        <i class="bi bi-plus-lg me-1"></i> Issue Work Assignment
-    </a>
-    {% endif %}
-    <a href="{% url 'karigar:pending_assignments' %}" class="btn btn-outline-danger btn-sm">
-        <i class="bi bi-hourglass-split me-1"></i> Pending &amp; Overdue
-    </a>
-    <a href="{% url 'karigar:dashboard' %}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-speedometer2 me-1"></i> Dashboard
-    </a>
-</div>
-{% endblock %}
-
 {% block content %}
-<!-- Filter & Search Bar -->
-<div class="card mb-4 border-0 shadow-sm">
-    <div class="card-body">
-        <form method="get" class="row g-2 align-items-center">
-            <div class="col-md-3">
-                <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm"
-                       placeholder="Search assignment #, artisan, customer...">
+<div class="jd-canvas">
+    <!-- Header -->
+    <div class="jd-header">
+        <div>
+            <div class="jd-badge"><i class="bi bi-hammer me-1"></i> Workshop Job Cards</div>
+            <h1 class="jd-title">Artisan Work Assignments</h1>
+            <p class="jd-subtitle">Issued job work, metal allocations, expected deadlines, and completion statuses.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            {% if user_perms.karigar.can_add %}
+            <a href="{% url 'karigar:assignment_create' %}" class="jd-btn-gold">
+                <i class="bi bi-plus-lg me-1"></i> Issue Work Assignment
+            </a>
+            {% endif %}
+            <a href="{% url 'karigar:pending_assignments' %}" class="jd-btn-danger-ghost">
+                <i class="bi bi-hourglass-split me-1"></i> Pending &amp; Overdue
+            </a>
+            <a href="{% url 'karigar:dashboard' %}" class="jd-btn-ghost">
+                <i class="bi bi-speedometer2 me-1"></i> Workshop Cockpit
+            </a>
+        </div>
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div class="jd-filter-card mb-4">
+        <form method="get" class="row g-3 align-items-center">
+            <div class="col-lg-3 col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-end-0 text-gold" style="border-color: rgba(236,200,106,0.2);"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" value="{{ q }}" class="jd-input border-start-0"
+                           placeholder="Assignment #, artisan, customer...">
+                </div>
             </div>
-            <div class="col-md-2">
-                <select name="karigar" class="form-select form-select-sm">
+            <div class="col-lg-2 col-md-3">
+                <select name="karigar" class="jd-select">
                     <option value="">All Karigars</option>
                     {% for k in karigars %}
                     <option value="{{ k.id }}" {% if selected_karigar == k.id|stringformat:"s" %}selected{% endif %}>{{ k.name }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-2">
-                <select name="status" class="form-select form-select-sm">
+            <div class="col-lg-2 col-md-3">
+                <select name="status" class="jd-select">
                     <option value="">All Statuses</option>
                     {% for key, val in status_choices %}
                     <option value="{{ key }}" {% if selected_status == key %}selected{% endif %}>{{ val }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-2">
-                <select name="work_type" class="form-select form-select-sm">
+            <div class="col-lg-2 col-md-2">
+                <select name="work_type" class="jd-select">
                     <option value="">All Work Types</option>
                     {% for key, val in work_type_choices %}
                     <option value="{{ key }}" {% if selected_work_type == key %}selected{% endif %}>{{ val }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-1">
-                <select name="priority" class="form-select form-select-sm">
+            <div class="col-lg-1 col-md-2">
+                <select name="priority" class="jd-select">
                     <option value="">Priority</option>
                     {% for key, val in priority_choices %}
                     <option value="{{ key }}" {% if selected_priority == key %}selected{% endif %}>{{ val }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-2 d-flex gap-1">
-                <button type="submit" class="btn btn-dark btn-sm w-100">
+            <div class="col-lg-2 col-md-2 d-flex gap-2">
+                <button type="submit" class="jd-btn-gold flex-grow-1">
                     <i class="bi bi-funnel"></i> Filter
                 </button>
-                <a href="{% url 'karigar:assignment_list' %}" class="btn btn-outline-secondary btn-sm" title="Clear Filters">
+                {% if q or selected_karigar or selected_status or selected_work_type or selected_priority %}
+                <a href="{% url 'karigar:assignment_list' %}" class="jd-btn-ghost px-3" title="Clear Filters">
                     <i class="bi bi-x-lg"></i>
                 </a>
+                {% endif %}
             </div>
         </form>
     </div>
-</div>
 
-<!-- Table Card -->
-<div class="card border-0 shadow-sm">
-    <div class="card-body p-0">
+    <!-- Assignments Table Card -->
+    <div class="jd-table-card">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+            <table class="jd-table">
+                <thead>
                     <tr>
                         <th>Job Ref</th>
                         <th>Artisan</th>
@@ -94,67 +103,71 @@
                 </thead>
                 <tbody>
                     {% for asg in assignments %}
-                    <tr {% if asg.is_overdue %}class="table-danger"{% endif %}>
+                    <tr {% if asg.is_overdue %}style="background: rgba(239, 68, 68, 0.08);"{% endif %}>
                         <td>
-                            <a href="{% url 'karigar:assignment_detail' asg.id %}" class="fw-bold font-monospace text-decoration-none {% if asg.is_overdue %}text-danger{% else %}text-dark{% endif %}">
+                            <a href="{% url 'karigar:assignment_detail' asg.id %}" class="font-monospace fw-bold text-decoration-none {% if asg.is_overdue %}text-danger{% else %}text-gold{% endif %}">
                                 {{ asg.assignment_number }}
                             </a>
                             {% if asg.is_overdue %}
-                            <span class="badge bg-danger ms-1">OVERDUE</span>
+                            <span class="badge bg-danger ms-1" style="font-size: 0.65rem;">OVERDUE</span>
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{% url 'karigar:karigar_detail' asg.karigar.id %}" class="text-dark fw-semibold text-decoration-none d-block">
+                            <a href="{% url 'karigar:karigar_detail' asg.karigar.id %}" class="text-white fw-semibold text-decoration-none d-block">
                                 {{ asg.karigar.name }}
                             </a>
                             <small class="text-muted">{{ asg.karigar.specialization }}</small>
                         </td>
                         <td>
                             {% if asg.customer %}
-                            <span class="fw-medium text-dark d-block">{{ asg.customer.name }}</span>
-                            <small class="text-muted">{{ asg.customer.mobile }}</small>
+                            <span class="text-white fw-medium d-block">{{ asg.customer.name }}</span>
+                            <small class="text-muted font-monospace">{{ asg.customer.mobile }}</small>
                             {% elif asg.inventory_item %}
-                            <span class="text-dark fw-medium d-block">Stock: {{ asg.inventory_item.item_code }}</span>
+                            <span class="text-light fw-medium d-block">Stock: {{ asg.inventory_item.item_code }}</span>
                             <small class="text-muted">{{ asg.inventory_item.name|truncatechars:25 }}</small>
                             {% else %}
                             <span class="text-muted small">Showroom Stock</span>
                             {% endif %}
                         </td>
-                        <td><span class="badge bg-light text-dark border">{{ asg.work_type }}</span></td>
+                        <td><span class="jd-tag">{{ asg.work_type }}</span></td>
                         <td>
                             {% if asg.metal_type == 'Gold' %}
-                            <span class="badge badge-gold">{{ asg.metal_type }} {{ asg.purity }}</span>
+                            <span class="jd-badge" style="background: rgba(236,200,106,0.15); color: #ECC86A; border-color: rgba(236,200,106,0.3);">
+                                {{ asg.metal_type }} {{ asg.purity }}
+                            </span>
                             {% elif asg.metal_type == 'Silver' %}
-                            <span class="badge badge-silver">{{ asg.metal_type }} {{ asg.purity }}</span>
+                            <span class="jd-badge" style="background: rgba(203,213,225,0.15); color: #e2e8f0; border-color: rgba(203,213,225,0.3);">
+                                {{ asg.metal_type }} {{ asg.purity }}
+                            </span>
                             {% else %}
-                            <span class="badge bg-secondary">{{ asg.metal_type }} {{ asg.purity }}</span>
+                            <span class="jd-badge">{{ asg.metal_type }} {{ asg.purity }}</span>
                             {% endif %}
                         </td>
-                        <td class="fw-semibold">{{ asg.net_weight_issued|floatformat:3 }} g</td>
+                        <td class="text-white font-monospace">{{ asg.net_weight_issued|floatformat:3 }} g</td>
                         <td class="small">
                             {% if asg.expected_completion_date %}
                             <span class="{% if asg.is_overdue %}text-danger fw-bold{% else %}text-muted{% endif %}">
                                 {{ asg.expected_completion_date|date:"d M Y" }}
                             </span>
                             {% else %}
-                            -
+                            <span class="text-muted">—</span>
                             {% endif %}
                         </td>
                         <td>
                             {% if asg.status == 'Assigned' %}
-                            <span class="badge bg-secondary">Assigned</span>
+                            <span class="jd-stage-pill" style="background: rgba(255,255,255,0.06); color: rgba(250,244,234,0.7); border: 1px solid rgba(255,255,255,0.15);">Assigned</span>
                             {% elif asg.status == 'In Progress' %}
-                            <span class="badge bg-info text-dark">In Progress</span>
+                            <span class="jd-stage-pill" style="background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.35);">In Progress</span>
                             {% elif asg.status == 'Completed' %}
-                            <span class="badge bg-primary">Completed</span>
+                            <span class="jd-stage-pill" style="background: rgba(168,85,247,0.15); color: #d8b4fe; border: 1px solid rgba(168,85,247,0.35);">Completed</span>
                             {% elif asg.status == 'Received' %}
-                            <span class="badge bg-success">Received</span>
+                            <span class="jd-stage-pill" style="background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.35);">Received</span>
                             {% elif asg.status == 'Cancelled' %}
-                            <span class="badge bg-dark">Cancelled</span>
+                            <span class="jd-stage-pill" style="background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.35);">Cancelled</span>
                             {% endif %}
                         </td>
-                        <td class="fw-semibold">
-                            ₹{{ asg.total_charge|floatformat:2 }}
+                        <td>
+                            <div class="text-gold font-monospace fw-bold">₹{{ asg.total_charge|floatformat:2 }}</div>
                             {% if asg.payment_status == 'Paid' %}
                             <span class="badge bg-success-subtle text-success border border-success-subtle d-block mt-1" style="font-size: 0.65rem;">Paid</span>
                             {% elif asg.payment_status == 'Partially Paid' %}
@@ -162,15 +175,15 @@
                             {% endif %}
                         </td>
                         <td class="text-end pe-3">
-                            <div class="btn-group btn-group-sm">
-                                <a href="{% url 'karigar:assignment_detail' asg.id %}" class="btn btn-outline-dark" title="View Details">
+                            <div class="d-flex justify-content-end gap-1">
+                                <a href="{% url 'karigar:assignment_detail' asg.id %}" class="jd-btn-ghost btn-sm py-1 px-2" title="View Details">
                                     <i class="bi bi-eye"></i>
                                 </a>
                                 {% if asg.status != 'Received' and asg.status != 'Cancelled' and user_perms.karigar.can_edit %}
-                                <a href="{% url 'karigar:assignment_receive' asg.id %}" class="btn btn-outline-success" title="Receive Work">
+                                <a href="{% url 'karigar:assignment_receive' asg.id %}" class="btn btn-sm py-1 px-2" style="background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); color: #6ee7b7;" title="Receive Work">
                                     <i class="bi bi-check-circle"></i>
                                 </a>
-                                <a href="{% url 'karigar:assignment_edit' asg.id %}" class="btn btn-outline-secondary" title="Edit">
+                                <a href="{% url 'karigar:assignment_edit' asg.id %}" class="jd-btn-ghost btn-sm py-1 px-2" title="Edit">
                                     <i class="bi bi-pencil"></i>
                                 </a>
                                 {% endif %}
@@ -179,9 +192,17 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="10" class="text-center py-5 text-muted">
-                            <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
-                            No work assignments match the selected filters.
+                        <td colspan="10" class="text-center py-5">
+                            <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(236, 200, 106, 0.08); display: inline-flex; align-items: center; justify-content: center; color: var(--gold-primary); font-size: 1.75rem; margin-bottom: 1rem;">
+                                <i class="bi bi-hammer"></i>
+                            </div>
+                            <h5 class="text-white fw-bold mb-1">No Work Assignments Found</h5>
+                            <p class="text-muted small mb-3">No jobs match the active filters or search terms.</p>
+                            {% if user_perms.karigar.can_add %}
+                            <a href="{% url 'karigar:assignment_create' %}" class="jd-btn-gold">
+                                <i class="bi bi-plus-lg me-1"></i> Issue Work Assignment
+                            </a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
@@ -191,4 +212,12 @@
         {% include 'includes/pagination.html' with page_obj=page_obj %}
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('has-atelier-suite');
+    const pc = document.getElementById('page-content');
+    if (pc) pc.classList.add('jd-active');
+});
+</script>
 {% endblock %}

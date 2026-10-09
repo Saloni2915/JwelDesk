@@ -1,45 +1,56 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Employees — Team — JewelDesk{% endblock %}
+{% block title %}Employees &amp; Staff Directory — JewelDesk Atelier{% endblock %}
 {% block page_title %}Team Management{% endblock %}
 
 {% block page_actions %}
   {% if can_add_employee or user_perms.team.can_add or not user.employee_profile %}
-  <a href="{% url 'team:employee_create' %}" class="btn btn-primary btn-sm shadow-sm" id="btn-add-employee">
+  <a href="{% url 'team:employee_create' %}" class="jd-btn-gold btn-sm" id="btn-add-employee">
     <i class="bi bi-person-plus me-1"></i> Add Employee
   </a>
   {% endif %}
   {% if user_perms.team.can_view or not user.employee_profile %}
-  <a href="{% url 'team:role_list' %}" class="btn btn-outline-dark btn-sm" id="btn-roles">
+  <a href="{% url 'team:role_list' %}" class="jd-btn-ghost btn-sm" id="btn-roles">
     <i class="bi bi-shield-check me-1"></i> Roles &amp; Permissions
   </a>
-  <a href="{% url 'team:branch_list' %}" class="btn btn-outline-secondary btn-sm" id="btn-branches">
+  <a href="{% url 'team:branch_list' %}" class="jd-btn-ghost btn-sm" id="btn-branches">
     <i class="bi bi-building me-1"></i> Branches
   </a>
   {% endif %}
 {% endblock %}
 
 {% block content %}
-<div class="card shadow-sm border-0">
-  <div class="card-header bg-white border-bottom py-3">
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-      <div class="d-flex align-items-center gap-2">
-        <h5 class="mb-0 fw-bold text-dark">
-          <i class="bi bi-people text-primary me-2"></i>Employees Directory
-        </h5>
-        <span class="badge bg-secondary rounded-pill">{{ total_count }}</span>
-      </div>
+<div class="jd-canvas">
+  <!-- Header -->
+  <div class="jd-header">
+    <div>
+      <div class="jd-badge"><i class="bi bi-people me-1"></i> Human Resources &amp; Access Controls</div>
+      <h1 class="jd-title">Employees &amp; Staff Directory</h1>
+      <p class="jd-subtitle">Manage showroom associates, goldsmith supervisors, inventory managers, and branch access.</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      {% if can_add_employee or user_perms.team.can_add or not user.employee_profile %}
+      <a href="{% url 'team:employee_create' %}" class="jd-btn-gold">
+        <i class="bi bi-person-plus me-1"></i> Add Employee
+      </a>
+      {% endif %}
+    </div>
+  </div>
 
-      <!-- Filters & Search Form -->
-      <form method="get" class="d-flex gap-2 flex-wrap align-items-center" id="employee-filter-form">
-        <div class="input-group input-group-sm" style="width: 220px;">
-          <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
-          <input type="text" name="q" value="{{ q }}" class="form-control"
+  <!-- Search & Filter Card -->
+  <div class="jd-filter-card mb-4">
+    <form method="get" class="row g-3 align-items-center" id="employee-filter-form">
+      <div class="col-lg-3 col-md-4">
+        <div class="input-group">
+          <span class="input-group-text bg-transparent border-end-0 text-gold" style="border-color: rgba(236,200,106,0.2);"><i class="bi bi-search"></i></span>
+          <input type="text" name="q" value="{{ q }}" class="jd-input border-start-0"
                  placeholder="Search name, ID, title…" id="employee-search">
         </div>
+      </div>
 
-        <select name="role" class="form-select form-select-sm" style="width: 140px;" id="filter-role">
+      <div class="col-lg-2 col-md-2">
+        <select name="role" class="jd-select" id="filter-role">
           <option value="">All Roles</option>
           {% for role in roles %}
             <option value="{{ role.pk }}" {% if sel_role == role.pk|stringformat:"s" %}selected{% endif %}>
@@ -47,22 +58,28 @@
             </option>
           {% endfor %}
         </select>
+      </div>
 
-        <select name="department" class="form-select form-select-sm" style="width: 140px;" id="filter-dept">
+      <div class="col-lg-2 col-md-2">
+        <select name="department" class="jd-select" id="filter-dept">
           <option value="">All Depts</option>
           {% for d in departments %}
             <option value="{{ d }}" {% if sel_dept == d %}selected{% endif %}>{{ d }}</option>
           {% endfor %}
         </select>
+      </div>
 
-        <select name="status" class="form-select form-select-sm" style="width: 120px;" id="filter-status">
+      <div class="col-lg-2 col-md-2">
+        <select name="status" class="jd-select" id="filter-status">
           <option value="">All Status</option>
           {% for key, label in statuses %}
             <option value="{{ key }}" {% if sel_status == key %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
         </select>
+      </div>
 
-        <select name="branch" class="form-select form-select-sm" style="width: 140px;" id="filter-branch">
+      <div class="col-lg-2 col-md-2">
+        <select name="branch" class="jd-select" id="filter-branch">
           <option value="">All Branches</option>
           {% for branch in branches %}
             <option value="{{ branch.pk }}" {% if sel_branch == branch.pk|stringformat:"s" %}selected{% endif %}>
@@ -70,22 +87,29 @@
             </option>
           {% endfor %}
         </select>
+      </div>
 
-        <button type="submit" class="btn btn-outline-primary btn-sm">Filter</button>
+      <div class="col-lg-1 col-md-12 d-flex gap-2">
+        <button type="submit" class="jd-btn-gold flex-grow-1" title="Filter">
+          <i class="bi bi-funnel"></i>
+        </button>
         {% if q or sel_role or sel_dept or sel_status or sel_branch %}
-          <a href="{% url 'team:employee_list' %}" class="btn btn-outline-secondary btn-sm" title="Clear Filters">Clear</a>
+          <a href="{% url 'team:employee_list' %}" class="jd-btn-ghost px-2" title="Clear Filters">
+            <i class="bi bi-x-lg"></i>
+          </a>
         {% endif %}
-      </form>
-    </div>
+      </div>
+    </form>
   </div>
 
-  <div class="card-body p-0">
+  <!-- Employee Table Card -->
+  <div class="jd-table-card">
     {% if employees %}
     <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0" id="employee-table">
-        <thead class="table-light text-uppercase small text-muted">
+      <table class="jd-table" id="employee-table">
+        <thead>
           <tr>
-            <th class="ps-3">Employee</th>
+            <th>Employee</th>
             <th>Designation</th>
             <th>Role</th>
             <th>Department</th>
@@ -98,95 +122,83 @@
         <tbody>
           {% for emp in employees %}
           <tr>
-            <td class="ps-3 py-3">
+            <td class="py-3">
               <div class="d-flex align-items-center gap-3">
                 {% if emp.photo %}
-                  <img src="{{ emp.photo.url }}" alt="{{ emp.full_name }}" class="rounded-circle object-fit-cover shadow-sm" style="width: 40px; height: 40px;">
+                  <img src="{{ emp.photo.url }}" alt="{{ emp.full_name }}" class="rounded-circle object-fit-cover shadow" style="width: 40px; height: 40px; border: 1px solid rgba(236,200,106,0.3);">
                 {% else %}
-                  <div class="rounded-circle bg-primary bg-opacity-10 text-primary fw-bold d-flex align-items-center justify-content-center shadow-sm" style="width: 40px; height: 40px; font-size: 0.95rem;">
+                  <div class="rounded-circle fw-bold d-flex align-items-center justify-content-center shadow" style="width: 40px; height: 40px; font-size: 0.95rem; background: rgba(236,200,106,0.15); border: 1px solid rgba(236,200,106,0.3); color: var(--gold-primary);">
                     {{ emp.full_name|slice:":1"|upper }}
                   </div>
                 {% endif %}
                 <div>
-                  <a href="{% url 'team:employee_detail' emp.pk %}" class="fw-bold text-dark text-decoration-none">
+                  <a href="{% url 'team:employee_detail' emp.pk %}" class="fw-bold text-white text-decoration-none">
                     {{ emp.full_name }}
                   </a>
                   <div class="text-muted small">
-                    <span class="badge bg-light text-dark border font-monospace">{{ emp.employee_id }}</span>
+                    <span class="text-gold font-monospace">{{ emp.employee_id }}</span>
                     {% if emp.email %}&bull; {{ emp.email }}{% endif %}
                   </div>
                 </div>
               </div>
             </td>
             <td>
-              <span class="text-secondary fw-medium">{{ emp.designation|default:"Staff" }}</span>
+              <span class="text-light fw-medium">{{ emp.designation|default:"Staff" }}</span>
             </td>
             <td>
-              <span class="badge
-                {% if emp.role.name == 'Admin' %}bg-danger
-                {% elif emp.role.name == 'HR' %}bg-primary
-                {% elif emp.role.name == 'Manager' %}bg-warning text-dark
-                {% elif emp.role.name == 'Sales' or emp.role.name == 'Sales Executive' %}bg-success
-                {% elif emp.role.name == 'Inventory' or emp.role.name == 'Inventory Manager' %}bg-info text-dark
-                {% elif emp.role.name == 'Accountant' %}bg-dark
-                {% elif emp.role.name == 'Support' %}bg-info
-                {% else %}bg-secondary{% endif %}">
-                {{ emp.role.name }}
-              </span>
+              <span class="jd-tag"><i class="bi bi-shield-check me-1"></i>{{ emp.role.name }}</span>
             </td>
             <td>
               <span class="text-muted small">{{ emp.department }}</span>
             </td>
             <td>
               {% for b in emp.branches.all %}
-                <span class="badge bg-light text-dark border small">{{ b.name }}</span>
+                <span class="jd-badge small">{{ b.name }}</span>
               {% empty %}
                 <span class="text-muted small">All Branches</span>
               {% endfor %}
             </td>
             <td>
               {% if emp.status == 'Active' %}
-                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">Active</span>
+                <span class="jd-stage-pill" style="background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.35);">Active</span>
               {% elif emp.status == 'Inactive' %}
-                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1">Inactive</span>
+                <span class="jd-stage-pill" style="background: rgba(255,255,255,0.06); color: rgba(250,244,234,0.6); border: 1px solid rgba(255,255,255,0.15);">Inactive</span>
               {% else %}
-                <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1">{{ emp.status }}</span>
+                <span class="jd-stage-pill">{{ emp.status }}</span>
               {% endif %}
             </td>
             <td>
               {% if emp.user %}
                 {% if emp.user.is_active %}
-                  <span class="badge bg-success text-white" title="Active login (Username: {{ emp.user.username }})">
+                  <span class="jd-badge" style="background: rgba(16,185,129,0.15); color: #6ee7b7; border-color: rgba(16,185,129,0.3);" title="Active user account: {{ emp.user.username }}">
                     <i class="bi bi-check-circle me-1"></i>Active
                   </span>
                 {% else %}
-                  <span class="badge bg-danger text-white" title="Login suspended">
+                  <span class="jd-badge" style="background: rgba(239,68,68,0.15); color: #fca5a5; border-color: rgba(239,68,68,0.3);" title="Suspended account">
                     <i class="bi bi-lock me-1"></i>Locked
                   </span>
                 {% endif %}
               {% else %}
-                <span class="badge bg-light text-muted border" title="No system login account">
-                  No Login
-                </span>
+                <span class="text-muted small">— No Login</span>
               {% endif %}
             </td>
             <td class="text-end pe-3">
-              <div class="btn-group btn-group-sm">
-                <a href="{% url 'team:employee_detail' emp.pk %}" class="btn btn-outline-primary" title="View Profile">
+              <div class="d-flex justify-content-end gap-1">
+                <a href="{% url 'team:employee_detail' emp.pk %}" class="jd-btn-ghost btn-sm py-1 px-2" title="View Profile">
                   <i class="bi bi-eye"></i>
                 </a>
                 {% if user_perms.team.can_edit or not user.employee_profile %}
-                <a href="{% url 'team:employee_edit' emp.pk %}" class="btn btn-outline-secondary" title="Edit">
+                <a href="{% url 'team:employee_edit' emp.pk %}" class="jd-btn-ghost btn-sm py-1 px-2" title="Edit">
                   <i class="bi bi-pencil"></i>
                 </a>
-                <a href="{% url 'team:employee_permissions' emp.pk %}" class="btn btn-outline-dark" title="Permissions">
+                <a href="{% url 'team:employee_permissions' emp.pk %}" class="jd-btn-ghost btn-sm py-1 px-2" title="Permissions">
                   <i class="bi bi-shield-lock"></i>
                 </a>
                 <form method="post" action="{% url 'team:employee_toggle_status' emp.pk %}" class="d-inline"
                       onsubmit="return confirm('Toggle active status for {{ emp.full_name }}?')">
                   {% csrf_token %}
                   <button type="submit" title="{% if emp.status == 'Active' %}Deactivate Account{% else %}Activate Account{% endif %}"
-                          class="btn {% if emp.status == 'Active' %}btn-outline-warning{% else %}btn-outline-success{% endif %}">
+                          class="{% if emp.status == 'Active' %}jd-btn-danger-ghost{% else %}jd-btn-ghost{% endif %} btn-sm py-1 px-2">
                     <i class="bi {% if emp.status == 'Active' %}bi-toggle-on{% else %}bi-toggle-off{% endif %}"></i>
                   </button>
                 </form>
@@ -201,29 +213,29 @@
 
     <!-- Pagination -->
     {% if page_obj.has_other_pages %}
-    <div class="d-flex justify-content-center py-3 border-top">
+    <div class="d-flex justify-content-center py-3 border-top" style="border-color: rgba(236,200,106,0.12) !important;">
       <nav>
         <ul class="pagination pagination-sm mb-0">
           {% if page_obj.has_previous %}
             <li class="page-item">
-              <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&role={{ sel_role }}&department={{ sel_dept }}&status={{ sel_status }}&branch={{ sel_branch }}">Previous</a>
+              <a class="page-link" style="background: rgba(0,0,0,0.3); border-color: rgba(236,200,106,0.2); color: var(--gold-primary);" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&role={{ sel_role }}&department={{ sel_dept }}&status={{ sel_status }}&branch={{ sel_branch }}">Previous</a>
             </li>
           {% else %}
-            <li class="page-item disabled"><span class="page-link">Previous</span></li>
+            <li class="page-item disabled"><span class="page-link" style="background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.06); color: rgba(255,255,255,0.3);">Previous</span></li>
           {% endif %}
 
           {% for p in page_obj.paginator.page_range %}
             <li class="page-item {% if page_obj.number == p %}active{% endif %}">
-              <a class="page-link" href="?page={{ p }}&q={{ q }}&role={{ sel_role }}&department={{ sel_dept }}&status={{ sel_status }}&branch={{ sel_branch }}">{{ p }}</a>
+              <a class="page-link" style="{% if page_obj.number == p %}background: var(--gold-primary); border-color: var(--gold-primary); color: #000;{% else %}background: rgba(0,0,0,0.3); border-color: rgba(236,200,106,0.2); color: var(--gold-primary);{% endif %}" href="?page={{ p }}&q={{ q }}&role={{ sel_role }}&department={{ sel_dept }}&status={{ sel_status }}&branch={{ sel_branch }}">{{ p }}</a>
             </li>
           {% endfor %}
 
           {% if page_obj.has_next %}
             <li class="page-item">
-              <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&role={{ sel_role }}&department={{ sel_dept }}&status={{ sel_status }}&branch={{ sel_branch }}">Next</a>
+              <a class="page-link" style="background: rgba(0,0,0,0.3); border-color: rgba(236,200,106,0.2); color: var(--gold-primary);" href="?page={{ page_obj.next_page_number }}&q={{ q }}&role={{ sel_role }}&department={{ sel_dept }}&status={{ sel_status }}&branch={{ sel_branch }}">Next</a>
             </li>
           {% else %}
-            <li class="page-item disabled"><span class="page-link">Next</span></li>
+            <li class="page-item disabled"><span class="page-link" style="background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.06); color: rgba(255,255,255,0.3);">Next</span></li>
           {% endif %}
         </ul>
       </nav>
@@ -232,11 +244,13 @@
 
     {% else %}
     <div class="text-center py-5">
-      <i class="bi bi-people display-4 text-muted mb-3 d-block"></i>
-      <h6 class="fw-semibold">No Employees Found</h6>
-      <p class="text-muted small">No employee records match the active search or filter criteria.</p>
+      <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(236, 200, 106, 0.08); display: inline-flex; align-items: center; justify-content: center; color: var(--gold-primary); font-size: 1.75rem; margin-bottom: 1rem;">
+        <i class="bi bi-people"></i>
+      </div>
+      <h5 class="text-white fw-bold mb-1">No Employees Found</h5>
+      <p class="text-muted small mb-3">No employee records match the active search or filter criteria.</p>
       {% if can_add_employee or user_perms.team.can_add or not user.employee_profile %}
-      <a href="{% url 'team:employee_create' %}" class="btn btn-primary btn-sm mt-2">
+      <a href="{% url 'team:employee_create' %}" class="jd-btn-gold">
         <i class="bi bi-person-plus me-1"></i> Add First Employee
       </a>
       {% endif %}
@@ -244,4 +258,12 @@
     {% endif %}
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('has-atelier-suite');
+    const pc = document.getElementById('page-content');
+    if (pc) pc.classList.add('jd-active');
+});
+</script>
 {% endblock %}

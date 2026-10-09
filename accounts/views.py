@@ -211,13 +211,15 @@ THEME_OPTIONS = (
 @staff_required
 def themes(request):
     """Display the Themes settings page (authenticated back-office)."""
-    current_theme = request.COOKIES.get('jd-theme', 'light')
+    requested_theme = request.GET.get('theme')
+    current_theme = requested_theme if requested_theme in ('light', 'dark', 'gold') else request.COOKIES.get('jd-theme', 'light')
     if current_theme not in ('light', 'dark', 'gold'):
         current_theme = 'light'
-    if current_theme not in ('light', 'dark', 'gold'):
-        current_theme = 'light'
-    return render(request, 'accounts/themes.html', {
+    response = render(request, 'accounts/themes.html', {
         'current_theme': current_theme,
         'theme_options': THEME_OPTIONS,
     })
+    if requested_theme in ('light', 'dark', 'gold'):
+        response.set_cookie('jd-theme', requested_theme, max_age=31536000, samesite='Lax')
+    return response
 

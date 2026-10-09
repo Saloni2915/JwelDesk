@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="gold">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,63 +16,49 @@
     <!-- PWA & Mobile Web App Meta Tags -->
     {% include 'includes/pwa_head.html' %}
 
-    <!-- Apply saved theme before first paint (prevent flash) -->
+    <!-- Login page is exclusively styled in Golden Premium theme -->
     <script>
         (function () {
-            var t = localStorage.getItem('jd-theme') || 'light';
-            document.documentElement.setAttribute('data-theme', t);
-            document.cookie = 'jd-theme=' + t + '; path=/; max-age=31536000; SameSite=Lax';
+            document.documentElement.setAttribute('data-theme', 'gold');
         })();
     </script>
 
     <!-- Embedded Critical Standalone CSS: Guarantees 100% pixel-perfect styling even offline, on slow CDN, or behind service worker cache -->
     <style>
         :root {
-            --bg-primary: #0e141f;
-            --bg-secondary: #121824;
-            --surface: #151d2c;
-            --surface-alt: rgba(255, 255, 255, 0.05);
-            --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
-            --border: rgba(255, 255, 255, 0.1);
-            --accent: #c59b27;
-            --accent-hover: #e0b43a;
-            --on-accent: #1a2232;
-            --input-bg: #0e1420;
-            --input-border: rgba(255, 255, 255, 0.14);
+            --bg-primary: #141009;
+            --bg-secondary: #1e180d;
+            --surface: #221c10;
+            --surface-alt: rgba(245, 206, 107, 0.08);
+            --surface-hover: rgba(245, 206, 107, 0.14);
+            --text-primary: #fef9ed;
+            --text-secondary: #d6caa8;
+            --text-muted: #9e9171;
+            --border: rgba(245, 206, 107, 0.22);
+            --border-strong: rgba(245, 206, 107, 0.4);
+            --accent: #e5b338;
+            --accent-hover: #f3ca58;
+            --on-accent: #141009;
+            --input-bg: #1a140b;
+            --input-border: rgba(245, 206, 107, 0.28);
             --danger: #ef4444;
-        }
-        [data-theme="light"] {
-            --bg-primary: #f8fafc;
-            --bg-secondary: #f1f5f9;
-            --surface: #ffffff;
-            --surface-alt: #f1f5f9;
-            --text-primary: #0f172a;
-            --text-secondary: #475569;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-            --accent: #b48516;
-            --accent-hover: #966f12;
-            --on-accent: #ffffff;
-            --input-bg: #ffffff;
-            --input-border: #cbd5e1;
-            --danger: #dc2626;
         }
         [data-theme="gold"] {
             --bg-primary: #141009;
             --bg-secondary: #1e180d;
             --surface: #221c10;
-            --surface-alt: rgba(245, 206, 107, 0.06);
+            --surface-alt: rgba(245, 206, 107, 0.08);
+            --surface-hover: rgba(245, 206, 107, 0.14);
             --text-primary: #fef9ed;
             --text-secondary: #d6caa8;
             --text-muted: #9e9171;
-            --border: rgba(245, 206, 107, 0.2);
+            --border: rgba(245, 206, 107, 0.22);
+            --border-strong: rgba(245, 206, 107, 0.4);
             --accent: #e5b338;
             --accent-hover: #f3ca58;
             --on-accent: #141009;
             --input-bg: #1a140b;
-            --input-border: rgba(245, 206, 107, 0.25);
+            --input-border: rgba(245, 206, 107, 0.28);
             --danger: #ef4444;
         }
         *, *::before, *::after { box-sizing: border-box; }
@@ -81,19 +67,16 @@
             padding: 0;
             min-height: 100vh;
             min-height: 100dvh;
-            background-color: #0c1017;
-            background-image: linear-gradient(135deg, rgba(12, 16, 23, 0.88), rgba(18, 24, 36, 0.82)), url("{% static 'images/branding/login_background.jpg' %}");
+            background-color: #141009;
+            background-image: linear-gradient(135deg, rgba(20, 15, 9, 0.92), rgba(28, 20, 12, 0.88)), url("{% static 'images/branding/login_background.jpg' %}");
             background-size: cover;
             background-position: center center;
             background-repeat: no-repeat;
             background-attachment: fixed;
-            color: var(--text-primary, #f1f5f9);
+            color: var(--text-primary, #fef9ed);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             overflow-x: hidden;
             line-height: 1.5;
-        }
-        [data-theme="light"] body.jd-login-page {
-            background-image: linear-gradient(135deg, rgba(248, 250, 252, 0.90), rgba(241, 245, 249, 0.86)), url("{% static 'images/branding/login_background.jpg' %}");
         }
         img { max-width: 100%; height: auto; display: block; }
         .jd-login-layout { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
@@ -101,10 +84,10 @@
             width: 100%;
             padding: 1.15rem 1.75rem;
             border-bottom: 1px solid var(--border);
-            background: rgba(18, 24, 36, 0.75);
+            background: rgba(20, 16, 9, 0.88);
             backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
         }
-        [data-theme="light"] .jd-login-header { background: rgba(255, 255, 255, 0.9); }
         .jd-login-header__inner {
             max-width: 1360px;
             margin: 0 auto;
@@ -135,35 +118,12 @@
             align-items: center;
             font-size: 0.82rem;
             font-weight: 500;
-            color: var(--text-secondary);
-            background: var(--surface-alt);
-            border: 1px solid var(--border);
+            color: #d6caa8;
+            background: rgba(245, 206, 107, 0.08);
+            border: 1px solid rgba(245, 206, 107, 0.25);
             padding: 0.35rem 0.85rem;
             border-radius: 2rem;
         }
-        .jd-theme-pills {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-            padding: 0.25rem;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 2rem;
-        }
-        .jd-theme-btn {
-            border: none;
-            background: transparent;
-            color: var(--text-muted);
-            width: 2rem;
-            height: 2rem;
-            border-radius: 50%;
-            display: grid;
-            place-items: center;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .jd-theme-btn.active { color: var(--on-accent); background: var(--accent); }
         .jd-login-main {
             flex: 1 0 auto;
             display: flex;
@@ -257,9 +217,9 @@
             position: relative;
             border-radius: 1.1rem;
             overflow: hidden;
-            background: #121824;
+            background: #1a140b;
             border: 1px solid var(--border);
-            box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.45);
+            box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.55);
             width: 100%;
             max-width: 100%;
         }
@@ -282,7 +242,7 @@
         .jd-showcase-overlay {
             position: absolute;
             inset: 0;
-            background: linear-gradient(180deg, rgba(14, 20, 31, 0.2) 0%, rgba(14, 20, 31, 0.85) 100%);
+            background: linear-gradient(180deg, rgba(20, 16, 9, 0.2) 0%, rgba(20, 16, 9, 0.90) 100%);
         }
         .jd-showcase-badge {
             position: absolute;
@@ -291,29 +251,23 @@
             right: 1.25rem;
             display: flex;
             align-items: center;
-            background: rgba(18, 24, 36, 0.88);
-            border: 1px solid rgba(197, 155, 39, 0.35);
+            background: rgba(28, 22, 13, 0.92);
+            border: 1px solid rgba(229, 179, 56, 0.35);
             border-radius: 0.75rem;
             padding: 0.75rem 1rem;
-            color: #f1f5f9;
+            color: #fef9ed;
         }
         .jd-login-card-wrapper { display: flex; justify-content: center; width: 100%; }
         .jd-login-card {
             width: 100%;
             max-width: 440px;
-            background: rgba(21, 29, 44, 0.94);
+            background: rgba(34, 28, 16, 0.94);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--border);
+            border: 1px solid rgba(245, 206, 107, 0.25);
             border-radius: 1.25rem;
             padding: clamp(1.75rem, 3vw, 2.5rem);
-            box-shadow: 0 24px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(197, 155, 39, 0.12);
-        }
-        [data-theme="light"] .jd-login-card {
-            background: rgba(255, 255, 255, 0.96);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            box-shadow: 0 20px 45px -12px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.04);
+            box-shadow: 0 24px 50px -12px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(229, 179, 56, 0.16);
         }
         .jd-card-header { margin-bottom: 1.75rem; text-align: center; }
         .jd-card-icon-halo {
@@ -443,26 +397,13 @@
         <header class="jd-login-header">
             <div class="jd-login-header__inner">
                 <a href="{% url 'accounts:login' %}" class="jd-brand-link" aria-label="JewelDesk Home">
-                    <img src="{% static 'images/branding/logo.png' %}" alt="JewelDesk" class="jd-login-brand-logo" style="height: 38px; width: auto; max-width: 170px; object-fit: contain; background: #ffffff; padding: 3px 8px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.25);">
+                    <img src="{% static 'images/branding/logo.png' %}" alt="JewelDesk" class="jd-login-brand-logo" style="height: 40px; width: auto; max-width: 185px; object-fit: contain;">
                 </a>
 
                 <div class="jd-header-actions">
-                    <div class="jd-trust-badge d-none d-md-inline-flex">
+                    <div class="jd-trust-badge d-none d-sm-inline-flex">
                         <i class="bi bi-shield-check text-warning me-1" aria-hidden="true"></i>
                         <span>ISO 27001 Certified & BIS Hallmark Ready</span>
-                    </div>
-
-                    <!-- Theme Switcher Pills -->
-                    <div class="jd-theme-pills" role="radiogroup" aria-label="Theme switcher">
-                        <button type="button" class="jd-theme-btn" data-theme-value="light" title="Light theme" aria-label="Light theme">
-                            <i class="bi bi-sun" aria-hidden="true"></i>
-                        </button>
-                        <button type="button" class="jd-theme-btn" data-theme-value="dark" title="Dark theme" aria-label="Dark theme">
-                            <i class="bi bi-moon" aria-hidden="true"></i>
-                        </button>
-                        <button type="button" class="jd-theme-btn" data-theme-value="gold" title="Gold luxury theme" aria-label="Gold luxury theme">
-                            <i class="bi bi-gem" aria-hidden="true"></i>
-                        </button>
                     </div>
                 </div>
             </div>
@@ -698,40 +639,6 @@
             toggle.addEventListener('click', function () { apply(!visible); });
         })();
 
-        // Theme Switcher Buttons
-        (function () {
-            var buttons = document.querySelectorAll('.jd-theme-btn');
-            function getSavedTheme() {
-                return localStorage.getItem('jd-theme') || 'light';
-            }
-            function setActiveBtn(theme) {
-                buttons.forEach(function (btn) {
-                    if (btn.getAttribute('data-theme-value') === theme) {
-                        btn.classList.add('active');
-                        btn.setAttribute('aria-checked', 'true');
-                    } else {
-                        btn.classList.remove('active');
-                        btn.setAttribute('aria-checked', 'false');
-                    }
-                });
-            }
-            function switchTheme(theme) {
-                document.documentElement.setAttribute('data-theme', theme);
-                try { localStorage.setItem('jd-theme', theme); } catch (e) {}
-                document.cookie = 'jd-theme=' + theme + '; path=/; max-age=31536000; SameSite=Lax';
-                setActiveBtn(theme);
-            }
-
-            // Init active button
-            setActiveBtn(getSavedTheme());
-
-            buttons.forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    var theme = this.getAttribute('data-theme-value');
-                    switchTheme(theme);
-                });
-            });
-        })();
     </script>
 
     <!-- Progressive Web App (PWA) Scripts & Offline Handling -->

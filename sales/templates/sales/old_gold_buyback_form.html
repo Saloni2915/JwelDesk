@@ -1,216 +1,244 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Old Gold Buyback — JewelDesk{% endblock %}
+{% block title %}Old Gold Outright Buyback — JewelDesk Atelier{% endblock %}
 
-{% block page_title %}Outright Old Gold Buyback{% endblock %}
-
-{% block page_actions %}
-<a href="{% url 'old_gold_list' %}" class="btn btn-outline-secondary btn-sm">
-    <i class="bi bi-arrow-left me-1"></i> Back to Transactions
-</a>
+{% block extra_css %}
+<link href="{% static 'css/sales_bullion.css' %}?v={% now "U" %}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
-<form method="post" id="buybackForm" novalidate>
-    {% csrf_token %}
-    <div class="row g-4">
-        <!-- Intake Details (Left Column) -->
-        <div class="col-lg-7">
-            <!-- Section 1: Customer Information -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white py-3 border-0">
-                    <h6 class="mb-0 fw-bold text-dark d-flex align-items-center">
-                        <span class="badge bg-dark rounded-circle me-2 px-2 py-1">1</span> Customer Information
-                    </h6>
-                </div>
-                <div class="card-body pt-0">
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Customer <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                {{ form.customer }}
-                                <a href="{% url 'customer_add' %}?next={{ request.path }}" class="btn btn-outline-dark" title="Add New Customer">
-                                    <i class="bi bi-person-plus"></i>
-                                </a>
-                            </div>
-                            {% if form.customer.errors %}<div class="text-danger small mt-1">{{ form.customer.errors }}</div>{% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
+<div class="jd-sb-canvas">
 
-            <!-- Section 2: Old Gold Valuation Details -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white py-3 border-0">
-                    <h6 class="mb-0 fw-bold text-dark d-flex align-items-center">
-                        <span class="badge bg-success text-white rounded-circle me-2 px-2 py-1">2</span> Old Gold Valuation Details
-                    </h6>
-                </div>
-                <div class="card-body pt-0">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Metal Type</label>
-                            {{ form.metal_type }}
-                            {% if form.metal_type.errors %}<div class="text-danger small mt-1">{{ form.metal_type.errors }}</div>{% endif %}
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Scrap Category</label>
-                            {{ form.old_gold_type }}
-                            {% if form.old_gold_type.errors %}<div class="text-danger small mt-1">{{ form.old_gold_type.errors }}</div>{% endif %}
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Jewellery / Scrap Description <span class="text-danger">*</span></label>
-                            {{ form.item_description }}
-                            <small class="text-muted">e.g. Broken 22K bangles, melted lump, cut pieces</small>
-                            {% if form.item_description.errors %}<div class="text-danger small mt-1">{{ form.item_description.errors }}</div>{% endif %}
-                        </div>
-
-                        <!-- Weights -->
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Gross Weight (g) <span class="text-danger">*</span></label>
-                            {{ form.gross_weight }}
-                            {% if form.gross_weight.errors %}<div class="text-danger small mt-1">{{ form.gross_weight.errors }}</div>{% endif %}
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Stone / Impurity Wt (g)</label>
-                            {{ form.stone_weight }}
-                            {% if form.stone_weight.errors %}<div class="text-danger small mt-1">{{ form.stone_weight.errors }}</div>{% endif %}
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold text-success">Net Metal Wt (g)</label>
-                            <input type="text" id="live_net_weight" class="form-control bg-light fw-bold text-success" readonly value="0.000">
-                        </div>
-
-                        <!-- Purity & Rates -->
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Purity / Karat <span class="text-danger">*</span></label>
-                            {{ form.purity }}
-                            {% if form.purity.errors %}<div class="text-danger small mt-1">{{ form.purity.errors }}</div>{% endif %}
-                        </div>
-                        <div class="col-md-4" id="custom_purity_wrapper" style="display: none;">
-                            <label class="form-label fw-semibold">Custom Purity %</label>
-                            {{ form.custom_purity_percent }}
-                            {% if form.custom_purity_percent.errors %}<div class="text-danger small mt-1">{{ form.custom_purity_percent.errors }}</div>{% endif %}
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">24K Base Rate (₹/g) <span class="text-danger">*</span></label>
-                            {{ form.applicable_rate }}
-                            {% if form.applicable_rate.errors %}<div class="text-danger small mt-1">{{ form.applicable_rate.errors }}</div>{% endif %}
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Melting Wastage %</label>
-                            {{ form.deduction_percent }}
-                            <small class="text-muted">Melting/dross testing deduction</small>
-                            {% if form.deduction_percent.errors %}<div class="text-danger small mt-1">{{ form.deduction_percent.errors }}</div>{% endif %}
-                        </div>
-
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Appraisal Remarks</label>
-                            {{ form.notes }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Section 3: Payout Details -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white py-3 border-0">
-                    <h6 class="mb-0 fw-bold text-dark d-flex align-items-center">
-                        <span class="badge bg-secondary text-white rounded-circle me-2 px-2 py-1">3</span> Payout Details
-                    </h6>
-                </div>
-                <div class="card-body pt-0">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Payout Method <span class="text-danger">*</span></label>
-                            {{ form.payment_method }}
-                            {% if form.payment_method.errors %}<div class="text-danger small mt-1">{{ form.payment_method.errors }}</div>{% endif %}
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Payment Status</label>
-                            {{ form.payment_status }}
-                            {% if form.payment_status.errors %}<div class="text-danger small mt-1">{{ form.payment_status.errors }}</div>{% endif %}
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Payment Reference</label>
-                            {{ form.payment_reference }}
-                            <small class="text-muted">Cash voucher number, UPI transaction ID, or Cheque number</small>
-                            {% if form.payment_reference.errors %}<div class="text-danger small mt-1">{{ form.payment_reference.errors }}</div>{% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- Header & Actions -->
+    <div class="jd-sb-header">
+        <div class="jd-sb-title-wrap">
+            <h1><i class="bi bi-cash-stack text-warning me-2"></i>Old Gold Outright Buyback Counter</h1>
+            <p class="jd-sb-subtitle">Customer scrap jewellery outright purchase with instant cash, UPI, or bank payout</p>
         </div>
+        <div class="jd-sb-header-actions">
+            <a href="{% url 'old_gold_list' %}" class="jd-btn-ghost">
+                <i class="bi bi-arrow-left"></i> Transactions Ledger
+            </a>
+            <a href="{% url 'old_gold_exchange_create' %}" class="jd-btn-ghost">
+                <i class="bi bi-arrow-repeat"></i> Gold Exchange
+            </a>
+        </div>
+    </div>
 
-        <!-- Live Valuation Breakdown (Right Column) -->
-        <div class="col-lg-5">
-            <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
-                <div class="card-header bg-dark text-white py-3">
-                    <h6 class="mb-0 fw-semibold d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-cash-stack me-2"></i> Live Buyback Valuation</span>
-                        <span class="badge bg-success" id="live_purity_badge">22K</span>
-                    </h6>
+    <!-- Main Buyback Form -->
+    <form method="post" id="buybackForm" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger py-2 mb-3 bg-danger bg-opacity-25 border-danger text-light">
+            {% for error in form.non_field_errors %}
+            <div class="small"><i class="bi bi-exclamation-triangle-fill me-1"></i> {{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="jd-og-form-grid">
+
+            <!-- LEFT COLUMN: Scrap Intake & Testing parameters -->
+            <div class="jd-og-col-left">
+
+                <!-- Section 1: Customer Information -->
+                <div class="jd-og-card">
+                    <div class="jd-og-card-header">
+                        <h2>
+                            <i class="bi bi-person-bounding-box text-warning"></i>
+                            1. Customer Identification &amp; KYC
+                        </h2>
+                        <a href="{% url 'customer_add' %}?next={{ request.path }}" class="jd-btn-ghost py-1 px-2" style="font-size: 0.78rem;">
+                            <i class="bi bi-person-plus"></i> Add Customer
+                        </a>
+                    </div>
+                    <div class="jd-og-card-body">
+                        <label class="jd-og-field-label">Customer Name &amp; Contact <span class="text-danger">*</span></label>
+                        {{ form.customer }}
+                        {% if form.customer.errors %}
+                        <div class="text-danger small mt-1">{{ form.customer.errors.0 }}</div>
+                        {% endif %}
+                    </div>
                 </div>
-                <div class="card-body p-4">
-                    <div class="mb-3 text-muted small text-uppercase fw-semibold border-bottom pb-2">
-                        Scrap Gold Appraisal
+
+                <!-- Section 2: Old Gold Valuation Details -->
+                <div class="jd-og-card">
+                    <div class="jd-og-card-header">
+                        <h2>
+                            <i class="bi bi-coin text-warning"></i>
+                            2. Scrap Gold Intake &amp; Assay Testing
+                        </h2>
+                        <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">Vault Intake</span>
+                    </div>
+                    <div class="jd-og-card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6 col-12">
+                                <label class="jd-og-field-label">Precious Metal</label>
+                                {{ form.metal_type }}
+                            </div>
+                            <div class="col-md-6 col-12">
+                                <label class="jd-og-field-label">Scrap Category</label>
+                                {{ form.old_gold_type }}
+                            </div>
+                            <div class="col-12">
+                                <label class="jd-og-field-label">Jewellery Physical Description <span class="text-danger">*</span></label>
+                                {{ form.item_description }}
+                                <small class="text-muted d-block mt-1">e.g. Broken 22K bangles, melted lump, cut pieces</small>
+                                {% if form.item_description.errors %}
+                                <div class="text-danger small mt-1">{{ form.item_description.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Weights Row -->
+                            <div class="col-md-4 col-12">
+                                <label class="jd-og-field-label">Gross Weight (g) <span class="text-danger">*</span></label>
+                                {{ form.gross_weight }}
+                                {% if form.gross_weight.errors %}
+                                <div class="text-danger small mt-1">{{ form.gross_weight.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 col-12">
+                                <label class="jd-og-field-label">Stone / Wax Wt (g)</label>
+                                {{ form.stone_weight }}
+                            </div>
+                            <div class="col-md-4 col-12">
+                                <label class="jd-og-field-label text-warning">Net Gold Wt (g)</label>
+                                <input type="text" id="live_net_weight" class="form-control bg-dark text-warning fw-bold font-monospace" readonly value="0.000">
+                            </div>
+
+                            <!-- Purity & Rate Row -->
+                            <div class="col-md-4 col-12">
+                                <label class="jd-og-field-label">Purity / Karat <span class="text-danger">*</span></label>
+                                {{ form.purity }}
+                            </div>
+                            <div class="col-md-4 col-12" id="custom_purity_wrapper" style="display: none;">
+                                <label class="jd-og-field-label">Custom Purity %</label>
+                                {{ form.custom_purity_percent }}
+                            </div>
+                            <div class="col-md-4 col-12">
+                                <label class="jd-og-field-label">24K Base Rate (₹/g) <span class="text-danger">*</span></label>
+                                {{ form.applicable_rate }}
+                            </div>
+                            <div class="col-md-4 col-12">
+                                <label class="jd-og-field-label">Melting Wastage %</label>
+                                {{ form.deduction_percent }}
+                                <small class="text-muted d-block mt-1">Melting / dross deduction</small>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="jd-og-field-label">Appraisal Remarks / Testing Notes</label>
+                                {{ form.notes }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Payout Details -->
+                <div class="jd-og-card">
+                    <div class="jd-og-card-header">
+                        <h2>
+                            <i class="bi bi-wallet2 text-warning"></i>
+                            3. Customer Payout Disbursement
+                        </h2>
+                        <span class="badge bg-info bg-opacity-25 text-info border border-info border-opacity-25">Cashier Outflow</span>
+                    </div>
+                    <div class="jd-og-card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6 col-12">
+                                <label class="jd-og-field-label">Payout Method <span class="text-danger">*</span></label>
+                                {{ form.payment_method }}
+                                {% if form.payment_method.errors %}
+                                <div class="text-danger small mt-1">{{ form.payment_method.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 col-12">
+                                <label class="jd-og-field-label">Payment Status</label>
+                                {{ form.payment_status }}
+                            </div>
+                            <div class="col-12">
+                                <label class="jd-og-field-label">Payment Reference</label>
+                                {{ form.payment_reference }}
+                                <small class="text-muted d-block mt-1">Cash voucher number, UPI reference ID, or Cheque number</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: Sticky Valuation Voucher & Payout Calculation -->
+            <div class="jd-og-col-right">
+                <div class="jd-og-voucher-card">
+                    <div class="jd-og-voucher-title">
+                        <span><i class="bi bi-cash-stack text-warning me-2"></i>Buyback Payout</span>
+                        <span class="badge bg-warning text-dark font-monospace" id="live_purity_badge">22K</span>
                     </div>
 
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Gross Weight</span>
-                        <span class="fw-semibold" id="calc_gross_wt">0.000 g</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Less: Non-Metal / Stones</span>
-                        <span class="text-danger" id="calc_stone_wt">- 0.000 g</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
-                        <span class="fw-semibold text-dark">Net Precious Metal</span>
-                        <span class="fw-bold text-success" id="calc_net_wt">0.000 g</span>
-                    </div>
-
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">24K Market Rate</span>
-                        <span id="calc_base_rate">₹0.00 /g</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Purity Factor</span>
-                        <span id="calc_purity_factor">0.916667 (91.67%)</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Effective Rate</span>
-                        <span class="fw-semibold text-dark" id="calc_effective_rate">₹0.00 /g</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Gross Scrap Value</span>
-                        <span class="fw-semibold text-dark" id="calc_gross_val">₹0.00</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
-                        <span class="text-muted">Less: Melting/Deduction (<span id="calc_deduct_pct">0</span>%)</span>
-                        <span class="text-danger" id="calc_deduct_val">- ₹0.00</span>
-                    </div>
-
-                    <!-- Payout Total -->
-                    <div class="p-3 bg-success-subtle rounded-3 mb-4 text-center border border-success-subtle">
-                        <span class="small fw-bold text-success d-block mb-1">Total Cash Payout to Customer</span>
-                        <h2 class="fw-bolder mb-0 text-success" id="calc_final_payout">₹0.00</h2>
-                        <small class="text-muted d-block mt-1">Item will be stored in Vault Stock (Not for sale)</small>
+                    <div class="jd-og-calc-list">
+                        <div class="jd-og-calc-row">
+                            <span class="text-muted">Gross Scrap Weight:</span>
+                            <strong id="calc_gross_wt">0.000 g</strong>
+                        </div>
+                        <div class="jd-og-calc-row text-danger">
+                            <span>Less: Stone / Wax:</span>
+                            <span id="calc_stone_wt">- 0.000 g</span>
+                        </div>
+                        <div class="jd-og-calc-row text-warning pt-1 border-top border-secondary border-opacity-25">
+                            <span class="fw-bold">Net Metal Weight:</span>
+                            <strong class="fw-bold" id="calc_net_wt">0.000 g</strong>
+                        </div>
+                        <div class="jd-og-calc-row">
+                            <span class="text-muted">24K Market Rate:</span>
+                            <span id="calc_base_rate">₹0.00 /g</span>
+                        </div>
+                        <div class="jd-og-calc-row">
+                            <span class="text-muted">Purity Factor:</span>
+                            <span id="calc_purity_factor">0.916667 (91.67%)</span>
+                        </div>
+                        <div class="jd-og-calc-row">
+                            <span class="text-muted">Effective Scrap Rate:</span>
+                            <strong id="calc_effective_rate">₹0.00 /g</strong>
+                        </div>
+                        <div class="jd-og-calc-row">
+                            <span class="text-muted">Gross Metal Valuation:</span>
+                            <strong id="calc_gross_val">₹0.00</strong>
+                        </div>
+                        <div class="jd-og-calc-row text-danger">
+                            <span>Melting Loss (<span id="calc_deduct_pct">0</span>%):</span>
+                            <span id="calc_deduct_val">- ₹0.00</span>
+                        </div>
                     </div>
 
-                    <button type="submit" class="btn btn-success w-100 py-2 fw-bold text-white shadow-sm">
-                        <i class="bi bi-check-circle me-1"></i> Record Buyback &amp; Print Voucher
+                    <!-- Final Payout Box -->
+                    <div class="jd-og-final-box my-3">
+                        <div class="jd-og-final-label">Final Payout to Customer</div>
+                        <div class="jd-og-final-val text-warning" id="calc_final_buyback">₹0.00</div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="jd-btn-gold w-100 py-3 justify-content-center fs-6">
+                        <i class="bi bi-cash-coin me-1"></i> Disburse Payout &amp; Save Voucher
                     </button>
                     <a href="{% url 'old_gold_list' %}" class="btn btn-link text-muted w-100 mt-2 text-decoration-none small">
-                        Cancel and return
+                        Cancel and return to ledger
                     </a>
                 </div>
             </div>
-        </div>
-    </div>
-</form>
 
+        </div>
+    </form>
+
+</div>
+
+<!-- Calculation Engine Script -->
 <script>
 (function() {
+    document.body.classList.add('has-sales-suite');
+    var pc = document.getElementById('page-content');
+    if (pc) pc.classList.add('jd-sb-active');
+
     const purityMap = {
         '24K': 1.000000,
         '22K': 22 / 24,
@@ -223,9 +251,9 @@
 
     const grossInput = document.getElementById('id_gross_weight');
     const stoneInput = document.getElementById('id_stone_weight');
-    const liveNetWeight = document.getElementById('live_net_weight');
+    const liveNet = document.getElementById('live_net_weight');
     const puritySelect = document.getElementById('id_purity');
-    const customPurityWrap = document.getElementById('custom_purity_wrapper');
+    const customWrapper = document.getElementById('custom_purity_wrapper');
     const customPurityInput = document.getElementById('id_custom_purity_percent');
     const rateInput = document.getElementById('id_applicable_rate');
     const deductInput = document.getElementById('id_deduction_percent');
@@ -239,65 +267,55 @@
     const calcGrossVal = document.getElementById('calc_gross_val');
     const calcDeductPct = document.getElementById('calc_deduct_pct');
     const calcDeductVal = document.getElementById('calc_deduct_val');
-    const calcFinalPayout = document.getElementById('calc_final_payout');
+    const calcFinalBuyback = document.getElementById('calc_final_buyback');
     const livePurityBadge = document.getElementById('live_purity_badge');
 
-    function round(val, dec) {
-        const factor = Math.pow(10, dec);
-        return Math.round((val + Number.EPSILON) * factor) / factor;
+    function formatInr(val) {
+        return '₹' + Number(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    function formatINR(val) {
-        return '₹' + Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-
-    function updateCalculations() {
-        const gross = Math.max(0, parseFloat(grossInput?.value) || 0);
-        const stone = Math.max(0, parseFloat(stoneInput?.value) || 0);
+    function recalculate() {
+        const gross = parseFloat(grossInput ? grossInput.value : 0) || 0;
+        const stone = parseFloat(stoneInput ? stoneInput.value : 0) || 0;
         const net = Math.max(0, gross - stone);
+        if (liveNet) liveNet.value = net.toFixed(3);
 
-        if (liveNetWeight) liveNetWeight.value = net.toFixed(3);
+        const purityKey = puritySelect ? puritySelect.value : '22K';
+        if (livePurityBadge) livePurityBadge.textContent = purityKey;
 
-        const purity = puritySelect ? puritySelect.value : '22K';
-        if (livePurityBadge) livePurityBadge.innerText = purity;
-
-        let pFactor = purityMap[purity] || (22 / 24);
-        if (purity === 'Other') {
-            if (customPurityWrap) customPurityWrap.style.display = 'block';
-            const customVal = parseFloat(customPurityInput?.value) || 0;
-            pFactor = customVal / 100.0;
+        let purityFactor = purityMap[purityKey] || 0.916667;
+        if (purityKey === 'Custom' && customPurityInput) {
+            if (customWrapper) customWrapper.style.display = 'block';
+            purityFactor = (parseFloat(customPurityInput.value) || 0) / 100;
         } else {
-            if (customPurityWrap) customPurityWrap.style.display = 'none';
+            if (customWrapper) customWrapper.style.display = 'none';
         }
 
-        const baseRate = Math.max(0, parseFloat(rateInput?.value) || 0);
-        const effectiveRate = round(baseRate * pFactor, 2);
-        const grossVal = round(net * effectiveRate, 2);
+        const baseRate = parseFloat(rateInput ? rateInput.value : 0) || 0;
+        const deductPct = parseFloat(deductInput ? deductInput.value : 0) || 0;
+        const effectiveRate = baseRate * purityFactor;
+        const grossVal = net * effectiveRate;
+        const deductVal = grossVal * (deductPct / 100);
+        const finalVal = Math.max(0, grossVal - deductVal);
 
-        const deductPct = Math.max(0, parseFloat(deductInput?.value) || 0);
-        const deductVal = round(grossVal * (deductPct / 100.0), 2);
-        const finalVal = Math.max(0, round(grossVal - deductVal, 2));
-
-        if (calcGrossWt) calcGrossWt.innerText = gross.toFixed(3) + ' g';
-        if (calcStoneWt) calcStoneWt.innerText = '- ' + stone.toFixed(3) + ' g';
-        if (calcNetWt) calcNetWt.innerText = net.toFixed(3) + ' g';
-        if (calcBaseRate) calcBaseRate.innerText = formatINR(baseRate) + ' /g';
-        if (calcPurityFactor) calcPurityFactor.innerText = pFactor.toFixed(6) + ' (' + (pFactor * 100).toFixed(2) + '%)';
-        if (calcEffectiveRate) calcEffectiveRate.innerText = formatINR(effectiveRate) + ' /g';
-        if (calcGrossVal) calcGrossVal.innerText = formatINR(grossVal);
-        if (calcDeductPct) calcDeductPct.innerText = deductPct.toString();
-        if (calcDeductVal) calcDeductVal.innerText = '- ' + formatINR(deductVal);
-        if (calcFinalPayout) calcFinalPayout.innerText = formatINR(finalVal);
+        if (calcGrossWt) calcGrossWt.textContent = gross.toFixed(3) + ' g';
+        if (calcStoneWt) calcStoneWt.textContent = '- ' + stone.toFixed(3) + ' g';
+        if (calcNetWt) calcNetWt.textContent = net.toFixed(3) + ' g';
+        if (calcBaseRate) calcBaseRate.textContent = formatInr(baseRate) + ' /g';
+        if (calcPurityFactor) calcPurityFactor.textContent = purityFactor.toFixed(4) + ' (' + (purityFactor * 100).toFixed(2) + '%)';
+        if (calcEffectiveRate) calcEffectiveRate.textContent = formatInr(effectiveRate) + ' /g';
+        if (calcGrossVal) calcGrossVal.textContent = formatInr(grossVal);
+        if (calcDeductPct) calcDeductPct.textContent = deductPct.toFixed(1);
+        if (calcDeductVal) calcDeductVal.textContent = '- ' + formatInr(deductVal);
+        if (calcFinalBuyback) calcFinalBuyback.textContent = formatInr(finalVal);
     }
 
     [grossInput, stoneInput, puritySelect, customPurityInput, rateInput, deductInput].forEach(el => {
-        if (el) {
-            el.addEventListener('input', updateCalculations);
-            el.addEventListener('change', updateCalculations);
-        }
+        if (el) el.addEventListener('input', recalculate);
+        if (el) el.addEventListener('change', recalculate);
     });
 
-    updateCalculations();
+    recalculate();
 })();
 </script>
 {% endblock %}

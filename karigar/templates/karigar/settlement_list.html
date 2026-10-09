@@ -1,86 +1,93 @@
 {% extends 'base.html' %}
 
-{% block title %}Karigar Settlements &amp; Dues — JewelDesk{% endblock %}
+{% block title %}Karigar Settlements &amp; Labour Dues — JewelDesk Atelier{% endblock %}
 
 {% block page_title %}Artisan Settlements &amp; Labour Payments{% endblock %}
 
-{% block page_actions %}
-<div class="d-flex gap-2">
-    {% if user_perms.karigar.can_add %}
-    <a href="{% url 'karigar:settlement_create' %}" class="btn btn-dark btn-sm">
-        <i class="bi bi-cash-stack me-1"></i> Record Settlement
-    </a>
-    {% endif %}
-    <a href="{% url 'karigar:dashboard' %}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-speedometer2 me-1"></i> Dashboard
-    </a>
-</div>
-{% endblock %}
-
 {% block content %}
-<!-- Search & Filter Card -->
-<div class="card mb-4 border-0 shadow-sm">
-    <div class="card-body">
-        <form method="get" class="row g-2 align-items-center">
-            <div class="col-md-4">
-                <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm"
-                       placeholder="Search voucher #, artisan name, or transaction ref...">
+<div class="jd-canvas">
+    <!-- Header -->
+    <div class="jd-header">
+        <div>
+            <div class="jd-badge"><i class="bi bi-cash-coin me-1"></i> Artisan Banking &amp; Vouchers</div>
+            <h1 class="jd-title">Karigar Labour Settlements</h1>
+            <p class="jd-subtitle">Disbursed cash, bank NEFT, and UPI vouchers clearing making charges and dues.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            {% if user_perms.karigar.can_add %}
+            <a href="{% url 'karigar:settlement_create' %}" class="jd-btn-gold">
+                <i class="bi bi-cash-stack me-1"></i> Record Settlement
+            </a>
+            {% endif %}
+            <a href="{% url 'karigar:dashboard' %}" class="jd-btn-ghost">
+                <i class="bi bi-speedometer2 me-1"></i> Workshop Cockpit
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="jd-filter-card mb-4">
+        <form method="get" class="row g-3 align-items-center">
+            <div class="col-lg-4 col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-end-0 text-gold" style="border-color: rgba(236,200,106,0.2);"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" value="{{ q }}" class="jd-input border-start-0"
+                           placeholder="Search voucher #, artisan name, or txn ref...">
+                </div>
             </div>
-            <div class="col-md-3">
-                <select name="karigar" class="form-select form-select-sm">
+            <div class="col-lg-3 col-md-3">
+                <select name="karigar" class="jd-select">
                     <option value="">All Artisans</option>
                     {% for k in karigars %}
                     <option value="{{ k.id }}" {% if selected_karigar == k.id|stringformat:"s" %}selected{% endif %}>{{ k.name }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-2">
-                <select name="method" class="form-select form-select-sm">
+            <div class="col-lg-2 col-md-2">
+                <select name="method" class="jd-select">
                     <option value="">All Methods</option>
                     {% for key, val in payment_methods %}
                     <option value="{{ key }}" {% if selected_method == key %}selected{% endif %}>{{ val }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-1">
-                <select name="status" class="form-select form-select-sm">
+            <div class="col-lg-1 col-md-2">
+                <select name="status" class="jd-select">
                     <option value="">Status</option>
                     {% for key, val in status_choices %}
                     <option value="{{ key }}" {% if selected_status == key %}selected{% endif %}>{{ val }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-2 d-flex gap-1">
-                <button type="submit" class="btn btn-dark btn-sm w-100">
+            <div class="col-lg-2 col-md-2 d-flex gap-2">
+                <button type="submit" class="jd-btn-gold flex-grow-1">
                     <i class="bi bi-funnel"></i> Filter
                 </button>
-                <a href="{% url 'karigar:settlement_list' %}" class="btn btn-outline-secondary btn-sm" title="Clear Filters">
+                {% if q or selected_karigar or selected_method or selected_status %}
+                <a href="{% url 'karigar:settlement_list' %}" class="jd-btn-ghost px-3" title="Clear Filters">
                     <i class="bi bi-x-lg"></i>
                 </a>
+                {% endif %}
             </div>
         </form>
     </div>
-</div>
 
-<!-- Total Settled KPI Banner -->
-<div class="card mb-4 border-0 shadow-sm bg-light">
-    <div class="card-body p-3 d-flex justify-content-between align-items-center">
+    <!-- Total Settled KPI Banner -->
+    <div class="jd-card p-3 mb-4 d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, rgba(236,200,106,0.06) 0%, rgba(32,22,14,0.4) 100%); border: 1px solid rgba(236,200,106,0.25);">
         <div>
-            <span class="text-muted small fw-semibold text-uppercase">Total Settled via Filtered Vouchers:</span>
-            <span class="fs-5 fw-bold text-success ms-2">₹{{ total_amount|floatformat:2 }}</span>
+            <span class="text-gold small fw-bold text-uppercase">Total Settled via Filtered Vouchers:</span>
+            <span class="fs-4 fw-bold text-success font-monospace ms-2">₹{{ total_amount|floatformat:2 }}</span>
         </div>
         <div class="text-muted small">
-            Vouchers recorded in database
+            Voucher audit trail recorded in database
         </div>
     </div>
-</div>
 
-<!-- Table Card -->
-<div class="card border-0 shadow-sm">
-    <div class="card-body p-0">
+    <!-- Table Card -->
+    <div class="jd-table-card">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+            <table class="jd-table">
+                <thead>
                     <tr>
                         <th>Voucher #</th>
                         <th>Artisan</th>
@@ -95,43 +102,51 @@
                 </thead>
                 <tbody>
                     {% for st in settlements %}
-                    <tr {% if st.status == 'Cancelled' %}class="table-light text-muted"{% endif %}>
+                    <tr {% if st.status == 'Cancelled' %}style="opacity: 0.6;"{% endif %}>
                         <td>
-                            <a href="{% url 'karigar:settlement_detail' st.id %}" class="fw-bold font-monospace text-dark text-decoration-none">
+                            <a href="{% url 'karigar:settlement_detail' st.id %}" class="text-gold font-monospace fw-bold text-decoration-none">
                                 {{ st.settlement_number }}
                             </a>
                         </td>
                         <td>
-                            <a href="{% url 'karigar:karigar_detail' st.karigar.id %}" class="fw-semibold text-dark text-decoration-none">
+                            <a href="{% url 'karigar:karigar_detail' st.karigar.id %}" class="text-white fw-semibold text-decoration-none">
                                 {{ st.karigar.name }}
                             </a>
-                            <small class="text-muted d-block">{{ st.karigar.karigar_code }}</small>
+                            <small class="text-muted font-monospace d-block">{{ st.karigar.karigar_code }}</small>
                         </td>
-                        <td class="small">{{ st.payment_date|date:"d M Y" }}</td>
-                        <td><span class="badge bg-light text-dark border">{{ st.payment_method }}</span></td>
-                        <td class="font-monospace small">{{ st.payment_reference|default:"-" }}</td>
+                        <td class="text-light small">{{ st.payment_date|date:"d M Y" }}</td>
+                        <td><span class="jd-tag">{{ st.payment_method }}</span></td>
+                        <td class="font-monospace small text-muted">{{ st.payment_reference|default:"-" }}</td>
                         <td>
                             {% if st.status == 'Completed' %}
-                            <span class="badge bg-success">Completed</span>
+                            <span class="jd-stage-pill" style="background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.35);">Completed</span>
                             {% else %}
-                            <span class="badge bg-danger">Cancelled</span>
+                            <span class="jd-stage-pill" style="background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.35);">Cancelled</span>
                             {% endif %}
                         </td>
                         <td class="small text-muted">{{ st.processed_by.get_full_name|default:st.processed_by.username|default:"System" }}</td>
-                        <td class="text-end pe-3 fw-bold {% if st.status == 'Completed' %}text-success{% else %}text-muted text-decoration-line-through{% endif %}">
+                        <td class="text-end pe-3 font-monospace fw-bold {% if st.status == 'Completed' %}text-success{% else %}text-muted text-decoration-line-through{% endif %}">
                             ₹{{ st.amount|floatformat:2 }}
                         </td>
                         <td class="text-end pe-3">
-                            <a href="{% url 'karigar:settlement_detail' st.id %}" class="btn btn-outline-dark btn-sm py-0 px-2" title="View Voucher">
+                            <a href="{% url 'karigar:settlement_detail' st.id %}" class="jd-btn-ghost btn-sm py-1 px-2" title="View Voucher">
                                 <i class="bi bi-eye"></i>
                             </a>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="9" class="text-center py-5 text-muted">
-                            <i class="bi bi-wallet2 fs-1 d-block mb-2 text-secondary"></i>
-                            No settlement payments match your criteria.
+                        <td colspan="9" class="text-center py-5">
+                            <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(236, 200, 106, 0.08); display: inline-flex; align-items: center; justify-content: center; color: var(--gold-primary); font-size: 1.75rem; margin-bottom: 1rem;">
+                                <i class="bi bi-wallet2"></i>
+                            </div>
+                            <h5 class="text-white fw-bold mb-1">No Settlement Vouchers Found</h5>
+                            <p class="text-muted small mb-3">No payments match your active filters or search query.</p>
+                            {% if user_perms.karigar.can_add %}
+                            <a href="{% url 'karigar:settlement_create' %}" class="jd-btn-gold">
+                                <i class="bi bi-cash-stack me-1"></i> Record Settlement
+                            </a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
@@ -141,4 +156,12 @@
         {% include 'includes/pagination.html' with page_obj=page_obj %}
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('has-atelier-suite');
+    const pc = document.getElementById('page-content');
+    if (pc) pc.classList.add('jd-active');
+});
+</script>
 {% endblock %}

@@ -1,241 +1,269 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Old Gold Exchange — JewelDesk{% endblock %}
+{% block title %}Old Gold Exchange — JewelDesk Atelier{% endblock %}
 
-{% block page_title %}Old Gold Exchange with New Jewellery{% endblock %}
-
-{% block page_actions %}
-<a href="{% url 'old_gold_list' %}" class="btn btn-outline-secondary btn-sm">
-    <i class="bi bi-arrow-left me-1"></i> Back to Transactions
-</a>
+{% block extra_css %}
+<link href="{% static 'css/sales_bullion.css' %}?v={% now "U" %}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
-<form method="post" id="exchangeForm" novalidate>
-    {% csrf_token %}
-    <div class="row g-4">
-        <!-- Input Form (Left Column) -->
-        <div class="col-lg-7">
-            <!-- Section 1: Customer Details -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white py-3 border-0">
-                    <h6 class="mb-0 fw-bold text-dark d-flex align-items-center">
-                        <span class="badge bg-dark rounded-circle me-2 px-2 py-1">1</span> Customer Information
-                    </h6>
-                </div>
-                <div class="card-body pt-0">
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Customer <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                {{ form.customer }}
-                                <a href="{% url 'customer_add' %}?next={{ request.path }}" class="btn btn-outline-dark" title="Add New Customer">
-                                    <i class="bi bi-person-plus"></i>
-                                </a>
-                            </div>
-                            {% if form.customer.errors %}<div class="text-danger small mt-1">{{ form.customer.errors }}</div>{% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
+<div class="jd-sb-canvas">
 
-            <!-- Section 2: Old Gold Intake & Purity -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white py-3 border-0">
-                    <h6 class="mb-0 fw-bold text-dark d-flex align-items-center">
-                        <span class="badge bg-warning text-dark rounded-circle me-2 px-2 py-1">2</span> Old Gold Valuation Details
-                    </h6>
-                </div>
-                <div class="card-body pt-0">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Metal Type</label>
-                            {{ form.metal_type }}
-                            {% if form.metal_type.errors %}<div class="text-danger small mt-1">{{ form.metal_type.errors }}</div>{% endif %}
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Scrap Category</label>
-                            {{ form.old_gold_type }}
-                            {% if form.old_gold_type.errors %}<div class="text-danger small mt-1">{{ form.old_gold_type.errors }}</div>{% endif %}
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Jewellery Description <span class="text-danger">*</span></label>
-                            {{ form.item_description }}
-                            <small class="text-muted">Mention physical condition, hallmarking marks, pieces, etc.</small>
-                            {% if form.item_description.errors %}<div class="text-danger small mt-1">{{ form.item_description.errors }}</div>{% endif %}
-                        </div>
-
-                        <!-- Weights -->
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Gross Weight (g) <span class="text-danger">*</span></label>
-                            {{ form.gross_weight }}
-                            {% if form.gross_weight.errors %}<div class="text-danger small mt-1">{{ form.gross_weight.errors }}</div>{% endif %}
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Stone / Wax Wt (g)</label>
-                            {{ form.stone_weight }}
-                            {% if form.stone_weight.errors %}<div class="text-danger small mt-1">{{ form.stone_weight.errors }}</div>{% endif %}
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold text-success">Net Gold Wt (g)</label>
-                            <input type="text" id="live_net_weight" class="form-control bg-light fw-bold text-success" readonly value="0.000">
-                        </div>
-
-                        <!-- Purity & Rates -->
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Purity / Karat <span class="text-danger">*</span></label>
-                            {{ form.purity }}
-                            {% if form.purity.errors %}<div class="text-danger small mt-1">{{ form.purity.errors }}</div>{% endif %}
-                        </div>
-                        <div class="col-md-4" id="custom_purity_wrapper" style="display: none;">
-                            <label class="form-label fw-semibold">Custom Purity %</label>
-                            {{ form.custom_purity_percent }}
-                            {% if form.custom_purity_percent.errors %}<div class="text-danger small mt-1">{{ form.custom_purity_percent.errors }}</div>{% endif %}
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">24K Base Rate (₹/g) <span class="text-danger">*</span></label>
-                            {{ form.applicable_rate }}
-                            {% if form.applicable_rate.errors %}<div class="text-danger small mt-1">{{ form.applicable_rate.errors }}</div>{% endif %}
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Melting Wastage %</label>
-                            {{ form.deduction_percent }}
-                            <small class="text-muted">Dross / melting test loss</small>
-                            {% if form.deduction_percent.errors %}<div class="text-danger small mt-1">{{ form.deduction_percent.errors }}</div>{% endif %}
-                        </div>
-
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Appraisal Notes</label>
-                            {{ form.notes }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Section 3: New Jewellery Piece -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white py-3 border-0">
-                    <h6 class="mb-0 fw-bold text-dark d-flex align-items-center">
-                        <span class="badge bg-primary text-white rounded-circle me-2 px-2 py-1">3</span> New Jewellery Selection
-                    </h6>
-                </div>
-                <div class="card-body pt-0">
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Select New Jewellery Piece <span class="text-danger">*</span></label>
-                            {{ form.new_jewellery_item }}
-                            <small class="text-muted">Available stock in showroom inventory</small>
-                            {% if form.new_jewellery_item.errors %}<div class="text-danger small mt-1">{{ form.new_jewellery_item.errors }}</div>{% endif %}
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">New Jewellery Price (₹) <span class="text-danger">*</span></label>
-                            {{ form.new_sale_price }}
-                            {% if form.new_sale_price.errors %}<div class="text-danger small mt-1">{{ form.new_sale_price.errors }}</div>{% endif %}
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Difference Payment Method</label>
-                            {{ form.settlement_payment_method }}
-                            <small class="text-muted">If customer pays difference at counter</small>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Difference Reference</label>
-                            {{ form.settlement_payment_reference }}
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- Header & Back Action -->
+    <div class="jd-sb-header">
+        <div class="jd-sb-title-wrap">
+            <h1><i class="bi bi-arrow-repeat text-warning me-2"></i>Old Gold Exchange Counter</h1>
+            <p class="jd-sb-subtitle">Exchange customer scrap jewellery for new showroom ornaments with live purity testing</p>
         </div>
+        <div class="jd-sb-header-actions">
+            <a href="{% url 'old_gold_list' %}" class="jd-btn-ghost">
+                <i class="bi bi-arrow-left"></i> Transactions Ledger
+            </a>
+            <a href="{% url 'old_gold_buyback_create' %}" class="jd-btn-ghost">
+                <i class="bi bi-cash-stack"></i> Outright Buyback
+            </a>
+        </div>
+    </div>
 
-        <!-- Live Calculation Breakdown (Right Column) -->
-        <div class="col-lg-5">
-            <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
-                <div class="card-header bg-dark text-white py-3">
-                    <h6 class="mb-0 fw-semibold d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-calculator me-2"></i> Live Exchange Calculation</span>
-                        <span class="badge bg-warning text-dark" id="live_purity_badge">22K</span>
-                    </h6>
+    <!-- Main Exchange Form -->
+    <form method="post" id="exchangeForm" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger py-2 mb-3 bg-danger bg-opacity-25 border-danger text-light">
+            {% for error in form.non_field_errors %}
+            <div class="small"><i class="bi bi-exclamation-triangle-fill me-1"></i> {{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="jd-og-form-grid">
+
+            <!-- LEFT COLUMN: Scrap Intake & Testing parameters -->
+            <div class="jd-og-col-left">
+
+                <!-- Section 1: Customer Information -->
+                <div class="jd-og-card">
+                    <div class="jd-og-card-header">
+                        <h2>
+                            <i class="bi bi-person-bounding-box text-warning"></i>
+                            1. Customer Identification
+                        </h2>
+                        <a href="{% url 'customer_add' %}?next={{ request.path }}" class="jd-btn-ghost py-1 px-2" style="font-size: 0.78rem;">
+                            <i class="bi bi-person-plus"></i> Add Customer
+                        </a>
+                    </div>
+                    <div class="jd-og-card-body">
+                        <label class="jd-og-field-label">Customer Name &amp; Contact <span class="text-danger">*</span></label>
+                        {{ form.customer }}
+                        {% if form.customer.errors %}
+                        <div class="text-danger small mt-1">{{ form.customer.errors.0 }}</div>
+                        {% endif %}
+                    </div>
                 </div>
-                <div class="card-body p-4">
-                    <div class="mb-3 text-muted small text-uppercase fw-semibold border-bottom pb-2">
-                        Old Gold Valuation Breakdown
-                    </div>
 
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Gross Weight</span>
-                        <span class="fw-semibold" id="calc_gross_wt">0.000 g</span>
+                <!-- Section 2: Old Gold Intake & Purity Details -->
+                <div class="jd-og-card">
+                    <div class="jd-og-card-header">
+                        <h2>
+                            <i class="bi bi-coin text-warning"></i>
+                            2. Old Gold Scrap Valuation &amp; Assay
+                        </h2>
+                        <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">Vault Intake</span>
                     </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Less: Non-Metal / Stones</span>
-                        <span class="text-danger" id="calc_stone_wt">- 0.000 g</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
-                        <span class="fw-semibold text-dark">Net Precious Metal</span>
-                        <span class="fw-bold text-success" id="calc_net_wt">0.000 g</span>
-                    </div>
+                    <div class="jd-og-card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6 col-12">
+                                <label class="jd-og-field-label">Precious Metal</label>
+                                {{ form.metal_type }}
+                            </div>
+                            <div class="col-md-6 col-12">
+                                <label class="jd-og-field-label">Scrap Category</label>
+                                {{ form.old_gold_type }}
+                            </div>
+                            <div class="col-12">
+                                <label class="jd-og-field-label">Jewellery Physical Description <span class="text-danger">*</span></label>
+                                {{ form.item_description }}
+                                <small class="text-muted d-block mt-1">Condition, hallmark markings, pieces, etc.</small>
+                                {% if form.item_description.errors %}
+                                <div class="text-danger small mt-1">{{ form.item_description.errors.0 }}</div>
+                                {% endif %}
+                            </div>
 
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">24K Market Rate</span>
-                        <span id="calc_base_rate">₹0.00 /g</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Purity Multiplier</span>
-                        <span id="calc_purity_factor">0.916667 (91.67%)</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Effective Rate</span>
-                        <span class="fw-semibold text-dark" id="calc_effective_rate">₹0.00 /g</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Gross Gold Value</span>
-                        <span class="fw-semibold text-dark" id="calc_gross_val">₹0.00</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
-                        <span class="text-muted">Less: Melting/Wastage (<span id="calc_deduct_pct">0</span>%)</span>
-                        <span class="text-danger" id="calc_deduct_val">- ₹0.00</span>
-                    </div>
+                            <!-- Weights Row -->
+                            <div class="col-md-4 col-12">
+                                <label class="jd-og-field-label">Gross Weight (g) <span class="text-danger">*</span></label>
+                                {{ form.gross_weight }}
+                                {% if form.gross_weight.errors %}
+                                <div class="text-danger small mt-1">{{ form.gross_weight.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 col-12">
+                                <label class="jd-og-field-label">Stone / Wax Wt (g)</label>
+                                {{ form.stone_weight }}
+                            </div>
+                            <div class="col-md-4 col-12">
+                                <label class="jd-og-field-label text-warning">Net Gold Wt (g)</label>
+                                <input type="text" id="live_net_weight" class="form-control bg-dark text-warning fw-bold font-monospace" readonly value="0.000">
+                            </div>
 
-                    <div class="p-3 bg-warning-subtle rounded-3 mb-4">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="fw-bold text-dark fs-6">Old Gold Value (Credit)</span>
-                            <span class="fw-bolder fs-5 text-dark" id="calc_final_old_gold">₹0.00</span>
+                            <!-- Purity & Rate Row -->
+                            <div class="col-md-4 col-12">
+                                <label class="jd-og-field-label">Purity / Karat <span class="text-danger">*</span></label>
+                                {{ form.purity }}
+                            </div>
+                            <div class="col-md-4 col-12" id="custom_purity_wrapper" style="display: none;">
+                                <label class="jd-og-field-label">Custom Purity %</label>
+                                {{ form.custom_purity_percent }}
+                            </div>
+                            <div class="col-md-4 col-12">
+                                <label class="jd-og-field-label">24K Base Rate (₹/g) <span class="text-danger">*</span></label>
+                                {{ form.applicable_rate }}
+                            </div>
+                            <div class="col-md-4 col-12">
+                                <label class="jd-og-field-label">Melting Wastage %</label>
+                                {{ form.deduction_percent }}
+                                <small class="text-muted d-block mt-1">Dross / melting test loss</small>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="jd-og-field-label">Appraisal Notes / Assayer Remarks</label>
+                                {{ form.notes }}
+                            </div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="mb-3 text-muted small text-uppercase fw-semibold border-bottom pb-2">
-                        Exchange Settlement Summary
+                <!-- Section 3: New Jewellery Piece Linkage -->
+                <div class="jd-og-card">
+                    <div class="jd-og-card-header">
+                        <h2>
+                            <i class="bi bi-gem text-warning"></i>
+                            3. New Jewellery Piece Selection
+                        </h2>
+                        <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25">Showroom Sale</span>
+                    </div>
+                    <div class="jd-og-card-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="jd-og-field-label">Select New Piece from Inventory <span class="text-danger">*</span></label>
+                                {{ form.new_jewellery_item }}
+                                {% if form.new_jewellery_item.errors %}
+                                <div class="text-danger small mt-1">{{ form.new_jewellery_item.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 col-12">
+                                <label class="jd-og-field-label">New Jewellery Price (₹) <span class="text-danger">*</span></label>
+                                {{ form.new_sale_price }}
+                                {% if form.new_sale_price.errors %}
+                                <div class="text-danger small mt-1">{{ form.new_sale_price.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 col-12">
+                                <label class="jd-og-field-label">Difference Payment Method</label>
+                                {{ form.settlement_payment_method }}
+                            </div>
+                            <div class="col-12">
+                                <label class="jd-og-field-label">Difference Payment Reference</label>
+                                {{ form.settlement_payment_reference }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: Sticky Valuation Voucher & Net Exchange Calculation -->
+            <div class="jd-og-col-right">
+                <div class="jd-og-voucher-card">
+                    <div class="jd-og-voucher-title">
+                        <span><i class="bi bi-calculator text-warning me-2"></i>Exchange Voucher</span>
+                        <span class="badge bg-warning text-dark font-monospace" id="live_purity_badge">22K</span>
                     </div>
 
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">New Jewellery Price</span>
-                        <span class="fw-semibold text-dark" id="calc_new_price">₹0.00</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
-                        <span class="text-muted">Less: Old Gold Credit</span>
-                        <span class="text-success fw-semibold" id="calc_credit_applied">- ₹0.00</span>
+                    <div class="jd-og-calc-list">
+                        <div class="jd-og-calc-row">
+                            <span class="text-muted">Gross Scrap Weight:</span>
+                            <strong id="calc_gross_wt">0.000 g</strong>
+                        </div>
+                        <div class="jd-og-calc-row text-danger">
+                            <span>Less: Stones / Impurity:</span>
+                            <span id="calc_stone_wt">- 0.000 g</span>
+                        </div>
+                        <div class="jd-og-calc-row text-warning pt-1 border-top border-secondary border-opacity-25">
+                            <span class="fw-bold">Net Precious Metal:</span>
+                            <strong class="fw-bold" id="calc_net_wt">0.000 g</strong>
+                        </div>
+                        <div class="jd-og-calc-row">
+                            <span class="text-muted">24K Base Rate:</span>
+                            <span id="calc_base_rate">₹0.00 /g</span>
+                        </div>
+                        <div class="jd-og-calc-row">
+                            <span class="text-muted">Purity Multiplier:</span>
+                            <span id="calc_purity_factor">0.916667 (91.67%)</span>
+                        </div>
+                        <div class="jd-og-calc-row">
+                            <span class="text-muted">Effective Rate:</span>
+                            <strong id="calc_effective_rate">₹0.00 /g</strong>
+                        </div>
+                        <div class="jd-og-calc-row">
+                            <span class="text-muted">Gross Metal Value:</span>
+                            <strong id="calc_gross_val">₹0.00</strong>
+                        </div>
+                        <div class="jd-og-calc-row text-danger">
+                            <span>Melting Loss (<span id="calc_deduct_pct">0</span>%):</span>
+                            <span id="calc_deduct_val">- ₹0.00</span>
+                        </div>
+
+                        <!-- Old Gold Credit -->
+                        <div class="p-3 bg-warning bg-opacity-20 border border-warning rounded-3 mt-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold text-warning small text-uppercase">Old Gold Credit</span>
+                                <span class="fw-bolder fs-5 text-warning font-monospace" id="calc_final_old_gold">₹0.00</span>
+                            </div>
+                        </div>
+
+                        <!-- Exchange Settlement Summary -->
+                        <div class="jd-og-calc-row pt-2 border-top border-secondary border-opacity-25">
+                            <span>New Piece Price:</span>
+                            <strong id="calc_new_price">₹0.00</strong>
+                        </div>
+                        <div class="jd-og-calc-row text-success">
+                            <span>Credit Applied:</span>
+                            <span id="calc_credit_applied">- ₹0.00</span>
+                        </div>
                     </div>
 
                     <!-- Final Balance Card -->
-                    <div id="balance_card" class="p-3 rounded-3 text-center mb-4 bg-light border">
-                        <span class="small text-muted d-block mb-1" id="balance_title">Net Balance</span>
-                        <h3 class="fw-bold mb-0 text-dark" id="calc_balance_amount">₹0.00</h3>
-                        <small class="text-muted d-block mt-1" id="balance_subtitle">Enter old gold and select new piece</small>
+                    <div id="balance_card" class="p-3 rounded-3 text-center my-3 bg-dark border border-secondary border-opacity-50">
+                        <span class="small text-muted d-block mb-1" id="balance_title">Net Settlement Due</span>
+                        <h2 class="fw-bold mb-0 text-warning" id="calc_balance_amount">₹0.00</h2>
+                        <small class="text-muted d-block mt-1" id="balance_subtitle">Enter scrap weights &amp; select new piece</small>
                     </div>
 
-                    <button type="submit" class="btn btn-warning w-100 py-2 fw-bold text-dark shadow-sm">
-                        <i class="bi bi-check-circle me-1"></i> Complete Exchange Transaction
+                    <!-- Submit Button -->
+                    <button type="submit" class="jd-btn-gold w-100 py-3 justify-content-center fs-6">
+                        <i class="bi bi-patch-check-fill me-1"></i> Complete Exchange &amp; Settle
                     </button>
                     <a href="{% url 'old_gold_list' %}" class="btn btn-link text-muted w-100 mt-2 text-decoration-none small">
-                        Cancel and return
+                        Cancel and return to ledger
                     </a>
                 </div>
             </div>
-        </div>
-    </div>
-</form>
 
-<!-- Live Calculation Script -->
+        </div>
+    </form>
+
+</div>
+
+<!-- Calculation Engine Script -->
 <script>
 (function() {
+    document.body.classList.add('has-sales-suite');
+    var pc = document.getElementById('page-content');
+    if (pc) pc.classList.add('jd-sb-active');
+
     const purityMap = {
         '24K': 1.000000,
         '22K': 22 / 24,
@@ -248,16 +276,15 @@
 
     const grossInput = document.getElementById('id_gross_weight');
     const stoneInput = document.getElementById('id_stone_weight');
-    const liveNetWeight = document.getElementById('live_net_weight');
+    const liveNet = document.getElementById('live_net_weight');
     const puritySelect = document.getElementById('id_purity');
-    const customPurityWrap = document.getElementById('custom_purity_wrapper');
+    const customWrapper = document.getElementById('custom_purity_wrapper');
     const customPurityInput = document.getElementById('id_custom_purity_percent');
     const rateInput = document.getElementById('id_applicable_rate');
-    const deductInput = document.getElementById('deduction_percent');
+    const deductInput = document.getElementById('id_deduction_percent');
+    const newItemSelect = document.getElementById('id_new_jewellery_item');
     const newPriceInput = document.getElementById('id_new_sale_price');
-    const newJewellerySelect = document.getElementById('id_new_jewellery_item');
 
-    // UI calculation elements
     const calcGrossWt = document.getElementById('calc_gross_wt');
     const calcStoneWt = document.getElementById('calc_stone_wt');
     const calcNetWt = document.getElementById('calc_net_wt');
@@ -270,124 +297,91 @@
     const calcFinalOldGold = document.getElementById('calc_final_old_gold');
     const calcNewPrice = document.getElementById('calc_new_price');
     const calcCreditApplied = document.getElementById('calc_credit_applied');
-    const balanceCard = document.getElementById('balance_card');
-    const balanceTitle = document.getElementById('balance_title');
     const calcBalanceAmount = document.getElementById('calc_balance_amount');
+    const balanceTitle = document.getElementById('balance_title');
     const balanceSubtitle = document.getElementById('balance_subtitle');
     const livePurityBadge = document.getElementById('live_purity_badge');
 
-    function round(val, dec) {
-        const factor = Math.pow(10, dec);
-        return Math.round((val + Number.EPSILON) * factor) / factor;
+    function formatInr(val) {
+        return '₹' + Number(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    function formatINR(val) {
-        return '₹' + Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-
-    function updateCalculations() {
-        const gross = Math.max(0, parseFloat(grossInput?.value) || 0);
-        const stone = Math.max(0, parseFloat(stoneInput?.value) || 0);
+    function recalculate() {
+        const gross = parseFloat(grossInput ? grossInput.value : 0) || 0;
+        const stone = parseFloat(stoneInput ? stoneInput.value : 0) || 0;
         const net = Math.max(0, gross - stone);
+        if (liveNet) liveNet.value = net.toFixed(3);
 
-        if (liveNetWeight) {
-            liveNetWeight.value = net.toFixed(3);
-        }
+        const purityKey = puritySelect ? puritySelect.value : '22K';
+        if (livePurityBadge) livePurityBadge.textContent = purityKey;
 
-        const purity = puritySelect ? puritySelect.value : '22K';
-        if (livePurityBadge) livePurityBadge.innerText = purity;
-
-        let pFactor = purityMap[purity] || (22 / 24);
-        if (purity === 'Other') {
-            if (customPurityWrap) customPurityWrap.style.display = 'block';
-            const customVal = parseFloat(customPurityInput?.value) || 0;
-            pFactor = customVal / 100.0;
+        let purityFactor = purityMap[purityKey] || 0.916667;
+        if (purityKey === 'Custom' && customPurityInput) {
+            if (customWrapper) customWrapper.style.display = 'block';
+            purityFactor = (parseFloat(customPurityInput.value) || 0) / 100;
         } else {
-            if (customPurityWrap) customPurityWrap.style.display = 'none';
+            if (customWrapper) customWrapper.style.display = 'none';
         }
 
-        const baseRate = Math.max(0, parseFloat(rateInput?.value) || 0);
-        const effectiveRate = round(baseRate * pFactor, 2);
-        const grossVal = round(net * effectiveRate, 2);
+        const baseRate = parseFloat(rateInput ? rateInput.value : 0) || 0;
+        const deductPct = parseFloat(deductInput ? deductInput.value : 0) || 0;
+        const effectiveRate = baseRate * purityFactor;
+        const grossVal = net * effectiveRate;
+        const deductVal = grossVal * (deductPct / 100);
+        const finalOldGoldVal = Math.max(0, grossVal - deductVal);
 
-        const deductPct = Math.max(0, parseFloat(deductInput?.value) || 0);
-        const deductVal = round(grossVal * (deductPct / 100.0), 2);
-        const finalOldGoldVal = Math.max(0, round(grossVal - deductVal, 2));
+        const newPrice = parseFloat(newPriceInput ? newPriceInput.value : 0) || 0;
+        const creditApplied = Math.min(newPrice, finalOldGoldVal);
+        const balance = newPrice - finalOldGoldVal;
 
-        const newPrice = Math.max(0, parseFloat(newPriceInput?.value) || 0);
-        const diff = round(newPrice - finalOldGoldVal, 2);
+        if (calcGrossWt) calcGrossWt.textContent = gross.toFixed(3) + ' g';
+        if (calcStoneWt) calcStoneWt.textContent = '- ' + stone.toFixed(3) + ' g';
+        if (calcNetWt) calcNetWt.textContent = net.toFixed(3) + ' g';
+        if (calcBaseRate) calcBaseRate.textContent = formatInr(baseRate) + ' /g';
+        if (calcPurityFactor) calcPurityFactor.textContent = purityFactor.toFixed(4) + ' (' + (purityFactor * 100).toFixed(2) + '%)';
+        if (calcEffectiveRate) calcEffectiveRate.textContent = formatInr(effectiveRate) + ' /g';
+        if (calcGrossVal) calcGrossVal.textContent = formatInr(grossVal);
+        if (calcDeductPct) calcDeductPct.textContent = deductPct.toFixed(1);
+        if (calcDeductVal) calcDeductVal.textContent = '- ' + formatInr(deductVal);
+        if (calcFinalOldGold) calcFinalOldGold.textContent = formatInr(finalOldGoldVal);
 
-        // Update display labels
-        if (calcGrossWt) calcGrossWt.innerText = gross.toFixed(3) + ' g';
-        if (calcStoneWt) calcStoneWt.innerText = '- ' + stone.toFixed(3) + ' g';
-        if (calcNetWt) calcNetWt.innerText = net.toFixed(3) + ' g';
-        if (calcBaseRate) calcBaseRate.innerText = formatINR(baseRate) + ' /g';
-        if (calcPurityFactor) calcPurityFactor.innerText = pFactor.toFixed(6) + ' (' + (pFactor * 100).toFixed(2) + '%)';
-        if (calcEffectiveRate) calcEffectiveRate.innerText = formatINR(effectiveRate) + ' /g';
-        if (calcGrossVal) calcGrossVal.innerText = formatINR(grossVal);
-        if (calcDeductPct) calcDeductPct.innerText = deductPct.toString();
-        if (calcDeductVal) calcDeductVal.innerText = '- ' + formatINR(deductVal);
-        if (calcFinalOldGold) calcFinalOldGold.innerText = formatINR(finalOldGoldVal);
-        if (calcNewPrice) calcNewPrice.innerText = formatINR(newPrice);
-        if (calcCreditApplied) calcCreditApplied.innerText = '- ' + formatINR(Math.min(newPrice, finalOldGoldVal));
+        if (calcNewPrice) calcNewPrice.textContent = formatInr(newPrice);
+        if (calcCreditApplied) calcCreditApplied.textContent = '- ' + formatInr(creditApplied);
 
-        // Update balance card
-        if (balanceCard && calcBalanceAmount && balanceTitle && balanceSubtitle) {
-            if (newPrice === 0 && finalOldGoldVal === 0) {
-                balanceCard.className = 'p-3 rounded-3 text-center mb-4 bg-light border';
-                balanceTitle.innerText = 'Net Balance';
-                calcBalanceAmount.innerText = '₹0.00';
-                balanceSubtitle.innerText = 'Enter old gold weight and select new piece';
-            } else if (diff > 0) {
-                // Customer owes money
-                balanceCard.className = 'p-3 rounded-3 text-center mb-4 bg-danger-subtle border border-danger-subtle';
-                balanceTitle.innerText = 'Amount Payable by Customer';
-                balanceTitle.className = 'small fw-bold text-danger d-block mb-1';
-                calcBalanceAmount.innerText = formatINR(diff);
-                calcBalanceAmount.className = 'fw-bold mb-0 text-danger';
-                balanceSubtitle.innerText = 'Customer pays difference at counter';
-            } else if (diff < 0) {
-                // Customer gets refund / store credit
-                balanceCard.className = 'p-3 rounded-3 text-center mb-4 bg-success-subtle border border-success-subtle';
-                balanceTitle.innerText = 'Amount Refundable / Credit to Customer';
-                balanceTitle.className = 'small fw-bold text-success d-block mb-1';
-                calcBalanceAmount.innerText = formatINR(Math.abs(diff));
-                calcBalanceAmount.className = 'fw-bold mb-0 text-success';
-                balanceSubtitle.innerText = 'Old gold value exceeds new jewellery price';
-            } else {
-                // Even exchange
-                balanceCard.className = 'p-3 rounded-3 text-center mb-4 bg-primary-subtle border border-primary-subtle';
-                balanceTitle.innerText = 'Even Exchange';
-                balanceTitle.className = 'small fw-bold text-primary d-block mb-1';
-                calcBalanceAmount.innerText = '₹0.00 Due';
-                calcBalanceAmount.className = 'fw-bold mb-0 text-primary';
-                balanceSubtitle.innerText = 'Old gold value exactly matches new jewellery price';
-            }
+        if (balance > 0) {
+            if (balanceTitle) balanceTitle.textContent = 'Customer Owes Counter';
+            if (calcBalanceAmount) calcBalanceAmount.textContent = formatInr(balance);
+            if (balanceSubtitle) balanceSubtitle.textContent = 'Remaining difference payable by customer';
+        } else if (balance < 0) {
+            if (balanceTitle) balanceTitle.textContent = 'Store Refund Due to Customer';
+            if (calcBalanceAmount) calcBalanceAmount.textContent = formatInr(Math.abs(balance));
+            if (balanceSubtitle) balanceSubtitle.textContent = 'Old gold exceeds new jewellery price';
+        } else {
+            if (balanceTitle) balanceTitle.textContent = 'Even Exchange';
+            if (calcBalanceAmount) calcBalanceAmount.textContent = '₹0.00';
+            if (balanceSubtitle) balanceSubtitle.textContent = 'Full credit matched perfectly';
         }
     }
 
-    // Auto-update price when selecting jewellery item if price field is empty
-    if (newJewellerySelect) {
-        newJewellerySelect.addEventListener('change', function() {
-            const selectedText = this.options[this.selectedIndex]?.text || '';
-            const match = selectedText.match(/₹([0-9,.]+)/) || selectedText.match(/Rs\.([0-9,.]+)/);
-            if (match && newPriceInput && (!newPriceInput.value || newPriceInput.value === '0.00' || newPriceInput.value === '0')) {
-                const cleaned = match[1].replace(/,/g, '');
-                newPriceInput.value = cleaned;
+    [grossInput, stoneInput, puritySelect, customPurityInput, rateInput, deductInput, newPriceInput].forEach(el => {
+        if (el) el.addEventListener('input', recalculate);
+        if (el) el.addEventListener('change', recalculate);
+    });
+
+    if (newItemSelect) {
+        newItemSelect.addEventListener('change', function() {
+            const opt = this.options[this.selectedIndex];
+            if (opt && opt.text) {
+                const match = opt.text.match(/Rs\.?\s*([0-9.,]+)/i);
+                if (match && newPriceInput) {
+                    newPriceInput.value = match[1].replace(/,/g, '');
+                    recalculate();
+                }
             }
-            updateCalculations();
         });
     }
 
-    // Listen to changes
-    [grossInput, stoneInput, puritySelect, customPurityInput, rateInput, deductInput, newPriceInput].forEach(el => {
-        if (el) {
-            el.addEventListener('input', updateCalculations);
-            el.addEventListener('change', updateCalculations);
-        }
-    });
-
-    updateCalculations();
+    recalculate();
 })();
 </script>
 {% endblock %}

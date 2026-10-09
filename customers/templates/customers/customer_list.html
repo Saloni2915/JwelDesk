@@ -1,91 +1,156 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Customers — JewelDesk{% endblock %}
-
-{% block page_title %}Customers{% endblock %}
-
-{% block page_actions %}
-<a href="{% url 'customer_add' %}" class="btn btn-dark btn-sm">
-    <i class="bi bi-person-plus me-1"></i> Add Customer
-</a>
-{% endblock %}
+{% block title %}Patron CRM & Client Directory — JewelDesk Atelier{% endblock %}
 
 {% block content %}
-<!-- Search Card -->
-<div class="card mb-4">
-    <div class="card-body">
+<div class="jd-canvas">
+
+    <!-- 1. Header & Actions -->
+    <div class="jd-header">
+        <div class="jd-title-wrap">
+            <h1><i class="bi bi-people-fill text-warning me-2"></i>Patron CRM &amp; Client Directory</h1>
+            <p class="jd-subtitle">Showroom client directory, loyalty profiles, purchase ledgers &amp; VIP WhatsApp outreach</p>
+        </div>
+        <div class="jd-header-actions">
+            <a href="{% url 'sale_add' %}" class="jd-btn-ghost">
+                <i class="bi bi-cart-plus"></i> Sales POS
+            </a>
+            <a href="{% url 'customer_add' %}" class="jd-btn-gold">
+                <i class="bi bi-person-plus-fill"></i> + Register New Customer
+            </a>
+        </div>
+    </div>
+
+    <!-- 2. Search & Filter Bar -->
+    <div class="jd-filter-card">
         <form method="get" class="row g-2 align-items-center">
-            <div class="col-md-6">
-                <input type="text" name="q" value="{{ selected_q }}" class="form-control form-control-sm"
-                       placeholder="Search by customer name or mobile...">
+            <div class="col-md-6 col-lg-8">
+                <input type="text" name="q" value="{{ selected_q }}" class="jd-input"
+                       placeholder="Search patron by name, mobile number, or city...">
             </div>
-            <div class="col-md-2 d-flex gap-1">
-                <button type="submit" class="btn btn-outline-dark btn-sm w-100" title="Search">
-                    <i class="bi bi-search"></i> Search
+            <div class="col-md-6 col-lg-4 d-flex gap-2">
+                <button type="submit" class="jd-btn-gold flex-grow-1" title="Search">
+                    <i class="bi bi-search"></i> Search Patrons
                 </button>
-                <a href="{% url 'customer_list' %}" class="btn btn-outline-secondary btn-sm" title="Clear">
+                {% if selected_q %}
+                <a href="{% url 'customer_list' %}" class="jd-btn-ghost px-3" title="Clear Search">
                     <i class="bi bi-x-lg"></i>
                 </a>
+                {% endif %}
             </div>
         </form>
     </div>
-</div>
 
-<!-- Customers Table -->
-<div class="card">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+    <!-- 3. Customers Directory Table Card -->
+    <div class="jd-table-card">
+        <div class="jd-table-header">
+            <h2>
+                <i class="bi bi-person-lines-fill text-warning"></i>
+                Client Directory
+            </h2>
+            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 font-monospace">
+                {{ page_obj.paginator.count }} Registered Clients
+            </span>
+        </div>
+        <div class="jd-table-scroll">
+            <table class="jd-table">
+                <thead>
                     <tr>
-                        <th>Customer Name</th>
-                        <th>Mobile</th>
-                        <th>Email</th>
-                        <th>Total Purchases</th>
-                        <th>Created Date</th>
+                        <th>Patron Name</th>
+                        <th>Mobile &amp; WhatsApp</th>
+                        <th>Email Address</th>
+                        <th>Showroom Purchases</th>
+                        <th>Member Since</th>
                         <th class="text-end pe-3">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for customer in customers %}
                     <tr>
+                        <!-- Name -->
                         <td>
-                            <a href="{% url 'customer_detail' customer.id %}" class="fw-semibold text-decoration-none text-dark">
-                                <i class="bi bi-person-circle text-muted me-1"></i> {{ customer.name }}
+                            <div class="fw-bold text-light fs-6">
+                                <a href="{% url 'customer_detail' customer.id %}" class="text-decoration-none text-light">
+                                    <i class="bi bi-person-circle text-warning me-1"></i> {{ customer.name }}
+                                </a>
+                            </div>
+                            {% if customer.city %}
+                            <small class="text-muted">{{ customer.city }}{% if customer.state %}, {{ customer.state }}{% endif %}</small>
+                            {% endif %}
+                        </td>
+
+                        <!-- Mobile & WhatsApp -->
+                        <td>
+                            <div class="font-monospace text-light">{{ customer.mobile }}</div>
+                            {% if customer.mobile %}
+                            <a href="https://wa.me/91{{ customer.mobile|cut:' ' }}" target="_blank" rel="noopener" class="small text-success text-decoration-none">
+                                <i class="bi bi-whatsapp me-1"></i> WhatsApp
+                            </a>
+                            {% endif %}
+                        </td>
+
+                        <!-- Email -->
+                        <td>
+                            <span class="small text-muted">{{ customer.email|default:"—" }}</span>
+                        </td>
+
+                        <!-- Purchases -->
+                        <td>
+                            <a href="{% url 'customer_detail' customer.id %}" class="jd-tag-pill">
+                                {{ customer.purchases_count }} transaction(s)
                             </a>
                         </td>
-                        <td>{{ customer.mobile }}</td>
-                        <td>{{ customer.email|default:"—" }}</td>
-                        <td>
-                            <span class="badge bg-light text-dark border">
-                                {{ customer.purchases_count }} purchases
-                            </span>
+
+                        <!-- Registered Date -->
+                        <td class="small text-muted font-monospace">
+                            {{ customer.created_at|date:"d M Y" }}
                         </td>
-                        <td>{{ customer.created_at|date:"M d, Y" }}</td>
+
+                        <!-- Actions -->
                         <td class="text-end pe-3">
-                            <a href="{% url 'customer_detail' customer.id %}" class="btn btn-outline-info btn-sm py-0 px-2" title="View">
-                                <i class="bi bi-eye"></i> View
-                            </a>
-                            <a href="{% url 'customer_edit' customer.id %}" class="btn btn-outline-primary btn-sm py-0 px-2" title="Edit">
-                                <i class="bi bi-pencil"></i> Edit
-                            </a>
-                            <a href="{% url 'customer_delete' customer.id %}" class="btn btn-outline-danger btn-sm py-0 px-2" title="Delete">
-                                <i class="bi bi-trash"></i> Delete
-                            </a>
+                            <div class="d-inline-flex gap-1">
+                                <a href="{% url 'customer_detail' customer.id %}" class="jd-tbl-btn" title="View Patron Profile">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'customer_edit' customer.id %}" class="jd-tbl-btn" title="Edit Profile">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'customer_delete' customer.id %}" class="jd-tbl-btn jd-tbl-btn-danger" title="Delete Profile">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center py-4 text-muted">
-                            <i class="bi bi-people fs-3 d-block mb-2"></i>
-                            No customers found. Click "+ Add Customer" to register your first customer.
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="bi bi-people fs-2 d-block mb-2 opacity-50"></i>
+                            No patrons found matching your search.
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-        {% include 'includes/pagination.html' with page_obj=page_obj %}
+
+        <div class="p-3 border-top border-secondary border-opacity-25 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="text-muted small">
+                Showing {{ page_obj.start_index|default:0 }} to {{ page_obj.end_index|default:0 }} of {{ page_obj.paginator.count }} patrons
+            </div>
+            {% include 'includes/pagination.html' with page_obj=page_obj %}
+        </div>
     </div>
+
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.body.classList.add('has-atelier-suite');
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) mainContent.classList.add('jd-active');
+        const pageContent = document.getElementById('page-content');
+        if (pageContent) pageContent.classList.add('jd-active');
+    });
+</script>
 {% endblock %}

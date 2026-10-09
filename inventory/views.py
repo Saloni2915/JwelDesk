@@ -184,8 +184,11 @@ def dashboard(request):
         'sales_chart_max': chart_max,
         'sales_chart_start': week_start,
         'today': today,
-    }
-    return render(request, 'inventory/dashboard.html', context)
+    response = render(request, 'inventory/dashboard.html', context)
+    requested_theme = request.GET.get('theme')
+    if requested_theme in ('light', 'dark', 'gold'):
+        response.set_cookie('jd-theme', requested_theme, max_age=31536000, samesite='Lax')
+    return response
 
 
 @login_required

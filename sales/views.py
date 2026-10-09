@@ -52,6 +52,16 @@ def sale_list(request):
     if payment:
         sales = sales.filter(payment_method=payment)
 
+    # KPI summary metrics across sales
+    all_sales = Sale.objects.all()
+    total_revenue_all = all_sales.aggregate(total=Sum('sale_price'))['total'] or Decimal('0.00')
+    total_sales_count = all_sales.count()
+
+    today = timezone.now().date()
+    today_sales = all_sales.filter(sale_date__date=today)
+    today_sales_revenue = today_sales.aggregate(total=Sum('sale_price'))['total'] or Decimal('0.00')
+    today_sales_count = today_sales.count()
+
     # Pagination
     paginator = Paginator(sales, 15)
     page_number = request.GET.get('page')
@@ -63,6 +73,10 @@ def sale_list(request):
         'payment_choices': Sale.PAYMENT_METHODS,
         'selected_q': q,
         'selected_payment': payment,
+        'total_revenue_all': total_revenue_all,
+        'total_sales_count': total_sales_count,
+        'today_sales_revenue': today_sales_revenue,
+        'today_sales_count': today_sales_count,
     }
     return render(request, 'sales/sale_list.html', context)
 
@@ -115,9 +129,59 @@ def sale_add(request):
     else:
         form = SaleForm(initial=initial_data)
 
+    import json
+    from inventory import metal_prices
+
+    metal_price_snapshot = metal_prices.get_price_snapshot()
+
+    # Pre-serialize available items for instant client-side POS details
+    available_items_qs = form.fields['jewellery_item'].queryset.select_related('category')
+    items_data = []
+    for it in available_items_qs:
+        items_data.append({
+            'id': it.id,
+            'name': it.name,
+            'item_code': it.item_code or '',
+            'tag_number': it.tag_number or it.item_code or f'TAG-{it.id}',
+            'huid': it.huid or '',
+            'category': it.category.name if it.category else '',
+            'metal_type': it.metal_type or 'Gold',
+            'purity': it.purity or '22K',
+            'gross_weight': float(it.gross_weight or 0),
+            'net_weight': float(it.net_weight or it.gross_weight or 0),
+            'stone_weight': float(it.stone_weight or 0),
+            'stone_price': float(getattr(it, 'stone_charges', 0) or 0),
+            'making_charge': float(getattr(it, 'making_charge', 0) or 0),
+            'selling_price': float(it.selling_price or 0),
+            'image_url': '',
+        })
+
+    customers_qs = form.fields['customer'].queryset
+    customers_data = []
+    for c in customers_qs:
+        customers_data.append({
+            'id': c.id,
+            'name': c.name,
+            'mobile': c.mobile or '',
+            'email': getattr(c, 'email', '') or '',
+            'address': getattr(c, 'address', '') or '',
+            'outstanding': float(c.outstanding_amount or 0),
+            'purchases_count': c.total_purchases_count,
+            'purchases_amount': float(c.total_purchases_amount or 0),
+        })
+
+    last_sale = Sale.objects.order_by('-id').first()
+    next_inv_id = (last_sale.id + 1) if last_sale else 1
+    draft_invoice_number = f"INV-2026-{next_inv_id:04d}"
+
     context = {
         'form': form,
-        'page_title': 'Create Sale',
+        'page_title': 'Showroom Counter POS & Invoice Billing',
+        'metal_prices': metal_price_snapshot,
+        'items_json': json.dumps(items_data),
+        'customers_json': json.dumps(customers_data),
+        'draft_invoice_number': draft_invoice_number,
+        'cashier_name': request.user.get_full_name() or request.user.username,
     }
     return render(request, 'sales/sale_form.html', context)
 

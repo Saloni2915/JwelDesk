@@ -1,63 +1,74 @@
 {% extends 'base.html' %}
 
-{% block title %}Customer Enquiries — JewelDesk{% endblock %}
+{% block title %}Patron Enquiries — JewelDesk Atelier{% endblock %}
 
 {% block page_title %}Customer Enquiries{% endblock %}
 
-{% block page_actions %}
-<a href="{% url 'enquiry_add' %}" class="btn btn-dark btn-sm">
-    <i class="bi bi-chat-left-plus me-1"></i> Add Enquiry
-</a>
-{% endblock %}
-
 {% block content %}
-<!-- Search & Filter Card -->
-<div class="card mb-4">
-    <div class="card-body">
-        <form method="get" class="row g-2 align-items-center">
-            <div class="col-md-4">
-                <input type="text" name="q" value="{{ selected_q }}" class="form-control form-control-sm"
-                       placeholder="Search by customer or interested item...">
+<div class="jd-canvas">
+    <!-- Header -->
+    <div class="jd-header">
+        <div>
+            <div class="jd-badge"><i class="bi bi-chat-quote me-1"></i> Patron Intent &amp; Clienteling</div>
+            <h1 class="jd-title">Customer Enquiries &amp; Leads</h1>
+            <p class="jd-subtitle">Track customer requests, desired jewellery designs, budget targets, and follow-up schedules.</p>
+        </div>
+        <div>
+            <a href="{% url 'enquiry_add' %}" class="jd-btn-gold">
+                <i class="bi bi-chat-left-plus me-1"></i> Record New Enquiry
+            </a>
+        </div>
+    </div>
+
+    <!-- Search & Filter Card -->
+    <div class="jd-filter-card mb-4">
+        <form method="get" class="row g-3 align-items-center">
+            <div class="col-lg-4 col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-end-0 text-gold" style="border-color: rgba(236,200,106,0.2);"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" value="{{ selected_q }}" class="jd-input border-start-0"
+                           placeholder="Search customer, item, or description...">
+                </div>
             </div>
-            <div class="col-md-3">
-                <select name="status" class="form-select form-select-sm">
-                    <option value="">All Statuses</option>
+            <div class="col-lg-3 col-md-3">
+                <select name="status" class="jd-select">
+                    <option value="">All Lead Statuses</option>
                     {% for key, val in status_choices %}
                     <option value="{{ key }}" {% if selected_status == key %}selected{% endif %}>{{ val }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-3">
-                <select name="followup" class="form-select form-select-sm">
-                    <option value="">All Follow-up Dates</option>
+            <div class="col-lg-3 col-md-3">
+                <select name="followup" class="jd-select">
+                    <option value="">All Follow-up Windows</option>
                     <option value="today" {% if selected_followup == 'today' %}selected{% endif %}>Follow-up Today</option>
                     <option value="upcoming" {% if selected_followup == 'upcoming' %}selected{% endif %}>Upcoming Follow-ups</option>
                     <option value="overdue" {% if selected_followup == 'overdue' %}selected{% endif %}>Overdue Follow-ups</option>
                 </select>
             </div>
-            <div class="col-md-2 d-flex gap-1">
-                <button type="submit" class="btn btn-outline-dark btn-sm w-100" title="Filter">
+            <div class="col-lg-2 col-md-2 d-flex gap-2">
+                <button type="submit" class="jd-btn-gold flex-grow-1" title="Filter Leads">
                     <i class="bi bi-funnel"></i> Filter
                 </button>
-                <a href="{% url 'enquiry_list' %}" class="btn btn-outline-secondary btn-sm" title="Clear">
+                {% if selected_q or selected_status or selected_followup %}
+                <a href="{% url 'enquiry_list' %}" class="jd-btn-ghost px-3" title="Clear Filters">
                     <i class="bi bi-x-lg"></i>
                 </a>
+                {% endif %}
             </div>
         </form>
     </div>
-</div>
 
-<!-- Enquiries Table -->
-<div class="card">
-    <div class="card-body p-0">
+    <!-- Enquiries Table -->
+    <div class="jd-table-card">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+            <table class="jd-table">
+                <thead>
                     <tr>
-                        <th>Customer</th>
-                        <th>Interested Item / Category</th>
-                        <th>Budget</th>
-                        <th>Status</th>
+                        <th>Patron Customer</th>
+                        <th>Interested Item / Design</th>
+                        <th>Budget Target</th>
+                        <th>Lead Status</th>
                         <th>Next Follow-up</th>
                         <th>Created Date</th>
                         <th class="text-end pe-3">Actions</th>
@@ -67,60 +78,77 @@
                     {% for enquiry in enquiries %}
                     <tr>
                         <td>
-                            <a href="{% url 'customer_detail' enquiry.customer.id %}" class="fw-semibold text-decoration-none text-dark">
+                            <a href="{% url 'customer_detail' enquiry.customer.id %}" class="text-white fw-semibold text-decoration-none d-block">
                                 {{ enquiry.customer.name }}
                             </a>
-                            <small class="text-muted d-block">{{ enquiry.customer.mobile }}</small>
+                            <div class="d-flex align-items-center gap-2 mt-1">
+                                <span class="text-muted small font-monospace">{{ enquiry.customer.mobile }}</span>
+                                <a href="https://wa.me/91{{ enquiry.customer.mobile|cut:' ' }}" target="_blank" class="text-success small" title="WhatsApp Customer">
+                                    <i class="bi bi-whatsapp"></i>
+                                </a>
+                            </div>
                         </td>
                         <td>
-                            <span class="fw-medium">{{ enquiry.interested_item }}</span>
+                            <span class="text-light fw-medium">{{ enquiry.interested_item }}</span>
                             {% if enquiry.category %}
-                            <small class="text-muted d-block">{{ enquiry.category.name }}</small>
+                            <small class="d-block text-gold mt-1"><i class="bi bi-tag me-1"></i>{{ enquiry.category.name }}</small>
                             {% endif %}
                         </td>
-                        <td class="fw-semibold">
-                            {% if enquiry.budget %}₹{{ enquiry.budget }}{% else %}<span class="text-muted">—</span>{% endif %}
+                        <td>
+                            {% if enquiry.budget %}
+                            <span class="text-gold font-monospace fw-bold">₹{{ enquiry.budget }}</span>
+                            {% else %}
+                            <span class="text-muted">— Open</span>
+                            {% endif %}
                         </td>
                         <td>
                             {% if enquiry.status == 'New' %}
-                            <span class="badge bg-primary">New</span>
+                            <span class="jd-stage-pill" style="background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.35);">New Lead</span>
                             {% elif enquiry.status == 'Contacted' %}
-                            <span class="badge bg-info text-dark">Contacted</span>
+                            <span class="jd-stage-pill" style="background: rgba(245,158,11,0.15); color: #fcd34d; border: 1px solid rgba(245,158,11,0.35);">Contacted</span>
                             {% elif enquiry.status == 'Interested' %}
-                            <span class="badge bg-warning text-dark">Interested</span>
+                            <span class="jd-stage-pill" style="background: rgba(236,200,106,0.15); color: #ECC86A; border: 1px solid rgba(236,200,106,0.4);">Interested</span>
                             {% elif enquiry.status == 'Purchased' %}
-                            <span class="badge bg-success">Purchased</span>
+                            <span class="jd-stage-pill" style="background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.35);">Purchased</span>
                             {% elif enquiry.status == 'Closed' %}
-                            <span class="badge bg-secondary">Closed</span>
+                            <span class="jd-stage-pill" style="background: rgba(255,255,255,0.06); color: rgba(250,244,234,0.6); border: 1px solid rgba(255,255,255,0.15);">Closed</span>
                             {% endif %}
                         </td>
                         <td>
                             {% if enquiry.next_followup_date %}
-                            <span class="text-dark">
-                                <i class="bi bi-calendar-event me-1"></i> {{ enquiry.next_followup_date|date:"M d, Y" }}
+                            <span class="text-light small">
+                                <i class="bi bi-calendar-event me-1 text-gold"></i> {{ enquiry.next_followup_date|date:"M d, Y" }}
                             </span>
                             {% else %}
-                            <span class="text-muted">—</span>
+                            <span class="text-muted small">—</span>
                             {% endif %}
                         </td>
-                        <td>{{ enquiry.created_at|date:"M d, Y" }}</td>
+                        <td class="text-muted small">{{ enquiry.created_at|date:"M d, Y" }}</td>
                         <td class="text-end pe-3">
-                            <a href="{% url 'enquiry_detail' enquiry.id %}" class="btn btn-outline-info btn-sm py-0 px-2" title="View">
-                                <i class="bi bi-eye"></i> View
-                            </a>
-                            <a href="{% url 'enquiry_edit' enquiry.id %}" class="btn btn-outline-primary btn-sm py-0 px-2" title="Edit">
-                                <i class="bi bi-pencil"></i> Edit
-                            </a>
-                            <a href="{% url 'enquiry_delete' enquiry.id %}" class="btn btn-outline-danger btn-sm py-0 px-2" title="Delete">
-                                <i class="bi bi-trash"></i> Delete
-                            </a>
+                            <div class="d-flex justify-content-end gap-1">
+                                <a href="{% url 'enquiry_detail' enquiry.id %}" class="jd-btn-ghost btn-sm py-1 px-2" title="View Enquiry">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'enquiry_edit' enquiry.id %}" class="jd-btn-ghost btn-sm py-1 px-2" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'enquiry_delete' enquiry.id %}" class="jd-btn-danger-ghost btn-sm py-1 px-2" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="text-center py-4 text-muted">
-                            <i class="bi bi-chat-left-dots fs-3 d-block mb-2"></i>
-                            No enquiries found. Click "+ Add Enquiry" to record a customer request.
+                        <td colspan="7" class="text-center py-5">
+                            <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(236, 200, 106, 0.08); display: inline-flex; align-items: center; justify-content: center; color: var(--gold-primary); font-size: 1.75rem; margin-bottom: 1rem;">
+                                <i class="bi bi-chat-left-dots"></i>
+                            </div>
+                            <h5 class="text-white fw-bold mb-1">No Patron Enquiries Found</h5>
+                            <p class="text-muted small mb-3">Record customer desires, requests, and follow-up alerts.</p>
+                            <a href="{% url 'enquiry_add' %}" class="jd-btn-gold">
+                                <i class="bi bi-chat-left-plus me-1"></i> Add Enquiry
+                            </a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -130,4 +158,12 @@
         {% include 'includes/pagination.html' with page_obj=page_obj %}
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('has-atelier-suite');
+    const pc = document.getElementById('page-content');
+    if (pc) pc.classList.add('jd-active');
+});
+</script>
 {% endblock %}

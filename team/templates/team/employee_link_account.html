@@ -5,109 +5,173 @@
 {% block page_title %}Enable Login Access{% endblock %}
 
 {% block page_actions %}
-  <a href="{% url 'team:employee_detail' employee.pk %}" class="btn btn-outline-secondary btn-sm">
+<a href="{% url 'team:employee_detail' employee.pk %}" class="jd-btn-ghost jd-btn-sm">
     <i class="bi bi-arrow-left me-1"></i> Back to Profile
-  </a>
+</a>
 {% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-lg-7">
-    <div class="card shadow-sm border-0">
-      <div class="card-header bg-white border-bottom py-3">
-        <h5 class="mb-0 fw-bold text-dark">
-          <i class="bi bi-person-check text-success me-2"></i>Enable Login Access for {{ employee.full_name }}
-        </h5>
-      </div>
-      <div class="card-body p-4">
-        <p class="text-muted small mb-4">
-          This employee (ID: <code>{{ employee.employee_id }}</code>, Email: {{ employee.email }}) currently has no active Django user login credentials.
-          Choose whether to create a new user account or link an existing unassigned user.
-        </p>
+<div class="jd-canvas">
 
-        <form method="post" novalidate>
-          {% csrf_token %}
+    <!-- Atelier Header -->
+    <header class="jd-header">
+        <div class="jd-header-left">
+            <span class="jd-badge-pill">
+                <i class="bi bi-person-check" aria-hidden="true"></i> Identity & Authentication
+            </span>
+            <h1 class="jd-title">Grant Staff Login Access</h1>
+            <p class="jd-subtitle">
+                Authorize system sign-in credentials for <strong>{{ employee.full_name }}</strong> (Employee ID: <code>{{ employee.employee_id }}</code> &bull; Email: {{ employee.email }}).
+            </p>
+        </div>
+        <div class="jd-header-actions">
+            <a href="{% url 'team:employee_detail' employee.pk %}" class="jd-btn-ghost">
+                <i class="bi bi-arrow-left" aria-hidden="true"></i> Cancel
+            </a>
+        </div>
+    </header>
 
-          {% if form.non_field_errors %}
-          <div class="alert alert-danger mb-3">
-            {% for err in form.non_field_errors %}<div>{{ err }}</div>{% endfor %}
-          </div>
-          {% endif %}
+    <div class="row justify-content-center">
+        <div class="col-xl-8 col-lg-9">
+            <div class="jd-card">
+                <div class="jd-card-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="jd-kpi-icon" style="width: 36px; height: 36px; font-size: 1.1rem; color: #34d399; background: rgba(52, 211, 153, 0.12); border: 1px solid rgba(52, 211, 153, 0.3);">
+                            <i class="bi bi-shield-lock-fill"></i>
+                        </div>
+                        <div>
+                            <h2 class="jd-card-title mb-0">Staff Authentication Credentials</h2>
+                            <small class="text-muted">Create a new login user or associate an existing registered Django account</small>
+                        </div>
+                    </div>
+                </div>
 
-          <div class="mb-4">
-            <label class="form-label fw-semibold">Action Mode</label>
-            <div class="d-flex gap-4 p-3 bg-light rounded border">
-              {% for radio in form.mode %}
-              <div class="form-check">
-                {{ radio.tag }}
-                <label class="form-check-label fw-medium" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
-              </div>
-              {% endfor %}
+                <div class="jd-card-body">
+                    <form method="post" novalidate id="employeeLinkAccountForm">
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger d-flex align-items-center gap-2 mb-4" role="alert" style="background: rgba(220, 53, 69, 0.15); border: 1px solid rgba(220, 53, 69, 0.35); color: #f87171;">
+                            <i class="bi bi-exclamation-octagon-fill fs-5"></i>
+                            <div>
+                                {% for err in form.non_field_errors %}<div>{{ err }}</div>{% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Mode Switcher -->
+                        <div class="mb-4">
+                            <label class="jd-label required">Provisioning Mode</label>
+                            <div class="d-flex flex-wrap gap-4 p-3 rounded" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(236, 200, 106, 0.2);">
+                                {% for radio in form.mode %}
+                                <div class="form-check d-flex align-items-center gap-2">
+                                    {{ radio.tag }}
+                                    <label class="form-check-label fw-semibold cursor-pointer" for="{{ radio.id_for_label }}" style="color: var(--jd-ivory);">
+                                        {{ radio.choice_label }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Create Mode Fields -->
+                        <div id="create-mode-fields" class="p-4 rounded mb-4" style="background: rgba(21, 19, 14, 0.6); border: 1px solid rgba(236, 200, 106, 0.25);">
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <i class="bi bi-person-plus text-warning"></i>
+                                <span class="fw-semibold" style="color: var(--jd-gold);">New User Account Creation</span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.username.id_for_label }}" class="jd-label">Login Username</label>
+                                {{ form.username }}
+                                {% if form.username.errors %}
+                                    <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ form.username.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text mt-1" style="color: #9E9171; font-size: 0.78rem;">
+                                    Leave blank to automatically default to employee email (<code>{{ employee.email }}</code>).
+                                </div>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="{{ form.password1.id_for_label }}" class="jd-label required">Initial Password</label>
+                                    {{ form.password1 }}
+                                    {% if form.password1.errors %}
+                                        <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ form.password1.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.password2.id_for_label }}" class="jd-label required">Confirm Password</label>
+                                    {{ form.password2 }}
+                                    {% if form.password2.errors %}
+                                        <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ form.password2.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Link Mode Fields -->
+                        <div id="link-mode-fields" class="p-4 rounded mb-4" style="background: rgba(21, 19, 14, 0.6); border: 1px solid rgba(236, 200, 106, 0.25); display:none;">
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <i class="bi bi-link-45deg text-warning"></i>
+                                <span class="fw-semibold" style="color: var(--jd-gold);">Link Existing Unassigned User</span>
+                            </div>
+
+                            <label for="{{ form.existing_user.id_for_label }}" class="jd-label required">Select Existing Django Account</label>
+                            {{ form.existing_user }}
+                            {% if form.existing_user.errors %}
+                                <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ form.existing_user.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Actions Bar -->
+                        <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-3 pt-3 border-top" style="border-color: rgba(236, 200, 106, 0.15) !important;">
+                            <a href="{% url 'team:employee_detail' employee.pk %}" class="jd-btn-ghost text-center">
+                                Cancel
+                            </a>
+                            <button type="submit" class="jd-btn-gold" id="btn-save-link-account">
+                                <i class="bi bi-check2-circle me-1"></i> Save &amp; Enable Login
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-          </div>
-
-          <div id="create-mode-fields" class="p-3 border rounded bg-white mb-4">
-            <div class="mb-3">
-              <label for="{{ form.username.id_for_label }}" class="form-label fw-semibold">Login Username</label>
-              {{ form.username }}
-              {% if form.username.errors %}
-                <div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>
-              {% endif %}
-              <small class="text-muted">Leave empty to use email ({{ employee.email }}).</small>
-            </div>
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label for="{{ form.password1.id_for_label }}" class="form-label fw-semibold">Password</label>
-                {{ form.password1 }}
-                {% if form.password1.errors %}
-                  <div class="text-danger small mt-1">{{ form.password1.errors.0 }}</div>
-                {% endif %}
-              </div>
-              <div class="col-md-6">
-                <label for="{{ form.password2.id_for_label }}" class="form-label fw-semibold">Confirm Password</label>
-                {{ form.password2 }}
-                {% if form.password2.errors %}
-                  <div class="text-danger small mt-1">{{ form.password2.errors.0 }}</div>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-
-          <div id="link-mode-fields" class="p-3 border rounded bg-white mb-4" style="display:none;">
-            <label for="{{ form.existing_user.id_for_label }}" class="form-label fw-semibold">Select Existing User Account</label>
-            {{ form.existing_user }}
-            {% if form.existing_user.errors %}
-              <div class="text-danger small mt-1">{{ form.existing_user.errors.0 }}</div>
-            {% endif %}
-          </div>
-
-          <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-success px-4 shadow-sm fw-semibold">
-              <i class="bi bi-check-lg me-1"></i> Save &amp; Enable Login
-            </button>
-            <a href="{% url 'team:employee_detail' employee.pk %}" class="btn btn-outline-secondary px-4">Cancel</a>
-          </div>
-        </form>
-      </div>
+        </div>
     </div>
-  </div>
+
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('has-atelier-suite');
+    const pc = document.getElementById('page-content');
+    if (pc) pc.classList.add('jd-active');
+
+    // Style inputs cleanly
+    const form = document.getElementById('employeeLinkAccountForm');
+    if (form) {
+        form.querySelectorAll('input[type="text"], input[type="password"]').forEach(el => {
+            if (!el.classList.contains('jd-input')) el.classList.add('jd-input');
+        });
+        form.querySelectorAll('select').forEach(el => {
+            if (!el.classList.contains('jd-select')) el.classList.add('jd-select');
+        });
+    }
+
+    // Toggle fields logic
     const modeRadios = document.querySelectorAll('input[name="mode"]');
     const createFields = document.getElementById('create-mode-fields');
     const linkFields = document.getElementById('link-mode-fields');
 
     function toggleFields() {
-      let sel = 'create';
-      modeRadios.forEach(r => { if (r.checked) sel = r.value; });
-      if (createFields) createFields.style.display = (sel === 'create') ? 'block' : 'none';
-      if (linkFields) linkFields.style.display = (sel === 'link') ? 'block' : 'none';
+        let sel = 'create';
+        modeRadios.forEach(r => { if (r.checked) sel = r.value; });
+        if (createFields) createFields.style.display = (sel === 'create') ? 'block' : 'none';
+        if (linkFields) linkFields.style.display = (sel === 'link') ? 'block' : 'none';
     }
 
     modeRadios.forEach(r => r.addEventListener('change', toggleFields));
     toggleFields();
-  });
+});
 </script>
 {% endblock %}
