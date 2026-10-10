@@ -22,6 +22,10 @@
     --jd-pos-muted: var(--jd-muted, #8E8271);
     --jd-pos-table-th: var(--jd-table-th, #19120B);
     --jd-pos-input-bg: var(--jd-input-bg, #14100A);
+    --jd-pos-topbar-bg: linear-gradient(90deg, #100E09 0%, #1A130C 50%, #100E09 100%);
+    --jd-pos-box-bg: #271C12;
+    --jd-pos-tile-bg: #251B12;
+    --jd-pos-thumb-bg: #281D13;
     --jd-pos-font-headline: 'Cinzel', 'Playfair Display', Georgia, serif;
     --jd-pos-font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 }
@@ -32,36 +36,44 @@
     --jd-pos-card-header: var(--jd-card-header, #171D2A);
     --jd-pos-card-high: var(--jd-card-high, #1C2332);
     --jd-pos-card-highest: var(--jd-card-highest, #242D40);
-    --jd-pos-border: var(--jd-border, rgba(236, 200, 106, 0.22));
-    --jd-pos-border-strong: var(--jd-border-strong, rgba(236, 200, 106, 0.42));
-    --jd-pos-gold: var(--jd-gold, #ECC86A);
-    --jd-pos-gold-bright: var(--jd-gold-bright, #F5D77F);
-    --jd-pos-gold-dark: var(--jd-gold-dark, #B8860B);
-    --jd-pos-gold-glow: var(--jd-gold-glow, rgba(236, 200, 106, 0.16));
-    --jd-pos-ivory: var(--jd-ivory, #F1F5F9);
-    --jd-pos-ivory-dim: var(--jd-ivory-dim, #94A3B8);
-    --jd-pos-muted: var(--jd-muted, #64748B);
+    --jd-pos-border: var(--jd-border, rgba(56, 189, 248, 0.22));
+    --jd-pos-border-strong: var(--jd-border-strong, rgba(56, 189, 248, 0.42));
+    --jd-pos-gold: var(--jd-gold, #38BDF8);
+    --jd-pos-gold-bright: var(--jd-gold-bright, #7DD3FC);
+    --jd-pos-gold-dark: var(--jd-gold-dark, #0284C7);
+    --jd-pos-gold-glow: var(--jd-gold-glow, rgba(56, 189, 248, 0.16));
+    --jd-pos-ivory: var(--jd-ivory, #F8FAFC);
+    --jd-pos-ivory-dim: var(--jd-ivory-dim, #CBD5E1);
+    --jd-pos-muted: var(--jd-muted, #94A3B8);
     --jd-pos-table-th: var(--jd-table-th, #151B28);
     --jd-pos-input-bg: var(--jd-input-bg, #0E121A);
+    --jd-pos-topbar-bg: linear-gradient(90deg, #0B0E14 0%, #141A26 50%, #0B0E14 100%);
+    --jd-pos-box-bg: #161D2B;
+    --jd-pos-tile-bg: #1A2232;
+    --jd-pos-thumb-bg: #161D2B;
 }
 
 [data-theme="light"] {
-    --jd-pos-bg: var(--jd-bg, #F7F5EF);
+    --jd-pos-bg: var(--jd-bg, #F8FAFC);
     --jd-pos-card: var(--jd-card, #FFFFFF);
-    --jd-pos-card-header: var(--jd-card-header, #FAF7F2);
-    --jd-pos-card-high: var(--jd-card-high, #F1EDE4);
-    --jd-pos-card-highest: var(--jd-card-highest, #E8E2D5);
+    --jd-pos-card-header: var(--jd-card-header, #FFFFFF);
+    --jd-pos-card-high: var(--jd-card-high, #F1F5F9);
+    --jd-pos-card-highest: var(--jd-card-highest, #E2E8F0);
     --jd-pos-border: var(--jd-border, rgba(180, 133, 22, 0.20));
     --jd-pos-border-strong: var(--jd-border-strong, rgba(180, 133, 22, 0.42));
     --jd-pos-gold: var(--jd-gold, #B48516);
-    --jd-pos-gold-bright: var(--jd-gold-bright, #C99A27);
-    --jd-pos-gold-dark: var(--jd-gold-dark, #8F660E);
-    --jd-pos-gold-glow: var(--jd-gold-glow, rgba(180, 133, 22, 0.14));
-    --jd-pos-ivory: var(--jd-ivory, #1C1917);
-    --jd-pos-ivory-dim: var(--jd-ivory-dim, #57534E);
-    --jd-pos-muted: var(--jd-muted, #8A7E72);
-    --jd-pos-table-th: var(--jd-table-th, #F5F0E6);
+    --jd-pos-gold-bright: var(--jd-gold-bright, #996515);
+    --jd-pos-gold-dark: var(--jd-gold-dark, #7A510A);
+    --jd-pos-gold-glow: var(--jd-gold-glow, rgba(180, 133, 22, 0.12));
+    --jd-pos-ivory: var(--jd-ivory, #0F172A);
+    --jd-pos-ivory-dim: var(--jd-ivory-dim, #334155);
+    --jd-pos-muted: var(--jd-muted, #64748B);
+    --jd-pos-table-th: var(--jd-table-th, #F8FAFC);
     --jd-pos-input-bg: var(--jd-input-bg, #FFFFFF);
+    --jd-pos-topbar-bg: linear-gradient(90deg, #FFFFFF 0%, #FDFBF7 50%, #FFFFFF 100%);
+    --jd-pos-box-bg: #F8F6F0;
+    --jd-pos-tile-bg: #F1EDE4;
+    --jd-pos-thumb-bg: #EDE8DC;
 }
 
 /* Seamless atelier background overrides */
@@ -114,7 +126,7 @@ body.has-pos-terminal .sidebar {
    1. Live Bullion & Terminal Ticker Bar (Top Bar)
    -------------------------------------------------------------------------- */
 .jd-pos-topbar {
-    background: linear-gradient(90deg, #100E09 0%, #1A130C 50%, #100E09 100%);
+    background: var(--jd-pos-topbar-bg) !important;
     border: 1px solid var(--jd-pos-border);
     border-radius: 0.75rem;
     padding: 0.75rem 1.25rem;
@@ -123,7 +135,7 @@ body.has-pos-terminal .sidebar {
     align-items: center;
     justify-content: space-between;
     gap: 1.25rem;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+    box-shadow: var(--jd-shadow, 0 4px 16px rgba(0, 0, 0, 0.08));
     flex-wrap: wrap;
 }
 
@@ -316,8 +328,8 @@ body.has-pos-terminal .sidebar {
 
 /* Customer Card Details */
 .jd-pos-customer-card {
-    background: #271C12;
-    border: 1px solid rgba(212, 175, 55, 0.35);
+    background: var(--jd-pos-box-bg) !important;
+    border: 1px solid var(--jd-pos-border) !important;
     border-radius: 0.65rem;
     padding: 0.85rem 1.15rem;
     display: flex;
@@ -424,9 +436,9 @@ body.has-pos-terminal .sidebar {
 }
 
 .jd-pos-btn-ghost {
-    background: rgba(36, 26, 17, 0.85);
+    background: var(--jd-pos-tile-bg);
     border: 1px solid var(--jd-pos-border);
-    color: var(--jd-pos-gold-bright);
+    color: var(--jd-pos-ivory);
     padding: 0.55rem 0.95rem;
     border-radius: 0.5rem;
     font-size: 0.82rem;
@@ -441,15 +453,15 @@ body.has-pos-terminal .sidebar {
 }
 
 .jd-pos-btn-ghost:hover {
-    background: #2D2015;
+    background: var(--jd-pos-card-highest);
     border-color: var(--jd-pos-gold);
-    color: #FFFFFF;
+    color: var(--jd-pos-gold-bright);
 }
 
 /* Active Jewellery Item Spec Card */
 .jd-pos-active-item-card {
-    background: #1A130C;
-    border: 1.5px solid rgba(212, 175, 55, 0.35);
+    background: var(--jd-pos-box-bg) !important;
+    border: 1.5px solid var(--jd-pos-border) !important;
     border-radius: 0.75rem;
     padding: 1.15rem;
     display: flex;
@@ -467,7 +479,7 @@ body.has-pos-terminal .sidebar {
     width: 76px;
     height: 76px;
     border-radius: 0.5rem;
-    background: #281D13;
+    background: var(--jd-pos-thumb-bg) !important;
     border: 1px solid var(--jd-pos-border);
     display: flex;
     align-items: center;
@@ -505,9 +517,9 @@ body.has-pos-terminal .sidebar {
 }
 
 .jd-pos-pill-tag {
-    background: #271C12;
-    border: 1px solid rgba(212, 175, 55, 0.3);
-    color: var(--jd-pos-ivory-dim);
+    background: var(--jd-pos-tile-bg) !important;
+    border: 1px solid var(--jd-pos-border) !important;
+    color: var(--jd-pos-ivory-dim) !important;
     font-family: monospace;
     font-size: 0.74rem;
     padding: 0.15rem 0.5rem;
@@ -782,9 +794,9 @@ body.has-pos-terminal .sidebar {
 }
 
 .jd-pos-method-btn {
-    background: #251B12;
-    border: 1px solid rgba(212, 175, 55, 0.3);
-    color: var(--jd-pos-ivory-dim);
+    background: var(--jd-pos-tile-bg) !important;
+    border: 1px solid var(--jd-pos-border) !important;
+    color: var(--jd-pos-ivory) !important;
     padding: 0.55rem 0.25rem;
     border-radius: 0.45rem;
     font-size: 0.78rem;
@@ -796,17 +808,17 @@ body.has-pos-terminal .sidebar {
 }
 
 .jd-pos-method-btn:hover {
-    background: #312316;
-    border-color: var(--jd-pos-gold);
-    color: #FFFFFF;
+    background: var(--jd-pos-card-highest) !important;
+    border-color: var(--jd-pos-gold) !important;
+    color: var(--jd-pos-gold-bright) !important;
 }
 
 .jd-pos-method-btn.active {
-    background: linear-gradient(135deg, #F5D77F 0%, #D4AF37 100%);
-    border-color: #ECC86A;
+    background: linear-gradient(135deg, #F5D77F 0%, #D4AF37 100%) !important;
+    border-color: #ECC86A !important;
     color: #150E07 !important;
-    font-weight: 700;
-    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+    font-weight: 800 !important;
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3) !important;
 }
 
 /* Split Tender Inputs */
@@ -871,26 +883,27 @@ body.has-pos-terminal .sidebar {
    -------------------------------------------------------------------------- */
 .jd-pos-btn-submit {
     width: 100%;
-    background: var(--jd-btn-primary-bg, var(--jd-pos-gold));
-    border: 1px solid var(--jd-pos-gold);
-    color: var(--jd-btn-primary-color, #140D07) !important;
+    background: linear-gradient(135deg, #F5D77F 0%, #D4AF37 100%) !important;
+    border: 1px solid #ECC86A !important;
+    color: #140D07 !important;
     padding: 0.95rem 1.5rem;
     font-family: var(--jd-pos-font-headline);
     font-size: 1.15rem;
-    font-weight: 700;
+    font-weight: 800 !important;
     border-radius: 0.65rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.65rem;
-    box-shadow: 0 6px 22px var(--jd-pos-gold-glow);
+    box-shadow: 0 6px 22px rgba(212, 175, 55, 0.35);
     transition: all 0.2s ease;
     text-decoration: none;
     user-select: none;
 }
 
 .jd-pos-btn-submit:hover {
+    background: linear-gradient(135deg, #F7DE94 0%, #DEBD4D 100%) !important;
     transform: translateY(-2px);
     box-shadow: 0 10px 28px rgba(212, 175, 55, 0.55);
     color: #140D07 !important;
@@ -908,9 +921,9 @@ body.has-pos-terminal .sidebar {
 }
 
 .jd-pos-btn-action-tile {
-    background: #251B12;
-    border: 1px solid rgba(212, 175, 55, 0.3);
-    color: var(--jd-pos-ivory-dim);
+    background: var(--jd-pos-tile-bg) !important;
+    border: 1px solid var(--jd-pos-border) !important;
+    color: var(--jd-pos-ivory) !important;
     padding: 0.65rem 0.45rem;
     border-radius: 0.5rem;
     font-size: 0.76rem;
@@ -926,9 +939,9 @@ body.has-pos-terminal .sidebar {
 }
 
 .jd-pos-btn-action-tile:hover {
-    background: #312316;
-    border-color: var(--jd-pos-gold);
-    color: #FFFFFF;
+    background: var(--jd-pos-card-highest) !important;
+    border-color: var(--jd-pos-gold) !important;
+    color: var(--jd-pos-gold-bright) !important;
 }
 
 .jd-pos-btn-action-tile i {
@@ -1069,4 +1082,21 @@ body.has-pos-terminal .sidebar {
     .jd-pos-secondary-actions-grid {
         grid-template-columns: 1fr;
     }
+}
+
+/* Dynamic text contrast adaptors for POS canvas across themes */
+[data-theme="light"] .jd-pos-canvas .text-light,
+[data-theme="light"] body.has-pos-terminal .text-light,
+[data-theme="light"] body:has(.jd-pos-canvas) .text-light {
+    color: var(--jd-pos-ivory) !important;
+}
+
+[data-theme="light"] .jd-pos-canvas .text-muted,
+[data-theme="light"] body.has-pos-terminal .text-muted,
+[data-theme="light"] body:has(.jd-pos-canvas) .text-muted {
+    color: var(--jd-pos-muted) !important;
+}
+
+[data-theme="light"] .jd-pos-canvas .text-secondary {
+    color: var(--jd-pos-muted) !important;
 }

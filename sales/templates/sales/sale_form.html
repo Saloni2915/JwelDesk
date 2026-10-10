@@ -115,7 +115,7 @@
                             <div class="jd-pos-customer-stats">
                                 <div>
                                     <div class="jd-pos-stat-label">Past Purchases</div>
-                                    <div class="jd-pos-stat-val text-light" id="custCardCount">0 bills</div>
+                                    <div class="jd-pos-stat-val" id="custCardCount">0 bills</div>
                                 </div>
                                 <div>
                                     <div class="jd-pos-stat-label">Outstanding Due</div>
@@ -232,7 +232,7 @@
                         <label class="jd-pos-exchange-toggle-wrap w-100 m-0" for="exchange_toggle">
                             <span class="d-flex align-items-center gap-2">
                                 <input type="checkbox" id="exchange_toggle" class="jd-pos-exchange-checkbox">
-                                <span class="fw-bold text-light"><i class="bi bi-arrow-repeat text-warning me-1"></i> Exchange Old Gold</span>
+                                <span class="fw-bold" style="color: var(--jd-pos-ivory);"><i class="bi bi-arrow-repeat text-warning me-1"></i> Exchange Old Gold</span>
                             </span>
                             <span class="text-danger fw-bold font-monospace" id="exchangeDeductionBadge">0.00 Deduction</span>
                         </label>
@@ -301,7 +301,7 @@
                     <div class="jd-pos-invoice-ledger">
                         <div class="jd-pos-ledger-row">
                             <span>Subtotal Items (1)</span>
-                            <span class="text-light" id="billSubtotal">₹0.00</span>
+                            <span class="fw-bold" id="billSubtotal" style="color: var(--jd-pos-ivory);">₹0.00</span>
                         </div>
                         <div class="jd-pos-ledger-row is-deduction">
                             <span>Less Old Gold Exchange</span>

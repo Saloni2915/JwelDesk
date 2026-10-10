@@ -184,6 +184,7 @@ def dashboard(request):
         'sales_chart_max': chart_max,
         'sales_chart_start': week_start,
         'today': today,
+    }
     response = render(request, 'inventory/dashboard.html', context)
     requested_theme = request.GET.get('theme')
     if requested_theme in ('light', 'dark', 'gold'):
