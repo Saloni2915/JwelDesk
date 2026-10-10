@@ -37,7 +37,7 @@ def _load_company():
             return _make_fallback_company()
 
         try:
-            cache.set('company_settings:singleton', company, timeout=3600)
+            cache.set('company_settings:singleton', company, timeout=15)
         except Exception:
             pass
         return company

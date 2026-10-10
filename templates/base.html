@@ -45,7 +45,11 @@
                     <i class="bi bi-list fs-4"></i>
                 </button>
                 <a class="navbar-brand d-inline-flex align-items-center text-truncate p-0 m-0" href="{% url 'dashboard' %}" style="line-height: 1.2;">
+                    {% if company.logo_url %}
+                    <img src="{{ company.logo_url }}" alt="{{ company.name }}" class="me-2 rounded flex-shrink-0 navbar-brand-logo" style="width: 24px; height: 24px; object-fit: contain; background: rgba(255, 255, 255, 0.95); padding: 1px;">
+                    {% else %}
                     <img src="{% static 'icons/favicon-32x32.png' %}" alt="JewelDesk" class="me-2 rounded flex-shrink-0" style="width: 22px; height: 22px; object-fit: cover;">
+                    {% endif %}
                     <span class="fw-semibold company-name">{{ company.name|default:"JewelDesk" }}</span>
                 </a>
             </div>

@@ -89,7 +89,10 @@ def validate_gstin(value):
             'Enter a valid 15-character GSTIN (e.g. 27ABCDE1234F1Z5).')
 
 
-ALLOWED_LOGO_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.webp', '.svg', '.gif')
+ALLOWED_LOGO_EXTENSIONS = (
+    '.png', '.jpg', '.jpeg', '.webp', '.svg', '.gif',
+    '.jfif', '.avif', '.bmp', '.ico',
+)
 
 
 def validate_logo_extension(value):
@@ -155,17 +158,19 @@ class CompanySettings(models.Model):
     @property
     def logo_url(self):
         """Safe logo URL that never raises an exception during template rendering."""
+        ts = int(self.updated_at.timestamp()) if getattr(self, 'updated_at', None) else 0
         if not self.logo:
             # Check if there is a logo blob stored in DB
             blob = get_logo_blob()
             if blob:
                 filename, _, _ = blob
                 restore_logo_file(filename)
-                return f"{settings.MEDIA_URL.rstrip('/')}/{filename}"
+                return f"{settings.MEDIA_URL.rstrip('/')}/{filename}?v={ts}"
             return None
         try:
             self.ensure_logo_file()
-            return self.logo.url
+            base_url = self.logo.url
+            return f"{base_url}?v={ts}" if ts else base_url
         except Exception:
             return None
 

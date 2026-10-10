@@ -196,13 +196,23 @@ def company_settings(request):
                     content_type = uploaded_logo.content_type or 'image/png'
                     filename = f"company/{uploaded_logo.name}"
                     save_logo_blob(filename, logo_bytes, content_type)
+                    from pathlib import Path
+                    from django.conf import settings
+                    dest = Path(settings.MEDIA_ROOT) / filename
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    dest.write_bytes(logo_bytes)
                 except Exception as blob_err:
                     import logging
                     logging.getLogger(__name__).warning("Logo blob backup warning: %s", blob_err)
 
             try:
                 form.save()
-                messages.success(request, 'Company settings saved successfully.')
+                try:
+                    from django.core.cache import cache
+                    cache.delete('company_settings:singleton')
+                except Exception:
+                    pass
+                messages.success(request, 'Company settings and showroom logo updated successfully!')
                 return redirect('accounts:company_settings')
             except Exception as e:
                 import logging
@@ -216,7 +226,12 @@ def company_settings(request):
                     elif logo_cleared:
                         settings_obj.logo = None
                     settings_obj.save()
-                    messages.success(request, 'Company settings saved successfully.')
+                    try:
+                        from django.core.cache import cache
+                        cache.delete('company_settings:singleton')
+                    except Exception:
+                        pass
+                    messages.success(request, 'Company settings and showroom logo updated successfully!')
                     return redirect('accounts:company_settings')
                 except Exception as fallback_err:
                     logging.getLogger(__name__).error("Fallback save also failed: %s", fallback_err)

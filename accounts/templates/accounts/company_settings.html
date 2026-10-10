@@ -118,20 +118,37 @@
                                 <label class="jd-label" for="{{ form.logo.id_for_label }}">
                                     Showroom Brand Logo
                                 </label>
-                                {% if settings_obj.logo_url %}
-                                <div class="mb-3 d-flex align-items-center flex-wrap gap-3 p-3 rounded" style="background: rgba(236, 200, 106, 0.05); border: 1px solid rgba(236, 200, 106, 0.2);">
-                                    <img src="{{ settings_obj.logo_url }}" alt="Current logo" style="max-height: 64px; max-width: 180px; object-fit: contain;"
+                                
+                                <div id="currentLogoBox" class="mb-3 d-flex align-items-center flex-wrap gap-3 p-3 rounded {% if not settings_obj.logo_url %}d-none{% endif %}"
+                                     style="background: rgba(236, 200, 106, 0.05); border: 1px solid rgba(236, 200, 106, 0.2);">
+                                    <img src="{{ settings_obj.logo_url|default:'' }}" id="logoPreviewImg" alt="Current logo" style="max-height: 64px; max-width: 180px; object-fit: contain;"
                                          class="rounded p-1 bg-white shadow-sm">
                                     <div>
-                                        <span class="d-block fw-semibold text-break" style="color: var(--jd-gold);">{{ settings_obj.logo.name }}</span>
-                                        <small class="text-muted">Currently active brand insignia for PDF invoices</small>
+                                        <span class="d-block fw-semibold text-break" id="logoFileName" style="color: var(--jd-gold);">{{ settings_obj.logo.name|default:"Selected Logo" }}</span>
+                                        <small class="text-muted" id="logoStatusText">Currently active brand insignia for PDF invoices and headers</small>
                                     </div>
                                 </div>
-                                {% endif %}
+
                                 <div class="p-3 rounded" style="background: rgba(0,0,0,0.18); border: 1px dashed rgba(236, 200, 106, 0.25);">
                                     {{ form.logo }}
+                                    
+                                    <div id="newLogoAlert" class="mt-3 d-none alert alert-info py-2 px-3 small align-items-center justify-content-between flex-wrap gap-2"
+                                         style="background: rgba(14, 165, 233, 0.15); border: 1px solid rgba(14, 165, 233, 0.35); color: #7dd3fc;">
+                                        <span id="newLogoAlertText"><i class="bi bi-image me-1"></i> New file selected! Click button to save.</span>
+                                        <button type="submit" class="btn btn-sm jd-btn-gold py-1 px-3">
+                                            <i class="bi bi-cloud-arrow-up-fill me-1"></i> Save Logo Now
+                                        </button>
+                                    </div>
+
+                                    <div class="mt-3 d-flex flex-wrap align-items-center gap-2">
+                                        <button type="submit" class="jd-btn-gold btn-sm d-inline-flex align-items-center gap-1" id="btn-quick-save-logo">
+                                            <i class="bi bi-cloud-arrow-up-fill me-1"></i> Save &amp; Apply New Logo
+                                        </button>
+                                        <span class="text-muted small" style="font-size: 0.78rem;">Updates logo across top navigation, sidebar, and GST tax invoice PDFs.</span>
+                                    </div>
+
                                     <div class="form-text mt-2" style="color: #9E9171; font-size: 0.78rem;">
-                                        Supported formats: PNG, JPG, JPEG, WEBP, SVG. Transparent PNG with 3:1 aspect ratio recommended.
+                                        Supported formats: PNG, JPG, JPEG, WEBP, SVG, JFIF, AVIF. Transparent PNG with 3:1 aspect ratio recommended.
                                     </div>
                                 </div>
                                 {% for e in form.logo.errors %}
@@ -191,6 +208,58 @@ document.addEventListener('DOMContentLoaded', function() {
             el.style.borderColor = 'rgba(236, 200, 106, 0.25)';
             el.style.color = '#FAF4EA';
         });
+
+        // Instant live preview when selecting a new logo file
+        const logoInput = form.querySelector('input[type="file"][name="logo"]');
+        if (logoInput) {
+            logoInput.addEventListener('change', function() {
+                const file = this.files && this.files[0];
+                if (file) {
+                    const previewImg = document.getElementById('logoPreviewImg');
+                    const fileNameSpan = document.getElementById('logoFileName');
+                    const statusText = document.getElementById('logoStatusText');
+                    const alertBox = document.getElementById('newLogoAlert');
+                    const alertText = document.getElementById('newLogoAlertText');
+                    const previewBox = document.getElementById('currentLogoBox');
+
+                    if (previewBox) previewBox.classList.remove('d-none');
+                    if (previewImg) {
+                        previewImg.src = URL.createObjectURL(file);
+                        previewImg.style.opacity = '1';
+                    }
+                    if (fileNameSpan) {
+                        fileNameSpan.textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+                    }
+                    if (statusText) {
+                        statusText.textContent = 'Preview of selected logo — click "Save Logo Now" to apply changes';
+                        statusText.style.color = '#38bdf8';
+                    }
+                    if (alertBox) {
+                        alertBox.classList.remove('d-none');
+                        alertBox.classList.add('d-flex');
+                    }
+                    if (alertText) {
+                        alertText.innerHTML = '<i class="bi bi-check2-circle text-success me-1"></i> <strong>' + file.name + '</strong> selected! Click button to save.';
+                    }
+                }
+            });
+        }
+
+        // Live visual indicator if Clear logo is checked
+        const clearCheckbox = form.querySelector('input[type="checkbox"][name="logo-clear"]');
+        if (clearCheckbox) {
+            clearCheckbox.addEventListener('change', function() {
+                const previewImg = document.getElementById('logoPreviewImg');
+                const statusText = document.getElementById('logoStatusText');
+                if (this.checked) {
+                    if (previewImg) previewImg.style.opacity = '0.3';
+                    if (statusText) statusText.textContent = 'Logo marked for removal upon saving';
+                } else {
+                    if (previewImg) previewImg.style.opacity = '1';
+                    if (statusText) statusText.textContent = 'Currently active brand insignia';
+                }
+            });
+        }
     }
 });
 </script>
