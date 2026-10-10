@@ -38,25 +38,25 @@
         {% endif %}
 
         <!-- Top Issued Baseline Banner -->
-        <div class="jd-card p-4 mb-4" style="background: linear-gradient(135deg, rgba(236,200,106,0.06) 0%, rgba(32,22,14,0.4) 100%); border: 1px solid rgba(236,200,106,0.25);">
+        <div class="jd-card p-4 mb-4 jd-atelier-banner">
             <div class="row align-items-center g-3">
                 <div class="col-md-3">
                     <span class="text-gold small fw-bold text-uppercase d-block mb-1">Master Artisan</span>
-                    <h5 class="fw-bold mb-0 text-white">{{ assignment.karigar.name }}</h5>
+                    <h5 class="fw-bold mb-0">{{ assignment.karigar.name }}</h5>
                     <small class="text-muted">{{ assignment.work_type }}</small>
                 </div>
                 <div class="col-md-3 border-start" style="border-color: rgba(236,200,106,0.15) !important;">
                     <span class="text-gold small fw-bold text-uppercase d-block mb-1">Precious Metal</span>
-                    <span class="fw-bold fs-6 text-white">{{ assignment.metal_type }} ({{ assignment.purity }})</span>
+                    <span class="fw-bold fs-6">{{ assignment.metal_type }} ({{ assignment.purity }})</span>
                 </div>
                 <div class="col-md-3 border-start" style="border-color: rgba(236,200,106,0.15) !important;">
                     <span class="text-gold small fw-bold text-uppercase d-block mb-1">Issued Net Weight</span>
-                    <span class="fw-bold fs-5 text-white font-monospace" id="base-net-issued" data-val="{{ assignment.net_weight_issued }}">{{ assignment.net_weight_issued|floatformat:3 }} g</span>
+                    <span class="fw-bold fs-5 font-monospace" id="base-net-issued" data-val="{{ assignment.net_weight_issued }}">{{ assignment.net_weight_issued|floatformat:3 }} g</span>
                     <small class="text-muted d-block mt-1 font-monospace" style="font-size: 0.75rem;">Gross: {{ assignment.gross_weight_issued|floatformat:3 }}g &bull; St: {{ assignment.stone_weight_issued|floatformat:3 }}g</small>
                 </div>
                 <div class="col-md-3 border-start" style="border-color: rgba(236,200,106,0.15) !important;">
                     <span class="text-gold small fw-bold text-uppercase d-block mb-1">Allowed Wastage</span>
-                    <span class="fw-bold fs-6 text-white font-monospace" id="base-allowed-pct" data-val="{{ assignment.wastage_allowed_percent }}">{{ assignment.wastage_allowed_percent }}%</span>
+                    <span class="fw-bold fs-6 font-monospace" id="base-allowed-pct" data-val="{{ assignment.wastage_allowed_percent }}">{{ assignment.wastage_allowed_percent }}%</span>
                     <small class="text-muted d-block mt-1 font-monospace" style="font-size: 0.75rem;">Max Loss: {{ assignment.wastage_weight_allowed|floatformat:3 }} g</small>
                 </div>
             </div>

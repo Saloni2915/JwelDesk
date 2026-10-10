@@ -43,10 +43,10 @@
         <!-- 22K Hallmark -->
         <div class="jd-rate-pill-card">
             <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="small fw-bold text-uppercase text-light">22K Standard (916)</span>
+                <span class="small fw-bold text-uppercase">22K Standard (916)</span>
                 <span class="badge bg-warning bg-opacity-25 text-warning font-monospace">91.6%</span>
             </div>
-            <div class="fs-4 fw-bold text-light font-monospace">
+            <div class="fs-4 fw-bold font-monospace">
                 ₹{{ rate_22k|floatformat:2 }} <span class="fs-6 fw-normal text-muted">/g</span>
             </div>
             <div class="small text-muted">Standard Indian BIS Hallmark</div>
@@ -55,10 +55,10 @@
         <!-- 18K Diamond Setting -->
         <div class="jd-rate-pill-card">
             <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="small fw-bold text-uppercase text-light">18K Jewellery (750)</span>
+                <span class="small fw-bold text-uppercase">18K Jewellery (750)</span>
                 <span class="badge bg-secondary font-monospace">75.0%</span>
             </div>
-            <div class="fs-4 fw-bold text-light font-monospace">
+            <div class="fs-4 fw-bold font-monospace">
                 ₹{{ rate_18k|floatformat:2 }} <span class="fs-6 fw-normal text-muted">/g</span>
             </div>
             <div class="small text-muted">Diamond Setting Standard</div>
@@ -67,10 +67,10 @@
         <!-- Fine Silver 999 -->
         <div class="jd-rate-pill-card">
             <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="small fw-bold text-uppercase text-light">Fine Silver 999</span>
-                <span class="badge bg-light bg-opacity-25 text-light font-monospace">99.9%</span>
+                <span class="small fw-bold text-uppercase">Fine Silver 999</span>
+                <span class="badge bg-secondary bg-opacity-25 font-monospace">99.9%</span>
             </div>
-            <div class="fs-4 fw-bold text-light font-monospace">
+            <div class="fs-4 fw-bold font-monospace">
                 ₹{{ rate_silver_999|floatformat:2 }} <span class="fs-6 fw-normal text-muted">/g</span>
             </div>
             <div class="small text-muted font-monospace">925 Sterling: ₹{{ rate_silver_925|floatformat:2 }}/g</div>
@@ -147,7 +147,7 @@
                                     <button type="button" class="btn btn-sm py-0 px-2 btn-outline-warning" style="font-size: 0.72rem;" onclick="setPurity('22K (916)')">22K 916</button>
                                     <button type="button" class="btn btn-sm py-0 px-2 btn-outline-warning" style="font-size: 0.72rem;" onclick="setPurity('18K (750)')">18K 750</button>
                                     <button type="button" class="btn btn-sm py-0 px-2 btn-outline-warning" style="font-size: 0.72rem;" onclick="setPurity('14K (585)')">14K</button>
-                                    <button type="button" class="btn btn-sm py-0 px-2 btn-outline-secondary text-light" style="font-size: 0.72rem;" onclick="setPurity('925 Sterling Silver')">925 Silver</button>
+                                    <button type="button" class="btn btn-sm py-0 px-2 btn-outline-secondary" style="font-size: 0.72rem;" onclick="setPurity('925 Sterling Silver')">925 Silver</button>
                                 </div>
                             </div>
                         </div>
@@ -156,7 +156,7 @@
                         <div class="mb-3">
                             <label class="jd-field-label">24K / Pure Metal Base Rate (₹/g)</label>
                             <div class="input-group input-group-sm">
-                                <span class="input-group-text bg-black border-secondary text-warning">₹</span>
+                                <span class="input-group-text jd-currency-prefix">₹</span>
                                 <input type="number" step="0.01" min="0" name="base_metal_rate" id="id_base_metal_rate"
                                        class="jd-inv-input text-warning fw-bold fs-6" value="{{ form_data.base_metal_rate }}" oninput="triggerRecalc()">
                                 <button type="button" class="jd-btn-ghost py-1 px-2" onclick="resetDefaultRate()" title="Reset to today's active board rate">
@@ -260,76 +260,76 @@
                 </div>
 
                 <!-- Grand Total Display -->
-                <div class="text-center p-3 mb-3 rounded bg-black bg-opacity-40 border border-warning border-opacity-25">
+                <div class="jd-quote-grand-display">
                     <div class="text-uppercase small text-muted mb-1">Final Showroom Price (Incl. 3% GST)</div>
-                    <div class="display-6 fw-bold text-warning font-monospace" id="disp-final-price">
+                    <div class="display-6 fw-bold font-monospace" id="disp-final-price">
                         ₹{{ breakdown.final_price|floatformat:2 }}
                     </div>
                     <div class="small text-muted mt-1">
-                        Subtotal: <strong class="text-light" id="disp-subtotal-text">₹{{ breakdown.subtotal|floatformat:2 }}</strong> &middot; GST: <strong class="text-light" id="disp-tax-text">₹{{ breakdown.tax_amount|floatformat:2 }}</strong>
+                        Subtotal: <strong id="disp-subtotal-text">₹{{ breakdown.subtotal|floatformat:2 }}</strong> &middot; GST: <strong id="disp-tax-text">₹{{ breakdown.tax_amount|floatformat:2 }}</strong>
                     </div>
                 </div>
 
                 <!-- Itemized Breakdown Rows -->
                 <div class="jd-quote-row">
                     <div>
-                        <div class="fw-bold text-light"><i class="bi bi-gem text-warning me-1"></i> Pure Metal Value</div>
+                        <div class="fw-bold"><i class="bi bi-gem text-warning me-1"></i> Pure Metal Value</div>
                         <div class="small text-muted" id="disp-metal-formula">
                             {{ breakdown.metal_weight|floatformat:3 }}g &times; ₹{{ breakdown.effective_rate_per_gram|floatformat:2 }}/g ({{ breakdown.purity }})
                         </div>
                     </div>
-                    <span class="fw-bold font-monospace text-warning fs-6" id="disp-metal-val">₹{{ breakdown.metal_value|floatformat:2 }}</span>
+                    <span class="fw-bold font-monospace fs-6" id="disp-metal-val">₹{{ breakdown.metal_value|floatformat:2 }}</span>
                 </div>
 
                 <div class="jd-quote-row">
                     <div>
-                        <div class="fw-bold text-light"><i class="bi bi-fire text-danger me-1"></i> Wastage</div>
+                        <div class="fw-bold"><i class="bi bi-fire text-danger me-1"></i> Wastage</div>
                         <div class="small text-muted" id="disp-wastage-formula">
                             {% if breakdown.wastage_percent > 0 %}{{ breakdown.wastage_percent|floatformat:2 }}% of metal value{% else %}None{% endif %}
                         </div>
                     </div>
-                    <span class="fw-bold font-monospace text-light" id="disp-wastage-amt">₹{{ breakdown.wastage_amount|floatformat:2 }}</span>
+                    <span class="fw-bold font-monospace" id="disp-wastage-amt">₹{{ breakdown.wastage_amount|floatformat:2 }}</span>
                 </div>
 
                 <div class="jd-quote-row">
                     <div>
-                        <div class="fw-bold text-light"><i class="bi bi-hammer text-warning me-1"></i> Making Charges</div>
+                        <div class="fw-bold"><i class="bi bi-hammer text-warning me-1"></i> Making Charges</div>
                         <div class="small text-muted" id="disp-mc-formula">
                             {{ breakdown.making_charge_type }}: ₹{{ breakdown.making_charge_rate|floatformat:2 }}
                         </div>
                     </div>
-                    <span class="fw-bold font-monospace text-light" id="disp-mc-amt">₹{{ breakdown.making_charge_amount|floatformat:2 }}</span>
+                    <span class="fw-bold font-monospace" id="disp-mc-amt">₹{{ breakdown.making_charge_amount|floatformat:2 }}</span>
                 </div>
 
                 <div class="jd-quote-row">
                     <div>
-                        <div class="fw-bold text-light"><i class="bi bi-diamond text-info me-1"></i> Stones / Diamonds</div>
+                        <div class="fw-bold"><i class="bi bi-diamond text-info me-1"></i> Stones / Diamonds</div>
                         <div class="small text-muted" id="disp-stone-formula">Gemstones &amp; Solitaires</div>
                     </div>
-                    <span class="fw-bold font-monospace text-light" id="disp-stone-amt">₹{{ breakdown.stone_charges|floatformat:2 }}</span>
+                    <span class="fw-bold font-monospace" id="disp-stone-amt">₹{{ breakdown.stone_charges|floatformat:2 }}</span>
                 </div>
 
                 <div class="jd-quote-row">
                     <div>
-                        <div class="fw-bold text-light"><i class="bi bi-patch-check text-success me-1"></i> Other / Hallmarking</div>
+                        <div class="fw-bold"><i class="bi bi-patch-check text-success me-1"></i> Other / Hallmarking</div>
                         <div class="small text-muted" id="disp-other-formula">
                             {{ breakdown.other_charges_description|default:"Assay & certification" }}
                         </div>
                     </div>
-                    <span class="fw-bold font-monospace text-light" id="disp-other-amt">₹{{ breakdown.other_charges|floatformat:2 }}</span>
+                    <span class="fw-bold font-monospace" id="disp-other-amt">₹{{ breakdown.other_charges|floatformat:2 }}</span>
                 </div>
 
-                <div class="jd-quote-row bg-black bg-opacity-20 px-2 my-2 rounded">
-                    <span class="fw-bold text-light">Taxable Subtotal</span>
-                    <span class="fw-bold font-monospace text-light fs-6" id="disp-subtotal">₹{{ breakdown.subtotal|floatformat:2 }}</span>
+                <div class="jd-quote-row jd-quote-subtotal-box">
+                    <span class="fw-bold">Taxable Subtotal</span>
+                    <span class="fw-bold font-monospace fs-6" id="disp-subtotal">₹{{ breakdown.subtotal|floatformat:2 }}</span>
                 </div>
 
                 <div class="jd-quote-row">
                     <div>
-                        <div class="fw-bold text-light"><i class="bi bi-percent text-secondary me-1"></i> GST ({{ breakdown.tax_percent|floatformat:1 }}%)</div>
+                        <div class="fw-bold"><i class="bi bi-percent text-secondary me-1"></i> GST ({{ breakdown.tax_percent|floatformat:1 }}%)</div>
                         <div class="small text-muted">CGST (1.5%) + SGST (1.5%)</div>
                     </div>
-                    <span class="fw-bold font-monospace text-light" id="disp-tax-amt">₹{{ breakdown.tax_amount|floatformat:2 }}</span>
+                    <span class="fw-bold font-monospace" id="disp-tax-amt">₹{{ breakdown.tax_amount|floatformat:2 }}</span>
                 </div>
 
                 <div class="jd-quote-total-row">

@@ -106,6 +106,87 @@ body.has-sales-suite .sidebar {
     display: none !important;
 }
 
+/* Light Theme: Prevent invisible text-light & text-white on sales canvas and tables */
+[data-theme="light"] .jd-sb-canvas .text-light,
+[data-theme="light"] body.has-sales-suite .text-light,
+[data-theme="light"] body:has(.jd-sb-canvas) .text-light,
+[data-theme="light"] .jd-sb-table .text-light,
+[data-theme="light"] .jd-sb-table a.text-light,
+[data-theme="light"] .jd-sb-filter-card .text-light {
+    color: var(--jd-sb-ivory) !important;
+}
+
+[data-theme="light"] .jd-sb-canvas .text-muted,
+[data-theme="light"] body.has-sales-suite .text-muted,
+[data-theme="light"] body:has(.jd-sb-canvas) .text-muted,
+[data-theme="light"] .jd-sb-table .text-muted {
+    color: #475569 !important;
+}
+
+[data-theme="light"] .jd-sb-canvas .text-white,
+[data-theme="light"] body.has-sales-suite .text-white,
+[data-theme="light"] .jd-sb-table .text-white {
+    color: var(--jd-sb-ivory) !important;
+}
+
+/* Search & Filter Addons */
+.jd-sb-input-addon,
+.jd-sb-canvas .input-group-text,
+.has-sales-suite .input-group-text {
+    background: var(--jd-sb-input-bg) !important;
+    border: 1px solid var(--jd-sb-border) !important;
+    color: var(--jd-sb-gold) !important;
+}
+
+/* Old Gold Live Net Input */
+.jd-og-live-net {
+    background: var(--jd-sb-card-high) !important;
+    border: 1px solid var(--jd-sb-border-strong) !important;
+    color: var(--jd-sb-gold) !important;
+}
+
+/* Old Gold Balance & Settlement Box */
+.jd-sb-balance-box {
+    background: var(--jd-sb-card-high) !important;
+    border: 1.5px solid var(--jd-sb-border-strong) !important;
+    border-radius: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+/* Old Gold Credit Highlight Box */
+.jd-og-credit-highlight {
+    background: rgba(180, 133, 22, 0.08);
+    border: 1.5px solid var(--jd-sb-border-strong);
+    border-radius: 0.5rem;
+    padding: 0.85rem 1rem;
+    transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .jd-og-credit-highlight {
+    background: rgba(56, 189, 248, 0.10);
+    border-color: rgba(56, 189, 248, 0.35);
+}
+
+[data-theme="gold"] .jd-og-credit-highlight {
+    background: rgba(236, 200, 106, 0.12);
+    border-color: rgba(236, 200, 106, 0.35);
+}
+
+.jd-og-credit-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--jd-sb-ivory-dim);
+    letter-spacing: 0.05em;
+}
+
+.jd-og-credit-val {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--jd-sb-gold);
+    font-family: var(--jd-sb-font-mono, monospace);
+}
+
 /* Canvas Wrapper */
 .jd-sb-canvas {
     width: 100%;

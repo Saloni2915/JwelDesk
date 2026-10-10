@@ -234,8 +234,8 @@
                         </div>
                     </div>
 
-                    <div class="p-2 rounded bg-black bg-opacity-40 d-flex justify-content-between align-items-center flex-wrap gap-2 text-muted small">
-                        <span>Tag Price: <strong class="text-light">₹{{ item.selling_price|floatformat:2 }}</strong> &nbsp;|&nbsp; Live Market Price: <strong class="text-success">₹{{ b.final_price|floatformat:2 }}</strong></span>
+                    <div class="jd-spec-banner d-flex justify-content-between align-items-center flex-wrap gap-2 text-muted small">
+                        <span>Tag Price: <strong class="jd-spec-tag-price">₹{{ item.selling_price|floatformat:2 }}</strong> &nbsp;|&nbsp; Live Market Price: <strong class="text-success">₹{{ b.final_price|floatformat:2 }}</strong></span>
                         {% if b.final_price > item.selling_price %}
                         <span class="badge bg-warning text-dark"><i class="bi bi-arrow-up-right me-1"></i>Market is ₹{{ b.final_price|floatformat:2 }} (+₹{{ b.final_price|add:"-item.selling_price"|floatformat:2 }})</span>
                         {% endif %}

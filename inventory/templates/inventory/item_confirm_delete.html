@@ -18,12 +18,12 @@
                     </h2>
                 </div>
                 <div class="jd-form-card-body text-center p-4">
-                    <p class="fs-5 text-light mb-3">Are you sure you want to permanently remove this jewellery piece from the vault?</p>
-                    <div class="p-3 mb-4 rounded bg-black bg-opacity-40 border border-secondary border-opacity-25 text-start small">
-                        <p class="mb-1 text-muted">Piece ID: <strong class="text-light font-monospace">{{ item.item_code }}</strong></p>
+                    <p class="fs-5 mb-3">Are you sure you want to permanently remove this jewellery piece from the vault?</p>
+                    <div class="jd-spec-banner p-3 mb-4 text-start small">
+                        <p class="mb-1 text-muted">Piece ID: <strong class="font-monospace">{{ item.item_code }}</strong></p>
                         <p class="mb-1 text-muted">Tag: <strong class="text-warning font-monospace">{{ item.tag_number }}</strong></p>
-                        <p class="mb-1 text-muted">Name: <strong class="text-light">{{ item.name }}</strong></p>
-                        <p class="mb-1 text-muted">Category: <strong class="text-light">{{ item.category.name }}</strong></p>
+                        <p class="mb-1 text-muted">Name: <strong>{{ item.name }}</strong></p>
+                        <p class="mb-1 text-muted">Category: <strong>{{ item.category.name }}</strong></p>
                         <p class="mb-0 text-muted">Selling Price: <strong class="text-warning font-monospace">₹{{ item.selling_price }}</strong></p>
                     </div>
                     <form method="post">

@@ -1223,12 +1223,13 @@ body.has-inventory-suite .sidebar {
     border: 1px solid var(--jd-inv-border);
     border-radius: 12px;
     padding: 1rem;
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .jd-rate-pill-card:hover {
     transform: translateY(-2px);
     border-color: var(--jd-inv-gold);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .jd-rate-pill-gold {
@@ -1245,6 +1246,35 @@ body.has-inventory-suite .sidebar {
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55), 0 0 20px rgba(212, 175, 55, 0.15);
     position: sticky;
     top: 85px;
+}
+
+.jd-quote-grand-display {
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(236, 200, 106, 0.3);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.jd-quote-subtotal-box {
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 8px;
+    padding: 0.65rem 0.85rem;
+    margin: 0.75rem 0;
+}
+
+.jd-currency-prefix {
+    background-color: var(--jd-inv-input-bg, #14100A);
+    border-color: var(--jd-inv-border, rgba(212, 175, 55, 0.28));
+    color: var(--jd-inv-gold, #ECC86A);
+}
+
+.jd-spec-banner {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--jd-inv-border);
+    border-radius: 8px;
+    padding: 0.65rem 0.85rem;
 }
 
 .jd-quote-row {
@@ -1267,6 +1297,255 @@ body.has-inventory-suite .sidebar {
     font-size: 1.45rem;
     font-weight: 700;
     color: var(--jd-inv-gold);
+}
+
+/* ==========================================================================
+   Multi-Theme Overrides for Pricing Calculator & Metal Rates
+   ========================================================================== */
+
+/* 1. LIGHT THEME (Clean, Bright, Luxury Showroom - NO MUDDY BLACK) */
+[data-theme="light"] .jd-quote-summary-card {
+    background: #FFFFFF !important;
+    border: 1.5px solid #CBD5E1 !important;
+    border-top: 4px solid #D97706 !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+    color: #0F172A !important;
+}
+
+[data-theme="light"] .jd-quote-grand-display,
+[data-theme="light"] .jd-quote-summary-card .bg-black {
+    background: #FEF3C7 !important;
+    border: 1.5px solid #FCD34D !important;
+    color: #78350F !important;
+}
+
+[data-theme="light"] .jd-quote-summary-card #disp-final-price {
+    color: #000000 !important;
+    font-weight: 800 !important;
+}
+
+[data-theme="light"] .jd-quote-grand-display .text-muted,
+[data-theme="light"] .jd-quote-grand-display strong,
+[data-theme="light"] .jd-quote-summary-card .bg-black .text-muted {
+    color: #78350F !important;
+}
+
+[data-theme="light"] #disp-subtotal-text,
+[data-theme="light"] #disp-tax-text {
+    color: #000000 !important;
+    font-weight: 700 !important;
+}
+
+[data-theme="light"] .jd-quote-row {
+    border-bottom: 1px solid #E2E8F0 !important;
+    color: #0F172A !important;
+}
+
+[data-theme="light"] .jd-quote-row .text-light,
+[data-theme="light"] .jd-quote-row .fw-bold {
+    color: #000000 !important;
+    font-weight: 700 !important;
+}
+
+[data-theme="light"] .jd-quote-row .text-muted {
+    color: #475569 !important;
+    font-weight: 500 !important;
+}
+
+[data-theme="light"] .jd-quote-row .text-warning {
+    color: #B45309 !important;
+    font-weight: 700 !important;
+}
+
+[data-theme="light"] .jd-quote-row .text-danger {
+    color: #DC2626 !important;
+    font-weight: 600 !important;
+}
+
+[data-theme="light"] .jd-quote-row .text-info {
+    color: #0284C7 !important;
+    font-weight: 600 !important;
+}
+
+[data-theme="light"] .jd-quote-row .text-success {
+    color: #16A34A !important;
+    font-weight: 600 !important;
+}
+
+[data-theme="light"] .jd-quote-subtotal-box,
+[data-theme="light"] .jd-quote-summary-card .bg-black.bg-opacity-20 {
+    background: #F1F5F9 !important;
+    border: 1px solid #E2E8F0 !important;
+}
+
+[data-theme="light"] .jd-quote-subtotal-box span,
+[data-theme="light"] .jd-quote-summary-card .bg-black.bg-opacity-20 span {
+    color: #000000 !important;
+    font-weight: 800 !important;
+}
+
+/* Rate Cards in Light Theme */
+[data-theme="light"] .jd-rate-pill-card {
+    background: #FFFFFF !important;
+    border: 1.5px solid #CBD5E1 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .jd-rate-pill-gold {
+    background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%) !important;
+    border: 1.5px solid #F59E0B !important;
+    box-shadow: 0 4px 12px rgba(217, 119, 6, 0.08) !important;
+}
+
+[data-theme="light"] .jd-rate-pill-card .text-light,
+[data-theme="light"] .jd-rate-pill-card .fw-bold {
+    color: #0F172A !important;
+}
+
+[data-theme="light"] .jd-rate-pill-card .text-warning {
+    color: #B45309 !important;
+    font-weight: 700 !important;
+}
+
+[data-theme="light"] .jd-rate-pill-gold .text-warning {
+    color: #78350F !important;
+    font-weight: 800 !important;
+}
+
+[data-theme="light"] .jd-rate-pill-card .text-muted {
+    color: #475569 !important;
+    font-weight: 500 !important;
+}
+
+/* Inputs, Prefixes & Alerts in Light Theme */
+[data-theme="light"] .jd-currency-prefix,
+[data-theme="light"] .jd-inv-canvas .input-group-text,
+[data-theme="light"] .jd-inv-canvas .input-group-text.bg-black {
+    background-color: #F1F5F9 !important;
+    border-color: #CBD5E1 !important;
+    color: #0F172A !important;
+    font-weight: 700 !important;
+}
+
+[data-theme="light"] .jd-spec-banner,
+[data-theme="light"] .jd-inv-canvas .bg-black.bg-opacity-40 {
+    background-color: #F8FAFC !important;
+    border: 1px solid #E2E8F0 !important;
+    color: #0F172A !important;
+}
+
+[data-theme="light"] .jd-spec-banner strong,
+[data-theme="light"] .jd-inv-canvas .bg-black.bg-opacity-40 strong {
+    color: #000000 !important;
+}
+
+[data-theme="light"] .jd-inv-canvas .badge.bg-secondary {
+    background-color: #F1F5F9 !important;
+    color: #334155 !important;
+    border: 1px solid #CBD5E1 !important;
+}
+
+[data-theme="light"] .jd-inv-canvas .btn-outline-warning {
+    border-color: #D97706 !important;
+    color: #92400E !important;
+    font-weight: 600 !important;
+}
+
+[data-theme="light"] .jd-inv-canvas .btn-outline-warning:hover {
+    background-color: #FEF3C7 !important;
+    color: #78350F !important;
+    border-color: #D97706 !important;
+}
+
+[data-theme="light"] .jd-inv-canvas .btn-outline-secondary {
+    border-color: #CBD5E1 !important;
+    color: #334155 !important;
+    font-weight: 600 !important;
+}
+
+[data-theme="light"] .jd-inv-canvas .btn-outline-secondary:hover {
+    background-color: #F1F5F9 !important;
+    color: #0F172A !important;
+    border-color: #94A3B8 !important;
+}
+
+/* 2. DARK THEME */
+[data-theme="dark"] .jd-quote-summary-card {
+    background: linear-gradient(180deg, #131A26 0%, #0E141E 100%) !important;
+    border: 1.5px solid rgba(56, 189, 248, 0.35) !important;
+    border-top: 3px solid #38BDF8 !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6) !important;
+    color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .jd-quote-grand-display,
+[data-theme="dark"] .jd-quote-summary-card .bg-black {
+    background: rgba(14, 20, 30, 0.85) !important;
+    border: 1px solid rgba(56, 189, 248, 0.3) !important;
+    color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .jd-quote-summary-card #disp-final-price {
+    color: #38BDF8 !important;
+}
+
+[data-theme="dark"] .jd-quote-row {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.15) !important;
+}
+
+[data-theme="dark"] .jd-rate-pill-card {
+    background: #121620 !important;
+    border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+[data-theme="dark"] .jd-rate-pill-gold {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.12) 0%, #161F2E 100%) !important;
+    border-color: rgba(56, 189, 248, 0.4) !important;
+}
+
+[data-theme="dark"] .jd-currency-prefix,
+[data-theme="dark"] .jd-inv-canvas .input-group-text,
+[data-theme="dark"] .jd-inv-canvas .input-group-text.bg-black {
+    background-color: #0E121A !important;
+    border-color: rgba(148, 163, 184, 0.25) !important;
+    color: #38BDF8 !important;
+}
+
+/* 3. GOLD THEME */
+[data-theme="gold"] .jd-quote-summary-card {
+    background: linear-gradient(180deg, #241A12 0%, #18120B 100%) !important;
+    border: 2px solid #ECC86A !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(212, 175, 55, 0.15) !important;
+    color: #FAF4EA !important;
+}
+
+[data-theme="gold"] .jd-quote-grand-display,
+[data-theme="gold"] .jd-quote-summary-card .bg-black {
+    background: rgba(20, 16, 10, 0.85) !important;
+    border: 1px solid rgba(236, 200, 106, 0.3) !important;
+    color: #FAF4EA !important;
+}
+
+[data-theme="gold"] .jd-quote-summary-card #disp-final-price {
+    color: #F5D77F !important;
+}
+
+[data-theme="gold"] .jd-rate-pill-card {
+    background: #20160E !important;
+    border-color: rgba(212, 175, 55, 0.28) !important;
+}
+
+[data-theme="gold"] .jd-rate-pill-gold {
+    background: linear-gradient(135deg, rgba(236, 200, 106, 0.18) 0%, #2A1D12 100%) !important;
+    border-color: #ECC86A !important;
+}
+
+[data-theme="gold"] .jd-currency-prefix,
+[data-theme="gold"] .jd-inv-canvas .input-group-text,
+[data-theme="gold"] .jd-inv-canvas .input-group-text.bg-black {
+    background-color: #14100A !important;
+    border-color: rgba(212, 175, 55, 0.35) !important;
+    color: #ECC86A !important;
 }
 
 /* --------------------------------------------------------------------------

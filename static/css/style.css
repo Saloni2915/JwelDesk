@@ -215,6 +215,31 @@ a:hover {
     color: var(--text-muted) !important;
 }
 
+[data-theme="light"] .text-muted {
+    color: #475569 !important;
+}
+
+/* In Light theme, prevent text-light & text-white from rendering invisible white on light surfaces */
+[data-theme="light"] table .text-light,
+[data-theme="light"] .table .text-light,
+[data-theme="light"] .card-body .text-light,
+[data-theme="light"] .jd-card .text-light,
+[data-theme="light"] .jd-kpi-card .text-light,
+[data-theme="light"] .stat-card .text-light,
+[data-theme="light"] .list-group-item .text-light,
+[data-theme="light"] a.text-light {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] table .text-white:not(.badge *):not(.btn *),
+[data-theme="light"] .table .text-white:not(.badge *):not(.btn *),
+[data-theme="light"] .card-body .text-white:not(.badge *):not(.btn *),
+[data-theme="light"] .jd-card .text-white:not(.badge *):not(.btn *),
+[data-theme="light"] .jd-table-card .text-white:not(.badge *):not(.btn *),
+[data-theme="light"] .modal-body .text-white:not(.badge *):not(.btn *) {
+    color: var(--text-primary) !important;
+}
+
 .bg-white {
     background-color: var(--surface) !important;
 }
@@ -571,6 +596,23 @@ a:hover {
 .card:hover { box-shadow: var(--shadow-hover); }
 .card-header { background-color: var(--bg-secondary); border-bottom: 1px solid var(--border); color: var(--text-primary); }
 .card-header.bg-white { background-color: var(--surface) !important; }
+.card-header.jd-invoice-header,
+[data-theme="light"] .card-header.jd-invoice-header,
+[data-theme="dark"] .card-header.jd-invoice-header,
+[data-theme="gold"] .card-header.jd-invoice-header {
+    background-color: #1E293B !important;
+    color: #FFFFFF !important;
+    border-bottom: 2px solid #D97706 !important;
+}
+.card-header.jd-invoice-header h4,
+.card-header.jd-invoice-header h5,
+.card-header.jd-invoice-header small,
+.card-header.jd-invoice-header .text-white-50 {
+    color: #F8FAFC !important;
+}
+.card-header.jd-invoice-header .text-warning {
+    color: #ECC86A !important;
+}
 .card-body { color: var(--text-primary); }
 
 /* Stat cards (dashboard / reports) */

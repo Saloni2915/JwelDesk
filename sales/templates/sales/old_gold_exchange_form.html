@@ -104,8 +104,8 @@
                                 {{ form.stone_weight }}
                             </div>
                             <div class="col-md-4 col-12">
-                                <label class="jd-og-field-label text-warning">Net Gold Wt (g)</label>
-                                <input type="text" id="live_net_weight" class="form-control bg-dark text-warning fw-bold font-monospace" readonly value="0.000">
+                                <label class="jd-og-field-label">Net Gold Wt (g)</label>
+                                <input type="text" id="live_net_weight" class="form-control jd-og-live-net fw-bold font-monospace" readonly value="0.000">
                             </div>
 
                             <!-- Purity & Rate Row -->
@@ -217,10 +217,10 @@
                         </div>
 
                         <!-- Old Gold Credit -->
-                        <div class="p-3 bg-warning bg-opacity-20 border border-warning rounded-3 mt-2">
+                        <div class="jd-og-credit-highlight mt-2">
                             <div class="d-flex justify-content-between align-items-center">
-                                <span class="fw-bold text-warning small text-uppercase">Old Gold Credit</span>
-                                <span class="fw-bolder fs-5 text-warning font-monospace" id="calc_final_old_gold">₹0.00</span>
+                                <span class="jd-og-credit-label">Old Gold Credit</span>
+                                <span class="jd-og-credit-val" id="calc_final_old_gold">₹0.00</span>
                             </div>
                         </div>
 
@@ -236,7 +236,7 @@
                     </div>
 
                     <!-- Final Balance Card -->
-                    <div id="balance_card" class="p-3 rounded-3 text-center my-3 bg-dark border border-secondary border-opacity-50">
+                    <div id="balance_card" class="p-3 rounded-3 text-center my-3 jd-sb-balance-box">
                         <span class="small text-muted d-block mb-1" id="balance_title">Net Settlement Due</span>
                         <h2 class="fw-bold mb-0 text-warning" id="calc_balance_amount">₹0.00</h2>
                         <small class="text-muted d-block mt-1" id="balance_subtitle">Enter scrap weights &amp; select new piece</small>

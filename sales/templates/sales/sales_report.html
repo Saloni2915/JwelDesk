@@ -99,9 +99,9 @@
     </div>
 
     <!-- Old Gold Exchange & Scrap Intake Section -->
-    <div class="jd-card p-4 mb-4" style="background: linear-gradient(135deg, rgba(236,200,106,0.06) 0%, rgba(32,22,14,0.4) 100%); border: 1px solid rgba(236,200,106,0.25);">
+    <div class="jd-card p-4 mb-4 jd-atelier-banner">
         <div class="d-flex align-items-center justify-content-between mb-4 border-bottom pb-3" style="border-color: rgba(236,200,106,0.15) !important;">
-            <h6 class="mb-0 fw-bold text-white font-serif" style="font-family: 'Cinzel', serif;">
+            <h6 class="mb-0 fw-bold font-serif" style="font-family: 'Cinzel', serif;">
                 <i class="bi bi-coin text-gold me-2"></i> Old Gold &amp; Bullion Intake ({{ report_start|date:"M d, Y" }} &mdash; {{ report_end|date:"M d, Y" }})
             </h6>
             <a href="{% url 'old_gold_list' %}" class="jd-btn-ghost btn-sm">
@@ -111,7 +111,7 @@
         <div class="row g-4 text-center">
             <div class="col-md-3 border-end" style="border-color: rgba(236,200,106,0.15) !important;">
                 <div class="text-gold small fw-bold text-uppercase mb-1">Exchange Credit Applied</div>
-                <div class="fs-4 fw-bold font-monospace text-white">₹{{ exchange_value|floatformat:2 }}</div>
+                <div class="fs-4 fw-bold font-monospace">₹{{ exchange_value|floatformat:2 }}</div>
                 <small class="text-muted">{{ exchange_count }} exchange transaction{{ exchange_count|pluralize }}</small>
             </div>
             <div class="col-md-3 border-end" style="border-color: rgba(236,200,106,0.15) !important;">
@@ -126,7 +126,7 @@
             </div>
             <div class="col-md-3">
                 <div class="text-gold small fw-bold text-uppercase mb-1">Net Retail Inflow</div>
-                <div class="fs-4 fw-bold font-monospace text-white">₹{{ total_amount }}</div>
+                <div class="fs-4 fw-bold font-monospace">₹{{ total_amount }}</div>
                 <small class="text-success"><i class="bi bi-shield-check me-1"></i> Kept strictly segregated</small>
             </div>
         </div>
@@ -135,7 +135,7 @@
     <!-- Sales Table -->
     <div class="jd-table-card">
         <div class="p-4 border-bottom" style="border-color: rgba(236,200,106,0.12) !important;">
-            <h5 class="font-serif fw-bold text-white mb-0" style="font-family: 'Cinzel', serif;">
+            <h5 class="font-serif fw-bold mb-0" style="font-family: 'Cinzel', serif;">
                 <i class="bi bi-receipt text-gold me-2"></i>
                 Sales from {{ report_start|date:"M d, Y" }} to {{ report_end|date:"M d, Y" }}
                 ({{ sales_count }} sale{{ sales_count|pluralize }})
