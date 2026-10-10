@@ -74,13 +74,19 @@ def build_invoice_pdf(sale):
                           f'GSTIN: {gstin.upper()}')
 
     # Optional logo (drawn over the dark band, right side).
-    if company and company.logo and default_storage.exists(company.logo.name):
+    if company and company.logo:
         try:
-            with company.logo.open('rb') as fh:
-                img = RLImage(fh, width=32 * mm, height=10 * mm, kind='proportional')
-                img.drawOn(c, page_w - 45 * mm, page_h - 24 * mm)
+            if hasattr(company, 'ensure_logo_file'):
+                company.ensure_logo_file()
         except Exception:
-            pass  # A broken/unreadable logo must not block the invoice.
+            pass
+        if default_storage.exists(company.logo.name):
+            try:
+                with company.logo.open('rb') as fh:
+                    img = RLImage(fh, width=32 * mm, height=10 * mm, kind='proportional')
+                    img.drawOn(c, page_w - 45 * mm, page_h - 24 * mm)
+            except Exception:
+                pass  # A broken/unreadable logo must not block the invoice.
 
     # ---- Invoice meta ------------------------------------------------
     y = page_h - 42 * mm

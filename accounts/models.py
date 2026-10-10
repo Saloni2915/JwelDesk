@@ -1,7 +1,80 @@
+import base64
 import re
+from pathlib import Path
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import connection, models
+
+
+def save_logo_blob(filename, content_bytes, content_type='image/png'):
+    """Persist logo binary into database blob table for cross-worker serverless persistence."""
+    try:
+        b64_data = base64.b64encode(content_bytes).decode('ascii')
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS accounts_company_logo_blob (
+                    id INT PRIMARY KEY,
+                    filename VARCHAR(255),
+                    content_type VARCHAR(100),
+                    data TEXT,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            cursor.execute("DELETE FROM accounts_company_logo_blob WHERE id = 1")
+            cursor.execute("""
+                INSERT INTO accounts_company_logo_blob (id, filename, content_type, data)
+                VALUES (1, %s, %s, %s)
+            """, [filename, content_type, b64_data])
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("save_logo_blob warning: %s", e)
+
+
+def get_logo_blob():
+    """Retrieve logo binary from database blob table."""
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT filename, content_type, data
+                FROM accounts_company_logo_blob
+                WHERE id = 1
+            """)
+            row = cursor.fetchone()
+            if row:
+                filename, content_type, b64_data = row
+                return filename, content_type, base64.b64decode(b64_data.encode('ascii'))
+    except Exception:
+        pass
+    return None
+
+
+def clear_logo_blob():
+    """Clear saved logo from database blob table."""
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM accounts_company_logo_blob WHERE id = 1")
+    except Exception:
+        pass
+
+
+def restore_logo_file(filename=None):
+    """Ensure logo file exists on disk (e.g. in /tmp on Vercel). Returns path if exists/restored."""
+    blob_info = get_logo_blob()
+    if not blob_info:
+        return None
+    saved_filename, content_type, raw_bytes = blob_info
+    target_name = filename or saved_filename
+    try:
+        dest_path = Path(settings.MEDIA_ROOT) / target_name
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
+        if not dest_path.exists() or dest_path.stat().st_size == 0:
+            dest_path.write_bytes(raw_bytes)
+        return str(dest_path)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("restore_logo_file warning: %s", e)
+        return None
 
 # GSTIN format: 2-digit state code + 10-char PAN + entity code + 'Z' + checksum
 GSTIN_REGEX = re.compile(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]{3}$')
@@ -67,12 +140,31 @@ class CompanySettings(models.Model):
         """
         return self.company_name or 'JewelDesk'
 
+    def ensure_logo_file(self):
+        """Restore logo to disk from DB blob table if missing on ephemeral filesystem."""
+        if not self.logo:
+            return None
+        from django.core.files.storage import default_storage
+        try:
+            if not default_storage.exists(self.logo.name):
+                return restore_logo_file(self.logo.name)
+        except Exception:
+            return restore_logo_file(self.logo.name)
+        return None
+
     @property
     def logo_url(self):
         """Safe logo URL that never raises an exception during template rendering."""
         if not self.logo:
+            # Check if there is a logo blob stored in DB
+            blob = get_logo_blob()
+            if blob:
+                filename, _, _ = blob
+                restore_logo_file(filename)
+                return f"{settings.MEDIA_URL.rstrip('/')}/{filename}"
             return None
         try:
+            self.ensure_logo_file()
             return self.logo.url
         except Exception:
             return None
@@ -84,6 +176,7 @@ class CompanySettings(models.Model):
                 existing = CompanySettings.objects.first()
                 if existing:
                     self.pk = existing.pk
+                    self._state.adding = False
                 else:
                     self.pk = 1
             except Exception:

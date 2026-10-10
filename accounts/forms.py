@@ -172,6 +172,12 @@ class CompanySettingsForm(forms.ModelForm):
             'class', 'form-control')
         self.fields['logo'].widget.attrs.setdefault('class', 'form-control')
 
+    def clean_logo(self):
+        logo = self.cleaned_data.get('logo')
+        if logo and hasattr(logo, 'size') and logo.size > 5 * 1024 * 1024:
+            raise forms.ValidationError('Logo file size must be less than 5MB.')
+        return logo
+
     def clean(self):
         cleaned = super().clean()
         name = (cleaned.get('company_name') or '').strip()

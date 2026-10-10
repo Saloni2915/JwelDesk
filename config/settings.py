@@ -291,10 +291,20 @@ CACHES = {
     }
 }
 
-# Uploaded files (e.g. custom order reference photos).
-# Served by Django itself only while DEBUG is True (development).
+# Uploaded files (e.g. custom order reference photos, company showroom logo).
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+if os.environ.get('VERCEL'):
+    # In Vercel serverless functions, the application root (/var/task) is read-only.
+    # Writable ephemeral disk is located under /tmp.
+    MEDIA_ROOT = Path('/tmp') / 'media'
+    FILE_UPLOAD_TEMP_DIR = '/tmp'
+else:
+    MEDIA_ROOT = BASE_DIR / 'media'
+
+try:
+    MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
+except Exception:
+    pass
 
 # Authentication
 LOGIN_URL = 'accounts:login'

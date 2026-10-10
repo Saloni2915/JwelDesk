@@ -46,7 +46,7 @@
                 </button>
                 <a class="navbar-brand d-inline-flex align-items-center text-truncate p-0 m-0" href="{% url 'dashboard' %}" style="line-height: 1.2;">
                     <img src="{% static 'icons/favicon-32x32.png' %}" alt="JewelDesk" class="me-2 rounded flex-shrink-0" style="width: 22px; height: 22px; object-fit: cover;">
-                    <span class="fw-bold company-name" style="font-size: 1.05rem; letter-spacing: 0.01em;">{{ company.name|default:"JewelDesk" }}</span>
+                    <span class="fw-semibold company-name">{{ company.name|default:"JewelDesk" }}</span>
                 </a>
             </div>
 
@@ -495,9 +495,9 @@
 
             <!-- Fixed Sidebar Company Branding Footer -->
             <div class="sidebar-company">
-                {% if company.logo %}
+                {% if company.logo_url %}
                 <a href="{% url 'accounts:company_settings' %}" class="sidebar-company-logo-link" title="{{ company.name }} logo">
-                    <img src="{{ company.logo.url }}" alt="{{ company.name }} logo" class="sidebar-company-logo">
+                    <img src="{{ company.logo_url }}" alt="{{ company.name }} logo" class="sidebar-company-logo">
                 </a>
                 {% endif %}
                 <div class="sidebar-company-name">{{ company.name }}</div>

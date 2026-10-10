@@ -15,7 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -71,6 +71,42 @@ urlpatterns = [
 
 
 
-if settings.DEBUG:
-    # Serve uploaded media files in development only.
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+def serve_media_with_fallback(request, path):
+    """Serve media files in development and production with database blob fallback."""
+    from pathlib import Path
+    from django.views.static import serve
+
+    try:
+        target_path = Path(settings.MEDIA_ROOT) / path
+        if not target_path.exists():
+            from accounts.models import restore_logo_file
+            restore_logo_file(path)
+    except Exception:
+        pass
+
+    return serve(request, path, document_root=settings.MEDIA_ROOT)
+
+
+urlpatterns += [
+    re_path(r'^media/(?P<path>.*)$', serve_media_with_fallback, name='media_serve'),
+]
+
+
+def custom_500_handler(request):
+    """Custom 500 handler that safely renders branded 500.html without throwing."""
+    from django.shortcuts import render
+    from django.http import HttpResponseServerError
+    try:
+        return render(request, '500.html', status=500)
+    except Exception:
+        return HttpResponseServerError(
+            "<!DOCTYPE html><html><body style='background:#141009;color:#FAF4EA;font-family:sans-serif;text-align:center;padding:50px;'>"
+            "<h1>Server Error (500)</h1><p>An unexpected error occurred. Please reload the page.</p>"
+            "<button onclick='location.reload()' style='background:#ECC86A;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;'>Reload</button>"
+            "</body></html>",
+            content_type="text/html",
+            status=500,
+        )
+
+
+handler500 = custom_500_handler

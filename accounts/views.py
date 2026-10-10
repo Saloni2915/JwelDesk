@@ -19,7 +19,7 @@ from .forms import (
     JewelDeskSetPasswordForm,
     JewelDeskSignUpForm,
 )
-from .models import CompanySettings
+from .models import CompanySettings, save_logo_blob, clear_logo_blob
 
 
 class JewelDeskPasswordResetView(PasswordResetView):
@@ -167,11 +167,7 @@ def logout_view(request):
 def company_settings(request):
     """Edit the single company/business settings record (admin/store owner only)."""
     # Verify authorization: Superuser, staff, or account without employee profile (primary store owner)
-    is_owner_or_admin = (
-        request.user.is_superuser
-        or request.user.is_staff
-        or not getattr(request.user, 'employee_profile', None)
-    )
+    is_owner_or_admin = request.user.is_active and (request.user.is_staff or request.user.is_superuser)
     if not is_owner_or_admin:
         messages.error(request, 'Access restricted. Only store administrators can modify company settings.')
         return redirect('dashboard')
@@ -187,6 +183,23 @@ def company_settings(request):
         form = CompanySettingsForm(
             request.POST, request.FILES, instance=settings_obj)
         if form.is_valid():
+            uploaded_logo = request.FILES.get('logo')
+            logo_cleared = request.POST.get('logo-clear') == 'on'
+
+            if logo_cleared:
+                clear_logo_blob()
+
+            if uploaded_logo:
+                try:
+                    logo_bytes = uploaded_logo.read()
+                    uploaded_logo.seek(0)
+                    content_type = uploaded_logo.content_type or 'image/png'
+                    filename = f"company/{uploaded_logo.name}"
+                    save_logo_blob(filename, logo_bytes, content_type)
+                except Exception as blob_err:
+                    import logging
+                    logging.getLogger(__name__).warning("Logo blob backup warning: %s", blob_err)
+
             try:
                 form.save()
                 messages.success(request, 'Company settings saved successfully.')
@@ -194,7 +207,20 @@ def company_settings(request):
             except Exception as e:
                 import logging
                 logging.getLogger(__name__).error("Failed to save company settings: %s", e)
-                messages.error(request, f'Unable to save company settings: {e}')
+                # Resilient fallback: update text fields and record filename directly
+                try:
+                    for field in ('company_name', 'gstin', 'phone', 'email', 'address', 'invoice_footer_note'):
+                        setattr(settings_obj, field, form.cleaned_data.get(field, getattr(settings_obj, field)))
+                    if uploaded_logo:
+                        settings_obj.logo.name = f"company/{uploaded_logo.name}"
+                    elif logo_cleared:
+                        settings_obj.logo = None
+                    settings_obj.save()
+                    messages.success(request, 'Company settings saved successfully.')
+                    return redirect('accounts:company_settings')
+                except Exception as fallback_err:
+                    logging.getLogger(__name__).error("Fallback save also failed: %s", fallback_err)
+                    messages.error(request, f'Unable to save company settings: {e}')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
