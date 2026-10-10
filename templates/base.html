@@ -38,37 +38,51 @@
     <!-- Top Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top top-navbar">
         <div class="container-fluid px-2 px-sm-3">
-            <!-- Left Top Corner: Sidebar Toggler + Brand + Logged-in User Info -->
-            <div class="d-flex align-items-center min-w-0" style="min-width: 0;">
+            <!-- Left Top Corner: Sidebar Toggler + Brand -->
+            <div class="d-flex align-items-center min-w-0">
                 <!-- Mobile/Tablet Sidebar Toggler (active < 992px) -->
                 <button class="btn btn-link d-lg-none me-2 p-1 border-0 flex-shrink-0" id="sidebarToggle" type="button" aria-label="Toggle navigation">
                     <i class="bi bi-list fs-4"></i>
                 </button>
-                <div class="d-flex flex-column justify-content-center min-w-0" style="min-width: 0;">
-                    <a class="navbar-brand d-inline-flex align-items-center text-truncate p-0 m-0" href="{% url 'dashboard' %}" style="line-height: 1.2;">
-                        <img src="{% static 'icons/favicon-32x32.png' %}" alt="JewelDesk" class="me-1 rounded" style="width: 20px; height: 20px; object-fit: cover;">
-                        <span class="fw-semibold company-name">{{ company.name }}</span>
-                    </a>
-                    {% if user.is_authenticated %}
-                    <div class="navbar-user-tag d-inline-flex align-items-center text-truncate" style="font-size: 0.72rem; line-height: 1.1; margin-top: 1px;" title="Logged in as {{ user.username }}">
-                        <i class="bi bi-person-fill text-warning me-1 flex-shrink-0" style="font-size: 0.72rem;"></i>
-                        <span class="text-truncate fw-medium navbar-username" style="max-width: 140px;">{{ user.username }}</span>
-                        {% if user.is_superuser %}
-                        <span class="badge bg-warning text-dark ms-1 px-1 py-0" style="font-size: 0.58rem; font-weight: 700;">Admin</span>
-                        {% endif %}
-                    </div>
-                    {% endif %}
-                </div>
+                <a class="navbar-brand d-inline-flex align-items-center text-truncate p-0 m-0" href="{% url 'dashboard' %}" style="line-height: 1.2;">
+                    <img src="{% static 'icons/favicon-32x32.png' %}" alt="JewelDesk" class="me-2 rounded flex-shrink-0" style="width: 22px; height: 22px; object-fit: cover;">
+                    <span class="fw-bold company-name" style="font-size: 1.05rem; letter-spacing: 0.01em;">{{ company.name|default:"JewelDesk" }}</span>
+                </a>
             </div>
 
-            <!-- Right Controls: Logout -->
-            <div class="ms-auto d-flex align-items-center flex-shrink-0">
+            <!-- Right Top Corner: Logged-in User Profile + Logout -->
+            <div class="ms-auto d-flex align-items-center gap-2 gap-sm-3 flex-shrink-0">
                 {% if user.is_authenticated %}
+                <!-- User Profile Pill in Right Top Corner -->
+                <div class="navbar-user-pill d-flex align-items-center gap-2 px-2 py-1 rounded" title="Logged in as {{ user.username }}">
+                    <div class="navbar-user-avatar rounded-circle d-flex align-items-center justify-content-center flex-shrink-0">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
+                    <div class="d-flex flex-column d-none d-sm-inline-flex min-w-0" style="line-height: 1.15;">
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="fw-semibold navbar-username text-truncate" style="max-width: 170px;">{{ user.username }}</span>
+                            {% if user.is_superuser %}
+                            <span class="badge bg-warning text-dark px-1 py-0" style="font-size: 0.62rem; font-weight: 700;">Admin</span>
+                            {% else %}
+                            <span class="badge bg-secondary text-light px-1 py-0" style="font-size: 0.62rem;">Staff</span>
+                            {% endif %}
+                        </div>
+                        <span class="navbar-user-role" style="font-size: 0.7rem;">
+                            {% if user.is_superuser %}Administrator{% else %}Store Staff{% endif %}
+                        </span>
+                    </div>
+                    <!-- On ultra-small screens, show short username -->
+                    <span class="d-inline d-sm-none fw-semibold navbar-username-mobile text-truncate" style="max-width: 90px; font-size: 0.8rem;">
+                        {{ user.username }}
+                    </span>
+                </div>
+
+                <!-- Logout Button -->
                 <form method="post" action="{% url 'accounts:logout' %}" class="d-inline">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-outline-light btn-sm d-inline-flex align-items-center navbar-logout-btn" title="Logout ({{ user.username }})" aria-label="Logout">
                         <i class="bi bi-box-arrow-right"></i>
-                        <span class="d-none d-sm-inline ms-1">Logout</span>
+                        <span class="d-none d-md-inline ms-1">Logout</span>
                     </button>
                 </form>
                 {% endif %}

@@ -272,13 +272,30 @@ label,
     color: #0F172A !important;
 }
 
+[data-theme="light"] .top-navbar .navbar-user-pill {
+    background: #F1F5F9 !important;
+    border: 1px solid #CBD5E1 !important;
+}
+
+[data-theme="light"] .top-navbar .navbar-user-avatar {
+    background: #FEF3C7 !important;
+    color: #78350F !important;
+    border: 1px solid #D97706 !important;
+}
+
 [data-theme="light"] .top-navbar .navbar-user-tag {
     color: #475569 !important;
 }
 
-[data-theme="light"] .top-navbar .navbar-username {
+[data-theme="light"] .top-navbar .navbar-username,
+[data-theme="light"] .top-navbar .navbar-username-mobile {
     color: #0F172A !important;
     font-weight: 700;
+}
+
+[data-theme="light"] .top-navbar .navbar-user-role {
+    color: #475569 !important;
+    font-weight: 600;
 }
 
 [data-theme="light"] .top-navbar #sidebarToggle {
@@ -555,13 +572,29 @@ label,
     color: #F8FAFC !important;
 }
 
+[data-theme="dark"] .top-navbar .navbar-user-pill {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-theme="dark"] .top-navbar .navbar-user-avatar {
+    background: rgba(56, 189, 248, 0.18) !important;
+    color: #38BDF8 !important;
+    border: 1px solid rgba(56, 189, 248, 0.4) !important;
+}
+
 [data-theme="dark"] .top-navbar .navbar-user-tag {
     color: #94A3B8 !important;
 }
 
-[data-theme="dark"] .top-navbar .navbar-username {
-    color: #38BDF8 !important;
+[data-theme="dark"] .top-navbar .navbar-username,
+[data-theme="dark"] .top-navbar .navbar-username-mobile {
+    color: #F8FAFC !important;
     font-weight: 700;
+}
+
+[data-theme="dark"] .top-navbar .navbar-user-role {
+    color: #94A3B8 !important;
 }
 
 [data-theme="dark"] .top-navbar #sidebarToggle {
@@ -838,13 +871,29 @@ label,
     color: #ECC86A !important;
 }
 
+[data-theme="gold"] .top-navbar .navbar-user-pill {
+    background: rgba(236, 200, 106, 0.08) !important;
+    border: 1px solid rgba(212, 175, 55, 0.3) !important;
+}
+
+[data-theme="gold"] .top-navbar .navbar-user-avatar {
+    background: rgba(212, 175, 55, 0.2) !important;
+    color: #ECC86A !important;
+    border: 1px solid rgba(212, 175, 55, 0.45) !important;
+}
+
 [data-theme="gold"] .top-navbar .navbar-user-tag {
     color: #D4C5B0 !important;
 }
 
-[data-theme="gold"] .top-navbar .navbar-username {
-    color: #F5D77F !important;
+[data-theme="gold"] .top-navbar .navbar-username,
+[data-theme="gold"] .top-navbar .navbar-username-mobile {
+    color: #FAF4EA !important;
     font-weight: 700;
+}
+
+[data-theme="gold"] .top-navbar .navbar-user-role {
+    color: #D4C5B0 !important;
 }
 
 [data-theme="gold"] .top-navbar #sidebarToggle {
