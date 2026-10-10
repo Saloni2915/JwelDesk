@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth import get_user_model, logout as auth_logout
-from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import (
     LoginView,
     PasswordResetView,
@@ -163,23 +163,43 @@ def logout_view(request):
     return render(request, 'accounts/logout_confirm.html')
 
 
-staff_required = user_passes_test(lambda u: u.is_active and u.is_staff)
-
-
-@staff_required
+@login_required
 def company_settings(request):
-    """Edit the single company/business settings record (admin only)."""
-    settings_obj = CompanySettings.load()
+    """Edit the single company/business settings record (admin/store owner only)."""
+    # Verify authorization: Superuser, staff, or account without employee profile (primary store owner)
+    is_owner_or_admin = (
+        request.user.is_superuser
+        or request.user.is_staff
+        or not getattr(request.user, 'employee_profile', None)
+    )
+    if not is_owner_or_admin:
+        messages.error(request, 'Access restricted. Only store administrators can modify company settings.')
+        return redirect('dashboard')
+
+    try:
+        settings_obj = CompanySettings.load()
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("Error loading company settings: %s", e)
+        settings_obj = CompanySettings(company_name='JewelDesk')
+
     if request.method == 'POST':
         form = CompanySettingsForm(
             request.POST, request.FILES, instance=settings_obj)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Company settings saved successfully.')
-            return redirect('accounts:company_settings')
-        messages.error(request, 'Please correct the errors below.')
+            try:
+                form.save()
+                messages.success(request, 'Company settings saved successfully.')
+                return redirect('accounts:company_settings')
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error("Failed to save company settings: %s", e)
+                messages.error(request, f'Unable to save company settings: {e}')
+        else:
+            messages.error(request, 'Please correct the errors below.')
     else:
         form = CompanySettingsForm(instance=settings_obj)
+
     return render(request, 'accounts/company_settings.html', {
         'form': form,
         'settings_obj': settings_obj,
@@ -208,7 +228,7 @@ THEME_OPTIONS = (
 )
 
 
-@staff_required
+@login_required
 def themes(request):
     """Display the Themes settings page (authenticated back-office)."""
     requested_theme = request.GET.get('theme')

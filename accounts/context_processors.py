@@ -26,20 +26,23 @@ def company_settings_context(request):
 
 
 def _load_company():
-    """Return the cached CompanySettings row (pk=1), or a safe fallback object."""
-    cached = cache.get('company_settings:singleton')
-    if cached is not None:
-        return cached
-
-    company = CompanySettings.objects.filter(pk=1).first()
-    if company is None:
-        return _make_fallback_company()
-
+    """Return the cached CompanySettings row, or a safe fallback object."""
     try:
-        cache.set('company_settings:singleton', company, timeout=3600)
+        cached = cache.get('company_settings:singleton')
+        if cached is not None:
+            return cached
+
+        company = CompanySettings.objects.first()
+        if company is None:
+            return _make_fallback_company()
+
+        try:
+            cache.set('company_settings:singleton', company, timeout=3600)
+        except Exception:
+            pass
+        return company
     except Exception:
-        pass
-    return company
+        return _make_fallback_company()
 
 
 class _FallbackCompany:
@@ -47,6 +50,7 @@ class _FallbackCompany:
 
     name = 'JewelDesk'
     logo = None          # no logo URL at all
+    logo_url = None
     gstin = ''
     address = ''
     phone = ''

@@ -293,7 +293,7 @@ CACHES = {
 
 # Uploaded files (e.g. custom order reference photos).
 # Served by Django itself only while DEBUG is True (development).
-MEDIA_URL = 'media/'
+MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # Authentication

@@ -67,9 +67,27 @@ class CompanySettings(models.Model):
         """
         return self.company_name or 'JewelDesk'
 
+    @property
+    def logo_url(self):
+        """Safe logo URL that never raises an exception during template rendering."""
+        if not self.logo:
+            return None
+        try:
+            return self.logo.url
+        except Exception:
+            return None
+
     def save(self, *args, **kwargs):
-        # Singleton: always overwrite the single settings row (pk=1).
-        self.pk = 1
+        # Singleton: attach to existing record if one exists, otherwise initialize pk=1
+        if not self.pk:
+            try:
+                existing = CompanySettings.objects.first()
+                if existing:
+                    self.pk = existing.pk
+                else:
+                    self.pk = 1
+            except Exception:
+                self.pk = 1
         super().save(*args, **kwargs)
         try:
             from django.core.cache import cache
@@ -79,9 +97,19 @@ class CompanySettings(models.Model):
 
     @classmethod
     def load(cls):
-        """Return the current settings row, creating a blank one if needed."""
-        obj, _created = cls.objects.get_or_create(pk=1)
-        return obj
+        """Return the current settings row, creating a blank one if needed.
+        
+        Guaranteed to never raise an unhandled database exception that breaks page rendering.
+        """
+        try:
+            obj = cls.objects.first()
+            if obj is None:
+                obj = cls.objects.create(pk=1, company_name='JewelDesk')
+            return obj
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning("CompanySettings.load fallback: %s", e)
+            return cls(company_name='JewelDesk')
 
     def clean(self):
         super().clean()
