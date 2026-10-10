@@ -46,21 +46,21 @@
 }
 
 [data-theme="light"] {
-    --jd-inv-bg: var(--jd-bg, #F7F5EF);
+    --jd-inv-bg: var(--jd-bg, #F8FAFC);
     --jd-inv-card: var(--jd-card, #FFFFFF);
-    --jd-inv-card-header: var(--jd-card-header, #FAF7F2);
-    --jd-inv-card-high: var(--jd-card-high, #F1EDE4);
-    --jd-inv-card-highest: var(--jd-card-highest, #E8E2D5);
-    --jd-inv-border: var(--jd-border, rgba(180, 133, 22, 0.20));
-    --jd-inv-border-strong: var(--jd-border-strong, rgba(180, 133, 22, 0.42));
-    --jd-inv-gold: var(--jd-gold, #B48516);
-    --jd-inv-gold-bright: var(--jd-gold-bright, #C99A27);
-    --jd-inv-gold-dark: var(--jd-gold-dark, #8F660E);
-    --jd-inv-gold-glow: var(--jd-gold-glow, rgba(180, 133, 22, 0.14));
-    --jd-inv-ivory: var(--jd-ivory, #1C1917);
-    --jd-inv-ivory-dim: var(--jd-ivory-dim, #57534E);
-    --jd-inv-muted: var(--jd-muted, #8A7E72);
-    --jd-inv-table-th: var(--jd-table-th, #F5F0E6);
+    --jd-inv-card-header: var(--jd-card-header, #FFFFFF);
+    --jd-inv-card-high: var(--jd-card-high, #F1F5F9);
+    --jd-inv-card-highest: var(--jd-card-highest, #E2E8F0);
+    --jd-inv-border: #CBD5E1;
+    --jd-inv-border-strong: #94A3B8;
+    --jd-inv-gold: #78350F;
+    --jd-inv-gold-bright: #92400E;
+    --jd-inv-gold-dark: #451A03;
+    --jd-inv-gold-glow: rgba(180, 83, 9, 0.12);
+    --jd-inv-ivory: #000000; /* Pure Crisp Black for clear vision */
+    --jd-inv-ivory-dim: #0F172A; /* Deep Slate/Black */
+    --jd-inv-muted: #1E293B; /* Crisp Dark Slate, never faint grey */
+    --jd-inv-table-th: #F1F5F9;
     --jd-inv-input-bg: var(--jd-input-bg, #FFFFFF);
 }
 
@@ -317,27 +317,28 @@ body.has-inventory-suite .sidebar {
 }
 
 .jd-inv-kpi-label {
-    font-size: 0.76rem;
+    font-size: 0.84rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--jd-inv-ivory-dim);
-    margin-bottom: 0.25rem;
-    font-weight: 600;
+    margin-bottom: 0.3rem;
+    font-weight: 700;
 }
 
 .jd-inv-kpi-val {
     font-family: var(--jd-inv-font-headline);
-    font-size: 1.45rem;
-    font-weight: 700;
+    font-size: 1.65rem;
+    font-weight: 800;
     color: var(--jd-inv-ivory);
     line-height: 1.2;
     font-variant-numeric: tabular-nums;
 }
 
 .jd-inv-kpi-sub {
-    font-size: 0.78rem;
+    font-size: 0.88rem;
     color: var(--jd-inv-muted);
-    margin-top: 0.25rem;
+    margin-top: 0.3rem;
+    font-weight: 600;
 }
 
 /* --------------------------------------------------------------------------
@@ -392,8 +393,9 @@ body.has-inventory-suite .sidebar {
     border: 1px solid var(--jd-inv-border) !important;
     color: var(--jd-inv-ivory) !important;
     border-radius: 8px !important;
-    padding: 0.48rem 0.75rem !important;
-    font-size: 0.86rem !important;
+    padding: 0.55rem 0.85rem !important;
+    font-size: 0.94rem !important;
+    font-weight: 500;
     transition: all 0.2s ease;
     box-sizing: border-box;
 }
@@ -437,8 +439,8 @@ body.has-inventory-suite .sidebar {
 
 .jd-inv-table-header h2 {
     font-family: var(--jd-inv-font-headline);
-    font-size: 1.15rem;
-    font-weight: 600;
+    font-size: 1.25rem;
+    font-weight: 700;
     margin: 0;
     color: var(--jd-inv-ivory);
     display: flex;
@@ -455,7 +457,7 @@ body.has-inventory-suite .sidebar {
 .jd-inv-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.86rem;
+    font-size: 0.98rem;
     color: var(--jd-inv-ivory);
     min-width: 980px;
 }
@@ -463,18 +465,18 @@ body.has-inventory-suite .sidebar {
 .jd-inv-table th {
     background: var(--jd-inv-table-th) !important;
     color: var(--jd-inv-gold) !important;
-    font-weight: 600;
-    font-size: 0.78rem;
+    font-weight: 700;
+    font-size: 0.88rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    padding: 0.85rem 1rem;
+    padding: 0.95rem 1rem;
     border-bottom: 1px solid var(--jd-inv-border-strong) !important;
     white-space: nowrap;
     text-align: left;
 }
 
 .jd-inv-table td {
-    padding: 0.85rem 1rem;
+    padding: 0.95rem 1rem;
     border-bottom: 1px solid var(--jd-inv-border);
     vertical-align: middle;
     color: var(--jd-inv-ivory);
@@ -501,8 +503,8 @@ body.has-inventory-suite .sidebar {
     background: var(--jd-inv-gold-glow);
     border: 1px solid var(--jd-inv-border);
     border-radius: 6px;
-    padding: 0.2rem 0.55rem;
-    font-size: 0.82rem;
+    padding: 0.25rem 0.65rem;
+    font-size: 0.92rem;
     text-decoration: none;
     transition: all 0.2s ease;
 }
@@ -518,9 +520,9 @@ body.has-inventory-suite .sidebar {
     color: var(--jd-inv-gold);
     border: 1px solid rgba(212, 175, 55, 0.4);
     border-radius: 6px;
-    padding: 0.18rem 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 600;
+    padding: 0.22rem 0.6rem;
+    font-size: 0.82rem;
+    font-weight: 700;
 }
 
 .jd-badge-silver {
@@ -528,9 +530,9 @@ body.has-inventory-suite .sidebar {
     color: #cbd5e1;
     border: 1px solid rgba(203, 213, 225, 0.35);
     border-radius: 6px;
-    padding: 0.18rem 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 600;
+    padding: 0.22rem 0.6rem;
+    font-size: 0.82rem;
+    font-weight: 700;
 }
 
 .jd-badge-diamond {
@@ -538,9 +540,9 @@ body.has-inventory-suite .sidebar {
     color: #d8b4fe;
     border: 1px solid rgba(168, 85, 247, 0.4);
     border-radius: 6px;
-    padding: 0.18rem 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 600;
+    padding: 0.22rem 0.6rem;
+    font-size: 0.82rem;
+    font-weight: 700;
 }
 
 .jd-status-pill {
@@ -548,9 +550,9 @@ body.has-inventory-suite .sidebar {
     align-items: center;
     gap: 0.35rem;
     border-radius: 9999px;
-    padding: 0.22rem 0.65rem;
-    font-size: 0.75rem;
-    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.82rem;
+    font-weight: 700;
 }
 
 .jd-status-available {
@@ -582,14 +584,14 @@ body.has-inventory-suite .sidebar {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     border-radius: 6px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(212, 175, 55, 0.25);
     color: var(--jd-inv-ivory);
     text-decoration: none;
-    font-size: 0.85rem;
+    font-size: 0.92rem;
     transition: all 0.2s ease;
 }
 
@@ -603,6 +605,411 @@ body.has-inventory-suite .sidebar {
     background: rgba(239, 68, 68, 0.25);
     border-color: #ef4444;
     color: #fca5a5;
+}
+
+/* Specific Cell Typography Classes for High Legibility */
+.jd-item-code {
+    font-family: monospace;
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: var(--jd-inv-ivory);
+    margin-bottom: 0.2rem;
+}
+
+.jd-design-badge {
+    display: inline-block;
+    font-family: monospace;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0.22rem 0.6rem;
+    border-radius: 5px;
+    background: var(--jd-inv-card-high);
+    color: var(--jd-inv-ivory-dim);
+    border: 1px solid var(--jd-inv-border-strong);
+}
+
+.jd-item-name {
+    font-size: 1.08rem;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 0.25rem;
+}
+
+.jd-item-name a {
+    color: var(--jd-inv-ivory) !important;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.jd-item-name a:hover {
+    color: var(--jd-inv-gold) !important;
+}
+
+.jd-item-category {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--jd-inv-ivory-dim);
+}
+
+.jd-purity-label {
+    font-family: monospace;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--jd-inv-gold);
+    margin-top: 0.25rem;
+}
+
+.jd-huid-code {
+    font-family: monospace;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--jd-inv-gold);
+}
+
+.jd-empty-dash {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--jd-inv-muted);
+}
+
+.jd-weight-primary {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--jd-inv-ivory);
+}
+
+.jd-wt-label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--jd-inv-ivory-dim);
+    margin-left: 0.15rem;
+}
+
+.jd-weight-secondary {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--jd-inv-ivory-dim);
+    margin-top: 0.15rem;
+}
+
+.jd-qty-val {
+    font-family: monospace;
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--jd-inv-ivory);
+    line-height: 1.2;
+    margin-bottom: 0.2rem;
+}
+
+.jd-price-val {
+    font-family: monospace;
+    font-size: 1.18rem;
+    font-weight: 800;
+    color: var(--jd-inv-gold);
+}
+
+.jd-price-sub {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--jd-inv-ivory-dim);
+    margin-top: 0.15rem;
+}
+
+/* ==========================================================================
+   Light Theme Clear Vision Overrides (Solid Black & High Contrast)
+   ========================================================================== */
+[data-theme="light"] .jd-inv-table {
+    font-size: 0.98rem;
+    color: #000000 !important;
+}
+
+[data-theme="light"] .jd-inv-table th {
+    color: #0F172A !important;
+    background: #F1F5F9 !important;
+    font-size: 0.88rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid #CBD5E1 !important;
+}
+
+[data-theme="light"] .jd-inv-table td {
+    color: #000000 !important;
+    border-bottom: 1px solid #E2E8F0 !important;
+    padding: 1rem 1rem !important;
+}
+
+[data-theme="light"] .jd-inv-table tbody tr:nth-child(odd) {
+    background-color: #FFFFFF !important;
+}
+
+[data-theme="light"] .jd-inv-table tbody tr:nth-child(even) {
+    background-color: #F8FAFC !important;
+}
+
+[data-theme="light"] .jd-inv-table tbody tr:hover {
+    background-color: #EEF2F6 !important;
+}
+
+[data-theme="light"] .jd-tag-pill {
+    color: #000000 !important;
+    background: #FEF3C7 !important;
+    border: 1.5px solid #D97706 !important;
+    font-weight: 800 !important;
+    font-size: 0.95rem !important;
+}
+
+[data-theme="light"] .jd-item-code {
+    color: #000000 !important;
+    font-size: 1rem !important;
+    font-weight: 800 !important;
+}
+
+[data-theme="light"] .jd-design-badge {
+    background: #F1F5F9 !important;
+    color: #0F172A !important;
+    border: 1.5px solid #94A3B8 !important;
+    font-size: 0.86rem !important;
+    font-weight: 700 !important;
+}
+
+[data-theme="light"] .jd-item-name a {
+    color: #000000 !important;
+    font-weight: 800 !important;
+    font-size: 1.1rem !important;
+}
+
+[data-theme="light"] .jd-item-name a:hover {
+    color: #996515 !important;
+}
+
+[data-theme="light"] .jd-item-category {
+    color: #0F172A !important;
+    font-size: 0.92rem !important;
+    font-weight: 700 !important;
+}
+
+[data-theme="light"] .jd-purity-label {
+    color: #78350F !important;
+    font-size: 0.92rem !important;
+    font-weight: 800 !important;
+}
+
+[data-theme="light"] .jd-huid-code {
+    color: #78350F !important;
+    font-weight: 800 !important;
+    font-size: 0.95rem !important;
+}
+
+[data-theme="light"] .jd-empty-dash {
+    color: #334155 !important;
+    font-weight: 800 !important;
+}
+
+[data-theme="light"] .jd-weight-primary {
+    color: #000000 !important;
+    font-size: 1.08rem !important;
+    font-weight: 800 !important;
+}
+
+[data-theme="light"] .jd-wt-label {
+    color: #0F172A !important;
+    font-weight: 700 !important;
+}
+
+[data-theme="light"] .jd-weight-secondary {
+    color: #0F172A !important;
+    font-size: 0.92rem !important;
+    font-weight: 700 !important;
+}
+
+[data-theme="light"] .jd-qty-val {
+    color: #000000 !important;
+    font-size: 1.35rem !important;
+    font-weight: 900 !important;
+}
+
+[data-theme="light"] .jd-price-val {
+    color: #000000 !important;
+    font-size: 1.25rem !important;
+    font-weight: 900 !important;
+}
+
+[data-theme="light"] .jd-price-sub {
+    color: #0F172A !important;
+    font-size: 0.9rem !important;
+    font-weight: 700 !important;
+}
+
+[data-theme="light"] .jd-badge-gold {
+    background: #FEF3C7 !important;
+    color: #78350F !important;
+    border: 1.5px solid #FCD34D !important;
+    font-size: 0.84rem !important;
+    font-weight: 800 !important;
+}
+
+[data-theme="light"] .jd-badge-silver {
+    background: #E2E8F0 !important;
+    color: #0F172A !important;
+    border: 1.5px solid #94A3B8 !important;
+    font-size: 0.84rem !important;
+    font-weight: 800 !important;
+}
+
+[data-theme="light"] .jd-badge-diamond {
+    background: #F3E8FF !important;
+    color: #581C87 !important;
+    border: 1.5px solid #D8B4FE !important;
+    font-size: 0.84rem !important;
+    font-weight: 800 !important;
+}
+
+[data-theme="light"] .jd-status-pill {
+    font-size: 0.82rem !important;
+    font-weight: 800 !important;
+    padding: 0.25rem 0.75rem !important;
+}
+
+[data-theme="light"] .jd-status-available {
+    background: #DCFCE7 !important;
+    color: #14532D !important;
+    border: 1.5px solid #86EFAC !important;
+}
+
+[data-theme="light"] .jd-status-reserved {
+    background: #FEF3C7 !important;
+    color: #78350F !important;
+    border: 1.5px solid #FCD34D !important;
+}
+
+[data-theme="light"] .jd-status-sold {
+    background: #FEE2E2 !important;
+    color: #7F1D1D !important;
+    border: 1.5px solid #FCA5A5 !important;
+}
+
+[data-theme="light"] .jd-status-low {
+    background: #FFEDD5 !important;
+    color: #7C2D12 !important;
+    border: 1.5px solid #FDBA74 !important;
+}
+
+[data-theme="light"] .jd-tbl-btn {
+    background: #FFFFFF !important;
+    border: 1.5px solid #CBD5E1 !important;
+    color: #0F172A !important;
+}
+
+[data-theme="light"] .jd-tbl-btn:hover {
+    background: #F1F5F9 !important;
+    border-color: #0F172A !important;
+    color: #000000 !important;
+}
+
+[data-theme="light"] .jd-tbl-btn-danger {
+    color: #DC2626 !important;
+    border-color: #FECACA !important;
+}
+
+[data-theme="light"] .jd-tbl-btn-danger:hover {
+    background: #FEE2E2 !important;
+    border-color: #DC2626 !important;
+    color: #991B1B !important;
+}
+
+/* Universal Light Theme Fallback: eliminate washed-out grey/white text */
+[data-theme="light"] .jd-inv-canvas .text-light,
+[data-theme="light"] .jd-inv-table .text-light {
+    color: #000000 !important;
+}
+
+[data-theme="light"] .jd-inv-canvas .text-muted,
+[data-theme="light"] .jd-inv-table .text-muted {
+    color: #0F172A !important;
+}
+
+[data-theme="light"] .jd-inv-canvas .text-secondary,
+[data-theme="light"] .jd-inv-table .text-secondary {
+    color: #0F172A !important;
+}
+
+[data-theme="light"] .jd-inv-table-header h2 {
+    color: #000000 !important;
+}
+
+[data-theme="light"] .jd-inv-table-header .text-muted {
+    color: #0F172A !important;
+    font-weight: 700 !important;
+    font-size: 0.9rem !important;
+}
+
+.jd-records-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: monospace;
+    font-size: 0.88rem;
+    font-weight: 700;
+    padding: 0.3rem 0.75rem;
+    border-radius: 6px;
+    background: rgba(212, 175, 55, 0.18);
+    color: var(--jd-inv-gold);
+    border: 1px solid var(--jd-inv-border);
+}
+
+.jd-page-indicator {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--jd-inv-ivory-dim);
+}
+
+.jd-alert-label {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 0.65rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    background: var(--jd-inv-card-high);
+    color: var(--jd-inv-ivory-dim);
+    border: 1px solid var(--jd-inv-border);
+    border-radius: 6px 0 0 6px;
+}
+
+[data-theme="light"] .jd-records-badge {
+    background: #FEF3C7 !important;
+    color: #78350F !important;
+    border: 1.5px solid #D97706 !important;
+    font-weight: 800 !important;
+}
+
+[data-theme="light"] .jd-page-indicator {
+    color: #0F172A !important;
+    font-weight: 700 !important;
+}
+
+[data-theme="light"] .jd-alert-label {
+    background: #F1F5F9 !important;
+    color: #0F172A !important;
+    border-color: #CBD5E1 !important;
+}
+
+[data-theme="light"] .jd-inv-kpi-card .text-warning {
+    color: #78350F !important;
+}
+
+[data-theme="light"] .jd-inv-kpi-card .text-success {
+    color: #15803D !important;
+}
+
+[data-theme="light"] .alert-warning {
+    background-color: #FEF3C7 !important;
+    border-color: #FCD34D !important;
+    color: #78350F !important;
+    font-weight: 600 !important;
+}
+
+[data-theme="light"] .alert-warning strong {
+    color: #451A03 !important;
 }
 
 /* --------------------------------------------------------------------------
