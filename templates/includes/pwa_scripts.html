@@ -16,24 +16,24 @@
             </div>
             <div class="pwa-update-title-wrap">
                 <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <h6 class="pwa-update-title mb-0">Naya Update Ready Hai!</h6>
+                    <h6 class="pwa-update-title mb-0">New Update Available!</h6>
                     <span class="pwa-update-badge" id="pwaUpdateVersionBadge">v2.1.0</span>
                 </div>
-                <span class="pwa-update-subtitle">JewelDesk App Update Available</span>
+                <span class="pwa-update-subtitle">JewelDesk System Update</span>
             </div>
             <button type="button" class="pwa-update-close" id="pwaUpdateDismissBtn" aria-label="Dismiss">&times;</button>
         </div>
         
         <div class="pwa-update-body">
             <p class="pwa-update-desc" id="pwaUpdateSummaryText">
-                JewelDesk ka naya update publish ho chuka hai. Latest features aur improvements ke liye reload karein.
+                A new version of JewelDesk is ready. Please reload the app to apply the latest features and performance updates.
             </p>
             <div class="pwa-update-highlights">
-                <span class="pwa-highlights-title"><i class="bi bi-stars text-warning me-1"></i>Kya Naya Update Hua Hai:</span>
+                <span class="pwa-highlights-title"><i class="bi bi-stars me-1"></i>What's New in This Update:</span>
                 <ul class="pwa-update-changelog" id="pwaUpdateChangelogList">
-                    <li>Inventory table text bold black &amp; enlarged for clear vision</li>
-                    <li>POS billing terminal full theme synchronization</li>
-                    <li>Instant PWA update sync &amp; performance optimizations</li>
+                    <li>Inventory Ledger: High-contrast pure black text &amp; larger comfortable font sizes for clear vision</li>
+                    <li>POS Billing Terminal: Seamless theme balance across Light, Gold &amp; Dark modes</li>
+                    <li>Progressive Web App: Instant update notification with one-tap reload button</li>
                 </ul>
             </div>
         </div>
@@ -43,7 +43,7 @@
                 <i class="bi bi-arrow-clockwise me-1"></i> <span id="pwaReloadBtnText">Reload &amp; Update Now</span>
             </button>
             <button type="button" class="btn pwa-btn-later" id="pwaLaterBtn">
-                Baad Mein / Later
+                Later
             </button>
         </div>
     </div>
@@ -51,25 +51,23 @@
 
 <!-- Minimized Floating Update Pill (when dismissed or waiting) -->
 <button type="button" id="pwaUpdateMiniPill" class="pwa-update-mini-pill d-none" title="Update Ready - Tap to Reload">
-    <i class="bi bi-stars text-warning me-1"></i> Update Ready &bull; Reload
+    <i class="bi bi-stars me-1"></i> Update Ready &bull; Reload
 </button>
 
 <style>
+/* Base Update Card Container */
 .pwa-update-card {
     position: fixed;
     bottom: 1.5rem;
     right: 1.5rem;
-    width: 420px;
+    width: 440px;
     max-width: calc(100vw - 2rem);
-    z-index: 1095;
-    background: #15130E;
-    color: #FAF4EA;
-    border: 1.5px solid #ECC86A;
+    z-index: 10950 !important;
     border-radius: 14px;
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.7), 0 0 25px rgba(236, 200, 106, 0.25);
     overflow: hidden;
     animation: pwaSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     font-family: system-ui, -apple-system, sans-serif;
+    box-sizing: border-box;
 }
 
 @keyframes pwaSlideUp {
@@ -97,16 +95,13 @@
 }
 
 .pwa-update-icon-box {
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
     border-radius: 10px;
-    background: rgba(236, 200, 106, 0.15);
-    border: 1px solid rgba(236, 200, 106, 0.4);
-    color: #ECC86A;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     flex-shrink: 0;
 }
 
@@ -126,33 +121,29 @@
 }
 
 .pwa-update-title {
-    font-size: 0.98rem;
-    font-weight: 700;
-    color: #FFFFFF;
-    line-height: 1.2;
+    font-size: 1.05rem !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+    margin: 0 !important;
 }
 
 .pwa-update-badge {
-    background: #FEF3C7;
-    color: #78350F;
-    font-size: 0.72rem;
-    font-weight: 800;
+    font-size: 0.74rem !important;
+    font-weight: 800 !important;
     font-family: monospace;
-    padding: 0.15rem 0.45rem;
+    padding: 0.15rem 0.5rem;
     border-radius: 4px;
-    border: 1px solid #FCD34D;
 }
 
 .pwa-update-subtitle {
-    font-size: 0.75rem;
-    color: #D4C5B0;
+    font-size: 0.78rem !important;
     display: block;
+    margin-top: 0.15rem;
 }
 
 .pwa-update-close {
     background: none;
     border: none;
-    color: #A89F91;
     font-size: 1.5rem;
     line-height: 1;
     padding: 0 0.25rem;
@@ -160,34 +151,26 @@
     transition: color 0.15s ease;
 }
 
-.pwa-update-close:hover {
-    color: #ECC86A;
-}
-
 .pwa-update-body {
-    margin-bottom: 0.9rem;
+    margin-bottom: 0.95rem;
 }
 
 .pwa-update-desc {
-    font-size: 0.85rem;
-    color: #FAF4EA;
-    line-height: 1.4;
-    margin-bottom: 0.65rem;
+    font-size: 0.9rem !important;
+    line-height: 1.45 !important;
+    margin-bottom: 0.75rem !important;
 }
 
 .pwa-update-highlights {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(236, 200, 106, 0.18);
     border-radius: 8px;
-    padding: 0.55rem 0.75rem;
+    padding: 0.65rem 0.85rem;
 }
 
 .pwa-highlights-title {
-    font-size: 0.76rem;
-    font-weight: 700;
-    color: #ECC86A;
+    font-size: 0.78rem !important;
+    font-weight: 800 !important;
     display: block;
-    margin-bottom: 0.3rem;
+    margin-bottom: 0.35rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
 }
@@ -195,13 +178,12 @@
 .pwa-update-changelog {
     margin: 0;
     padding-left: 1.15rem;
-    font-size: 0.79rem;
-    color: #D4C5B0;
-    line-height: 1.45;
+    font-size: 0.82rem !important;
+    line-height: 1.5 !important;
 }
 
 .pwa-update-changelog li {
-    margin-bottom: 0.2rem;
+    margin-bottom: 0.25rem;
 }
 
 .pwa-update-actions {
@@ -212,40 +194,26 @@
 
 .pwa-btn-reload {
     flex-grow: 1;
-    background: linear-gradient(135deg, #ECC86A 0%, #D4AF37 100%) !important;
-    color: #15130E !important;
-    border: 1px solid #ECC86A !important;
-    font-weight: 700 !important;
-    font-size: 0.88rem !important;
-    padding: 0.55rem 1rem !important;
+    font-size: 0.9rem !important;
+    font-weight: 800 !important;
+    padding: 0.58rem 1rem !important;
     border-radius: 8px !important;
-    box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35);
     transition: all 0.2s ease;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    text-decoration: none;
 }
 
 .pwa-btn-reload:hover {
-    background: linear-gradient(135deg, #F5D77F 0%, #E2BE46 100%) !important;
     transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(212, 175, 55, 0.45);
-    color: #100E09 !important;
 }
 
 .pwa-btn-later {
-    background: rgba(255, 255, 255, 0.08) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    color: #D4C5B0 !important;
-    font-size: 0.82rem !important;
-    padding: 0.55rem 0.85rem !important;
+    font-size: 0.84rem !important;
+    padding: 0.58rem 0.95rem !important;
     border-radius: 8px !important;
     transition: all 0.2s ease;
-}
-
-.pwa-btn-later:hover {
-    background: rgba(255, 255, 255, 0.15) !important;
-    color: #FFFFFF !important;
 }
 
 /* Floating Mini Pill when dismissed */
@@ -254,14 +222,10 @@
     bottom: 1.5rem;
     right: 1.5rem;
     z-index: 1090;
-    background: #15130E;
-    color: #ECC86A;
-    border: 1.5px solid #ECC86A;
     border-radius: 9999px;
-    padding: 0.45rem 0.95rem;
-    font-size: 0.82rem;
+    padding: 0.45rem 1rem;
+    font-size: 0.84rem;
     font-weight: 700;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(236, 200, 106, 0.3);
     cursor: pointer;
     animation: pwaBounce 2.5s infinite;
     display: inline-flex;
@@ -274,6 +238,255 @@
     60% { transform: translateY(-3px); }
 }
 
+/* ==========================================================================
+   THEME 1: LIGHT THEME (Crisp White Card & Solid Black / Slate High Contrast)
+   ========================================================================== */
+[data-theme="light"] .pwa-update-card,
+body:not([data-theme="dark"]):not([data-theme="gold"]) .pwa-update-card,
+.pwa-update-card {
+    background: #FFFFFF !important;
+    color: #0F172A !important;
+    border: 2px solid #D97706 !important;
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.25), 0 0 25px rgba(217, 119, 6, 0.25) !important;
+}
+
+[data-theme="light"] .pwa-update-card .pwa-update-title,
+body:not([data-theme="dark"]):not([data-theme="gold"]) .pwa-update-card .pwa-update-title,
+.pwa-update-card .pwa-update-title {
+    color: #000000 !important;
+}
+
+[data-theme="light"] .pwa-update-card .pwa-update-subtitle,
+body:not([data-theme="dark"]):not([data-theme="gold"]) .pwa-update-card .pwa-update-subtitle,
+.pwa-update-card .pwa-update-subtitle {
+    color: #475569 !important;
+    font-weight: 700 !important;
+}
+
+[data-theme="light"] .pwa-update-card .pwa-update-desc,
+body:not([data-theme="dark"]):not([data-theme="gold"]) .pwa-update-card .pwa-update-desc,
+.pwa-update-card .pwa-update-desc {
+    color: #0F172A !important;
+    font-weight: 600 !important;
+}
+
+[data-theme="light"] .pwa-update-card .pwa-update-highlights,
+body:not([data-theme="dark"]):not([data-theme="gold"]) .pwa-update-card .pwa-update-highlights,
+.pwa-update-card .pwa-update-highlights {
+    background: #F8FAFC !important;
+    border: 1.5px solid #CBD5E1 !important;
+}
+
+[data-theme="light"] .pwa-update-card .pwa-highlights-title,
+body:not([data-theme="dark"]):not([data-theme="gold"]) .pwa-update-card .pwa-highlights-title,
+.pwa-update-card .pwa-highlights-title {
+    color: #78350F !important;
+}
+
+[data-theme="light"] .pwa-update-card .pwa-update-changelog,
+[data-theme="light"] .pwa-update-card .pwa-update-changelog li,
+body:not([data-theme="dark"]):not([data-theme="gold"]) .pwa-update-card .pwa-update-changelog,
+body:not([data-theme="dark"]):not([data-theme="gold"]) .pwa-update-card .pwa-update-changelog li,
+.pwa-update-card .pwa-update-changelog,
+.pwa-update-card .pwa-update-changelog li {
+    color: #0F172A !important;
+    font-weight: 600 !important;
+}
+
+[data-theme="light"] .pwa-update-card .pwa-update-badge,
+body:not([data-theme="dark"]):not([data-theme="gold"]) .pwa-update-card .pwa-update-badge,
+.pwa-update-card .pwa-update-badge {
+    background: #FEF3C7 !important;
+    color: #78350F !important;
+    border: 1.5px solid #D97706 !important;
+}
+
+[data-theme="light"] .pwa-update-card .pwa-btn-reload,
+body:not([data-theme="dark"]):not([data-theme="gold"]) .pwa-update-card .pwa-btn-reload,
+.pwa-update-card .pwa-btn-reload {
+    background: linear-gradient(135deg, #D97706 0%, #B45309 100%) !important;
+    color: #FFFFFF !important;
+    border: 1px solid #B45309 !important;
+    box-shadow: 0 4px 14px rgba(217, 119, 6, 0.45) !important;
+}
+
+[data-theme="light"] .pwa-update-card .pwa-btn-later,
+body:not([data-theme="dark"]):not([data-theme="gold"]) .pwa-update-card .pwa-btn-later,
+.pwa-update-card .pwa-btn-later {
+    background: #F1F5F9 !important;
+    color: #0F172A !important;
+    border: 1.5px solid #94A3B8 !important;
+    font-weight: 700 !important;
+}
+
+[data-theme="light"] .pwa-update-card .pwa-update-icon-box,
+body:not([data-theme="dark"]):not([data-theme="gold"]) .pwa-update-card .pwa-update-icon-box,
+.pwa-update-card .pwa-update-icon-box {
+    background: #FEF3C7 !important;
+    border: 1.5px solid #D97706 !important;
+    color: #D97706 !important;
+}
+
+[data-theme="light"] .pwa-update-card .pwa-update-close,
+body:not([data-theme="dark"]):not([data-theme="gold"]) .pwa-update-card .pwa-update-close,
+.pwa-update-card .pwa-update-close {
+    color: #475569 !important;
+}
+
+[data-theme="light"] .pwa-update-mini-pill,
+body:not([data-theme="dark"]):not([data-theme="gold"]) .pwa-update-mini-pill,
+.pwa-update-mini-pill {
+    background: #FFFFFF !important;
+    color: #78350F !important;
+    border: 1.5px solid #D97706 !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* ==========================================================================
+   THEME 2: GOLD THEME (Dark Chocolate & Champagne Gold Aesthetics)
+   ========================================================================== */
+[data-theme="gold"] .pwa-update-card {
+    background: #15130E !important;
+    color: #FAF4EA !important;
+    border: 2px solid #ECC86A !important;
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.75), 0 0 25px rgba(236, 200, 106, 0.3) !important;
+}
+
+[data-theme="gold"] .pwa-update-card .pwa-update-title {
+    color: #FFFFFF !important;
+}
+
+[data-theme="gold"] .pwa-update-card .pwa-update-subtitle {
+    color: #D4C5B0 !important;
+}
+
+[data-theme="gold"] .pwa-update-card .pwa-update-desc {
+    color: #FAF4EA !important;
+}
+
+[data-theme="gold"] .pwa-update-card .pwa-update-highlights {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(236, 200, 106, 0.3) !important;
+}
+
+[data-theme="gold"] .pwa-update-card .pwa-highlights-title {
+    color: #ECC86A !important;
+}
+
+[data-theme="gold"] .pwa-update-card .pwa-update-changelog,
+[data-theme="gold"] .pwa-update-card .pwa-update-changelog li {
+    color: #FAF4EA !important;
+}
+
+[data-theme="gold"] .pwa-update-card .pwa-update-badge {
+    background: #FEF3C7 !important;
+    color: #78350F !important;
+    border: 1px solid #FCD34D !important;
+}
+
+[data-theme="gold"] .pwa-update-card .pwa-btn-reload {
+    background: linear-gradient(135deg, #ECC86A 0%, #D4AF37 100%) !important;
+    color: #15130E !important;
+    border: 1px solid #ECC86A !important;
+    box-shadow: 0 4px 14px rgba(212, 175, 55, 0.45) !important;
+}
+
+[data-theme="gold"] .pwa-update-card .pwa-btn-later {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #FAF4EA !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+[data-theme="gold"] .pwa-update-card .pwa-update-icon-box {
+    background: rgba(236, 200, 106, 0.15) !important;
+    border: 1px solid rgba(236, 200, 106, 0.4) !important;
+    color: #ECC86A !important;
+}
+
+[data-theme="gold"] .pwa-update-card .pwa-update-close {
+    color: #D4C5B0 !important;
+}
+
+[data-theme="gold"] .pwa-update-mini-pill {
+    background: #15130E !important;
+    color: #ECC86A !important;
+    border: 1.5px solid #ECC86A !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* ==========================================================================
+   THEME 3: DARK THEME (Obsidian & Electric Blue/Gold)
+   ========================================================================== */
+[data-theme="dark"] .pwa-update-card {
+    background: #0F172A !important;
+    color: #F8FAFC !important;
+    border: 2px solid #ECC86A !important;
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.8), 0 0 25px rgba(236, 200, 106, 0.3) !important;
+}
+
+[data-theme="dark"] .pwa-update-card .pwa-update-title {
+    color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .pwa-update-card .pwa-update-subtitle {
+    color: #94A3B8 !important;
+}
+
+[data-theme="dark"] .pwa-update-card .pwa-update-desc {
+    color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .pwa-update-card .pwa-update-highlights {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(236, 200, 106, 0.3) !important;
+}
+
+[data-theme="dark"] .pwa-update-card .pwa-highlights-title {
+    color: #ECC86A !important;
+}
+
+[data-theme="dark"] .pwa-update-card .pwa-update-changelog,
+[data-theme="dark"] .pwa-update-card .pwa-update-changelog li {
+    color: #E2E8F0 !important;
+}
+
+[data-theme="dark"] .pwa-update-card .pwa-update-badge {
+    background: #FEF3C7 !important;
+    color: #78350F !important;
+    border: 1px solid #FCD34D !important;
+}
+
+[data-theme="dark"] .pwa-update-card .pwa-btn-reload {
+    background: linear-gradient(135deg, #ECC86A 0%, #D4AF37 100%) !important;
+    color: #0F172A !important;
+    border: 1px solid #ECC86A !important;
+    box-shadow: 0 4px 14px rgba(212, 175, 55, 0.45) !important;
+}
+
+[data-theme="dark"] .pwa-update-card .pwa-btn-later {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #F8FAFC !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+[data-theme="dark"] .pwa-update-card .pwa-update-icon-box {
+    background: rgba(236, 200, 106, 0.15) !important;
+    border: 1px solid rgba(236, 200, 106, 0.4) !important;
+    color: #ECC86A !important;
+}
+
+[data-theme="dark"] .pwa-update-card .pwa-update-close {
+    color: #94A3B8 !important;
+}
+
+[data-theme="dark"] .pwa-update-mini-pill {
+    background: #0F172A !important;
+    color: #ECC86A !important;
+    border: 1.5px solid #ECC86A !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Mobile Media Queries */
 @media (max-width: 576px) {
     .pwa-update-card {
         bottom: 0.75rem;
@@ -382,7 +595,6 @@
                     caches.keys().then(function(keys) {
                         return Promise.all(
                             keys.map(function(k) {
-                                // delete runtime caches to ensure fresh code
                                 if (k.includes('runtime')) {
                                     return caches.delete(k);
                                 }
@@ -398,11 +610,9 @@
             } else if (swRegistration && swRegistration.waiting) {
                 swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
             } else {
-                // If no worker waiting, reload directly
                 window.location.reload();
             }
 
-            // Fallback timeout in case controllerchange takes too long
             setTimeout(function() {
                 window.location.reload();
             }, 650);
@@ -451,19 +661,15 @@
                     } catch(e) {}
 
                     if (!storedBuild) {
-                        // First visit: record current build
                         try {
                             localStorage.setItem('jeweldesk_current_build', data.build);
                         } catch(e) {}
                     } else if (storedBuild !== data.build) {
-                        // Server has newer build! Show update card
                         console.log('[PWA] Update detected from server: ' + storedBuild + ' -> ' + data.build);
                         showUpdateCard(waitingWorker, data);
                     }
                 })
-                .catch(function(err) {
-                    // Ignore network errors in offline mode
-                });
+                .catch(function(err) {});
         }
 
         // 1. Root-scoped Progressive Web App Service Worker Registration
@@ -473,13 +679,11 @@
                     .then(function(reg) {
                         swRegistration = reg;
 
-                        // Check if a worker is already waiting when app opens!
                         if (reg.waiting) {
                             waitingWorker = reg.waiting;
                             showUpdateCard(reg.waiting, latestUpdateData);
                         }
 
-                        // Listen for newly found updates during this session
                         reg.onupdatefound = function() {
                             var installingWorker = reg.installing;
                             if (installingWorker) {
@@ -493,18 +697,15 @@
                             }
                         };
 
-                        // Immediately trigger background SW update check on open
                         reg.update().catch(function() {});
                     })
                     .catch(function(err) {
                         console.warn('[PWA] Service worker registration:', err);
                     });
 
-                // Immediate version check on page/app open
                 checkServerVersion();
             });
 
-            // Check for updates when user returns to PWA from background
             document.addEventListener('visibilitychange', function() {
                 if (document.visibilityState === 'visible') {
                     if (swRegistration) {
@@ -521,7 +722,6 @@
                 checkServerVersion();
             });
 
-            // Periodic background check every 15 minutes
             setInterval(function() {
                 if (swRegistration) {
                     swRegistration.update().catch(function() {});
@@ -529,7 +729,6 @@
                 checkServerVersion();
             }, 15 * 60 * 1000);
         } else {
-            // Fallback for browsers without Service Worker: check version API on load
             window.addEventListener('load', checkServerVersion);
         }
 

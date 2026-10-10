@@ -62,9 +62,8 @@ def app_version_view(request):
     data = {
         'version': version,
         'build': build_id,
-        'title': 'New Update Available',
-        'title_hi': 'JewelDesk Naya Update Ready Hai!',
-        'summary': 'JewelDesk v' + str(version) + ' update available: High-contrast inventory readability, POS terminal upgrades & live PWA sync.',
+        'title': 'New Update Available!',
+        'summary': 'JewelDesk v' + str(version) + ' is ready. Please reload the app to apply the latest features and performance improvements.',
         'changelog': [
             'Inventory Ledger: High-contrast pure black text & larger comfortable font sizes for clear vision',
             'POS Billing Terminal: Seamless theme balance across Light, Gold & Dark modes',
