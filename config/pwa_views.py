@@ -49,6 +49,36 @@ def service_worker_view(request):
 
 
 @require_GET
+def app_version_view(request):
+    """Serve JSON details about the current application version and changelog.
+
+    Used by the client browser and Progressive Web App (PWA) to detect new
+    deployments, notify the user, and prompt them to reload immediately.
+    """
+    from django.http import JsonResponse
+    version = getattr(settings, 'APP_VERSION', '2.1.0')
+    build_id = getattr(settings, 'APP_BUILD_ID', '20261010-v21')
+
+    data = {
+        'version': version,
+        'build': build_id,
+        'title': 'New Update Available',
+        'title_hi': 'JewelDesk Naya Update Ready Hai!',
+        'summary': 'JewelDesk v' + str(version) + ' update available: High-contrast inventory readability, POS terminal upgrades & live PWA sync.',
+        'changelog': [
+            'Inventory Ledger: High-contrast pure black text & larger comfortable font sizes for clear vision',
+            'POS Billing Terminal: Seamless theme balance across Light, Gold & Dark modes',
+            'Progressive Web App: Instant update notification with one-tap reload button'
+        ],
+        'release_date': '2026-10-10'
+    }
+    response = JsonResponse(data)
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    response['Pragma'] = 'no-cache'
+    return response
+
+
+@require_GET
 def offline_view(request):
     """Render the branded offline fallback page when network is unavailable."""
     return render(request, 'offline.html')

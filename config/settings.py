@@ -412,3 +412,7 @@ import sys
 if 'test' in sys.argv:
     from django.contrib.auth.hashers import PBKDF2PasswordHasher
     PBKDF2PasswordHasher.iterations = 1
+
+# Application Version & PWA Build Info
+APP_VERSION = '2.1.0'
+APP_BUILD_ID = '20261010-v21'

@@ -7,28 +7,530 @@
     </div>
 </div>
 
+<!-- Floating PWA & Web App Update Notification Card -->
+<div id="pwaUpdateCard" class="pwa-update-card d-none" role="alert" aria-live="polite">
+    <div class="pwa-update-inner">
+        <div class="pwa-update-header">
+            <div class="pwa-update-icon-box">
+                <i class="bi bi-arrow-repeat spin-icon"></i>
+            </div>
+            <div class="pwa-update-title-wrap">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <h6 class="pwa-update-title mb-0">Naya Update Ready Hai!</h6>
+                    <span class="pwa-update-badge" id="pwaUpdateVersionBadge">v2.1.0</span>
+                </div>
+                <span class="pwa-update-subtitle">JewelDesk App Update Available</span>
+            </div>
+            <button type="button" class="pwa-update-close" id="pwaUpdateDismissBtn" aria-label="Dismiss">&times;</button>
+        </div>
+        
+        <div class="pwa-update-body">
+            <p class="pwa-update-desc" id="pwaUpdateSummaryText">
+                JewelDesk ka naya update publish ho chuka hai. Latest features aur improvements ke liye reload karein.
+            </p>
+            <div class="pwa-update-highlights">
+                <span class="pwa-highlights-title"><i class="bi bi-stars text-warning me-1"></i>Kya Naya Update Hua Hai:</span>
+                <ul class="pwa-update-changelog" id="pwaUpdateChangelogList">
+                    <li>Inventory table text bold black &amp; enlarged for clear vision</li>
+                    <li>POS billing terminal full theme synchronization</li>
+                    <li>Instant PWA update sync &amp; performance optimizations</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="pwa-update-actions">
+            <button type="button" class="btn pwa-btn-reload" id="pwaReloadUpdateBtn">
+                <i class="bi bi-arrow-clockwise me-1"></i> <span id="pwaReloadBtnText">Reload &amp; Update Now</span>
+            </button>
+            <button type="button" class="btn pwa-btn-later" id="pwaLaterBtn">
+                Baad Mein / Later
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Minimized Floating Update Pill (when dismissed or waiting) -->
+<button type="button" id="pwaUpdateMiniPill" class="pwa-update-mini-pill d-none" title="Update Ready - Tap to Reload">
+    <i class="bi bi-stars text-warning me-1"></i> Update Ready &bull; Reload
+</button>
+
+<style>
+.pwa-update-card {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    width: 420px;
+    max-width: calc(100vw - 2rem);
+    z-index: 1095;
+    background: #15130E;
+    color: #FAF4EA;
+    border: 1.5px solid #ECC86A;
+    border-radius: 14px;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.7), 0 0 25px rgba(236, 200, 106, 0.25);
+    overflow: hidden;
+    animation: pwaSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    font-family: system-ui, -apple-system, sans-serif;
+}
+
+@keyframes pwaSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(25px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.pwa-update-inner {
+    padding: 1.15rem 1.25rem;
+    position: relative;
+}
+
+.pwa-update-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    position: relative;
+}
+
+.pwa-update-icon-box {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(236, 200, 106, 0.15);
+    border: 1px solid rgba(236, 200, 106, 0.4);
+    color: #ECC86A;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.spin-icon {
+    display: inline-block;
+    animation: pwaSpin 4s linear infinite;
+}
+
+@keyframes pwaSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.pwa-update-title-wrap {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.pwa-update-title {
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: #FFFFFF;
+    line-height: 1.2;
+}
+
+.pwa-update-badge {
+    background: #FEF3C7;
+    color: #78350F;
+    font-size: 0.72rem;
+    font-weight: 800;
+    font-family: monospace;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    border: 1px solid #FCD34D;
+}
+
+.pwa-update-subtitle {
+    font-size: 0.75rem;
+    color: #D4C5B0;
+    display: block;
+}
+
+.pwa-update-close {
+    background: none;
+    border: none;
+    color: #A89F91;
+    font-size: 1.5rem;
+    line-height: 1;
+    padding: 0 0.25rem;
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.pwa-update-close:hover {
+    color: #ECC86A;
+}
+
+.pwa-update-body {
+    margin-bottom: 0.9rem;
+}
+
+.pwa-update-desc {
+    font-size: 0.85rem;
+    color: #FAF4EA;
+    line-height: 1.4;
+    margin-bottom: 0.65rem;
+}
+
+.pwa-update-highlights {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(236, 200, 106, 0.18);
+    border-radius: 8px;
+    padding: 0.55rem 0.75rem;
+}
+
+.pwa-highlights-title {
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #ECC86A;
+    display: block;
+    margin-bottom: 0.3rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.pwa-update-changelog {
+    margin: 0;
+    padding-left: 1.15rem;
+    font-size: 0.79rem;
+    color: #D4C5B0;
+    line-height: 1.45;
+}
+
+.pwa-update-changelog li {
+    margin-bottom: 0.2rem;
+}
+
+.pwa-update-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.pwa-btn-reload {
+    flex-grow: 1;
+    background: linear-gradient(135deg, #ECC86A 0%, #D4AF37 100%) !important;
+    color: #15130E !important;
+    border: 1px solid #ECC86A !important;
+    font-weight: 700 !important;
+    font-size: 0.88rem !important;
+    padding: 0.55rem 1rem !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35);
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pwa-btn-reload:hover {
+    background: linear-gradient(135deg, #F5D77F 0%, #E2BE46 100%) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(212, 175, 55, 0.45);
+    color: #100E09 !important;
+}
+
+.pwa-btn-later {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #D4C5B0 !important;
+    font-size: 0.82rem !important;
+    padding: 0.55rem 0.85rem !important;
+    border-radius: 8px !important;
+    transition: all 0.2s ease;
+}
+
+.pwa-btn-later:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: #FFFFFF !important;
+}
+
+/* Floating Mini Pill when dismissed */
+.pwa-update-mini-pill {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 1090;
+    background: #15130E;
+    color: #ECC86A;
+    border: 1.5px solid #ECC86A;
+    border-radius: 9999px;
+    padding: 0.45rem 0.95rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(236, 200, 106, 0.3);
+    cursor: pointer;
+    animation: pwaBounce 2.5s infinite;
+    display: inline-flex;
+    align-items: center;
+}
+
+@keyframes pwaBounce {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-6px); }
+    60% { transform: translateY(-3px); }
+}
+
+@media (max-width: 576px) {
+    .pwa-update-card {
+        bottom: 0.75rem;
+        left: 0.75rem;
+        right: 0.75rem;
+        width: auto;
+        max-width: calc(100vw - 1.5rem);
+    }
+    .pwa-update-inner {
+        padding: 1rem;
+    }
+    .pwa-update-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .pwa-btn-reload,
+    .pwa-btn-later {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+    }
+    .pwa-update-mini-pill {
+        bottom: 1rem;
+        right: 1rem;
+    }
+}
+</style>
+
 <script>
     (function() {
+        var swRegistration = null;
+        var waitingWorker = null;
+        var latestUpdateData = null;
+        var isReloading = false;
+
+        var updateCard = document.getElementById('pwaUpdateCard');
+        var updateMiniPill = document.getElementById('pwaUpdateMiniPill');
+        var reloadBtn = document.getElementById('pwaReloadUpdateBtn');
+        var reloadBtnText = document.getElementById('pwaReloadBtnText');
+        var laterBtn = document.getElementById('pwaLaterBtn');
+        var dismissBtn = document.getElementById('pwaUpdateDismissBtn');
+        var versionBadge = document.getElementById('pwaUpdateVersionBadge');
+        var summaryText = document.getElementById('pwaUpdateSummaryText');
+        var changelogList = document.getElementById('pwaUpdateChangelogList');
+
+        // Display Update Card with changelog
+        function showUpdateCard(worker, data) {
+            if (worker) waitingWorker = worker;
+            if (data) {
+                latestUpdateData = data;
+                if (versionBadge && data.version) {
+                    versionBadge.textContent = 'v' + data.version;
+                }
+                if (summaryText && data.summary) {
+                    summaryText.textContent = data.summary;
+                }
+                if (changelogList && Array.isArray(data.changelog) && data.changelog.length > 0) {
+                    changelogList.innerHTML = '';
+                    data.changelog.forEach(function(item) {
+                        var li = document.createElement('li');
+                        li.textContent = item;
+                        changelogList.appendChild(li);
+                    });
+                }
+            }
+            if (updateCard) {
+                updateCard.classList.remove('d-none');
+            }
+            if (updateMiniPill) {
+                updateMiniPill.classList.add('d-none');
+            }
+        }
+
+        // Hide Card & show Mini Pill
+        function hideUpdateCard() {
+            if (updateCard) {
+                updateCard.classList.add('d-none');
+            }
+            if (updateMiniPill) {
+                updateMiniPill.classList.remove('d-none');
+            }
+        }
+
+        // Trigger Service Worker Skip-Waiting and Page Reload
+        function triggerReloadAndUpdate() {
+            if (isReloading) return;
+            isReloading = true;
+
+            if (reloadBtn) {
+                reloadBtn.disabled = true;
+            }
+            if (reloadBtnText) {
+                reloadBtnText.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Updating...';
+            }
+
+            // Save new build to localStorage to avoid re-prompting
+            if (latestUpdateData && latestUpdateData.build) {
+                try {
+                    localStorage.setItem('jeweldesk_current_build', latestUpdateData.build);
+                } catch(e) {}
+            }
+
+            // Clean runtime caches so new static files take effect immediately
+            if ('caches' in window) {
+                try {
+                    caches.keys().then(function(keys) {
+                        return Promise.all(
+                            keys.map(function(k) {
+                                // delete runtime caches to ensure fresh code
+                                if (k.includes('runtime')) {
+                                    return caches.delete(k);
+                                }
+                            })
+                        );
+                    }).catch(function() {});
+                } catch(e) {}
+            }
+
+            // Post message to waiting Service Worker to skip waiting
+            if (waitingWorker) {
+                waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+            } else if (swRegistration && swRegistration.waiting) {
+                swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            } else {
+                // If no worker waiting, reload directly
+                window.location.reload();
+            }
+
+            // Fallback timeout in case controllerchange takes too long
+            setTimeout(function() {
+                window.location.reload();
+            }, 650);
+        }
+
+        if (reloadBtn) {
+            reloadBtn.addEventListener('click', triggerReloadAndUpdate);
+        }
+        if (laterBtn) {
+            laterBtn.addEventListener('click', hideUpdateCard);
+        }
+        if (dismissBtn) {
+            dismissBtn.addEventListener('click', hideUpdateCard);
+        }
+        if (updateMiniPill) {
+            updateMiniPill.addEventListener('click', function() {
+                showUpdateCard(waitingWorker, latestUpdateData);
+            });
+        }
+
+        // Listen for controllerchange: when new SW takes over, reload immediately
+        if ('serviceWorker' in navigator) {
+            var refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', function() {
+                if (!refreshing) {
+                    refreshing = true;
+                    window.location.reload();
+                }
+            });
+        }
+
+        // Check Server Version API (/api/app-version/)
+        function checkServerVersion() {
+            fetch('/api/app-version/?t=' + Date.now(), { cache: 'no-store' })
+                .then(function(res) {
+                    if (!res.ok) throw new Error('Version check failed');
+                    return res.json();
+                })
+                .then(function(data) {
+                    if (!data || !data.build) return;
+                    latestUpdateData = data;
+                    
+                    var storedBuild = null;
+                    try {
+                        storedBuild = localStorage.getItem('jeweldesk_current_build');
+                    } catch(e) {}
+
+                    if (!storedBuild) {
+                        // First visit: record current build
+                        try {
+                            localStorage.setItem('jeweldesk_current_build', data.build);
+                        } catch(e) {}
+                    } else if (storedBuild !== data.build) {
+                        // Server has newer build! Show update card
+                        console.log('[PWA] Update detected from server: ' + storedBuild + ' -> ' + data.build);
+                        showUpdateCard(waitingWorker, data);
+                    }
+                })
+                .catch(function(err) {
+                    // Ignore network errors in offline mode
+                });
+        }
+
         // 1. Root-scoped Progressive Web App Service Worker Registration
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
                 navigator.serviceWorker.register('/sw.js', { scope: '/' })
                     .then(function(reg) {
+                        swRegistration = reg;
+
+                        // Check if a worker is already waiting when app opens!
+                        if (reg.waiting) {
+                            waitingWorker = reg.waiting;
+                            showUpdateCard(reg.waiting, latestUpdateData);
+                        }
+
+                        // Listen for newly found updates during this session
                         reg.onupdatefound = function() {
                             var installingWorker = reg.installing;
                             if (installingWorker) {
                                 installingWorker.onstatechange = function() {
                                     if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                        console.log('[PWA] New version of JewelDesk available.');
+                                        waitingWorker = installingWorker;
+                                        console.log('[PWA] New version of JewelDesk downloaded & ready.');
+                                        showUpdateCard(installingWorker, latestUpdateData);
                                     }
                                 };
                             }
                         };
+
+                        // Immediately trigger background SW update check on open
+                        reg.update().catch(function() {});
                     })
                     .catch(function(err) {
                         console.warn('[PWA] Service worker registration:', err);
                     });
+
+                // Immediate version check on page/app open
+                checkServerVersion();
             });
+
+            // Check for updates when user returns to PWA from background
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'visible') {
+                    if (swRegistration) {
+                        swRegistration.update().catch(function() {});
+                    }
+                    checkServerVersion();
+                }
+            });
+
+            window.addEventListener('focus', function() {
+                if (swRegistration) {
+                    swRegistration.update().catch(function() {});
+                }
+                checkServerVersion();
+            });
+
+            // Periodic background check every 15 minutes
+            setInterval(function() {
+                if (swRegistration) {
+                    swRegistration.update().catch(function() {});
+                }
+                checkServerVersion();
+            }, 15 * 60 * 1000);
+        } else {
+            // Fallback for browsers without Service Worker: check version API on load
+            window.addEventListener('load', checkServerVersion);
         }
 
         // 2. In-App Install Prompt Handling
@@ -61,7 +563,6 @@
                         window.deferredPrompt = null;
                     });
                 } else {
-                    // Show guidance modal if available, otherwise browser instructions
                     var modalEl = document.getElementById('pwaInstallGuideModal');
                     if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
                         var modal = bootstrap.Modal.getOrCreateInstance(modalEl);

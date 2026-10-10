@@ -3,7 +3,7 @@
  * Production-ready Progressive Web App worker for jewellery retail management.
  */
 
-const CACHE_VERSION = 'jeweldesk-v2.0.0';
+const CACHE_VERSION = 'jeweldesk-v2.1.0';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -40,8 +40,10 @@ self.addEventListener('install', (event) => {
           console.warn('[SW] Precache skipped for:', asset, err);
         }
       }
-    }).then(() => self.skipWaiting())
+    })
   );
+  // Waiting state is preserved so client UI can detect update and show reload button.
+  // When user taps "Reload & Update", client sends SKIP_WAITING to activate immediately.
 });
 
 // Activate: clean up older cache versions

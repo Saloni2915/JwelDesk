@@ -30,6 +30,7 @@ from accounts.views import (
 from .pwa_views import (
     manifest_view,
     service_worker_view,
+    app_version_view,
     offline_view,
     download_report_view,
     view_report_view,
@@ -65,6 +66,7 @@ urlpatterns = [
     path('manifest.json', manifest_view, name='pwa_manifest'),
     path('sw.js', service_worker_view, name='pwa_service_worker'),
     path('offline/', offline_view, name='pwa_offline'),
+    path('api/app-version/', app_version_view, name='pwa_app_version'),
 ]
 
 
