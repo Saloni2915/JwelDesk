@@ -839,6 +839,38 @@ class PaymentTests(TestCase):
         self.assertIn(b'Paid', body)
         self.assertIn(b'Due', body)
 
+    def test_payment_list_view_renders_and_lists_payments(self):
+        self._pay('15000', method='UPI')
+        response = self.client.get(reverse('payment_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'sales/payment_list.html')
+        self.assertContains(response, '15000.00')
+        self.assertContains(response, 'UPI')
+
+    def test_payment_list_post_records_payment_successfully(self):
+        response = self.client.post(reverse('payment_list'), {
+            'sale': self.sale.pk,
+            'amount': '25000.00',
+            'payment_method': 'Cash',
+            'reference': 'CASH-REC-01',
+            'notes': 'Advance receipt from payment page',
+        })
+        self.assertRedirects(response, reverse('payment_list'))
+        payment = Payment.objects.filter(sale=self.sale, reference='CASH-REC-01').first()
+        self.assertIsNotNone(payment)
+        self.assertEqual(payment.amount, Decimal('25000.00'))
+
+    def test_payment_list_post_rejects_overpayment(self):
+        self._pay('40000')  # Remaining due is 10,000
+        response = self.client.post(reverse('payment_list'), {
+            'sale': self.sale.pk,
+            'amount': '15000.00',  # Exceeds remaining due
+            'payment_method': 'UPI',
+        })
+        # Stays on page and does not create payment
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Payment.objects.filter(sale=self.sale).count(), 1)
+
 
 class OldGoldTransactionTests(TestCase):
     def setUp(self):
@@ -1203,6 +1235,116 @@ class OldGoldTransactionTests(TestCase):
         # Accessing exchange create should return HTTP 403 Forbidden
         response2 = self.client.get(reverse('old_gold_exchange_create'))
         self.assertEqual(response2.status_code, 403)
+
+
+class JewelleryTaxInvoiceTests(TestCase):
+    """Tests for authentic Indian jewellery tax invoice breakdown, GST toggle, and PDF."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='invoice_cashier', password='Password123')
+        self.client.login(username='invoice_cashier', password='Password123')
+        self.category = Category.objects.create(name='Necklaces')
+        self.customer = Customer.objects.create(
+            name='Kavita Sharma',
+            mobile='+91 9811122233',
+            address='B-104, Sunrise Heights, Mumbai'
+        )
+        self.item = JewelleryItem.objects.create(
+            item_code='JWL-NCK-001',
+            tag_number='TAG-916-001',
+            name='22K Floral Gold Necklace',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K (916)',
+            huid='KV9162',
+            gross_weight=Decimal('20.500'),
+            stone_weight=Decimal('0.500'),
+            net_weight=Decimal('20.000'),
+            making_charge=Decimal('400.00'),
+            making_charge_type='Per Gram',
+            selling_price=Decimal('150000.00'),
+            status='Available'
+        )
+        self.sale = Sale.objects.create(
+            customer=self.customer,
+            jewellery_item=self.item,
+            sale_price=Decimal('150000.00'),
+            payment_method='UPI'
+        )
+
+    def test_amount_to_words_inr(self):
+        from sales.invoice_utils import amount_to_words_inr
+        self.assertEqual(amount_to_words_inr(Decimal('75000.00')), 'Rupees Seventy Five Thousand Only')
+        self.assertEqual(amount_to_words_inr(Decimal('125430.50')), 'Rupees One Lakh Twenty Five Thousand Four Hundred Thirty and Fifty Paise Only')
+
+    def test_get_state_from_gstin(self):
+        from sales.invoice_utils import get_state_from_gstin
+        state, code = get_state_from_gstin('27ABCDE1234F1Z5')
+        self.assertEqual(state, 'Maharashtra')
+        self.assertEqual(code, '27')
+        state_dl, code_dl = get_state_from_gstin('07AAAAA0000A1Z5')
+        self.assertEqual(state_dl, 'Delhi')
+        self.assertEqual(code_dl, '07')
+
+    def test_calculate_invoice_breakdown_with_gst(self):
+        from sales.invoice_utils import calculate_invoice_breakdown
+        bd = calculate_invoice_breakdown(self.sale, include_gst=True)
+        self.assertTrue(bd['include_gst'])
+        self.assertEqual(bd['title'], 'TAX INVOICE')
+        self.assertEqual(bd['hsn_code'], '7113')
+        self.assertEqual(bd['gross_weight'], Decimal('20.500'))
+        self.assertEqual(bd['net_weight'], Decimal('20.000'))
+        # Financial check: taxable + cgst + sgst + round_off == sale_price
+        total_calc = bd['taxable_value'] + bd['cgst_amount'] + bd['sgst_amount'] + bd['round_off']
+        self.assertEqual(total_calc, self.sale.sale_price)
+        self.assertGreater(bd['cgst_amount'], Decimal('0.00'))
+        self.assertGreater(bd['sgst_amount'], Decimal('0.00'))
+
+    def test_calculate_invoice_breakdown_without_gst(self):
+        from sales.invoice_utils import calculate_invoice_breakdown
+        bd = calculate_invoice_breakdown(self.sale, include_gst=False)
+        self.assertFalse(bd['include_gst'])
+        self.assertEqual(bd['title'], 'RETAIL INVOICE / CASH MEMO')
+        self.assertEqual(bd['taxable_value'], self.sale.sale_price)
+        self.assertEqual(bd['cgst_amount'], Decimal('0.00'))
+        self.assertEqual(bd['sgst_amount'], Decimal('0.00'))
+        self.assertEqual(bd['total_tax'], Decimal('0.00'))
+        self.assertEqual(bd['round_off'], Decimal('0.00'))
+
+    def test_sale_detail_view_with_gst_and_without_gst(self):
+        # Default (With GST)
+        url = reverse('sale_detail', args=[self.sale.pk])
+        resp_gst = self.client.get(url)
+        self.assertEqual(resp_gst.status_code, 200)
+        self.assertContains(resp_gst, 'TAX INVOICE')
+        self.assertContains(resp_gst, '7113')
+        self.assertContains(resp_gst, 'KV9162')
+        self.assertContains(resp_gst, 'TAG-916-001')
+        self.assertTrue(resp_gst.context['include_gst'])
+
+        # Without GST (?gst=0)
+        resp_nogst = self.client.get(url + '?gst=0')
+        self.assertEqual(resp_nogst.status_code, 200)
+        self.assertFalse(resp_nogst.context['include_gst'])
+        self.assertContains(resp_nogst, 'RETAIL INVOICE / CASH MEMO')
+
+    def test_sale_invoice_pdf_with_gst_and_without_gst(self):
+        url = reverse('sale_invoice_pdf', args=[self.sale.pk])
+        
+        # With GST (?gst=1)
+        resp_gst = self.client.get(url + '?gst=1')
+        self.assertEqual(resp_gst.status_code, 200)
+        self.assertIn(b'TAX INVOICE', resp_gst.content)
+        self.assertIn(b'7113', resp_gst.content)
+        self.assertIn(b'CGST', resp_gst.content)
+
+        # Without GST (?gst=0)
+        resp_nogst = self.client.get(url + '?gst=0')
+        self.assertEqual(resp_nogst.status_code, 200)
+        self.assertIn(b'RETAIL INVOICE / CASH MEMO', resp_nogst.content)
+        self.assertIn(b'Non-GST', resp_nogst.content)
+
 
 
 

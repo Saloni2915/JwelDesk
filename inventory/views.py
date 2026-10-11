@@ -350,7 +350,11 @@ def inventory_add(request):
                 'gross_weight': source_item.gross_weight,
                 'stone_weight': source_item.stone_weight,
                 'net_weight': source_item.net_weight,
+                'making_charge_type': source_item.making_charge_type,
                 'making_charge': source_item.making_charge,
+                'wastage_percent': source_item.wastage_percent,
+                'stone_charges': source_item.stone_charges,
+                'other_charges': source_item.other_charges,
                 'selling_price': source_item.selling_price,
                 'status': 'Available',
             })
@@ -367,6 +371,8 @@ def inventory_add(request):
                 stock.record_initial_stock(item, user=request.user)
             messages.success(request, f"Jewellery item '{item.name}' ({item.item_code}) added successfully.")
             return redirect('inventory_list')
+        else:
+            messages.error(request, "Failed to save jewellery piece. Please check the highlighted errors below.")
     else:
         form = JewelleryItemForm(initial=initial_data)
 
@@ -422,6 +428,8 @@ def inventory_edit(request, pk):
             item = form.save()
             messages.success(request, f"Jewellery item '{item.name}' ({item.item_code}) updated successfully.")
             return redirect('inventory_detail', pk=item.pk)
+        else:
+            messages.error(request, "Failed to update jewellery piece. Please check the highlighted errors below.")
     else:
         form = JewelleryItemForm(instance=item)
 

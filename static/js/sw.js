@@ -3,7 +3,7 @@
  * Production-ready Progressive Web App worker for jewellery retail management.
  */
 
-const CACHE_VERSION = 'jeweldesk-v2.1.1';
+const CACHE_VERSION = 'jeweldesk-v2.3.0';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 

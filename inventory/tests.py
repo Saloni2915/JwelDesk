@@ -2104,3 +2104,99 @@ class JewelleryTagAndHallmarkTests(TestCase):
         self.assertEqual(preview.context['summary']['invalid_count'], 1)
         self.assertFalse(preview.context['can_import'])
 
+
+class JewelleryItemOptionalChargesTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='inventory_tester', password='password123')
+        self.category = Category.objects.create(name='Chains', description='Gold Chains')
+
+    def test_form_with_empty_optional_charges_saves_zero_defaults(self):
+        from inventory.forms import JewelleryItemForm
+        form_data = {
+            'tag_number': '',
+            'item_code': 'TEST-CHAIN-001',
+            'design_code': '',
+            'category': self.category.id,
+            'name': 'Test Gold Chain',
+            'metal_type': 'Gold',
+            'purity': '22K',
+            'gross_weight': '10.500',
+            'stone_weight': '',
+            'net_weight': '',
+            'making_charge_type': 'Fixed Amount',
+            'making_charge': '',
+            'wastage_percent': '',
+            'stone_charges': '',
+            'other_charges': '',
+            'selling_price': '85000.00',
+            'status': 'Available',
+        }
+        form = JewelleryItemForm(data=form_data)
+        self.assertTrue(form.is_valid(), form.errors)
+        item = form.save()
+        self.assertEqual(item.other_charges, Decimal('0.00'))
+        self.assertEqual(item.stone_charges, Decimal('0.00'))
+        self.assertEqual(item.wastage_percent, Decimal('0.00'))
+        self.assertEqual(item.stone_weight, Decimal('0.000'))
+        self.assertEqual(item.making_charge, Decimal('0.00'))
+        self.assertEqual(item.net_weight, Decimal('10.500'))
+
+    def test_inventory_add_post_with_blank_optional_charges_succeeds(self):
+        """Simulate the user's exact POST payload that previously triggered IntegrityError."""
+        self.client.login(username='inventory_tester', password='password123')
+        post_data = {
+            'tag_number': '',
+            'item_code': 'GLD-RN-001-A',
+            'design_code': '',
+            'category': str(self.category.id),
+            'name': 'Chain',
+            'huid': 'ASAS12',
+            'huid_status': 'Verified',
+            'hallmark_status': 'Hallmarked',
+            'hallmark_details': 'ABC',
+            'metal_type': 'Gold',
+            'purity': '22k',
+            'gross_weight': '10',
+            'stone_weight': '',
+            'net_weight': '10.000',
+            'making_charge_type': 'Per Gram',
+            'making_charge': '10000',
+            'wastage_percent': '',
+            'stone_charges': '',
+            'other_charges': '',
+            'selling_price': '100000',
+            'status': 'Available',
+        }
+        response = self.client.post(reverse('inventory_add'), post_data)
+        self.assertRedirects(response, reverse('inventory_list'))
+        created = JewelleryItem.objects.get(item_code='GLD-RN-001-A')
+        self.assertEqual(created.name, 'Chain')
+        self.assertEqual(created.other_charges, Decimal('0.00'))
+        self.assertEqual(created.stone_charges, Decimal('0.00'))
+        self.assertEqual(created.wastage_percent, Decimal('0.00'))
+        self.assertEqual(created.stone_weight, Decimal('0.000'))
+
+    def test_model_direct_save_with_none_charges_defaults_to_zero(self):
+        item = JewelleryItem(
+            item_code='DIRECT-SAVE-001',
+            name='Direct Save Item',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('5.000'),
+            selling_price=Decimal('45000.00'),
+            making_charge=None,
+            wastage_percent=None,
+            stone_charges=None,
+            other_charges=None,
+            stone_weight=None,
+        )
+        item.save()
+        item.refresh_from_db()
+        self.assertEqual(item.other_charges, Decimal('0.00'))
+        self.assertEqual(item.stone_charges, Decimal('0.00'))
+        self.assertEqual(item.wastage_percent, Decimal('0.00'))
+        self.assertEqual(item.stone_weight, Decimal('0.000'))
+        self.assertEqual(item.making_charge, Decimal('0.00'))
+
+

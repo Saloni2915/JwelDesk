@@ -231,7 +231,7 @@
                         </td>
                         <td class="font-monospace small">
                             <strong class="text-light">{{ row.net_weight }}g</strong> <span class="text-muted">net</span>
-                            <div class="text-muted">Gr {{ row.gross_weight }}g</div>
+                            <div class="text-muted">Gr {{ row.gross_weight }}g{% if row.stone_weight %} &middot; St {{ row.stone_weight }}g{% endif %}</div>
                         </td>
                         <td class="font-monospace text-warning fw-bold fs-6">₹{{ row.selling_price }}</td>
                         <td>

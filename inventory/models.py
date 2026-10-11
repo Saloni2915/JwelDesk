@@ -180,6 +180,16 @@ class JewelleryItem(models.Model):
 
     def clean(self):
         super().clean()
+        if self.making_charge is None:
+            self.making_charge = Decimal('0.00')
+        if self.wastage_percent is None:
+            self.wastage_percent = Decimal('0.00')
+        if self.stone_charges is None:
+            self.stone_charges = Decimal('0.00')
+        if self.other_charges is None:
+            self.other_charges = Decimal('0.00')
+        if self.stone_weight is None:
+            self.stone_weight = Decimal('0.000')
         if self.tag_number:
             self.tag_number = self.tag_number.strip()
 
@@ -274,6 +284,16 @@ class JewelleryItem(models.Model):
             self.huid = self.huid.strip().upper()
         else:
             self.huid = ''
+        if self.making_charge is None:
+            self.making_charge = Decimal('0.00')
+        if self.wastage_percent is None:
+            self.wastage_percent = Decimal('0.00')
+        if self.stone_charges is None:
+            self.stone_charges = Decimal('0.00')
+        if self.other_charges is None:
+            self.other_charges = Decimal('0.00')
+        if self.stone_weight is None:
+            self.stone_weight = Decimal('0.000')
         self.full_clean()
         super().save(*args, **kwargs)
 

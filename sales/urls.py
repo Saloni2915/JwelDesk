@@ -5,6 +5,7 @@ urlpatterns = [
     # Sales routes
     path('sales/', views.sale_list, name='sale_list'),
     path('sales/add/', views.sale_add, name='sale_add'),
+    path('sales/payments/', views.payment_list, name='payment_list'),
     path('sales/<int:pk>/', views.sale_detail, name='sale_detail'),
     path('sales/<int:pk>/invoice/pdf/', views.sale_invoice_pdf, name='sale_invoice_pdf'),
     path('sales/<int:pk>/payments/add/', views.payment_add, name='payment_add'),

@@ -91,6 +91,68 @@ class PaymentForm(forms.ModelForm):
         return amount
 
 
+class StandalonePaymentForm(forms.ModelForm):
+    """
+    Form for recording a payment from the standalone payments ledger,
+    allowing the user to choose any sale with pending dues.
+    """
+    sale = forms.ModelChoiceField(
+        queryset=Sale.objects.none(),
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_standalone_sale'}),
+        label='Select Sale / Invoice',
+        empty_label='-- Choose Customer Sale / Invoice --'
+    )
+
+    class Meta:
+        model = Payment
+        fields = ['sale', 'amount', 'payment_method', 'reference', 'notes']
+        widgets = {
+            'amount': forms.NumberInput(attrs={
+                'class': 'form-control', 'step': '0.01', 'min': '0.01',
+                'placeholder': '0.00', 'id': 'id_standalone_amount'}),
+            'payment_method': forms.Select(attrs={'class': 'form-select', 'id': 'id_standalone_method'}),
+            'reference': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Transaction ID / UPI ref / Card slip / Cheque No. (optional)',
+                'id': 'id_standalone_reference'}),
+            'notes': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 2,
+                'placeholder': 'Optional remarks or payment notes...',
+                'id': 'id_standalone_notes'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Order sales by newest, prioritizing sales with pending dues
+        self.fields['sale'].queryset = (
+            Sale.objects.select_related('customer', 'jewellery_item')
+            .order_by('-sale_date')
+        )
+        self.fields['sale'].label_from_instance = (
+            lambda s: f"INV-{s.id:05d} \u2014 {s.customer.name} | {s.jewellery_item.name} | Due: \u20b9{s.due_amount:,.2f}"
+            + (" (Paid)" if s.due_amount <= 0 else "")
+        )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        sale = cleaned_data.get('sale')
+        amount = cleaned_data.get('amount')
+
+        if amount is not None and amount <= 0:
+            self.add_error('amount', 'Payment amount must be greater than zero.')
+
+        if sale and amount:
+            remaining = sale.due_amount
+            if remaining <= 0:
+                self.add_error('sale', f'Sale INV-{sale.id:05d} is already fully settled.')
+            elif amount > remaining:
+                self.add_error(
+                    'amount',
+                    f'Payment amount of \u20b9{amount:,.2f} exceeds remaining due balance of \u20b9{remaining:,.2f}.'
+                )
+        return cleaned_data
+
+
 class OldGoldExchangeForm(forms.ModelForm):
     """
     Form for creating an Old Gold Exchange transaction linked with a new jewellery purchase.

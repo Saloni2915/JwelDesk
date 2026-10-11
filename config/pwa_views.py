@@ -56,20 +56,20 @@ def app_version_view(request):
     deployments, notify the user, and prompt them to reload immediately.
     """
     from django.http import JsonResponse
-    version = getattr(settings, 'APP_VERSION', '2.1.0')
-    build_id = getattr(settings, 'APP_BUILD_ID', '20261010-v21')
+    version = getattr(settings, 'APP_VERSION', '2.3.0')
+    build_id = getattr(settings, 'APP_BUILD_ID', '20261011-v23')
 
     data = {
         'version': version,
         'build': build_id,
         'title': 'New Update Available!',
-        'summary': 'JewelDesk v' + str(version) + ' is ready. Please reload the app to apply the latest features and performance improvements.',
+        'summary': 'JewelDesk v' + str(version) + ' is ready. Please reload the app to apply the latest jewellery invoice and system improvements.',
         'changelog': [
-            'Inventory Ledger: High-contrast pure black text & larger comfortable font sizes for clear vision',
-            'POS Billing Terminal: Seamless theme balance across Light, Gold & Dark modes',
-            'Progressive Web App: Instant update notification with one-tap reload button'
+            'Standard Jewellery Tax Invoice: Authentic showroom layout, HSN 7113, weights & rates alignment',
+            'Optional GST Mode: Instant toggle between With-GST (3%) and Non-GST Retail Cash Memo',
+            'Enhanced A4 Print Quality & High-Precision PDF Invoice generation'
         ],
-        'release_date': '2026-10-10'
+        'release_date': '2026-10-11'
     }
     response = JsonResponse(data)
     response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'

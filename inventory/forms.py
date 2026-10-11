@@ -1,8 +1,57 @@
+from decimal import Decimal, ROUND_HALF_UP
 from django import forms
 from .models import JewelleryItem, Category, StockMovement
 
 
+class SanitizedDecimalField(forms.DecimalField):
+    """
+    DecimalField that automatically rounds/quantizes input with extra decimal
+    places (e.g. 0.50000 -> 0.50, 0.002 -> 0.00) instead of failing validation.
+    Also supports default_zero=True to return Decimal('0.00') / Decimal('0.000')
+    when the field is left blank.
+    """
+    def __init__(self, *args, default_zero=False, **kwargs):
+        self.default_zero = default_zero
+        super().__init__(*args, **kwargs)
+
+    def to_python(self, value):
+        val = super().to_python(value)
+        if val is None and self.default_zero and not self.required:
+            if self.decimal_places == 3:
+                val = Decimal('0.000')
+            else:
+                val = Decimal('0.00')
+        if val is not None and self.decimal_places is not None:
+            val = val.quantize(Decimal(10) ** -self.decimal_places, rounding=ROUND_HALF_UP)
+        return val
+
+
 class JewelleryItemForm(forms.ModelForm):
+    making_charge = SanitizedDecimalField(
+        max_digits=10, decimal_places=2, required=False, default_zero=True,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}))
+    wastage_percent = SanitizedDecimalField(
+        max_digits=5, decimal_places=2, required=False, default_zero=True,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}))
+    stone_charges = SanitizedDecimalField(
+        max_digits=10, decimal_places=2, required=False, default_zero=True,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}))
+    other_charges = SanitizedDecimalField(
+        max_digits=10, decimal_places=2, required=False, default_zero=True,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}))
+    selling_price = SanitizedDecimalField(
+        max_digits=12, decimal_places=2, required=True,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}))
+    gross_weight = SanitizedDecimalField(
+        max_digits=10, decimal_places=3, required=True,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001', 'placeholder': '0.000'}))
+    stone_weight = SanitizedDecimalField(
+        max_digits=10, decimal_places=3, required=False, default_zero=True,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001', 'placeholder': '0.000'}))
+    net_weight = SanitizedDecimalField(
+        max_digits=10, decimal_places=3, required=False,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001', 'placeholder': 'Auto = Gross - Stone'}))
+
     class Meta:
         model = JewelleryItem
         fields = [
@@ -24,15 +73,7 @@ class JewelleryItemForm(forms.ModelForm):
             'huid_status': forms.Select(attrs={'class': 'form-select'}),
             'hallmark_status': forms.Select(attrs={'class': 'form-select'}),
             'hallmark_details': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Center name, assay notes, or certification ID'}),
-            'gross_weight': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001', 'placeholder': '0.000'}),
-            'stone_weight': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001', 'placeholder': '0.000'}),
-            'net_weight': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001', 'placeholder': 'Auto = Gross - Stone'}),
             'making_charge_type': forms.Select(attrs={'class': 'form-select'}),
-            'making_charge': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}),
-            'wastage_percent': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}),
-            'stone_charges': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}),
-            'other_charges': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}),
-            'selling_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
         }
 
@@ -60,8 +101,8 @@ class JewelleryItemForm(forms.ModelForm):
                     field.initial = getattr(self.instance, fname)
                 else:
                     field.initial = self.initial.get(fname, default)
-                    if not self.is_bound:
-                        self.initial.setdefault(fname, default)
+                if not self.is_bound:
+                    self.initial.setdefault(fname, default)
 
     def clean_tag_number(self):
         tag = self.cleaned_data.get('tag_number', '')
@@ -71,10 +112,27 @@ class JewelleryItemForm(forms.ModelForm):
             if self.instance and self.instance.pk:
                 qs = qs.exclude(pk=self.instance.pk)
             if qs.exists():
-                raise forms.ValidationError("This tag number is already assigned to another item.")
+                raise forms.ValidationError(
+                    f"Tag number '{tag}' is already assigned to another item. "
+                    "Please enter a unique tag or leave blank to auto-generate."
+                )
         else:
             tag = ''
         return tag
+
+    def clean_item_code(self):
+        code = self.cleaned_data.get('item_code', '')
+        if code:
+            code = code.strip()
+            qs = JewelleryItem.objects.filter(item_code__iexact=code)
+            if self.instance and self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError(
+                    f"Piece ID / Item Code '{code}' is already assigned to another piece. "
+                    "Each physical piece must have a unique Piece ID."
+                )
+        return code
 
     def clean_huid(self):
         huid = self.cleaned_data.get('huid', '')
@@ -94,16 +152,45 @@ class JewelleryItemForm(forms.ModelForm):
     def clean_making_charge(self):
         mc = self.cleaned_data.get('making_charge')
         if mc is None:
-            return 0.00
+            return Decimal('0.00')
         return mc
+
+    def clean_wastage_percent(self):
+        val = self.cleaned_data.get('wastage_percent')
+        if val is None:
+            return Decimal('0.00')
+        return val
+
+    def clean_stone_charges(self):
+        val = self.cleaned_data.get('stone_charges')
+        if val is None:
+            return Decimal('0.00')
+        return val
+
+    def clean_other_charges(self):
+        val = self.cleaned_data.get('other_charges')
+        if val is None:
+            return Decimal('0.00')
+        return val
+
+    def clean_stone_weight(self):
+        val = self.cleaned_data.get('stone_weight')
+        if val is None:
+            return Decimal('0.000')
+        return val
 
     def clean(self):
         cleaned_data = super().clean()
         gross = cleaned_data.get('gross_weight')
         stone = cleaned_data.get('stone_weight')
         if stone is None:
-            stone = 0
+            stone = Decimal('0.000')
             cleaned_data['stone_weight'] = stone
+
+        for fld in ('making_charge', 'wastage_percent', 'stone_charges', 'other_charges'):
+            if cleaned_data.get(fld) is None:
+                cleaned_data[fld] = Decimal('0.00')
+
         net = cleaned_data.get('net_weight')
 
         if gross is not None:

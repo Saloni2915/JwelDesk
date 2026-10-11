@@ -5,7 +5,27 @@
 {% block page_title %}Sale Receipt #{{ sale.id }}{% endblock %}
 
 {% block page_actions %}
-<div class="d-flex gap-2">
+<div class="d-flex flex-wrap align-items-center gap-2">
+    <!-- Interactive GST Mode Toggle -->
+    <div class="jd-gst-toggle-card p-1 px-3 rounded border bg-light d-flex align-items-center gap-2 me-1"
+         title="Switch between Standard Jewellery Tax Invoice (3% GST) and Retail Cash Memo (Without GST)">
+        <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+            <input class="form-check-input ms-0" type="checkbox" role="switch" id="gstToggleSwitch"
+                   {% if include_gst %}checked{% endif %} style="cursor: pointer; width: 2.3rem; height: 1.25rem;">
+            <label class="form-check-label fw-bold small user-select-none" for="gstToggleSwitch" id="gstToggleLabel">
+                {% if include_gst %}
+                <span class="badge bg-success-subtle text-success border border-success-subtle">
+                    <i class="bi bi-shield-check me-1"></i> GST 3% Included (Tax Invoice)
+                </span>
+                {% else %}
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                    <i class="bi bi-receipt me-1"></i> Without GST (Retail Cash Memo)
+                </span>
+                {% endif %}
+            </label>
+        </div>
+    </div>
+
     {% if whatsapp_url %}
     <a href="{{ whatsapp_url }}" target="_blank" rel="noopener" class="btn btn-success btn-sm"
        title="Open WhatsApp with a pre-filled thank-you message for {{ whatsapp_customer_name }}">
@@ -17,12 +37,13 @@
         <i class="bi bi-whatsapp me-1"></i> Send WhatsApp Thank You
     </span>
     {% endif %}
-    <button onclick="window.print()" class="btn btn-outline-dark btn-sm">
+
+    <button type="button" onclick="window.print()" class="btn btn-outline-dark btn-sm">
         <i class="bi bi-printer me-1"></i> Print Receipt
     </button>
-    <a href="{% url 'sale_invoice_pdf' sale.pk %}" class="btn btn-dark btn-sm"
-       title="Download this invoice as a PDF file">
-        <i class="bi bi-file-earmark-pdf me-1"></i> Download Invoice PDF
+    <a id="downloadPdfBtn" href="{% url 'sale_invoice_pdf' sale.pk %}{% if not include_gst %}?gst=0{% else %}?gst=1{% endif %}"
+       class="btn btn-dark btn-sm" title="Download this invoice as a PDF file">
+        <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
     </a>
     <a href="{% url 'sale_list' %}" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left me-1"></i> Back to Sales
@@ -37,8 +58,8 @@
 {% endblock %}
 
 {% block content %}
-<!-- Payment Summary -->
-<div class="row g-3 mb-4">
+<!-- Payment Summary KPIs (Hidden on print) -->
+<div class="row g-3 mb-4 d-print-none">
     <div class="col-xl-3 col-md-6">
         <div class="card stat-card p-3">
             <div class="stat-value">₹{{ sale.sale_price }}</div>
@@ -73,103 +94,336 @@
     </div>
 </div>
 
+<!-- ======================================================================== -->
+<!-- AUTHENTIC JEWELLERY INVOICE DOCUMENT                                     -->
+<!-- Designed for Standard Indian Jewellery Showrooms & A4 Printing           -->
+<!-- ======================================================================== -->
 <div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card border">
-            <!-- Receipt Header -->
-            <div class="card-header jd-invoice-header p-4">
-                <div class="d-flex justify-content-between align-items-center">
+    <div class="col-xl-9 col-lg-10 col-12">
+        <div id="invoice-document" class="card border jd-invoice-sheet shadow-sm mb-4">
+            
+            <!-- 1. SHOWROOM HEADER -->
+            <div class="p-4 pb-3 border-bottom text-center jd-invoice-header-block">
+                {% if company.logo_url %}
+                <div class="mb-2">
+                    <img src="{{ company.logo_url }}" alt="{{ company.name }}" class="jd-invoice-header-logo" style="max-height: 55px; max-width: 220px; object-fit: contain;">
+                </div>
+                {% endif %}
+                <h3 class="mb-1 fw-bold jd-showroom-name text-uppercase" style="letter-spacing: 1px;">
+                    {{ company.name|default:"JewelDesk Showroom" }}
+                </h3>
+                <div class="text-secondary small fw-semibold jd-showroom-tagline mb-1">
+                    MANUFACTURERS & RETAIL JEWELLERS &bull; GOLD, DIAMOND & SILVER ORNAMENTS &bull; BIS HALLMARKED
+                </div>
+                <div class="text-muted small jd-showroom-address mb-1">
+                    {{ company.address|default:"Showroom Counter, Main Gold Market" }}
+                    {% if company.phone %} &bull; Phone: <strong>{{ company.phone }}</strong>{% endif %}
+                    {% if company.email %} &bull; Email: {{ company.email }}{% endif %}
+                </div>
+                
+                <!-- Statutory Strip (GSTIN, State, BIS) -->
+                <div class="d-flex flex-wrap justify-content-between align-items-center bg-light border rounded px-3 py-1 mt-2 small">
                     <div>
-                        <h4 class="mb-0 fw-bold"><i class="bi bi-gem me-2"></i> JewelDesk</h4>
-                        <small class="text-white-50">Jewellery Shop Management System</small>
+                        <span class="text-muted">GSTIN:</span> 
+                        <strong class="font-monospace text-dark">{{ company.gstin|default:"27ABCDE1234F1Z5" }}</strong>
                     </div>
-                    <div class="text-end">
-                        <h5 class="mb-0 fw-semibold text-warning">INVOICE</h5>
-                        <small class="text-white-50">#INV-{{ sale.id|stringformat:"05d" }}</small>
+                    <div>
+                        <span class="text-muted">STATE:</span> 
+                        <strong class="text-dark">{{ state_name|upper }} (CODE: {{ state_code }})</strong>
+                    </div>
+                    <div>
+                        <span class="badge bg-warning-subtle text-dark border border-warning-subtle">
+                            <i class="bi bi-patch-check-fill text-warning me-1"></i> BIS 916 & HUID CERTIFIED
+                        </span>
                     </div>
                 </div>
             </div>
 
-            <div class="card-body p-4">
-                <!-- Info Row -->
+            <!-- 2. DOCUMENT TITLE BANNER -->
+            <div class="jd-invoice-title-band px-4 py-2 border-bottom text-center bg-light">
+                <h5 id="invoiceDocTitle" class="mb-0 fw-bold text-uppercase" style="letter-spacing: 0.5px;">
+                    {{ breakdown.title }}
+                </h5>
+                <small id="invoiceDocSubtitle" class="text-muted d-block font-sans">
+                    {{ breakdown.subtitle }} &bull; Original for Recipient
+                </small>
+            </div>
+
+            <div class="p-4 pt-3">
+                <!-- 3. BUYER & INVOICE DETAILS GRID -->
                 <div class="row g-3 mb-4 pb-3 border-bottom">
+                    <!-- Billed To -->
                     <div class="col-sm-6">
-                        <h6 class="text-muted text-uppercase small fw-bold mb-2">Billed To</h6>
-                        <div class="fw-bold fs-6">{{ sale.customer.name }}</div>
-                        <div>{{ sale.customer.mobile }}</div>
-                        {% if sale.customer.email %}<div>{{ sale.customer.email }}</div>{% endif %}
-                        {% if sale.customer.address %}<div class="text-muted small">{{ sale.customer.address }}</div>{% endif %}
+                        <div class="p-3 bg-light rounded border h-100">
+                            <div class="text-uppercase small fw-bold text-muted mb-2 border-bottom pb-1">
+                                <i class="bi bi-person-fill me-1"></i> Billed To (Buyer Details)
+                            </div>
+                            <div class="fw-bold fs-6 text-dark">{{ sale.customer.name }}</div>
+                            <div class="text-dark small"><strong>Mobile:</strong> {{ sale.customer.mobile }}</div>
+                            {% if sale.customer.email %}<div class="text-dark small"><strong>Email:</strong> {{ sale.customer.email }}</div>{% endif %}
+                            <div class="text-muted small"><strong>Address:</strong> {{ sale.customer.address|default:"Counter Customer / Retail Consumer" }}</div>
+                            <div class="text-muted small mt-1"><strong>Status:</strong> Unregistered Consumer</div>
+                        </div>
                     </div>
-                    <div class="col-sm-6 text-sm-end">
-                        <h6 class="text-muted text-uppercase small fw-bold mb-2">Invoice Details</h6>
-                        <div><strong>Invoice Date:</strong> {{ sale.sale_date|date:"M d, Y" }}</div>
-                        <div><strong>Time:</strong> {{ sale.sale_date|date:"h:i A" }}</div>
-                        <div><strong>Payment Method:</strong> <span class="badge bg-light text-dark border">{{ sale.payment_method }}</span></div>
+                    
+                    <!-- Invoice Meta -->
+                    <div class="col-sm-6">
+                        <div class="p-3 bg-light rounded border h-100">
+                            <div class="text-uppercase small fw-bold text-muted mb-2 border-bottom pb-1 text-sm-end">
+                                <i class="bi bi-file-earmark-text-fill me-1"></i> Invoice & Dispatch Details
+                            </div>
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span class="text-muted">Invoice No:</span>
+                                <strong class="font-monospace text-dark fs-6">INV-{{ sale.id|stringformat:"05d" }}</strong>
+                            </div>
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span class="text-muted">Date & Time:</span>
+                                <span><strong>{{ sale.sale_date|date:"d-M-Y" }}</strong> &bull; {{ sale.sale_date|date:"h:i A" }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span class="text-muted">Place of Supply:</span>
+                                <span>{{ state_name }} ({{ state_code }})</span>
+                            </div>
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span class="text-muted">Reverse Charge:</span>
+                                <span>No</span>
+                            </div>
+                            <div class="d-flex justify-content-between small">
+                                <span class="text-muted">Payment Mode:</span>
+                                <span class="badge bg-white text-dark border">{{ sale.payment_method }}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Item Details Table -->
-                <div class="table-responsive mb-4">
-                    <table class="table table-bordered mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Tag / Item Code</th>
-                                <th>Description</th>
-                                <th>Metal / Purity</th>
-                                <th>Net Weight</th>
-                                <th class="text-end">Amount</th>
+                <!-- 4. JEWELLERY LINE ITEMS TABLE -->
+                <div class="table-responsive mb-3">
+                    <table class="table table-bordered mb-0 jd-invoice-table">
+                        <thead class="table-secondary align-middle">
+                            <tr class="text-uppercase small" style="font-size: 0.78rem;">
+                                <th style="width: 4%;" class="text-center">Sr.</th>
+                                <th style="width: 27%;" class="text-start">Description of Goods</th>
+                                <th style="width: 7%;" class="text-center">HSN</th>
+                                <th style="width: 10%;" class="text-center">Purity</th>
+                                <th style="width: 8%;" class="text-end">Gross Wt</th>
+                                <th style="width: 7%;" class="text-end">Less Wt</th>
+                                <th style="width: 8%;" class="text-end">Net Wt</th>
+                                <th style="width: 9%;" class="text-end">Rate / g</th>
+                                <th style="width: 8%;" class="text-end">Making</th>
+                                <th style="width: 12%;" class="text-end" id="thTaxableAmount">
+                                    {% if include_gst %}Taxable Amt (₹){% else %}Amount (₹){% endif %}
+                                </th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="align-middle">
                             <tr>
-                                <td>
-                                    <span class="fw-semibold font-monospace">{{ sale.jewellery_item.tag_number|default:sale.jewellery_item.item_code }}</span>
-                                    <small class="text-muted d-block">{{ sale.jewellery_item.item_code }}</small>
+                                <td class="text-center fw-semibold">1</td>
+                                <td class="text-start">
+                                    <div class="fw-bold text-dark">{{ sale.jewellery_item.name }}</div>
+                                    <div class="small text-muted">{{ sale.jewellery_item.category.name }}</div>
+                                    <div class="small font-monospace text-secondary">
+                                        Tag: {{ sale.jewellery_item.tag_number|default:sale.jewellery_item.item_code }}
+                                        {% if sale.jewellery_item.huid %} &bull; <strong>HUID: {{ sale.jewellery_item.huid }}</strong>{% endif %}
+                                    </div>
                                     {% if sale.jewellery_item.design_code and sale.jewellery_item.design_code != sale.jewellery_item.item_code %}
-                                    <small class="text-muted d-block font-monospace">Design: {{ sale.jewellery_item.design_code }}</small>
-                                    {% endif %}
-                                    {% if sale.jewellery_item.huid %}
-                                    <small class="text-muted d-block font-monospace">HUID: {{ sale.jewellery_item.huid }}</small>
+                                    <div class="small font-monospace text-muted">Design: {{ sale.jewellery_item.design_code }}</div>
                                     {% endif %}
                                 </td>
-                                <td>
-                                    <strong>{{ sale.jewellery_item.name }}</strong>
-                                    <small class="text-muted d-block">{{ sale.jewellery_item.category.name }}</small>
+                                <td class="text-center font-monospace">{{ breakdown.hsn_code }}</td>
+                                <td class="text-center fw-bold">{{ sale.jewellery_item.purity|default:"22K (916)" }}</td>
+                                <td class="text-end font-monospace">{{ breakdown.gross_weight|floatformat:3 }}g</td>
+                                <td class="text-end font-monospace">{{ breakdown.stone_weight|floatformat:3 }}g</td>
+                                <td class="text-end font-monospace fw-bold text-dark">{{ breakdown.net_weight|floatformat:3 }}g</td>
+                                <td class="text-end font-monospace" id="tdRatePerGram">
+                                    {% if breakdown.rate_per_gram > 0 %}₹{{ breakdown.rate_per_gram|floatformat:2 }}{% else %}—{% endif %}
                                 </td>
-                                <td>{{ sale.jewellery_item.metal_type }} / {{ sale.jewellery_item.purity }}</td>
-                                <td>
-                                    {{ sale.jewellery_item.net_weight }}g
-                                    <small class="text-muted d-block">Gross {{ sale.jewellery_item.gross_weight }}g{% if sale.jewellery_item.stone_weight %} &middot; Stone {{ sale.jewellery_item.stone_weight }}g{% endif %}</small>
+                                <td class="text-end font-monospace" id="tdMakingCharge">
+                                    {% if breakdown.making_charges > 0 %}₹{{ breakdown.making_charges|floatformat:2 }}{% else %}Included{% endif %}
                                 </td>
-                                <td class="text-end fw-bold">₹{{ sale.sale_price }}</td>
+                                <td class="text-end font-monospace fw-bold fs-6 text-dark" id="tdTaxableAmount">
+                                    ₹{{ breakdown.taxable_value|floatformat:2 }}
+                                </td>
                             </tr>
                         </tbody>
-                        <tfoot>
-                            <tr>
-                                <th colspan="4" class="text-end">Total Amount:</th>
-                                <th class="text-end fs-5 text-success">₹{{ sale.sale_price }}</th>
+                        <tfoot class="table-light">
+                            <!-- Weight Totals Strip -->
+                            <tr class="small">
+                                <td colspan="10" class="py-2">
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center px-1">
+                                        <div><strong class="text-dark">WEIGHT TOTALS:</strong></div>
+                                        <div>Gross: <strong class="font-monospace">{{ breakdown.gross_weight|floatformat:3 }} g</strong></div>
+                                        <div>Stone/Less: <strong class="font-monospace">{{ breakdown.stone_weight|floatformat:3 }} g</strong></div>
+                                        <div>Net Precious Metal: <strong class="font-monospace text-dark">{{ breakdown.net_weight|floatformat:3 }} g</strong></div>
+                                    </div>
+                                </td>
                             </tr>
                         </tfoot>
                     </table>
                 </div>
 
-                {% if sale.notes %}
-                <div class="mb-3 p-3 bg-light rounded">
-                    <h6 class="text-muted small fw-bold mb-1">Notes:</h6>
-                    <p class="mb-0 small">{{ sale.notes }}</p>
-                </div>
-                {% endif %}
+                <!-- 5. FINANCIAL SUMMARY & TERMS (2-Column Grid) -->
+                <div class="row g-3 mb-4">
+                    <!-- Left: Amount in words, Payment info & Terms -->
+                    <div class="col-md-7">
+                        <div class="p-3 bg-light rounded border h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="text-uppercase small fw-bold text-muted mb-1">
+                                    <i class="bi bi-cash me-1"></i> Amount in Words (INR):
+                                </div>
+                                <div id="invoiceAmountWords" class="fw-bold text-dark mb-3 p-2 bg-white rounded border small" style="letter-spacing: 0.3px;">
+                                    {{ breakdown.amount_in_words }}
+                                </div>
 
-                <div class="text-center text-muted small mt-4 pt-3 border-top">
-                    Thank you for your business! For any enquiries, please visit again.
+                                <div class="small text-muted mb-2">
+                                    <strong>Payment Mode:</strong> {{ sale.payment_method }} &bull; 
+                                    <strong>Status:</strong> 
+                                    <span class="badge {% if sale.payment_status == 'Paid' %}bg-success{% elif sale.payment_status == 'Partially Paid' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                        {{ sale.payment_status }}
+                                    </span>
+                                </div>
+
+                                {% if sale.notes %}
+                                <div class="small text-muted mb-3 p-2 bg-white rounded border">
+                                    <strong>Notes:</strong> {{ sale.notes }}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Statutory Jewellery Declarations -->
+                            <div class="pt-2 border-top">
+                                <div class="text-uppercase small fw-bold text-muted mb-1">Declarations & Terms:</div>
+                                <ol class="small text-muted ps-3 mb-0" style="font-size: 0.73rem; line-height: 1.35;">
+                                    <li>Certified that all gold items comply with BIS Hallmarking standards with unique 6-character HUID.</li>
+                                    <li>Customer has verified the ornament, weight, gemstones and purity before taking delivery.</li>
+                                    <li>Exchange or buyback is subject to showroom policy against this original invoice only.</li>
+                                    <li>All disputes are subject to {{ state_name }} jurisdiction.</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Tax & Balance Calculations -->
+                    <div class="col-md-5">
+                        <div class="p-3 bg-light rounded border">
+                            <table class="table table-sm table-borderless mb-0 small">
+                                <tbody>
+                                    <tr>
+                                        <td class="text-muted" id="lblTaxableSubtotal">
+                                            {% if include_gst %}Total Taxable Value:{% else %}Subtotal Amount:{% endif %}
+                                        </td>
+                                        <td class="text-end font-monospace fw-semibold" id="summaryTaxableVal">
+                                            ₹{{ breakdown.taxable_value|floatformat:2 }}
+                                        </td>
+                                    </tr>
+
+                                    <!-- CGST Row -->
+                                    <tr id="trCgst" {% if not include_gst %}style="display: none;"{% endif %}>
+                                        <td class="text-muted">CGST @ 1.5%:</td>
+                                        <td class="text-end font-monospace" id="valCgst">
+                                            ₹{{ breakdown.cgst_amount|floatformat:2 }}
+                                        </td>
+                                    </tr>
+
+                                    <!-- SGST Row -->
+                                    <tr id="trSgst" {% if not include_gst %}style="display: none;"{% endif %}>
+                                        <td class="text-muted">SGST @ 1.5%:</td>
+                                        <td class="text-end font-monospace" id="valSgst">
+                                            ₹{{ breakdown.sgst_amount|floatformat:2 }}
+                                        </td>
+                                    </tr>
+
+                                    <!-- Total Tax Row -->
+                                    <tr id="trTotalTax" class="border-bottom" {% if not include_gst %}style="display: none;"{% endif %}>
+                                        <td class="fw-bold text-dark">Total Tax (GST 3%):</td>
+                                        <td class="text-end font-monospace fw-bold text-dark" id="valTotalTax">
+                                            ₹{{ breakdown.total_tax|floatformat:2 }}
+                                        </td>
+                                    </tr>
+
+                                    <!-- Non-GST Notice Row -->
+                                    <tr id="trNonGst" {% if include_gst %}style="display: none;"{% endif %}>
+                                        <td class="text-muted">GST / Tax Rate:</td>
+                                        <td class="text-end font-monospace text-muted">Non-GST / Nil (₹0.00)</td>
+                                    </tr>
+
+                                    {% if breakdown.old_gold_value > 0 %}
+                                    <tr>
+                                        <td class="text-warning fw-semibold">Old Gold Credit:</td>
+                                        <td class="text-end font-monospace text-warning fw-semibold">
+                                            - ₹{{ breakdown.old_gold_value|floatformat:2 }}
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+
+                                    <tr id="trRoundOff">
+                                        <td class="text-muted">Round Off (+/-):</td>
+                                        <td class="text-end font-monospace" id="valRoundOff">
+                                            {% if breakdown.round_off != 0 %}₹{{ breakdown.round_off|floatformat:2 }}{% else %}₹0.00{% endif %}
+                                        </td>
+                                    </tr>
+
+                                    <!-- GRAND TOTAL -->
+                                    <tr class="border-top border-dark">
+                                        <td class="fs-6 fw-bold text-dark pt-2">GRAND TOTAL:</td>
+                                        <td class="text-end fs-6 fw-bold font-monospace text-dark pt-2">
+                                            ₹{{ sale.sale_price|floatformat:2 }}
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td class="text-success fw-semibold">Paid Amount:</td>
+                                        <td class="text-end font-monospace text-success fw-bold">
+                                            ₹{{ sale.paid_amount|floatformat:2 }}
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td class="{% if sale.due_amount > 0 %}text-danger fw-semibold{% else %}text-muted{% endif %}">
+                                            Balance Due:
+                                        </td>
+                                        <td class="text-end font-monospace {% if sale.due_amount > 0 %}text-danger fw-bold{% else %}text-muted{% endif %}">
+                                            ₹{{ sale.due_amount|floatformat:2 }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. SIGNATURE SECTION -->
+                <div class="row pt-4 mt-2 border-top align-items-end text-center">
+                    <div class="col-sm-5 text-sm-start mb-3 mb-sm-0">
+                        <div style="height: 40px;"></div>
+                        <div class="border-top pt-1 small text-muted d-inline-block px-3">
+                            Customer's Signature
+                        </div>
+                    </div>
+                    <div class="col-sm-2 text-center mb-2 mb-sm-0 small text-muted">
+                        <i class="bi bi-gem fs-4 d-block text-warning opacity-75"></i>
+                    </div>
+                    <div class="col-sm-5 text-sm-end">
+                        <div class="fw-bold small text-dark mb-4">
+                            For {{ company.name|default:"JewelDesk Showroom" }}
+                        </div>
+                        <div class="border-top pt-1 small text-muted d-inline-block px-3">
+                            Authorised Signatory
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. FOOTER NOTE -->
+                <div class="text-center text-muted small mt-4 pt-3 border-top" style="font-size: 0.78rem;">
+                    {{ company.invoice_footer_note|default:"Thank you for choosing our showroom! We look forward to serving you again." }}
+                    <span class="d-block text-black-50" style="font-size: 0.7rem;">This is a computer-generated tax invoice issued by JewelDesk.</span>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Payment History -->
-<div class="card mt-4">
+<!-- Payment History (Hidden on print) -->
+<div class="card mt-4 d-print-none">
     <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
         <h6 class="mb-0 fw-semibold text-dark">
             <i class="bi bi-clock-history me-1"></i> Payment History
@@ -219,8 +473,8 @@
 </div>
 
 {% if sale.due_amount > 0 %}
-<!-- Add Payment Modal -->
-<div class="modal fade" id="addPaymentModal" tabindex="-1" aria-labelledby="addPaymentModalLabel" aria-hidden="true">
+<!-- Add Payment Modal (Hidden on print) -->
+<div class="modal fade d-print-none" id="addPaymentModal" tabindex="-1" aria-labelledby="addPaymentModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <form method="post" action="{% url 'payment_add' sale.pk %}" class="modal-content">
             {% csrf_token %}
@@ -233,8 +487,8 @@
             <div class="modal-body">
                 <div class="alert alert-info py-2 small mb-3">
                     <i class="bi bi-info-circle me-1"></i>
-                    Total: <strong>₹{{ sale.sale_price }}</strong> &nbsp;•&nbsp;
-                    Paid: <strong>₹{{ sale.paid_amount }}</strong> &nbsp;•&nbsp;
+                    Total: <strong>₹{{ sale.sale_price }}</strong> &bull;
+                    Paid: <strong>₹{{ sale.paid_amount }}</strong> &bull;
                     Remaining due: <strong>₹{{ sale.due_amount }}</strong>
                 </div>
                 <div class="mb-3">
@@ -270,4 +524,377 @@
     </div>
 </div>
 {% endif %}
+
+<!-- Embed JSON Breakdown Data for Instant Client-Side Toggle -->
+{{ breakdown_gst|json_script:"gstData" }}
+{{ breakdown_nogst|json_script:"noGstData" }}
+
+<style>
+/* =========================================================================
+   JEWELLERY INVOICE SCREEN & PRINT STYLES
+   ========================================================================= */
+.jd-invoice-sheet {
+    background: #ffffff;
+    border-radius: 8px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #1e293b;
+}
+
+.jd-showroom-name {
+    color: #0f172a;
+    letter-spacing: 0.8px;
+}
+
+.jd-invoice-table th {
+    font-weight: 600;
+    color: #334155;
+    background-color: #f1f5f9 !important;
+    border-color: #cbd5e1;
+    padding: 8px 10px;
+}
+
+.jd-invoice-table td {
+    border-color: #e2e8f0;
+    padding: 8px 10px;
+    color: #1e293b;
+}
+
+.jd-gst-toggle-card {
+    transition: all 0.2s ease;
+}
+.jd-gst-toggle-card:hover {
+    background-color: #e2e8f0 !important;
+}
+
+/* =========================================================================
+   A4 PRINT SPECIFIC STYLES
+   ========================================================================= */
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 6mm 8mm;
+    }
+
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-size: 10px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Hide web app UI elements when printing */
+    .sidebar,
+    .topbar,
+    .navbar,
+    .top-navbar,
+    .sidebar-backdrop,
+    .jd-topbar,
+    .d-print-none,
+    .breadcrumb,
+    .btn,
+    .modal,
+    footer,
+    .jd-gst-toggle-card,
+    .stat-card,
+    .page-header-wrapper,
+    .page-header-title,
+    .page-header-actions,
+    .alert,
+    #sidebarToggle,
+    .pwa-offline-toast,
+    .pwa-update-card,
+    .pwa-update-mini-pill {
+        display: none !important;
+    }
+
+    /* Expand main layout to 100% without breaking grid */
+    .content-wrapper,
+    .main-content,
+    #page-content,
+    .container,
+    .container-fluid {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        min-height: auto !important;
+        background: transparent !important;
+    }
+
+    #wrapper {
+        display: block !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        min-height: auto !important;
+    }
+
+    .row.justify-content-center {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+
+    .row.justify-content-center > .col-xl-9,
+    .row.justify-content-center > .col-lg-10,
+    .row.justify-content-center > .col-12 {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        flex: 0 0 100% !important;
+    }
+
+    #invoice-document {
+        box-shadow: none !important;
+        border: 1.5px solid #000000 !important;
+        border-radius: 4px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        background: #ffffff !important;
+        page-break-inside: auto !important;
+        break-inside: auto !important;
+    }
+
+    /* Maintain 2-column side-by-side grids in print (don't stack) */
+    #invoice-document .row {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        margin-left: -4px !important;
+        margin-right: -4px !important;
+    }
+
+    #invoice-document .row > * {
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+    }
+
+    #invoice-document .col-sm-6 {
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+        width: 50% !important;
+    }
+
+    #invoice-document .col-md-7 {
+        flex: 0 0 58% !important;
+        max-width: 58% !important;
+        width: 58% !important;
+    }
+
+    #invoice-document .col-md-5 {
+        flex: 0 0 42% !important;
+        max-width: 42% !important;
+        width: 42% !important;
+    }
+
+    #invoice-document .col-sm-5 {
+        flex: 0 0 45% !important;
+        max-width: 45% !important;
+        width: 45% !important;
+    }
+
+    #invoice-document .col-sm-2 {
+        flex: 0 0 10% !important;
+        max-width: 10% !important;
+        width: 10% !important;
+    }
+
+    /* Compact padding in print to fit crisp 1-page A4 */
+    #invoice-document .p-4 {
+        padding: 5px 10px !important;
+    }
+    #invoice-document .pb-3,
+    #invoice-document .pt-3,
+    #invoice-document .pt-4,
+    #invoice-document .mt-4 {
+        padding-top: 3px !important;
+        padding-bottom: 3px !important;
+        margin-top: 3px !important;
+        margin-bottom: 3px !important;
+    }
+    #invoice-document .mb-4,
+    #invoice-document .mb-3 {
+        margin-bottom: 5px !important;
+    }
+
+    .jd-invoice-header-block {
+        padding: 6px 10px 4px 10px !important;
+    }
+    .jd-showroom-name {
+        font-size: 15px !important;
+        margin-bottom: 1px !important;
+    }
+    .jd-showroom-tagline {
+        font-size: 8px !important;
+        margin-bottom: 1px !important;
+    }
+    .jd-showroom-address {
+        font-size: 8.5px !important;
+        margin-bottom: 2px !important;
+    }
+
+    .jd-invoice-title-band {
+        padding: 3px 8px !important;
+        background-color: #f8f9fa !important;
+        border-color: #000000 !important;
+    }
+    .jd-invoice-title-band h5 {
+        font-size: 11px !important;
+    }
+    .jd-invoice-title-band small {
+        font-size: 8px !important;
+    }
+
+    .jd-invoice-table th,
+    .jd-invoice-table td {
+        border-color: #333333 !important;
+        padding: 3px 4px !important;
+        font-size: 9px !important;
+        line-height: 1.2 !important;
+        color: #000000 !important;
+    }
+
+    .jd-invoice-table th {
+        background-color: #eaeaea !important;
+    }
+
+    #invoice-document .p-3 {
+        padding: 5px 6px !important;
+    }
+
+    #invoice-document ol {
+        font-size: 7.5px !important;
+        line-height: 1.2 !important;
+    }
+
+    #invoiceAmountWords {
+        margin-bottom: 4px !important;
+        padding: 3px 5px !important;
+        font-size: 8.5px !important;
+    }
+
+    #invoice-document .table-sm td {
+        padding: 1.2px 2px !important;
+        font-size: 8.5px !important;
+    }
+
+    .bg-light {
+        background-color: #f8f9fa !important;
+    }
+
+    /* Print color fidelity */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const gstToggle = document.getElementById('gstToggleSwitch');
+    const gstLabel = document.getElementById('gstToggleLabel');
+    const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+    
+    const gstDataElem = document.getElementById('gstData');
+    const noGstDataElem = document.getElementById('noGstData');
+    if (!gstToggle || !gstDataElem || !noGstDataElem) return;
+
+    const gstData = JSON.parse(gstDataElem.textContent);
+    const noGstData = JSON.parse(noGstDataElem.textContent);
+
+    function formatInr(val) {
+        const num = parseFloat(val);
+        if (isNaN(num)) return '0.00';
+        return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function applyMode(isGst) {
+        const data = isGst ? gstData : noGstData;
+
+        // 1. Update toggle label
+        if (isGst) {
+            gstLabel.innerHTML = '<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-shield-check me-1"></i> GST 3% Included (Tax Invoice)</span>';
+        } else {
+            gstLabel.innerHTML = '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"><i class="bi bi-receipt me-1"></i> Without GST (Retail Cash Memo)</span>';
+        }
+
+        // 2. Update PDF Download URL
+        const basePdfUrl = "{% url 'sale_invoice_pdf' sale.pk %}";
+        downloadPdfBtn.href = basePdfUrl + (isGst ? '?gst=1' : '?gst=0');
+
+        // 3. Update Title & Subtitle
+        document.getElementById('invoiceDocTitle').textContent = data.title;
+        document.getElementById('invoiceDocSubtitle').textContent = data.subtitle + ' \u2022 Original for Recipient';
+
+        // 4. Update Table Headers & Cells
+        const thTaxable = document.getElementById('thTaxableAmount');
+        if (thTaxable) {
+            thTaxable.textContent = isGst ? 'Taxable Amt (₹)' : 'Amount (₹)';
+        }
+
+        const tdRate = document.getElementById('tdRatePerGram');
+        if (tdRate) {
+            tdRate.textContent = data.rate_per_gram > 0 ? ('₹' + formatInr(data.rate_per_gram)) : '—';
+        }
+
+        const tdTaxable = document.getElementById('tdTaxableAmount');
+        if (tdTaxable) {
+            tdTaxable.textContent = '₹' + formatInr(data.taxable_value);
+        }
+
+        // 5. Update Financial Summary Table
+        const lblTaxableSub = document.getElementById('lblTaxableSubtotal');
+        if (lblTaxableSub) {
+            lblTaxableSub.textContent = isGst ? 'Total Taxable Value:' : 'Subtotal Amount:';
+        }
+
+        const summaryTaxableVal = document.getElementById('summaryTaxableVal');
+        if (summaryTaxableVal) {
+            summaryTaxableVal.textContent = '₹' + formatInr(data.taxable_value);
+        }
+
+        const trCgst = document.getElementById('trCgst');
+        const trSgst = document.getElementById('trSgst');
+        const trTotalTax = document.getElementById('trTotalTax');
+        const trNonGst = document.getElementById('trNonGst');
+        const valCgst = document.getElementById('valCgst');
+        const valSgst = document.getElementById('valSgst');
+        const valTotalTax = document.getElementById('valTotalTax');
+        const valRoundOff = document.getElementById('valRoundOff');
+
+        if (isGst) {
+            if (trCgst) trCgst.style.display = '';
+            if (trSgst) trSgst.style.display = '';
+            if (trTotalTax) trTotalTax.style.display = '';
+            if (trNonGst) trNonGst.style.display = 'none';
+
+            if (valCgst) valCgst.textContent = '₹' + formatInr(data.cgst_amount);
+            if (valSgst) valSgst.textContent = '₹' + formatInr(data.sgst_amount);
+            if (valTotalTax) valTotalTax.textContent = '₹' + formatInr(data.total_tax);
+        } else {
+            if (trCgst) trCgst.style.display = 'none';
+            if (trSgst) trSgst.style.display = 'none';
+            if (trTotalTax) trTotalTax.style.display = 'none';
+            if (trNonGst) trNonGst.style.display = '';
+        }
+
+        if (valRoundOff) {
+            const ro = parseFloat(data.round_off);
+            valRoundOff.textContent = (ro !== 0) ? ('₹' + formatInr(ro)) : '₹0.00';
+        }
+
+        // 6. Update URL in browser history cleanly without reload
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set('gst', isGst ? '1' : '0');
+        window.history.replaceState({}, '', newUrl.toString());
+    }
+
+    gstToggle.addEventListener('change', function() {
+        applyMode(this.checked);
+    });
+});
+</script>
 {% endblock %}

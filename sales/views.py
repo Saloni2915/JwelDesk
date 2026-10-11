@@ -14,7 +14,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 from .models import Sale, Payment, Enquiry, OldGoldTransaction, generate_old_gold_number
 from .forms import (
-    PaymentForm, SaleForm, EnquiryForm,
+    PaymentForm, StandalonePaymentForm, SaleForm, EnquiryForm,
     OldGoldExchangeForm, OldGoldBuybackForm, OldGoldCancelForm
 )
 from .whatsapp import get_whatsapp_context_for_sale
@@ -254,11 +254,33 @@ def sale_add(request):
 @login_required
 def sale_detail(request, pk):
     """View details / receipt for a sale."""
-    sale = get_object_or_404(Sale.objects.select_related('customer', 'jewellery_item', 'jewellery_item__category'), pk=pk)
+    from .invoice_utils import calculate_invoice_breakdown, get_state_from_gstin
+
+    sale = get_object_or_404(
+        Sale.objects.select_related('customer', 'jewellery_item', 'jewellery_item__category'), pk=pk)
+
+    # Read GST preference from query param ?gst=1 or ?gst=0 (defaults to True)
+    gst_param = request.GET.get('gst', '1').strip().lower()
+    include_gst = gst_param not in ('0', 'false', 'no', 'none')
+
+    breakdown_gst = calculate_invoice_breakdown(sale, include_gst=True)
+    breakdown_nogst = calculate_invoice_breakdown(sale, include_gst=False)
+    active_breakdown = breakdown_gst if include_gst else breakdown_nogst
+
+    company = CompanySettings.objects.first()
+    gstin = company.gstin if company else ''
+    state_name, state_code = get_state_from_gstin(gstin)
+
     context = {
         'sale': sale,
         'payments': sale.payments.all(),          # newest first (Payment.Meta)
         'payment_form': PaymentForm(sale=sale),   # renders the Add Payment modal
+        'breakdown': active_breakdown,
+        'breakdown_gst': breakdown_gst,
+        'breakdown_nogst': breakdown_nogst,
+        'include_gst': include_gst,
+        'state_name': state_name,
+        'state_code': state_code,
     }
     context.update(get_whatsapp_context_for_sale(sale))
     return render(request, 'sales/sale_detail.html', context)
@@ -272,8 +294,12 @@ def sale_invoice_pdf(request, pk):
     from .invoice_pdf import build_invoice_pdf
 
     sale = get_object_or_404(
-        Sale.objects.select_related('customer', 'jewellery_item'), pk=pk)
-    pdf_bytes = build_invoice_pdf(sale)
+        Sale.objects.select_related('customer', 'jewellery_item', 'jewellery_item__category'), pk=pk)
+
+    gst_param = request.GET.get('gst', '1').strip().lower()
+    include_gst = gst_param not in ('0', 'false', 'no', 'none')
+
+    pdf_bytes = build_invoice_pdf(sale, include_gst=include_gst)
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
     filename = f'INV-{sale.pk:05d}.pdf'
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
@@ -562,6 +588,127 @@ def payment_add(request, pk):
         for field, errs in form.errors.items())
     messages.error(request, f'Payment not recorded — {errors}')
     return redirect('sale_detail', pk=sale.pk)
+
+
+@login_required
+def payment_list(request):
+    """
+    Dedicated Sales Payments register & ledger.
+    Allows viewing all payments, filtering by customer, payment method, date,
+    and recording new payments against any sale with pending dues.
+    """
+    payments = (
+        Payment.objects.select_related('sale', 'sale__customer', 'sale__jewellery_item')
+        .order_by('-payment_date', '-id')
+    )
+
+    # Search (Customer name, mobile, reference, or invoice ID)
+    q = request.GET.get('q', '').strip()
+    if q:
+        clean_inv_id = None
+        if q.upper().startswith('INV-'):
+            try:
+                clean_inv_id = int(q.upper().replace('INV-', ''))
+            except ValueError:
+                pass
+        elif q.isdigit():
+            clean_inv_id = int(q)
+
+        search_query = (
+            Q(sale__customer__name__icontains=q)
+            | Q(sale__customer__mobile__icontains=q)
+            | Q(reference__icontains=q)
+            | Q(notes__icontains=q)
+            | Q(sale__jewellery_item__name__icontains=q)
+            | Q(sale__jewellery_item__item_code__icontains=q)
+            | Q(sale__jewellery_item__tag_number__icontains=q)
+        )
+        if clean_inv_id is not None:
+            search_query |= Q(sale_id=clean_inv_id)
+        payments = payments.filter(search_query)
+
+    # Filter by payment method
+    method = request.GET.get('method', '').strip()
+    if method:
+        payments = payments.filter(payment_method=method)
+
+    # Filter by date preset (today, week, month)
+    date_preset = request.GET.get('date_preset', '').strip()
+    today = timezone.localdate()
+    if date_preset == 'today':
+        payments = payments.filter(payment_date__date=today)
+    elif date_preset == 'week':
+        week_ago = today - datetime.timedelta(days=7)
+        payments = payments.filter(payment_date__date__gte=week_ago)
+    elif date_preset == 'month':
+        month_ago = today - datetime.timedelta(days=30)
+        payments = payments.filter(payment_date__date__gte=month_ago)
+
+    # Handle Recording Payment directly from this page (POST)
+    if request.method == 'POST':
+        form = StandalonePaymentForm(request.POST)
+        if form.is_valid():
+            payment = form.save()
+            messages.success(
+                request,
+                f"Payment of \u20b9{payment.amount:,.2f} recorded successfully for Invoice INV-{payment.sale.id:05d} "
+                f"({payment.sale.customer.name}). Remaining Due: \u20b9{payment.sale.due_amount:,.2f} ({payment.sale.payment_status})."
+            )
+            return redirect('payment_list')
+        else:
+            errors_str = '; '.join([f"{f}: {', '.join(errs)}" for f, errs in form.errors.items()])
+            messages.error(request, f"Could not record payment — {errors_str}")
+    else:
+        # Preselect sale if passed in query param ?sale=<id>
+        initial_sale_id = request.GET.get('sale')
+        initial_data = {}
+        if initial_sale_id and initial_sale_id.isdigit():
+            initial_data['sale'] = int(initial_sale_id)
+        form = StandalonePaymentForm(initial=initial_data)
+
+    # KPI Metrics
+    all_payments = Payment.objects.all()
+    total_collected = all_payments.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    today_collected = all_payments.filter(payment_date__date=today).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+
+    # Total outstanding dues across all sales
+    all_sales = Sale.objects.select_related('customer', 'jewellery_item').prefetch_related('payments').all()
+    total_outstanding_due = sum(s.due_amount for s in all_sales)
+    pending_sales_count = sum(1 for s in all_sales if s.due_amount > 0)
+
+    # Sales with dues mapping for dynamic client-side modal auto-fill
+    sales_with_dues_map = {
+        s.id: {
+            'due': float(s.due_amount),
+            'total': float(s.sale_price),
+            'customer': s.customer.name,
+            'item': s.jewellery_item.name,
+            'tag': s.jewellery_item.tag_number or s.jewellery_item.item_code,
+        }
+        for s in all_sales if s.due_amount > 0
+    }
+
+    # Pagination
+    paginator = Paginator(payments, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'payments': page_obj.object_list,
+        'total_count': paginator.count,
+        'total_collected': total_collected,
+        'today_collected': today_collected,
+        'total_outstanding_due': total_outstanding_due,
+        'pending_sales_count': pending_sales_count,
+        'sales_with_dues_map': sales_with_dues_map,
+        'form': form,
+        'payment_methods': Payment.PAYMENT_METHODS,
+        'selected_method': method,
+        'date_preset': date_preset,
+        'q': q,
+    }
+    return render(request, 'sales/payment_list.html', context)
 
 
 # ==============================================================================

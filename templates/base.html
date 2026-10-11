@@ -142,9 +142,15 @@
                         <div class="collapse sidebar-submenu-collapse {% if 'sale' in request.resolver_match.url_name and request.resolver_match.url_name != 'sales_report' or 'old_gold' in request.resolver_match.url_name or '/old-gold/' in request.path or '/sales/' in request.path and '/sales/report/' not in request.path %}show{% endif %}" id="submenu-sales">
                             <ul class="nav flex-column sidebar-submenu">
                                 <li class="nav-item">
-                                    <a class="nav-link {% if 'sale' in request.resolver_match.url_name and request.resolver_match.url_name != 'sales_report' and 'old_gold' not in request.resolver_match.url_name %}active{% endif %}"
+                                    <a class="nav-link {% if 'sale' in request.resolver_match.url_name and request.resolver_match.url_name != 'sales_report' and request.resolver_match.url_name != 'payment_list' and 'old_gold' not in request.resolver_match.url_name %}active{% endif %}"
                                        href="{% url 'sale_list' %}">
                                         <i class="bi bi-receipt"></i> All Sales
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'payment_list' %}active{% endif %}"
+                                       href="{% url 'payment_list' %}">
+                                        <i class="bi bi-cash-coin"></i> Payments &amp; Receipts
                                     </a>
                                 </li>
                                 <li class="nav-item">

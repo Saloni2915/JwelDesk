@@ -424,5 +424,5 @@ if 'test' in sys.argv:
     PBKDF2PasswordHasher.iterations = 1
 
 # Application Version & PWA Build Info
-APP_VERSION = '2.1.0'
-APP_BUILD_ID = '20261011-v22'
+APP_VERSION = '2.3.0'
+APP_BUILD_ID = '20261011-v23'

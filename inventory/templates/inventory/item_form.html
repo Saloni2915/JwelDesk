@@ -29,11 +29,18 @@
     <form method="post" id="jewelleryItemForm" novalidate>
         {% csrf_token %}
 
-        {% if form.non_field_errors %}
-        <div class="alert alert-danger py-2 mb-4 bg-danger bg-opacity-20 border-danger text-light">
-            {% for error in form.non_field_errors %}
-            <div class="small"><i class="bi bi-exclamation-triangle-fill me-1"></i> {{ error }}</div>
-            {% endfor %}
+        {% if form.errors %}
+        <div class="alert alert-danger py-3 mb-4 rounded border-danger shadow-sm bg-danger bg-opacity-10 text-danger" role="alert">
+            <div class="fw-bold mb-1">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> Please review and correct the errors below before saving:
+            </div>
+            <ul class="mb-0 small ps-3">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                    <li><strong>{{ field|title }}:</strong> {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
         </div>
         {% endif %}
 
@@ -215,10 +222,16 @@
                             <div>
                                 <label class="jd-field-label">Making Charge Type</label>
                                 {{ form.making_charge_type }}
+                                {% if form.making_charge_type.errors %}
+                                <div class="text-danger small mt-1">{{ form.making_charge_type.errors.0 }}</div>
+                                {% endif %}
                             </div>
                             <div>
                                 <label class="jd-field-label">Making Charge Amount</label>
                                 {{ form.making_charge }}
+                                {% if form.making_charge.errors %}
+                                <div class="text-danger small mt-1">{{ form.making_charge.errors.0 }}</div>
+                                {% endif %}
                             </div>
                         </div>
 
@@ -226,14 +239,23 @@
                             <div>
                                 <label class="jd-field-label">Wastage %</label>
                                 {{ form.wastage_percent }}
+                                {% if form.wastage_percent.errors %}
+                                <div class="text-danger small mt-1">{{ form.wastage_percent.errors.0 }}</div>
+                                {% endif %}
                             </div>
                             <div>
                                 <label class="jd-field-label">Stone Charges (₹)</label>
                                 {{ form.stone_charges }}
+                                {% if form.stone_charges.errors %}
+                                <div class="text-danger small mt-1">{{ form.stone_charges.errors.0 }}</div>
+                                {% endif %}
                             </div>
                             <div>
                                 <label class="jd-field-label">Other Charges (₹)</label>
                                 {{ form.other_charges }}
+                                {% if form.other_charges.errors %}
+                                <div class="text-danger small mt-1">{{ form.other_charges.errors.0 }}</div>
+                                {% endif %}
                             </div>
                         </div>
 

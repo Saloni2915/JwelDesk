@@ -1,0 +1,471 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sales Payments & Receipts Ledger — JewelDesk Atelier{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/sales_bullion.css' %}?v={% now "U" %}" rel="stylesheet">
+<style>
+.jd-payment-badge-cash { background-color: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); }
+.jd-payment-badge-upi { background-color: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+.jd-payment-badge-card { background-color: rgba(168, 85, 247, 0.15); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3); }
+.jd-payment-badge-bank { background-color: rgba(234, 179, 8, 0.15); color: #eab308; border: 1px solid rgba(234, 179, 8, 0.3); }
+.jd-payment-badge-cheque { background-color: rgba(249, 115, 22, 0.15); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.3); }
+.jd-payment-badge-exchange { background-color: rgba(236, 200, 106, 0.2); color: #ecc86a; border: 1px solid rgba(236, 200, 106, 0.4); }
+
+.jd-due-pill-settled { background-color: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.25); font-size: 0.75rem; padding: 2px 8px; border-radius: 9999px; }
+.jd-due-pill-pending { background-color: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.25); font-size: 0.75rem; padding: 2px 8px; border-radius: 9999px; font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="jd-sb-canvas">
+
+    <!-- 1. Header & Actions -->
+    <div class="jd-sb-header">
+        <div class="jd-sb-title-wrap">
+            <h1><i class="bi bi-cash-coin text-warning me-2"></i>Sales Payments &amp; Receipts Ledger</h1>
+            <p class="jd-sb-subtitle">Customer payment collections, money receipts, settlement history &amp; dues management</p>
+        </div>
+        <div class="jd-sb-header-actions">
+            <a href="{% url 'sale_list' %}" class="jd-btn-ghost">
+                <i class="bi bi-receipt"></i> All Sales Invoices
+            </a>
+            <button type="button" class="jd-btn-gold" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">
+                <i class="bi bi-plus-circle-fill"></i> + Receive Payment
+            </button>
+        </div>
+    </div>
+
+    <!-- 2. KPI Summary Cards Grid -->
+    <div class="jd-sb-kpi-grid">
+        <!-- Today's Collections -->
+        <div class="jd-sb-kpi-card">
+            <div class="jd-sb-kpi-top">
+                <div class="jd-sb-kpi-icon icon-green">
+                    <i class="bi bi-cash-stack"></i>
+                </div>
+                <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25">Today</span>
+            </div>
+            <div class="jd-sb-kpi-label">Today's Collections</div>
+            <div class="jd-sb-kpi-val text-success">₹{{ today_collected|floatformat:2 }}</div>
+            <div class="jd-sb-kpi-sub">Received across counters today</div>
+        </div>
+
+        <!-- Total Collected Lifetime -->
+        <div class="jd-sb-kpi-card">
+            <div class="jd-sb-kpi-top">
+                <div class="jd-sb-kpi-icon">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">Lifetime</span>
+            </div>
+            <div class="jd-sb-kpi-label">Total Collections</div>
+            <div class="jd-sb-kpi-val text-warning">₹{{ total_collected|floatformat:2 }}</div>
+            <div class="jd-sb-kpi-sub">{{ total_count }} transaction{{ total_count|pluralize }} recorded</div>
+        </div>
+
+        <!-- Total Outstanding Dues -->
+        <div class="jd-sb-kpi-card">
+            <div class="jd-sb-kpi-top">
+                <div class="jd-sb-kpi-icon icon-amber">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <span class="badge {% if total_outstanding_due > 0 %}bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25{% else %}bg-success bg-opacity-25 text-success border border-success border-opacity-25{% endif %}">
+                    {% if total_outstanding_due > 0 %}Dues Pending{% else %}All Settled{% endif %}
+                </span>
+            </div>
+            <div class="jd-sb-kpi-label">Total Customer Dues</div>
+            <div class="jd-sb-kpi-val {% if total_outstanding_due > 0 %}text-danger{% else %}text-success{% endif %}">₹{{ total_outstanding_due|floatformat:2 }}</div>
+            <div class="jd-sb-kpi-sub">{{ pending_sales_count }} customer invoice{{ pending_sales_count|pluralize }} with balance</div>
+        </div>
+
+        <!-- Total Ledger Records -->
+        <div class="jd-sb-kpi-card">
+            <div class="jd-sb-kpi-top">
+                <div class="jd-sb-kpi-icon icon-purple">
+                    <i class="bi bi-journal-check"></i>
+                </div>
+                <span class="badge bg-info bg-opacity-25 text-info border border-info border-opacity-25">Verified</span>
+            </div>
+            <div class="jd-sb-kpi-label">Payments Count</div>
+            <div class="jd-sb-kpi-val">{{ total_count }}</div>
+            <div class="jd-sb-kpi-sub">Audited collection entries</div>
+        </div>
+    </div>
+
+    <!-- 3. Search & Filter Bar -->
+    <div class="jd-sb-filter-card">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-lg-5 col-md-5 col-12">
+                <div class="input-group">
+                    <span class="input-group-text jd-sb-input-addon"><i class="bi bi-search"></i></span>
+                    <input type="text"
+                           name="q"
+                           value="{{ q }}"
+                           class="form-control jd-sb-filter-input"
+                           placeholder="Search customer, mobile, INV-00005, Txn Ref, or ornament...">
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-3 col-6">
+                <select name="method" class="form-select jd-sb-filter-select">
+                    <option value="">All Payment Methods</option>
+                    {% for code, label in payment_methods %}
+                    <option value="{{ code }}" {% if selected_method == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-2 col-6">
+                <select name="date_preset" class="form-select jd-sb-filter-select">
+                    <option value="">All Time</option>
+                    <option value="today" {% if date_preset == 'today' %}selected{% endif %}>Today</option>
+                    <option value="week" {% if date_preset == 'week' %}selected{% endif %}>Last 7 Days</option>
+                    <option value="month" {% if date_preset == 'month' %}selected{% endif %}>Last 30 Days</option>
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-2 col-12 d-flex gap-2">
+                <button type="submit" class="jd-btn-gold flex-grow-1">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+                {% if q or selected_method or date_preset %}
+                <a href="{% url 'payment_list' %}" class="jd-btn-ghost text-center px-3" title="Clear Filters">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- 4. Payments Register Table Card -->
+    <div class="jd-sb-table-card">
+        <div class="jd-sb-table-header">
+            <h2>
+                <i class="bi bi-list-check text-warning"></i>
+                Payment Receipts Register
+            </h2>
+            <span class="badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-25 font-monospace">
+                Showing {{ payments|length }} of {{ total_count }} Entries
+            </span>
+        </div>
+
+        {% if payments %}
+        <div class="jd-sb-table-scroll">
+            <table class="jd-sb-table">
+                <thead>
+                    <tr>
+                        <th>Date &amp; Time</th>
+                        <th>Invoice #</th>
+                        <th>Customer</th>
+                        <th>Jewellery Ornament</th>
+                        <th>Payment Mode</th>
+                        <th>Reference / Txn</th>
+                        <th class="text-end">Amount Paid</th>
+                        <th>Invoice Due Status</th>
+                        <th class="text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in payments %}
+                    <tr>
+                        <!-- Date & Time -->
+                        <td class="font-monospace small">
+                            <div class="text-light fw-bold">{{ p.payment_date|date:"d M Y" }}</div>
+                            <div class="text-muted" style="font-size: 0.76rem;">{{ p.payment_date|date:"h:i A" }}</div>
+                        </td>
+
+                        <!-- Invoice Link -->
+                        <td>
+                            <a href="{% url 'sale_detail' p.sale.id %}" class="fw-bold font-monospace text-warning text-decoration-none" title="View Full Invoice & Receipt">
+                                INV-{{ p.sale.id|stringformat:"05d" }}
+                            </a>
+                        </td>
+
+                        <!-- Customer Details -->
+                        <td>
+                            <div class="fw-bold text-light">{{ p.sale.customer.name }}</div>
+                            <div class="small font-monospace text-muted">{{ p.sale.customer.mobile }}</div>
+                        </td>
+
+                        <!-- Jewellery Ornament -->
+                        <td>
+                            <div class="text-light small fw-semibold">{{ p.sale.jewellery_item.name }}</div>
+                            <div class="small font-monospace text-muted" style="font-size: 0.74rem;">
+                                Tag: {{ p.sale.jewellery_item.tag_number|default:p.sale.jewellery_item.item_code }}
+                                &bull; {{ p.sale.jewellery_item.metal_type }} {{ p.sale.jewellery_item.purity }}
+                            </div>
+                        </td>
+
+                        <!-- Payment Method Badge -->
+                        <td>
+                            {% if p.payment_method == 'Cash' %}
+                            <span class="badge jd-payment-badge-cash"><i class="bi bi-cash me-1"></i>Cash</span>
+                            {% elif p.payment_method == 'UPI' %}
+                            <span class="badge jd-payment-badge-upi"><i class="bi bi-qr-code me-1"></i>UPI</span>
+                            {% elif p.payment_method == 'Card' %}
+                            <span class="badge jd-payment-badge-card"><i class="bi bi-credit-card me-1"></i>Card</span>
+                            {% elif p.payment_method == 'Bank Transfer' %}
+                            <span class="badge jd-payment-badge-bank"><i class="bi bi-bank me-1"></i>Bank Transfer</span>
+                            {% elif p.payment_method == 'Cheque' %}
+                            <span class="badge jd-payment-badge-cheque"><i class="bi bi-card-checklist me-1"></i>Cheque</span>
+                            {% elif p.payment_method == 'Exchange' %}
+                            <span class="badge jd-payment-badge-exchange"><i class="bi bi-arrow-repeat me-1"></i>Exchange</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ p.payment_method }}</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Reference / Notes -->
+                        <td class="font-monospace small">
+                            {% if p.reference %}
+                            <span class="text-light fw-semibold">{{ p.reference }}</span>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                            {% if p.notes %}
+                            <div class="text-muted text-truncate" style="max-width: 160px; font-size: 0.72rem;" title="{{ p.notes }}">
+                                {{ p.notes }}
+                            </div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Amount Paid -->
+                        <td class="text-end font-monospace fw-bold fs-6 text-success">
+                            ₹{{ p.amount|floatformat:2 }}
+                        </td>
+
+                        <!-- Invoice Due Status -->
+                        <td>
+                            {% if p.sale.due_amount <= 0 %}
+                            <span class="jd-due-pill-settled">
+                                <i class="bi bi-check-circle-fill me-1"></i>Fully Paid
+                            </span>
+                            {% else %}
+                            <span class="jd-due-pill-pending">
+                                Due: ₹{{ p.sale.due_amount|floatformat:2 }}
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Action -->
+                        <td class="text-center">
+                            <a href="{% url 'sale_detail' p.sale.id %}" class="jd-btn-ghost py-1 px-2 small" title="View Sale & Print Receipt">
+                                <i class="bi bi-receipt"></i> Invoice
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="p-3 border-top border-secondary border-opacity-25 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="small text-muted">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} &bull; Total {{ total_count }} payments
+            </span>
+            <ul class="pagination pagination-sm m-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if selected_method %}&method={{ selected_method }}{% endif %}{% if date_preset %}&date_preset={{ date_preset }}{% endif %}">&laquo;</a>
+                </li>
+                {% endif %}
+                
+                <li class="page-item active">
+                    <span class="page-link">{{ page_obj.number }}</span>
+                </li>
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if selected_method %}&method={{ selected_method }}{% endif %}{% if date_preset %}&date_preset={{ date_preset }}{% endif %}">&raquo;</a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-5">
+            <i class="bi bi-cash-coin fs-1 text-warning opacity-50 mb-2 d-block"></i>
+            <h5 class="text-light">No Payments Recorded Yet</h5>
+            <p class="text-muted small mb-3">
+                {% if q or selected_method or date_preset %}
+                No payments match your current filter criteria. Try clearing filters.
+                {% else %}
+                Record your first customer payment collection against any open sales invoice.
+                {% endif %}
+            </p>
+            <div class="d-flex justify-content-center gap-2">
+                {% if q or selected_method or date_preset %}
+                <a href="{% url 'payment_list' %}" class="jd-btn-ghost">
+                    Clear Filters
+                </a>
+                {% endif %}
+                <button type="button" class="jd-btn-gold" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">
+                    <i class="bi bi-plus-circle-fill"></i> + Receive Payment
+                </button>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+
+</div>
+
+<!-- ========================================================================= -->
+<!-- 5. RECORD PAYMENT MODAL                                                  -->
+<!-- ========================================================================= -->
+<div class="modal fade" id="recordPaymentModal" tabindex="-1" aria-labelledby="recordPaymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <form method="post" action="{% url 'payment_list' %}" class="modal-content jd-form-card border-warning border-opacity-30 shadow-lg">
+            {% csrf_token %}
+            <div class="modal-header border-bottom border-secondary border-opacity-25 py-3">
+                <h5 class="modal-title fw-bold text-light d-flex align-items-center gap-2" id="recordPaymentModalLabel">
+                    <i class="bi bi-cash-coin text-warning fs-5"></i>
+                    Receive Customer Payment
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <!-- Sale Selector -->
+                <div class="mb-3">
+                    <label for="id_standalone_sale" class="jd-field-label fw-bold">
+                        Select Customer Sale / Invoice <span class="text-danger">*</span>
+                    </label>
+                    {{ form.sale }}
+                    <div class="jd-field-help mt-1">
+                        Select from active sales. Invoices with remaining dues are highlighted.
+                    </div>
+                </div>
+
+                <!-- Dynamic Live Info Card when sale is selected -->
+                <div id="saleDetailsBanner" class="p-3 mb-3 rounded bg-dark border border-warning border-opacity-25 d-none">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <div class="small text-muted">Customer &amp; Item:</div>
+                            <strong class="text-light" id="bannerCustomerItem">—</strong>
+                        </div>
+                        <div class="text-end">
+                            <div class="small text-muted">Remaining Balance Due:</div>
+                            <span class="fs-5 fw-bold text-danger font-monospace" id="bannerDueAmount">₹0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Details Grid -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label for="id_standalone_amount" class="jd-field-label fw-bold">
+                            Payment Amount (₹) <span class="text-danger">*</span>
+                        </label>
+                        {{ form.amount }}
+                        <div class="jd-field-help mt-1 d-flex justify-content-between">
+                            <span>Enter received amount</span>
+                            <a href="#" id="fillFullDueBtn" class="text-warning text-decoration-none fw-semibold d-none">
+                                <i class="bi bi-arrow-clockwise"></i> Pay Full Due
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="id_standalone_method" class="jd-field-label fw-bold">
+                            Payment Method <span class="text-danger">*</span>
+                        </label>
+                        {{ form.payment_method }}
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="id_standalone_reference" class="jd-field-label">
+                            Transaction / Reference No.
+                        </label>
+                        {{ form.reference }}
+                        <div class="jd-field-help mt-1">UPI transaction ID, card swipe slip no., or cheque number.</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="id_standalone_notes" class="jd-field-label">
+                            Payment Remarks / Notes
+                        </label>
+                        {{ form.notes }}
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer border-top border-secondary border-opacity-25 py-3">
+                <button type="button" class="jd-btn-ghost" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="jd-btn-gold px-4">
+                    <i class="bi bi-check2-circle me-1"></i> Save &amp; Record Payment
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{ sales_with_dues_map|json_script:"salesDuesData" }}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const duesData = JSON.parse(document.getElementById('salesDuesData').textContent || '{}');
+    const saleSelect = document.getElementById('id_standalone_sale');
+    const amountInput = document.getElementById('id_standalone_amount');
+    const detailsBanner = document.getElementById('saleDetailsBanner');
+    const bannerCustomerItem = document.getElementById('bannerCustomerItem');
+    const bannerDueAmount = document.getElementById('bannerDueAmount');
+    const fillFullDueBtn = document.getElementById('fillFullDueBtn');
+
+    function onSaleChange() {
+        if (!saleSelect) return;
+        const saleId = saleSelect.value;
+        const info = duesData[saleId];
+
+        if (info && info.due > 0) {
+            detailsBanner.classList.remove('d-none');
+            bannerCustomerItem.textContent = info.customer + ' — ' + info.item + ' (' + info.tag + ')';
+            bannerDueAmount.textContent = '₹' + info.due.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            fillFullDueBtn.classList.remove('d-none');
+
+            // Auto populate amount if blank or zero
+            if (!amountInput.value || parseFloat(amountInput.value) <= 0) {
+                amountInput.value = info.due.toFixed(2);
+            }
+        } else {
+            detailsBanner.classList.add('d-none');
+            fillFullDueBtn.classList.add('d-none');
+        }
+    }
+
+    if (saleSelect) {
+        saleSelect.addEventListener('change', onSaleChange);
+        // If preselected on load
+        if (saleSelect.value) {
+            onSaleChange();
+            // Auto open modal if ?sale= param was provided
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('sale')) {
+                const modalEl = document.getElementById('recordPaymentModal');
+                if (modalEl && typeof bootstrap !== 'undefined') {
+                    const modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                }
+            }
+        }
+    }
+
+    if (fillFullDueBtn) {
+        fillFullDueBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const saleId = saleSelect.value;
+            const info = duesData[saleId];
+            if (info && info.due > 0) {
+                amountInput.value = info.due.toFixed(2);
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
