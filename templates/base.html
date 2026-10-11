@@ -46,9 +46,9 @@
                 </button>
                 <a class="navbar-brand d-inline-flex align-items-center text-truncate p-0 m-0" href="{% url 'dashboard' %}" style="line-height: 1.2;">
                     {% if company.logo_url %}
-                    <img src="{{ company.logo_url }}" alt="{{ company.name }}" class="me-2 rounded flex-shrink-0 navbar-brand-logo" style="width: 24px; height: 24px; object-fit: contain; background: rgba(255, 255, 255, 0.95); padding: 1px;">
+                    <img src="{{ company.logo_url }}" alt="{{ company.name }}" class="me-2 rounded flex-shrink-0 navbar-brand-logo" style="height: 38px; max-height: 38px; width: auto; max-width: 150px; object-fit: contain; background: #ffffff; padding: 2px 6px; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.18);" onerror="this.onerror=null; this.src='{% static 'icons/favicon-32x32.png' %}';">
                     {% else %}
-                    <img src="{% static 'icons/favicon-32x32.png' %}" alt="JewelDesk" class="me-2 rounded flex-shrink-0" style="width: 22px; height: 22px; object-fit: cover;">
+                    <img src="{% static 'icons/favicon-32x32.png' %}" alt="JewelDesk" class="me-2 rounded flex-shrink-0 navbar-brand-icon" style="width: 28px; height: 28px; object-fit: cover;">
                     {% endif %}
                     <span class="fw-semibold company-name">{{ company.name|default:"JewelDesk" }}</span>
                 </a>
@@ -501,7 +501,7 @@
             <div class="sidebar-company">
                 {% if company.logo_url %}
                 <a href="{% url 'accounts:company_settings' %}" class="sidebar-company-logo-link" title="{{ company.name }} logo">
-                    <img src="{{ company.logo_url }}" alt="{{ company.name }} logo" class="sidebar-company-logo">
+                    <img src="{{ company.logo_url }}" alt="{{ company.name }} logo" class="sidebar-company-logo" onerror="this.onerror=null; this.src='{% static 'images/branding/company_logo.png' %}';">
                 </a>
                 {% endif %}
                 <div class="sidebar-company-name">{{ company.name }}</div>

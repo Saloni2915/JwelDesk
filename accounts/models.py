@@ -158,15 +158,9 @@ class CompanySettings(models.Model):
     @property
     def logo_url(self):
         """Safe logo URL that never raises an exception during template rendering."""
-        ts = int(self.updated_at.timestamp()) if getattr(self, 'updated_at', None) else 0
         if not self.logo:
-            # Check if there is a logo blob stored in DB
-            blob = get_logo_blob()
-            if blob:
-                filename, _, _ = blob
-                restore_logo_file(filename)
-                return f"{settings.MEDIA_URL.rstrip('/')}/{filename}?v={ts}"
             return None
+        ts = int(self.updated_at.timestamp()) if getattr(self, 'updated_at', None) else 0
         try:
             self.ensure_logo_file()
             base_url = self.logo.url

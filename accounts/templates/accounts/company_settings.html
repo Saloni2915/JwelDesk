@@ -121,8 +121,8 @@
                                 
                                 <div id="currentLogoBox" class="mb-3 d-flex align-items-center flex-wrap gap-3 p-3 rounded {% if not settings_obj.logo_url %}d-none{% endif %}"
                                      style="background: rgba(236, 200, 106, 0.05); border: 1px solid rgba(236, 200, 106, 0.2);">
-                                    <img src="{{ settings_obj.logo_url|default:'' }}" id="logoPreviewImg" alt="Current logo" style="max-height: 64px; max-width: 180px; object-fit: contain;"
-                                         class="rounded p-1 bg-white shadow-sm">
+                                    <img src="{{ settings_obj.logo_url|default:'' }}" id="logoPreviewImg" alt="Current logo" style="max-height: 80px; max-width: 220px; object-fit: contain;"
+                                         class="rounded p-2 bg-white shadow-sm" onerror="this.onerror=null; this.src='{% static 'images/branding/company_logo.png' %}';">
                                     <div>
                                         <span class="d-block fw-semibold text-break" id="logoFileName" style="color: var(--jd-gold);">{{ settings_obj.logo.name|default:"Selected Logo" }}</span>
                                         <small class="text-muted" id="logoStatusText">Currently active brand insignia for PDF invoices and headers</small>
@@ -143,6 +143,9 @@
                                     <div class="mt-3 d-flex flex-wrap align-items-center gap-2">
                                         <button type="submit" class="jd-btn-gold btn-sm d-inline-flex align-items-center gap-1" id="btn-quick-save-logo">
                                             <i class="bi bi-cloud-arrow-up-fill me-1"></i> Save &amp; Apply New Logo
+                                        </button>
+                                        <button type="submit" name="reset_default_logo" value="1" class="btn btn-outline-warning btn-sm d-inline-flex align-items-center gap-1" id="btn-reset-default-logo" onclick="return confirm('Restore JewelDesk official luxury brand insignia?');" style="border-color: rgba(236, 200, 106, 0.5); color: var(--jd-gold);">
+                                            <i class="bi bi-arrow-counterclockwise me-1"></i> Restore JewelDesk Logo
                                         </button>
                                         <span class="text-muted small" style="font-size: 0.78rem;">Updates logo across top navigation, sidebar, and GST tax invoice PDFs.</span>
                                     </div>
@@ -257,6 +260,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     if (previewImg) previewImg.style.opacity = '1';
                     if (statusText) statusText.textContent = 'Currently active brand insignia';
+                }
+            });
+        }
+
+        // Quick Save Button: if no file selected yet, open file picker instead of empty submit
+        const quickSaveBtn = document.getElementById('btn-quick-save-logo');
+        if (quickSaveBtn && logoInput) {
+            quickSaveBtn.addEventListener('click', function(e) {
+                const hasFile = logoInput.files && logoInput.files.length > 0;
+                const isClearChecked = clearCheckbox && clearCheckbox.checked;
+                if (!hasFile && !isClearChecked) {
+                    e.preventDefault();
+                    logoInput.click();
                 }
             });
         }

@@ -6,7 +6,9 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db import transaction
+import logging
+import time
+from django.db import connection, transaction
 from django.db.models import Avg, Count, Q, Sum
 from django.http import JsonResponse
 from django.utils import timezone
@@ -22,6 +24,29 @@ from team.permissions import require_permission, has_module_perm
 from accounts.models import CompanySettings
 
 
+logger = logging.getLogger('sales.perf')
+
+
+class _QueryExecutionTracker:
+    """Temporary diagnostic wrapper to count executed SQL queries and measure cumulative SQL time.
+
+    Safe for production with DEBUG=False. Does not inspect, record, or log SQL statements,
+    parameters, table names, or any sensitive data.
+    """
+
+    def __init__(self):
+        self.count = 0
+        self.cumulative_duration_ms = 0.0
+
+    def __call__(self, execute, sql, params, many, context):
+        start = time.perf_counter()
+        try:
+            return execute(sql, params, many, context)
+        finally:
+            self.cumulative_duration_ms += (time.perf_counter() - start) * 1000.0
+            self.count += 1
+
+
 # ==============================================================================
 # SALES VIEWS
 # ==============================================================================
@@ -29,56 +54,96 @@ from accounts.models import CompanySettings
 @login_required
 def sale_list(request):
     """List all sales records with search and payment method filters."""
-    sales = (
-        Sale.objects.select_related('customer', 'jewellery_item')
-        .prefetch_related('payments')
-        .order_by('-sale_date')
-    )
+    t_view_start = time.perf_counter()
+    tracker = _QueryExecutionTracker()
 
-    # Search (Customer name or item name/code/tag/design/HUID)
-    q = request.GET.get('q', '').strip()
-    if q:
-        sales = sales.filter(
-            Q(customer__name__icontains=q) |
-            Q(jewellery_item__name__icontains=q) |
-            Q(jewellery_item__tag_number__icontains=q) |
-            Q(jewellery_item__item_code__icontains=q) |
-            Q(jewellery_item__design_code__icontains=q) |
-            Q(jewellery_item__huid__icontains=q)
+    with connection.execute_wrapper(tracker):
+        sales = (
+            Sale.objects.select_related('customer', 'jewellery_item')
+            .prefetch_related('payments')
+            .order_by('-sale_date')
         )
 
-    # Payment method filter
-    payment = request.GET.get('payment', '').strip()
-    if payment:
-        sales = sales.filter(payment_method=payment)
+        # Search (Customer name or item name/code/tag/design/HUID)
+        q = request.GET.get('q', '').strip()
+        if q:
+            sales = sales.filter(
+                Q(customer__name__icontains=q) |
+                Q(jewellery_item__name__icontains=q) |
+                Q(jewellery_item__tag_number__icontains=q) |
+                Q(jewellery_item__item_code__icontains=q) |
+                Q(jewellery_item__design_code__icontains=q) |
+                Q(jewellery_item__huid__icontains=q)
+            )
 
-    # KPI summary metrics across sales
-    all_sales = Sale.objects.all()
-    total_revenue_all = all_sales.aggregate(total=Sum('sale_price'))['total'] or Decimal('0.00')
-    total_sales_count = all_sales.count()
+        # Payment method filter
+        payment = request.GET.get('payment', '').strip()
+        if payment:
+            sales = sales.filter(payment_method=payment)
 
-    today = timezone.now().date()
-    today_sales = all_sales.filter(sale_date__date=today)
-    today_sales_revenue = today_sales.aggregate(total=Sum('sale_price'))['total'] or Decimal('0.00')
-    today_sales_count = today_sales.count()
+        # Stage 1: KPI summary metrics across sales
+        t_kpi_start = time.perf_counter()
+        q_kpi_before = tracker.count
+        all_sales = Sale.objects.all()
+        total_revenue_all = all_sales.aggregate(total=Sum('sale_price'))['total'] or Decimal('0.00')
+        total_sales_count = all_sales.count()
 
-    # Pagination
-    paginator = Paginator(sales, 15)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+        today = timezone.now().date()
+        today_sales = all_sales.filter(sale_date__date=today)
+        today_sales_revenue = today_sales.aggregate(total=Sum('sale_price'))['total'] or Decimal('0.00')
+        today_sales_count = today_sales.count()
+        t_kpi_elapsed_ms = (time.perf_counter() - t_kpi_start) * 1000.0
+        q_kpi_count = tracker.count - q_kpi_before
 
-    context = {
-        'sales': page_obj,
-        'page_obj': page_obj,
-        'payment_choices': Sale.PAYMENT_METHODS,
-        'selected_q': q,
-        'selected_payment': payment,
-        'total_revenue_all': total_revenue_all,
-        'total_sales_count': total_sales_count,
-        'today_sales_revenue': today_sales_revenue,
-        'today_sales_count': today_sales_count,
-    }
-    return render(request, 'sales/sale_list.html', context)
+        # Stage 2: Pagination
+        t_page_start = time.perf_counter()
+        q_page_before = tracker.count
+        paginator = Paginator(sales, 15)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        t_page_elapsed_ms = (time.perf_counter() - t_page_start) * 1000.0
+        q_page_count = tracker.count - q_page_before
+
+        context = {
+            'sales': page_obj,
+            'page_obj': page_obj,
+            'payment_choices': Sale.PAYMENT_METHODS,
+            'selected_q': q,
+            'selected_payment': payment,
+            'total_revenue_all': total_revenue_all,
+            'total_sales_count': total_sales_count,
+            'today_sales_revenue': today_sales_revenue,
+            'today_sales_count': today_sales_count,
+        }
+
+        # Stage 3: Template rendering (including context processors)
+        t_render_start = time.perf_counter()
+        q_render_before = tracker.count
+        response = render(request, 'sales/sale_list.html', context)
+        t_render_elapsed_ms = (time.perf_counter() - t_render_start) * 1000.0
+        q_render_count = tracker.count - q_render_before
+
+    t_view_total_ms = (time.perf_counter() - t_view_start) * 1000.0
+
+    logger.warning(
+        "[PERF_DIAGNOSTIC] /sales/ timing: "
+        "total_view_ms=%.2f | "
+        "kpi_metrics_ms=%.2f (queries=%d) | "
+        "pagination_fetch_ms=%.2f (queries=%d) | "
+        "template_render_ms=%.2f (queries=%d) | "
+        "sql_total_ms=%.2f (sql_count=%d)",
+        t_view_total_ms,
+        t_kpi_elapsed_ms,
+        q_kpi_count,
+        t_page_elapsed_ms,
+        q_page_count,
+        t_render_elapsed_ms,
+        q_render_count,
+        tracker.cumulative_duration_ms,
+        tracker.count,
+    )
+
+    return response
 
 
 @login_required

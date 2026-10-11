@@ -3,7 +3,7 @@
  * Production-ready Progressive Web App worker for jewellery retail management.
  */
 
-const CACHE_VERSION = 'jeweldesk-v2.1.0';
+const CACHE_VERSION = 'jeweldesk-v2.1.1';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -111,13 +111,15 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2. Static Assets (CSS, JS, Fonts, Images): Stale-While-Revalidate
-  const isStaticAsset =
+  // 2. Static Assets (CSS, JS, Fonts, Static Images): Stale-While-Revalidate
+  const isMediaUpload = url.pathname.startsWith('/media/');
+  const isStaticAsset = !isMediaUpload && (
     request.destination === 'style' ||
     request.destination === 'script' ||
     request.destination === 'font' ||
     request.destination === 'image' ||
-    url.pathname.startsWith('/static/');
+    url.pathname.startsWith('/static/')
+  );
 
   if (isStaticAsset) {
     event.respondWith(

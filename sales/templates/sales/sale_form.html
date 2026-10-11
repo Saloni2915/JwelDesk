@@ -49,21 +49,38 @@
         {% csrf_token %}
 
         {% if form.non_field_errors %}
-        <div class="alert alert-danger py-2 mb-3 bg-danger bg-opacity-25 border-danger text-light">
+        <div class="jd-pos-alert-error" role="alert">
+            <div class="jd-pos-alert-error-title">
+                <i class="bi bi-exclamation-octagon-fill"></i> System Notice:
+            </div>
             {% for error in form.non_field_errors %}
-            <div class="small"><i class="bi bi-exclamation-triangle-fill me-1"></i> {{ error }}</div>
+            <div class="jd-pos-alert-error-msg"><i class="bi bi-dot"></i> {{ error }}</div>
             {% endfor %}
         </div>
         {% endif %}
 
         {% if form.errors %}
-        <div class="alert alert-warning py-2 mb-3 bg-warning bg-opacity-20 border-warning text-light">
-            <div class="small fw-semibold text-warning mb-1"><i class="bi bi-exclamation-circle-fill me-1"></i> Please check form inputs:</div>
+        <div class="jd-pos-alert-error" role="alert">
+            <div class="jd-pos-alert-error-title">
+                <i class="bi bi-exclamation-triangle-fill"></i> Please complete required fields before billing:
+            </div>
+            <div class="jd-pos-alert-error-list">
             {% for field, errors in form.errors.items %}
                 {% for err in errors %}
-                <div class="small text-warning-emphasis">&bull; <strong>{{ field|title }}:</strong> {{ err }}</div>
+                <div class="jd-pos-alert-error-item">
+                    <span class="jd-pos-alert-error-badge">Required</span>
+                    <strong class="jd-pos-alert-error-field">
+                        {% if field == 'jewellery_item' %}Jewellery Item
+                        {% elif field == 'customer' %}Customer
+                        {% elif field == 'sale_price' %}Sale Price
+                        {% elif field == 'payment_method' %}Payment Method
+                        {% else %}{{ field|cut:"_"|title }}{% endif %}:
+                    </strong>
+                    <span class="jd-pos-alert-error-desc">{{ err }}</span>
+                </div>
                 {% endfor %}
             {% endfor %}
+            </div>
         </div>
         {% endif %}
 
@@ -100,6 +117,12 @@
                             <label for="{{ form.customer.id_for_label }}" class="form-label text-warning small">Select Customer</label>
                             {{ form.customer }}
                         </div>
+                        {% if form.customer.errors %}
+                        <div class="jd-pos-field-error mb-2">
+                            <i class="bi bi-exclamation-circle-fill me-1"></i>
+                            {% for err in form.customer.errors %}{{ err }}{% endfor %}
+                        </div>
+                        {% endif %}
 
                         <!-- Selected Customer Dynamic Card -->
                         <div class="jd-pos-customer-card" id="selectedCustomerCard">
@@ -158,6 +181,12 @@
                                 Available Vault Inventory Item <span class="text-danger">*</span>
                             </label>
                             {{ form.jewellery_item }}
+                            {% if form.jewellery_item.errors %}
+                            <div class="jd-pos-field-error">
+                                <i class="bi bi-exclamation-circle-fill me-1"></i>
+                                {% for err in form.jewellery_item.errors %}{{ err }}{% endfor %}
+                            </div>
+                            {% endif %}
                         </div>
 
                         <!-- Active Jewellery Item Specs Card -->

@@ -425,4 +425,4 @@ if 'test' in sys.argv:
 
 # Application Version & PWA Build Info
 APP_VERSION = '2.1.0'
-APP_BUILD_ID = '20261010-v21'
+APP_BUILD_ID = '20261011-v22'

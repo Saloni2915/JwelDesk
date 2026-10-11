@@ -180,33 +180,69 @@ def company_settings(request):
         settings_obj = CompanySettings(company_name='JewelDesk')
 
     if request.method == 'POST':
+        # 1. 1-Click quick restore of official brand insignia
+        if request.POST.get('reset_default_logo') == '1':
+            try:
+                from pathlib import Path
+                from django.conf import settings
+                static_logo = settings.BASE_DIR / 'static' / 'images' / 'branding' / 'company_logo.png'
+                if static_logo.exists():
+                    logo_bytes = static_logo.read_bytes()
+                    final_name = 'company/logo.png'
+                    save_logo_blob(final_name, logo_bytes, 'image/png')
+                    dest = Path(settings.MEDIA_ROOT) / final_name
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    dest.write_bytes(logo_bytes)
+                    settings_obj.logo.name = final_name
+                    settings_obj.save()
+                    try:
+                        from django.core.cache import cache
+                        cache.delete('company_settings:singleton')
+                    except Exception:
+                        pass
+                    messages.success(request, 'JewelDesk official brand insignia restored successfully!')
+                    return redirect('accounts:company_settings')
+            except Exception as reset_err:
+                import logging
+                logging.getLogger(__name__).warning("Reset logo warning: %s", reset_err)
+
         form = CompanySettingsForm(
             request.POST, request.FILES, instance=settings_obj)
         if form.is_valid():
             uploaded_logo = request.FILES.get('logo')
             logo_cleared = request.POST.get('logo-clear') == 'on'
 
-            if logo_cleared:
-                clear_logo_blob()
-
             if uploaded_logo:
                 try:
                     logo_bytes = uploaded_logo.read()
                     uploaded_logo.seek(0)
                     content_type = uploaded_logo.content_type or 'image/png'
-                    filename = f"company/{uploaded_logo.name}"
-                    save_logo_blob(filename, logo_bytes, content_type)
-                    from pathlib import Path
-                    from django.conf import settings
-                    dest = Path(settings.MEDIA_ROOT) / filename
-                    dest.parent.mkdir(parents=True, exist_ok=True)
-                    dest.write_bytes(logo_bytes)
-                except Exception as blob_err:
-                    import logging
-                    logging.getLogger(__name__).warning("Logo blob backup warning: %s", blob_err)
+                except Exception:
+                    logo_bytes = None
+                    content_type = 'image/png'
+            else:
+                logo_bytes = None
 
             try:
-                form.save()
+                instance = form.save()
+
+                if logo_cleared:
+                    clear_logo_blob()
+                    instance.logo = None
+                    instance.save(update_fields=['logo'])
+                elif uploaded_logo and instance.logo and logo_bytes:
+                    try:
+                        final_filename = instance.logo.name
+                        save_logo_blob(final_filename, logo_bytes, content_type)
+                        from pathlib import Path
+                        from django.conf import settings
+                        dest = Path(settings.MEDIA_ROOT) / final_filename
+                        dest.parent.mkdir(parents=True, exist_ok=True)
+                        dest.write_bytes(logo_bytes)
+                    except Exception as blob_err:
+                        import logging
+                        logging.getLogger(__name__).warning("Logo blob backup warning: %s", blob_err)
+
                 try:
                     from django.core.cache import cache
                     cache.delete('company_settings:singleton')
@@ -221,10 +257,18 @@ def company_settings(request):
                 try:
                     for field in ('company_name', 'gstin', 'phone', 'email', 'address', 'invoice_footer_note'):
                         setattr(settings_obj, field, form.cleaned_data.get(field, getattr(settings_obj, field)))
-                    if uploaded_logo:
-                        settings_obj.logo.name = f"company/{uploaded_logo.name}"
+                    if uploaded_logo and logo_bytes:
+                        final_filename = f"company/{uploaded_logo.name}"
+                        settings_obj.logo.name = final_filename
+                        save_logo_blob(final_filename, logo_bytes, content_type)
+                        from pathlib import Path
+                        from django.conf import settings
+                        dest = Path(settings.MEDIA_ROOT) / final_filename
+                        dest.parent.mkdir(parents=True, exist_ok=True)
+                        dest.write_bytes(logo_bytes)
                     elif logo_cleared:
                         settings_obj.logo = None
+                        clear_logo_blob()
                     settings_obj.save()
                     try:
                         from django.core.cache import cache

@@ -283,8 +283,29 @@ a:hover {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: clamp(0.88rem, 2.8vw, 1.15rem);
     vertical-align: middle;
+}
+
+.navbar-brand-logo {
+    height: 38px;
+    max-height: 38px;
+    width: auto;
+    max-width: 150px;
+    object-fit: contain;
+    background: #ffffff;
+    border-radius: 6px;
+    padding: 2px 6px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.16);
+    display: inline-block;
+}
+
+@media (max-width: 575.98px) {
+    .navbar-brand-logo {
+        height: 32px;
+        max-height: 32px;
+        max-width: 110px;
+        padding: 2px 4px;
+    }
 }
 
 .navbar-dark .navbar-text {
@@ -548,14 +569,15 @@ a:hover {
 
 .sidebar-company-logo {
     display: block !important;
-    max-width: 150px !important;
-    max-height: 42px !important;
+    max-width: 170px !important;
+    max-height: 48px !important;
     width: auto !important;
     height: auto !important;
     border-radius: 6px !important;
     object-fit: contain !important;
     background: #ffffff !important;
-    padding: 3px 6px !important;
+    padding: 3px 8px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
 }
 
 .sidebar-company-name {
