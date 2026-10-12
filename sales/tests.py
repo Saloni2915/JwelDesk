@@ -876,15 +876,19 @@ class OldGoldTransactionTests(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user(username='sales_rep', password='Password123', is_staff=True)
+        from accounts.models import Tenant
+        self.tenant = Tenant.objects.create(name='Test Showroom', owner=self.user)
         self.client.login(username='sales_rep', password='Password123')
 
-        self.category = Category.objects.create(name='Necklaces', description='Gold Necklaces')
+        self.category = Category.objects.create(tenant=self.tenant, name='Necklaces', description='Gold Necklaces')
         self.customer = Customer.objects.create(
+            tenant=self.tenant,
             name='Priya Sharma',
             mobile='+91 9123456780',
             email='priya@example.com'
         )
         self.available_item = JewelleryItem.objects.create(
+            tenant=self.tenant,
             item_code='NK-001',
             tag_number='JWL-000099',
             name='22K Heritage Gold Necklace',
@@ -1046,6 +1050,7 @@ class OldGoldTransactionTests(TestCase):
     def test_exchange_where_old_gold_exceeds_new_item_price(self):
         """Old gold value (e.g. 58,212) > New Ring price (e.g. 40,000)."""
         cheap_ring = JewelleryItem.objects.create(
+            tenant=self.tenant,
             item_code='RN-CHEAP',
             name='Simple 18K Band',
             category=self.category,
@@ -1138,6 +1143,7 @@ class OldGoldTransactionTests(TestCase):
 
     def test_cancellation_preserves_audit_trail(self):
         tx = OldGoldTransaction.objects.create(
+            tenant=self.tenant,
             transaction_number='OGX-AUDIT-1',
             transaction_type='Exchange',
             customer=self.customer,
@@ -1174,6 +1180,7 @@ class OldGoldTransactionTests(TestCase):
     def test_sales_report_preserves_normal_sales_totals(self):
         # Create normal sale
         sale = Sale.objects.create(
+            tenant=self.tenant,
             customer=self.customer,
             jewellery_item=self.available_item,
             sale_price=Decimal('120000.00'),
@@ -1182,6 +1189,7 @@ class OldGoldTransactionTests(TestCase):
 
         # Create buyback
         OldGoldTransaction.objects.create(
+            tenant=self.tenant,
             transaction_number='OGB-REP-1',
             transaction_type='Buyback',
             customer=self.customer,

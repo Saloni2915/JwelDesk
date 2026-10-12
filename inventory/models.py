@@ -7,12 +7,26 @@ from django.utils import timezone
 
 
 class Category(models.Model):
-    name = models.CharField(max_length=100, unique=True)
+    tenant = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.CASCADE,
+        related_name='categories',
+        null=True,
+        blank=True,
+        help_text="Tenant shop owning this category"
+    )
+    name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
 
     class Meta:
         verbose_name_plural = 'Categories'
         ordering = ['name']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tenant', 'name'],
+                name='unique_tenant_category_name',
+            ),
+        ]
 
     def __str__(self):
         return self.name
@@ -23,12 +37,26 @@ class ItemSequence(models.Model):
     Atomic monotonic sequence tracker for jewellery tag numbers (e.g. JWL-000001).
     Used to prevent duplicates under concurrent item creation without gaps or collisions.
     """
-    name = models.CharField(max_length=50, unique=True, default='jewellery_tag')
+    tenant = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.CASCADE,
+        related_name='item_sequences',
+        null=True,
+        blank=True,
+        help_text="Tenant shop owning this sequence"
+    )
+    name = models.CharField(max_length=50, default='jewellery_tag')
     last_number = models.PositiveIntegerField(default=0)
 
     class Meta:
         verbose_name = 'Item Sequence'
         verbose_name_plural = 'Item Sequences'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tenant', 'name'],
+                name='unique_tenant_sequence_name',
+            ),
+        ]
 
     def __str__(self):
         return f"{self.name}: {self.last_number}"
@@ -62,15 +90,24 @@ class JewelleryItem(models.Model):
         ('Hallmarked', 'Hallmarked'),
     ]
 
+    # Tenant ownership
+    tenant = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.CASCADE,
+        related_name='jewellery_items',
+        null=True,
+        blank=True,
+        help_text="Tenant shop owning this jewellery piece"
+    )
+
     # Physical piece identity
     tag_number = models.CharField(
         max_length=50,
-        unique=True,
         blank=True,
         db_index=True,
-        help_text="Unique physical jewellery piece tag number (e.g. JWL-000001)"
+        help_text="Physical jewellery piece tag number (e.g. JWL-000001)"
     )
-    item_code = models.CharField(max_length=50, unique=True, help_text="Unique piece ID / Tag / Barcode")
+    item_code = models.CharField(max_length=50, help_text="Piece ID / Tag / Barcode")
     design_code = models.CharField(
         max_length=50,
         blank=True,
@@ -169,12 +206,20 @@ class JewelleryItem(models.Model):
     class Meta:
         ordering = ['-created_at']
         constraints = [
-            # HUID must be unique when provided; blank ('') values are allowed
+            models.UniqueConstraint(
+                fields=['tenant', 'tag_number'],
+                name='unique_tenant_item_tag_number',
+            ),
+            models.UniqueConstraint(
+                fields=['tenant', 'item_code'],
+                name='unique_tenant_item_code',
+            ),
+            # HUID must be unique per tenant when provided; blank ('') values are allowed
             # to repeat so non-hallmarked pieces stay importable/searchable.
             models.UniqueConstraint(
-                fields=['huid'],
+                fields=['tenant', 'huid'],
                 condition=~models.Q(huid=''),
-                name='unique_nonblank_huid',
+                name='unique_tenant_nonblank_huid',
             ),
         ]
 
@@ -198,12 +243,12 @@ class JewelleryItem(models.Model):
             self.huid = self.huid.strip().upper()
             if len(self.huid) != 6 or not self.huid.isalnum():
                 raise ValidationError({'huid': 'HUID must be a 6-character alphanumeric code.'})
-            # Prevent duplicate HUID values (blank/empty values are always allowed)
-            huid_qs = type(self).objects.filter(huid=self.huid)
+            # Prevent duplicate HUID values within the same tenant (blank/empty values are always allowed)
+            huid_qs = type(self).objects.filter(tenant=self.tenant, huid=self.huid)
             if self.pk:
                 huid_qs = huid_qs.exclude(pk=self.pk)
             if huid_qs.exists():
-                raise ValidationError({'huid': 'This HUID is already assigned to another item.'})
+                raise ValidationError({'huid': 'This HUID is already assigned to another item in your showroom.'})
 
         # Normalise HUID whitespace when blank so all empty values stay ''
         # (and share the DB partial-index exemption cleanly).
@@ -237,21 +282,25 @@ class JewelleryItem(models.Model):
             raise ValidationError({'quantity': 'Stock quantity cannot be negative.'})
 
     @classmethod
-    def generate_next_tag_number(cls):
+    def generate_next_tag_number(cls, tenant=None):
         """
         Thread-safe tag number generator producing unique tags formatted as JWL-000001.
-        Uses database row-locking on ItemSequence to ensure safe concurrent allocations.
+        Uses database row-locking on ItemSequence scoped to the shop tenant.
         """
         from django.db import transaction
         with transaction.atomic():
             seq, _ = ItemSequence.objects.select_for_update().get_or_create(
+                tenant=tenant,
                 name='jewellery_tag',
                 defaults={'last_number': 0}
             )
             # Ensure the sequence counter is at least the highest existing tag number
             if seq.last_number == 0:
                 highest = 0
-                for tag in cls.objects.filter(tag_number__startswith='JWL-').values_list('tag_number', flat=True):
+                qs = cls.objects.filter(tag_number__startswith='JWL-')
+                if tenant:
+                    qs = qs.filter(tenant=tenant)
+                for tag in qs.values_list('tag_number', flat=True):
                     try:
                         num = int(tag.split('-')[-1])
                         if num > highest:
@@ -265,11 +314,17 @@ class JewelleryItem(models.Model):
             seq.save(update_fields=['last_number'])
             tag_candidate = f"JWL-{seq.last_number:06d}"
 
-            # Safety check against existing record collision
-            while cls.objects.filter(tag_number=tag_candidate).exists():
+            # Safety check against existing record collision in this tenant
+            collision_qs = cls.objects.filter(tag_number=tag_candidate)
+            if tenant:
+                collision_qs = collision_qs.filter(tenant=tenant)
+            while collision_qs.exists():
                 seq.last_number += 1
                 seq.save(update_fields=['last_number'])
                 tag_candidate = f"JWL-{seq.last_number:06d}"
+                collision_qs = cls.objects.filter(tag_number=tag_candidate)
+                if tenant:
+                    collision_qs = collision_qs.filter(tenant=tenant)
 
             return tag_candidate
 
@@ -277,7 +332,7 @@ class JewelleryItem(models.Model):
         if self.tag_number:
             self.tag_number = self.tag_number.strip()
         if not self.tag_number:
-            self.tag_number = self.generate_next_tag_number()
+            self.tag_number = self.generate_next_tag_number(tenant=self.tenant)
         if not self.design_code:
             self.design_code = self.item_code
         if self.huid:
@@ -390,6 +445,14 @@ class StockMovement(models.Model):
         ('Sale', 'Sale'),
     ]
 
+    tenant = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.CASCADE,
+        related_name='stock_movements',
+        null=True,
+        blank=True,
+        help_text="Tenant shop owning this stock movement"
+    )
     item = models.ForeignKey(
         JewelleryItem, on_delete=models.CASCADE, related_name='stock_movements')
     movement_type = models.CharField(max_length=20, choices=MOVEMENT_TYPES)
@@ -406,6 +469,11 @@ class StockMovement(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='stock_movements')
     created_at = models.DateTimeField(default=timezone.now)
+
+    def save(self, *args, **kwargs):
+        if not self.tenant_id and self.item_id and getattr(self.item, 'tenant_id', None):
+            self.tenant_id = self.item.tenant_id
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ['-created_at', '-id']
@@ -476,7 +544,15 @@ class MetalRate(models.Model):
         (METAL_PLATINUM, 'Platinum'),
     ]
 
-    metal_type = models.CharField(max_length=20, choices=METAL_CHOICES, unique=True)
+    tenant = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.CASCADE,
+        related_name='metal_rates',
+        null=True,
+        blank=True,
+        help_text="Tenant shop owning this metal rate"
+    )
+    metal_type = models.CharField(max_length=20, choices=METAL_CHOICES)
     rate_per_gram = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -500,13 +576,24 @@ class MetalRate(models.Model):
         ordering = ['metal_type']
         verbose_name = 'Metal Rate'
         verbose_name_plural = 'Metal Rates'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tenant', 'metal_type'],
+                name='unique_tenant_metal_rate',
+            ),
+        ]
 
     def __str__(self):
         return f"{self.metal_type}: ₹{self.rate_per_gram}/g"
 
     @classmethod
-    def get_rate(cls, metal_type):
-        rate_obj = cls.objects.filter(metal_type=metal_type).first()
+    def get_rate(cls, metal_type, tenant=None):
+        qs = cls.objects.filter(metal_type=metal_type)
+        if tenant:
+            rate_obj = qs.filter(tenant=tenant).first()
+            if rate_obj:
+                return rate_obj.rate_per_gram
+        rate_obj = qs.first()
         return rate_obj.rate_per_gram if rate_obj else None
 
 

@@ -106,6 +106,24 @@
                     </div>
 
                     <div class="jd-auth__field">
+                        <label class="jd-auth__label" for="id_shop_name">Jewellery Shop / Business Name</label>
+                        <div class="jd-auth__input">
+                            <i class="bi bi-shop jd-auth__icon" aria-hidden="true"></i>
+                            <input type="text" name="shop_name" id="id_shop_name"
+                                   class="jd-auth__control{% if form.shop_name.errors %} is-invalid{% endif %}"
+                                   placeholder="e.g. Sri Krishna Jewellers"
+                                   autocomplete="organization"
+                                   value="{{ form.shop_name.value|default_if_none:'' }}"
+                                   {% if form.shop_name.errors %}aria-invalid="true" aria-describedby="jd-signup-error"{% endif %}>
+                        </div>
+                        {% if form.shop_name.errors %}
+                        <div class="jd-auth__field-error text-danger small mt-1">
+                            {{ form.shop_name.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="jd-auth__field">
                         <label class="jd-auth__label" for="id_username">Username</label>
                         <div class="jd-auth__input">
                             <i class="bi bi-at jd-auth__icon" aria-hidden="true"></i>

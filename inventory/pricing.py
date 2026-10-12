@@ -162,11 +162,11 @@ def parse_purity_factor(metal_type: str, purity_str: str) -> Decimal:
     return Decimal('1.000000')
 
 
-def get_current_metal_rate(metal_type: str = 'Gold') -> Decimal:
+def get_current_metal_rate(metal_type: str = 'Gold', tenant=None) -> Decimal:
     """
     Fetch the active base rate per gram in INR.
     Priority:
-      1. MetalRate model row in DB (manually set or cached daily shop rate)
+      1. MetalRate model row in DB (manually set or cached daily shop rate for this tenant)
       2. Cached API snapshot from inventory.metal_prices
       3. Fallback default
     """
@@ -178,7 +178,10 @@ def get_current_metal_rate(metal_type: str = 'Gold') -> Decimal:
     # 1. DB lookup
     try:
         from .models import MetalRate
-        rate_obj = MetalRate.objects.filter(metal_type=m_type).first()
+        qs = MetalRate.objects.filter(metal_type=m_type)
+        if tenant is not None:
+            qs = qs.filter(tenant=tenant)
+        rate_obj = qs.first()
         if rate_obj and rate_obj.rate_per_gram > 0:
             return to_decimal(rate_obj.rate_per_gram)
     except Exception:
@@ -281,6 +284,7 @@ def calculate_jewellery_price(
     other_charges: Decimal = Decimal('0.00'),
     other_charges_description: str = '',
     tax_percent: Decimal = DEFAULT_GST_RATE,
+    tenant=None,
 ) -> PriceBreakdown:
     """
     Perform a complete jewellery price calculation.
@@ -300,6 +304,7 @@ def calculate_jewellery_price(
       - other_charges: hallmarking, packaging, rhodium in INR
       - other_charges_description: note describing other charges
       - tax_percent: GST rate percentage (default 3.0%)
+      - tenant: optional tenant to look up shop-specific metal rates
 
     Returns:
       PriceBreakdown dataclass with all computed components and final price.
@@ -323,7 +328,7 @@ def calculate_jewellery_price(
     if base_metal_rate is not None and to_decimal(base_metal_rate) > 0:
         base_rate = to_decimal(base_metal_rate)
     else:
-        base_rate = get_current_metal_rate(m_type)
+        base_rate = get_current_metal_rate(m_type, tenant=tenant)
 
     effective_rate = round_curr(base_rate * p_factor)
 
@@ -410,4 +415,5 @@ def calculate_item_price(item, base_rate=None, tax_percent=DEFAULT_GST_RATE) -> 
         stone_charges=getattr(item, 'stone_charges', Decimal('0.00')),
         other_charges=getattr(item, 'other_charges', Decimal('0.00')),
         tax_percent=tax_percent,
+        tenant=getattr(item, 'tenant', None),
     )

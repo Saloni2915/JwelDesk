@@ -2,7 +2,8 @@ from decimal import Decimal
 from django import forms
 from django.db.models import Q
 from .models import Enquiry, Payment, Sale, OldGoldTransaction
-from inventory.models import JewelleryItem
+from inventory.models import JewelleryItem, Category
+from customers.models import Customer
 
 
 class SaleForm(forms.ModelForm):
@@ -22,22 +23,39 @@ class SaleForm(forms.ModelForm):
             }
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, tenant=None, **kwargs):
+        self.tenant = tenant or (kwargs.get('instance').tenant if kwargs.get('instance') else None)
         super().__init__(*args, **kwargs)
+        if self.tenant:
+            self.fields['customer'].queryset = Customer.objects.filter(tenant=self.tenant)
         # Only show items that are Available
+        item_qs = JewelleryItem.objects.all()
+        if self.tenant:
+            item_qs = item_qs.filter(tenant=self.tenant)
         if self.instance and self.instance.pk:
             # If editing existing sale, include current item as well
-            self.fields['jewellery_item'].queryset = JewelleryItem.objects.filter(
+            self.fields['jewellery_item'].queryset = item_qs.filter(
                 Q(status='Available') | Q(pk=self.instance.jewellery_item_id)
             ).select_related('category')
         else:
-            self.fields['jewellery_item'].queryset = JewelleryItem.objects.filter(
+            self.fields['jewellery_item'].queryset = item_qs.filter(
                 status='Available').select_related('category')
         # Show tag number + design in the dropdown for reliable piece identification.
         self.fields['jewellery_item'].label_from_instance = (
             lambda obj: f"[{obj.tag_number or obj.item_code}] {obj.name} "
                         f"({obj.metal_type} {obj.purity}) - Rs.{obj.selling_price}"
         )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if self.tenant:
+            cust = cleaned_data.get('customer')
+            if cust and cust.tenant_id != self.tenant.id:
+                self.add_error('customer', 'Invalid customer for this store.')
+            item = cleaned_data.get('jewellery_item')
+            if item and item.tenant_id != self.tenant.id:
+                self.add_error('jewellery_item', 'Invalid jewellery item for this store.')
+        return cleaned_data
 
 
 class EnquiryForm(forms.ModelForm):
@@ -53,6 +71,13 @@ class EnquiryForm(forms.ModelForm):
             'status': forms.Select(attrs={'class': 'form-select'}),
             'next_followup_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
+
+    def __init__(self, *args, tenant=None, **kwargs):
+        self.tenant = tenant or (kwargs.get('instance').tenant if kwargs.get('instance') else None)
+        super().__init__(*args, **kwargs)
+        if self.tenant:
+            self.fields['customer'].queryset = Customer.objects.filter(tenant=self.tenant)
+            self.fields['category'].queryset = Category.objects.filter(tenant=self.tenant)
 
 class PaymentForm(forms.ModelForm):
     """Validates a payment against the sale's remaining due amount."""
@@ -121,11 +146,15 @@ class StandalonePaymentForm(forms.ModelForm):
                 'id': 'id_standalone_notes'}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, tenant=None, **kwargs):
+        self.tenant = tenant or (kwargs.get('instance').tenant if kwargs.get('instance') else None)
         super().__init__(*args, **kwargs)
         # Order sales by newest, prioritizing sales with pending dues
+        sale_qs = Sale.objects.all()
+        if self.tenant:
+            sale_qs = sale_qs.filter(tenant=self.tenant)
         self.fields['sale'].queryset = (
-            Sale.objects.select_related('customer', 'jewellery_item')
+            sale_qs.select_related('customer', 'jewellery_item')
             .order_by('-sale_date')
         )
         self.fields['sale'].label_from_instance = (
@@ -158,7 +187,7 @@ class OldGoldExchangeForm(forms.ModelForm):
     Form for creating an Old Gold Exchange transaction linked with a new jewellery purchase.
     """
     new_jewellery_item = forms.ModelChoiceField(
-        queryset=JewelleryItem.objects.filter(status='Available').select_related('category'),
+        queryset=JewelleryItem.objects.none(),
         widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_new_jewellery_item'}),
         label='Select New Jewellery Item',
         help_text='Only currently Available items from inventory'
@@ -217,15 +246,21 @@ class OldGoldExchangeForm(forms.ModelForm):
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Optional internal notes, melting remarks, testing notes...'}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, tenant=None, **kwargs):
+        self.tenant = tenant or (kwargs.get('instance').tenant if kwargs.get('instance') else None)
         super().__init__(*args, **kwargs)
+        item_qs = JewelleryItem.objects.filter(status='Available')
+        if self.tenant:
+            self.fields['customer'].queryset = Customer.objects.filter(tenant=self.tenant)
+            item_qs = item_qs.filter(tenant=self.tenant)
+        self.fields['new_jewellery_item'].queryset = item_qs.select_related('category')
         self.fields['new_jewellery_item'].label_from_instance = (
             lambda obj: f"[{obj.tag_number or obj.item_code}] {obj.name} "
                         f"({obj.metal_type} {obj.purity}) - ₹{obj.selling_price:,.2f}"
         )
         if not self.initial.get('applicable_rate'):
             from inventory.pricing import get_current_metal_rate
-            self.initial['applicable_rate'] = get_current_metal_rate('Gold')
+            self.initial['applicable_rate'] = get_current_metal_rate('Gold', tenant=self.tenant)
 
     def clean(self):
         cleaned_data = super().clean()
@@ -285,11 +320,14 @@ class OldGoldBuybackForm(forms.ModelForm):
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Testing remarks, customer ID verification notes, purity check...'}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, tenant=None, **kwargs):
+        self.tenant = tenant or (kwargs.get('instance').tenant if kwargs.get('instance') else None)
         super().__init__(*args, **kwargs)
+        if self.tenant:
+            self.fields['customer'].queryset = Customer.objects.filter(tenant=self.tenant)
         if not self.initial.get('applicable_rate'):
             from inventory.pricing import get_current_metal_rate
-            self.initial['applicable_rate'] = get_current_metal_rate('Gold')
+            self.initial['applicable_rate'] = get_current_metal_rate('Gold', tenant=self.tenant)
 
     def clean(self):
         cleaned_data = super().clean()

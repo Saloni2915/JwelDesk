@@ -2,6 +2,14 @@ from django.db import models
 
 
 class Customer(models.Model):
+    tenant = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.CASCADE,
+        related_name='customers',
+        null=True,
+        blank=True,
+        help_text="Tenant shop owning this customer record"
+    )
     name = models.CharField(max_length=150)
     mobile = models.CharField(max_length=15)
     email = models.EmailField(blank=True, null=True)

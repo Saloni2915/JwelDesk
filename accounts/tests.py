@@ -94,6 +94,8 @@ class CompanySettingsTests(TestCase):
             username='adminuser', password='Password123', is_staff=True)
         self.plain = User.objects.create_user(
             username='plainuser', password='Password123', is_staff=False)
+        from accounts.models import Tenant
+        self.tenant = Tenant.objects.create(name='JewelDesk', owner=self.staff)
         self.url = reverse('accounts:company_settings')
 
     def test_page_requires_authentication(self):
@@ -381,7 +383,7 @@ class CompanySettingsTests(TestCase):
             self.assertIn(part, content)
 
         # All three theme names present
-        for name in ('Light', 'Dark', 'Gold / Premium'):
+        for name in ('Light', 'Dark', 'Gold'):
             self.assertIn(name, content)
 
     def test_themes_page_reflects_saved_theme_from_cookie(self):

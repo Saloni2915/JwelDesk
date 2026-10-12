@@ -8,7 +8,7 @@ from django.contrib.auth.forms import (
 from django.db.models import Q
 import re
 
-from .models import CompanySettings
+from .models import CompanySettings, Tenant
 
 
 class JewelDeskPasswordResetForm(PasswordResetForm):
@@ -50,6 +50,16 @@ class JewelDeskSignUpForm(UserCreationForm):
             'autofocus': True,
         }),
     )
+    shop_name = forms.CharField(
+        label='Jewellery Shop Name',
+        max_length=200,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'jd-auth__control',
+            'placeholder': 'e.g. Sri Krishna Jewellers',
+            'autocomplete': 'organization',
+        }),
+    )
     email = forms.EmailField(
         label='Email Address',
         max_length=254,
@@ -63,7 +73,7 @@ class JewelDeskSignUpForm(UserCreationForm):
 
     class Meta(UserCreationForm.Meta):
         model = get_user_model()
-        fields = ('first_name', 'username', 'email')
+        fields = ('first_name', 'shop_name', 'username', 'email')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -139,10 +149,29 @@ class JewelDeskSignUpForm(UserCreationForm):
         user.first_name = (self.cleaned_data.get('first_name') or '').strip()
         user.email = (self.cleaned_data.get('email') or '').strip().lower()
         user.is_active = True
-        user.is_staff = True
-        user.is_superuser = True
+        user.is_staff = False
+        user.is_superuser = False
         if commit:
             user.save()
+            raw_shop_name = (self.cleaned_data.get('shop_name') or '').strip()
+            shop_name = raw_shop_name or f"{user.first_name or user.username}'s Jewellery"
+            tenant = Tenant.objects.create(name=shop_name, owner=user)
+            CompanySettings.objects.create(tenant=tenant, company_name=shop_name)
+
+            # Create default Admin Employee profile for this store owner in their own shop
+            from team.models import Role, Employee
+            Role.ensure_builtin_roles()
+            admin_role = Role.objects.filter(name=Role.ROLE_ADMIN).first()
+            if admin_role:
+                emp = Employee.objects.create(
+                    user=user,
+                    tenant=tenant,
+                    full_name=user.first_name or user.username,
+                    email=user.email,
+                    role=admin_role,
+                    designation='Store Owner / Admin',
+                )
+                emp.apply_default_permissions()
         return user
 
 

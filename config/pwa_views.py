@@ -133,3 +133,18 @@ def digital_brochure_view(request):
         content = f.read()
     return HttpResponse(content, content_type='text/html; charset=utf-8')
 
+
+@require_GET
+def download_apk_view(request):
+    """Serve the signed JewelDesk Android APK package for direct download."""
+    from django.http import FileResponse
+    apk_path = settings.BASE_DIR / 'static' / 'downloads' / 'JewelDesk.apk'
+    if not apk_path.exists():
+        raise Http404("JewelDesk APK file not found.")
+    return FileResponse(
+        open(apk_path, 'rb'),
+        as_attachment=True,
+        filename='JewelDesk.apk',
+        content_type='application/vnd.android.package-archive'
+    )
+

@@ -41,10 +41,10 @@ def dashboard(request):
     today = timezone.localdate()
 
     # Metrics
-    total_active_karigars = Karigar.objects.filter(status=Karigar.STATUS_ACTIVE).count()
-    total_karigars = Karigar.objects.count()
+    total_active_karigars = Karigar.objects.filter(tenant=request.tenant, status=Karigar.STATUS_ACTIVE).count()
+    total_karigars = Karigar.objects.filter(tenant=request.tenant).count()
 
-    active_assignments = KarigarWorkAssignment.objects.exclude(
+    active_assignments = KarigarWorkAssignment.objects.filter(tenant=request.tenant).exclude(
         status__in=[KarigarWorkAssignment.STATUS_RECEIVED, KarigarWorkAssignment.STATUS_CANCELLED]
     )
 
@@ -67,18 +67,18 @@ def dashboard(request):
     )['total'] or Decimal('0.000')
 
     # Total labour dues
-    all_valid_works = KarigarWorkAssignment.objects.exclude(status=KarigarWorkAssignment.STATUS_CANCELLED)
+    all_valid_works = KarigarWorkAssignment.objects.filter(tenant=request.tenant).exclude(status=KarigarWorkAssignment.STATUS_CANCELLED)
     total_charges = all_valid_works.aggregate(total=Sum('total_charge'))['total'] or Decimal('0.00')
-    total_paid = KarigarSettlement.objects.filter(status='Completed').aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    total_paid = KarigarSettlement.objects.filter(tenant=request.tenant, status='Completed').aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
     pending_dues = max(Decimal('0.00'), total_charges - total_paid)
 
     # Recent lists
-    recent_assignments = KarigarWorkAssignment.objects.select_related('karigar', 'customer').order_by('-id')[:8]
-    recent_settlements = KarigarSettlement.objects.select_related('karigar', 'processed_by').order_by('-id')[:6]
+    recent_assignments = KarigarWorkAssignment.objects.filter(tenant=request.tenant).select_related('karigar', 'customer').order_by('-id')[:8]
+    recent_settlements = KarigarSettlement.objects.filter(tenant=request.tenant).select_related('karigar', 'processed_by').order_by('-id')[:6]
     overdue_list = overdue_assignments.select_related('karigar', 'customer').order_by('expected_completion_date')[:6]
 
     # Top artisans by active assignments
-    top_karigars = Karigar.objects.filter(status=Karigar.STATUS_ACTIVE).annotate(
+    top_karigars = Karigar.objects.filter(tenant=request.tenant, status=Karigar.STATUS_ACTIVE).annotate(
         active_count=Count(
             'assignments',
             filter=Q(assignments__status__in=[
@@ -118,7 +118,7 @@ def dashboard(request):
 @require_permission(EmployeePermission.MODULE_KARIGAR, 'view')
 def karigar_list(request):
     """Artisan directory with search, specialization filters, and status toggle."""
-    queryset = Karigar.objects.annotate(
+    queryset = Karigar.objects.filter(tenant=request.tenant).annotate(
         active_work_count=Count(
             'assignments',
             filter=Q(assignments__status__in=[
@@ -168,13 +168,15 @@ def karigar_list(request):
 def karigar_create(request):
     """Add a new Karigar master record."""
     if request.method == 'POST':
-        form = KarigarForm(request.POST)
+        form = KarigarForm(request.POST, tenant=request.tenant)
         if form.is_valid():
-            karigar = form.save()
+            karigar = form.save(commit=False)
+            karigar.tenant = request.tenant
+            karigar.save()
             messages.success(request, f"Karigar '{karigar.name}' ({karigar.karigar_code}) created successfully.")
             return redirect('karigar:karigar_detail', pk=karigar.pk)
     else:
-        form = KarigarForm()
+        form = KarigarForm(tenant=request.tenant)
 
     return render(request, 'karigar/karigar_form.html', {
         'page_title': 'Add New Karigar',
@@ -187,7 +189,7 @@ def karigar_create(request):
 @require_permission(EmployeePermission.MODULE_KARIGAR, 'view')
 def karigar_detail(request, pk):
     """Detailed profile of a Karigar with active work, history, and accountability."""
-    karigar = get_object_or_404(Karigar, pk=pk)
+    karigar = get_object_or_404(Karigar, pk=pk, tenant=request.tenant)
 
     # Active assignments
     active_works = karigar.assignments.filter(
@@ -238,15 +240,15 @@ def karigar_detail(request, pk):
 @require_permission(EmployeePermission.MODULE_KARIGAR, 'edit')
 def karigar_edit(request, pk):
     """Edit Karigar details."""
-    karigar = get_object_or_404(Karigar, pk=pk)
+    karigar = get_object_or_404(Karigar, pk=pk, tenant=request.tenant)
     if request.method == 'POST':
-        form = KarigarForm(request.POST, instance=karigar)
+        form = KarigarForm(request.POST, instance=karigar, tenant=request.tenant)
         if form.is_valid():
             karigar = form.save()
             messages.success(request, f"Karigar '{karigar.name}' updated successfully.")
             return redirect('karigar:karigar_detail', pk=karigar.pk)
     else:
-        form = KarigarForm(instance=karigar)
+        form = KarigarForm(instance=karigar, tenant=request.tenant)
 
     return render(request, 'karigar/karigar_form.html', {
         'page_title': f"Edit Karigar: {karigar.name}",
@@ -260,7 +262,7 @@ def karigar_edit(request, pk):
 @require_permission(EmployeePermission.MODULE_KARIGAR, 'edit')
 def karigar_toggle_status(request, pk):
     """Activate or deactivate a Karigar profile."""
-    karigar = get_object_or_404(Karigar, pk=pk)
+    karigar = get_object_or_404(Karigar, pk=pk, tenant=request.tenant)
     if request.method == 'POST':
         if karigar.status == Karigar.STATUS_ACTIVE:
             karigar.status = Karigar.STATUS_INACTIVE
@@ -281,7 +283,7 @@ def karigar_toggle_status(request, pk):
 @require_permission(EmployeePermission.MODULE_KARIGAR, 'view')
 def assignment_list(request):
     """List work assignments with multi-factor search and filtering."""
-    queryset = KarigarWorkAssignment.objects.select_related(
+    queryset = KarigarWorkAssignment.objects.filter(tenant=request.tenant).select_related(
         'karigar', 'customer', 'custom_order', 'inventory_item'
     ).order_by('-issue_date', '-id')
 
@@ -326,7 +328,7 @@ def assignment_list(request):
         'status_choices': KarigarWorkAssignment.STATUS_CHOICES,
         'work_type_choices': KarigarWorkAssignment.WORK_TYPE_CHOICES,
         'priority_choices': KarigarWorkAssignment.PRIORITY_CHOICES,
-        'karigars': Karigar.objects.order_by('name'),
+        'karigars': Karigar.objects.filter(tenant=request.tenant).order_by('name'),
         'total_count': queryset.count(),
     }
     return render(request, 'karigar/assignment_list.html', context)
@@ -339,11 +341,13 @@ def pending_assignments(request):
     today = timezone.localdate()
 
     overdue_qs = KarigarWorkAssignment.objects.filter(
+        tenant=request.tenant,
         expected_completion_date__lt=today,
         status__in=[KarigarWorkAssignment.STATUS_ASSIGNED, KarigarWorkAssignment.STATUS_IN_PROGRESS]
     ).select_related('karigar', 'customer').order_by('expected_completion_date')
 
     pending_qs = KarigarWorkAssignment.objects.filter(
+        tenant=request.tenant,
         status__in=[KarigarWorkAssignment.STATUS_ASSIGNED, KarigarWorkAssignment.STATUS_IN_PROGRESS, KarigarWorkAssignment.STATUS_COMPLETED]
     ).select_related('karigar', 'customer').order_by('priority', 'expected_completion_date')
 
@@ -373,7 +377,7 @@ def assignment_create(request):
     custom_order_id = request.GET.get('custom_order')
     if custom_order_id:
         try:
-            co = CustomOrder.objects.get(pk=custom_order_id)
+            co = CustomOrder.objects.filter(tenant=request.tenant).get(pk=custom_order_id)
             initial_data['custom_order'] = co
             initial_data['customer'] = co.customer
             initial_data['metal_type'] = co.metal_type
@@ -386,7 +390,7 @@ def assignment_create(request):
     item_id = request.GET.get('item')
     if item_id:
         try:
-            item = JewelleryItem.objects.get(pk=item_id)
+            item = JewelleryItem.objects.filter(tenant=request.tenant).get(pk=item_id)
             initial_data['inventory_item'] = item
             initial_data['metal_type'] = item.metal_type
             initial_data['purity'] = item.purity
@@ -397,10 +401,11 @@ def assignment_create(request):
             pass
 
     if request.method == 'POST':
-        form = KarigarWorkAssignmentForm(request.POST, request.FILES)
+        form = KarigarWorkAssignmentForm(request.POST, request.FILES, tenant=request.tenant)
         if form.is_valid():
             with transaction.atomic():
                 assignment = form.save(commit=False)
+                assignment.tenant = request.tenant
                 assignment.assigned_by = request.user
 
                 # Inventory Integration: If an existing item is selected and user opted to deduct from stock
@@ -437,7 +442,7 @@ def assignment_create(request):
             messages.success(request, f"Work assignment '{assignment.assignment_number}' issued successfully to {assignment.karigar.name}.")
             return redirect('karigar:assignment_detail', pk=assignment.pk)
     else:
-        form = KarigarWorkAssignmentForm(initial=initial_data)
+        form = KarigarWorkAssignmentForm(initial=initial_data, tenant=request.tenant)
 
     return render(request, 'karigar/assignment_form.html', {
         'page_title': 'Issue Work Assignment',
@@ -455,7 +460,8 @@ def assignment_detail(request, pk):
             'karigar', 'customer', 'custom_order', 'inventory_item',
             'assigned_by', 'received_by', 'stock_movement_issued', 'stock_movement_received'
         ),
-        pk=pk
+        pk=pk,
+        tenant=request.tenant,
     )
 
     settlements = assignment.settlements.all().order_by('-payment_date')
@@ -472,20 +478,20 @@ def assignment_detail(request, pk):
 @require_permission(EmployeePermission.MODULE_KARIGAR, 'edit')
 def assignment_edit(request, pk):
     """Edit work assignment instructions / parameters before completion."""
-    assignment = get_object_or_404(KarigarWorkAssignment, pk=pk)
+    assignment = get_object_or_404(KarigarWorkAssignment, pk=pk, tenant=request.tenant)
 
     if assignment.status in [KarigarWorkAssignment.STATUS_RECEIVED, KarigarWorkAssignment.STATUS_CANCELLED]:
         messages.error(request, f"Cannot edit an assignment with status '{assignment.status}'.")
         return redirect('karigar:assignment_detail', pk=assignment.pk)
 
     if request.method == 'POST':
-        form = KarigarWorkAssignmentForm(request.POST, request.FILES, instance=assignment)
+        form = KarigarWorkAssignmentForm(request.POST, request.FILES, instance=assignment, tenant=request.tenant)
         if form.is_valid():
             assignment = form.save()
             messages.success(request, f"Work assignment '{assignment.assignment_number}' updated successfully.")
             return redirect('karigar:assignment_detail', pk=assignment.pk)
     else:
-        form = KarigarWorkAssignmentForm(instance=assignment)
+        form = KarigarWorkAssignmentForm(instance=assignment, tenant=request.tenant)
 
     return render(request, 'karigar/assignment_form.html', {
         'page_title': f"Edit Work Assignment: {assignment.assignment_number}",
@@ -499,7 +505,7 @@ def assignment_edit(request, pk):
 @require_permission(EmployeePermission.MODULE_KARIGAR, 'edit')
 def assignment_status_update(request, pk):
     """Move assignment status (e.g. In Progress, Completed, Cancelled)."""
-    assignment = get_object_or_404(KarigarWorkAssignment, pk=pk)
+    assignment = get_object_or_404(KarigarWorkAssignment, pk=pk, tenant=request.tenant)
 
     if request.method == 'POST':
         target_status = request.POST.get('status')
@@ -545,7 +551,7 @@ def assignment_status_update(request, pk):
 @require_permission(EmployeePermission.MODULE_KARIGAR, 'edit')
 def assignment_receive(request, pk):
     """Receive completed work from Karigar, perform weight accountability & finalize charges."""
-    assignment = get_object_or_404(KarigarWorkAssignment, pk=pk)
+    assignment = get_object_or_404(KarigarWorkAssignment, pk=pk, tenant=request.tenant)
 
     if assignment.status == KarigarWorkAssignment.STATUS_RECEIVED:
         messages.info(request, "This assignment has already been received.")
@@ -623,7 +629,7 @@ def assignment_receive(request, pk):
 @require_permission(EmployeePermission.MODULE_KARIGAR, 'view')
 def settlement_list(request):
     """List labour payment settlements with filter and pagination."""
-    queryset = KarigarSettlement.objects.select_related('karigar', 'processed_by').order_by('-payment_date', '-id')
+    queryset = KarigarSettlement.objects.filter(tenant=request.tenant).select_related('karigar', 'processed_by').order_by('-payment_date', '-id')
 
     q = request.GET.get('q', '').strip()
     if q:
@@ -658,7 +664,7 @@ def settlement_list(request):
         'selected_karigar': karigar_id,
         'selected_status': status,
         'selected_method': method,
-        'karigars': Karigar.objects.order_by('name'),
+        'karigars': Karigar.objects.filter(tenant=request.tenant).order_by('name'),
         'payment_methods': KarigarSettlement.PAYMENT_METHODS,
         'status_choices': KarigarSettlement.STATUS_CHOICES,
         'total_amount': total_amount,
@@ -674,10 +680,11 @@ def settlement_create(request):
     assignment_id = request.GET.get('assignment')
 
     if request.method == 'POST':
-        form = KarigarSettlementForm(request.POST)
+        form = KarigarSettlementForm(request.POST, tenant=request.tenant)
         if form.is_valid():
             with transaction.atomic():
                 settlement = form.save(commit=False)
+                settlement.tenant = request.tenant
                 settlement.processed_by = request.user
                 settlement.save()
                 form.save_m2m()
@@ -703,10 +710,10 @@ def settlement_create(request):
             )
             return redirect('karigar:settlement_detail', pk=settlement.pk)
     else:
-        form = KarigarSettlementForm(karigar_id=karigar_id)
+        form = KarigarSettlementForm(karigar_id=karigar_id, tenant=request.tenant)
         if assignment_id:
             try:
-                asg = KarigarWorkAssignment.objects.get(pk=assignment_id)
+                asg = KarigarWorkAssignment.objects.filter(tenant=request.tenant).get(pk=assignment_id)
                 form.fields['assignments'].initial = [asg]
                 form.fields['amount'].initial = asg.due_charge_amount
             except KarigarWorkAssignment.DoesNotExist:
@@ -724,7 +731,8 @@ def settlement_detail(request, pk):
     """Settlement voucher display and printable payment receipt."""
     settlement = get_object_or_404(
         KarigarSettlement.objects.select_related('karigar', 'processed_by', 'cancelled_by'),
-        pk=pk
+        pk=pk,
+        tenant=request.tenant,
     )
     assignments = settlement.assignments.all()
 
@@ -740,7 +748,7 @@ def settlement_detail(request, pk):
 @require_permission(EmployeePermission.MODULE_KARIGAR, 'delete')
 def settlement_cancel(request, pk):
     """Safely cancel a settlement voucher and roll back assignment paid balances."""
-    settlement = get_object_or_404(KarigarSettlement, pk=pk)
+    settlement = get_object_or_404(KarigarSettlement, pk=pk, tenant=request.tenant)
 
     if settlement.status == KarigarSettlement.STATUS_CANCELLED:
         messages.warning(request, "This settlement is already cancelled.")
@@ -787,7 +795,7 @@ def reports(request):
     karigar_id = request.GET.get('karigar', '')
 
     # Base assignments
-    assignments = KarigarWorkAssignment.objects.select_related('karigar', 'customer').order_by('-issue_date')
+    assignments = KarigarWorkAssignment.objects.filter(tenant=request.tenant).select_related('karigar', 'customer').order_by('-issue_date')
 
     if karigar_id:
         assignments = assignments.filter(karigar_id=karigar_id)
@@ -850,7 +858,7 @@ def reports(request):
 
     # 3. Charges & Payments Report
     elif tab == 'charges':
-        settlements_qs = KarigarSettlement.objects.filter(status='Completed')
+        settlements_qs = KarigarSettlement.objects.filter(tenant=request.tenant, status='Completed')
         if karigar_id:
             settlements_qs = settlements_qs.filter(karigar_id=karigar_id)
         if start_date:
@@ -903,7 +911,7 @@ def reports(request):
             return response
 
     # Web View
-    karigars = Karigar.objects.order_by('name')
+    karigars = Karigar.objects.filter(tenant=request.tenant).order_by('name')
 
     # Aggregates for summary cards
     aggregates = {
@@ -914,7 +922,7 @@ def reports(request):
         'total_allowed_loss': assignments.aggregate(s=Sum('wastage_weight_allowed'))['s'] or Decimal('0.000'),
         'total_diff': assignments.aggregate(s=Sum('weight_difference'))['s'] or Decimal('0.000'),
         'total_charges': assignments.exclude(status='Cancelled').aggregate(s=Sum('total_charge'))['s'] or Decimal('0.00'),
-        'total_paid': KarigarSettlement.objects.filter(status='Completed').aggregate(s=Sum('amount'))['s'] or Decimal('0.00'),
+        'total_paid': KarigarSettlement.objects.filter(tenant=request.tenant, status='Completed').aggregate(s=Sum('amount'))['s'] or Decimal('0.00'),
     }
     aggregates['pending_balance'] = max(Decimal('0.00'), aggregates['total_charges'] - aggregates['total_paid'])
 

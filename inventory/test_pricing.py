@@ -393,7 +393,7 @@ class PricingIntegrationTests(TestCase):
         # GET Pricing Calculator
         res = client.get(reverse('pricing_calculator'))
         self.assertEqual(res.status_code, 200)
-        self.assertContains(res, 'Jewellery Pricing Engine')
+        self.assertContains(res, 'Jewellery Price Calculator')
         self.assertContains(res, 'Live Price Breakdown')
 
         # POST to JSON API

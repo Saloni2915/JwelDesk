@@ -490,13 +490,14 @@
                                 </li>
                             </ul>
                         </div>
-                    <!-- 11. PWA Install Shortcut (Visible on supported devices) -->
-                    <li class="nav-item pwa-install-item d-none" id="pwaInstallNavItem">
-                        <a class="nav-link nav-link-single pwa-install-btn text-gold" href="#" id="pwaInstallBtn" role="button">
+                    <!-- 11. Get the App / APK Install Shortcut (Permanently visible in navigation) -->
+                    <li class="nav-item pwa-install-item" id="pwaInstallNavItem">
+                        <a class="nav-link nav-link-single pwa-install-btn text-gold pwa-install-trigger" href="{% url 'download_apk' %}" id="pwaInstallBtn" role="button" title="Download JewelDesk Android APK or Install App">
                             <span class="sidebar-item-content">
-                                <i class="bi bi-download sidebar-item-icon"></i>
-                                <span class="sidebar-item-title">Install JewelDesk</span>
+                                <i class="bi bi-phone sidebar-item-icon"></i>
+                                <span class="sidebar-item-title">Get the App</span>
                             </span>
+                            <span class="badge bg-warning text-dark ms-auto fw-bold" style="font-size: 0.65rem; padding: 0.2rem 0.45rem; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.15);">APK / Install</span>
                         </a>
                     </li>
 

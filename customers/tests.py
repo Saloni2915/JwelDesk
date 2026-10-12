@@ -162,9 +162,9 @@ class CustomerOutstandingTests(TestCase):
         response = self.client.get(
             reverse('customer_detail', kwargs={'pk': self.customer.pk}))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Total Purchase')
+        self.assertContains(response, 'Lifetime Purchases')
         self.assertContains(response, 'Total Paid')
-        self.assertContains(response, 'Outstanding')
+        self.assertContains(response, 'Balance Due')
         # Total purchases 50000.00 and outstanding 20000.00 are rendered
         self.assertContains(response, '50000.00')
         self.assertContains(response, '20000.00')

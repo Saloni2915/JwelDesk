@@ -118,7 +118,7 @@ class TeamModuleTests(TestCase):
         self.assertEqual(emp.user.email, 'john@jeweldesk.test')
         self.assertEqual(emp.user.first_name, 'John')
         self.assertEqual(emp.user.last_name, 'Sales')
-        self.assertTrue(emp.user.is_staff)  # Back-office access
+        self.assertFalse(emp.user.is_staff)  # Zero-privilege escalation
         self.assertTrue(emp.user.is_active)
 
         # Password must be hashed, never stored in plain text
@@ -184,7 +184,7 @@ class TeamModuleTests(TestCase):
         emp = form.save(created_by=self.admin_user)
 
         self.assertEqual(emp.user.pk, existing_u.pk)
-        self.assertTrue(emp.user.is_staff)
+        self.assertFalse(emp.user.is_staff)
 
     def test_create_employee_without_login_account(self):
         """Creating an employee record without an immediate login account."""
@@ -377,7 +377,7 @@ class TeamModuleTests(TestCase):
         self.client.force_login(self.admin_user)
         response = self.client.get(reverse('team:employee_list'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Employees Directory')
+        self.assertContains(response, 'Staff Directory')
 
     def test_unauthorized_user_rejected_by_backend_with_403(self):
         """Backend authorization rejects unauthorized access with 403 Forbidden."""
@@ -488,7 +488,7 @@ class TeamModuleTests(TestCase):
         # View roles list
         list_res = self.client.get(reverse('team:role_list'))
         self.assertEqual(list_res.status_code, 200)
-        self.assertContains(list_res, 'System Roles &amp; Access Profiles')
+        self.assertContains(list_res, 'Roles &amp; Permissions')
 
         # Create custom role
         create_res = self.client.post(reverse('team:role_create'), {

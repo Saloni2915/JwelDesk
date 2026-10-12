@@ -37,10 +37,13 @@ from .pwa_views import (
     download_brochure_view,
     view_brochure_view,
     digital_brochure_view,
+    download_apk_view,
 )
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('download-apk/', download_apk_view, name='download_apk'),
+    path('download-app/', download_apk_view, name='download_app'),
     path('download-brochure/', download_brochure_view, name='download_brochure'),
     path('view-brochure/', view_brochure_view, name='view_brochure'),
     path('brochure/', digital_brochure_view, name='digital_brochure'),

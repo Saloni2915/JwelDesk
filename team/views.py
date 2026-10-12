@@ -43,10 +43,12 @@ User = get_user_model()
 
 
 def _can_view_employee(request, employee):
-    """Staff with team view perm OR the employee viewing their own profile."""
+    """Staff with team view perm OR the employee viewing their own profile, scoped to tenant."""
+    if employee.tenant_id != getattr(request.tenant, 'id', None) and not request.user.is_superuser:
+        return False
     if hasattr(request.user, 'employee_profile') and request.user.employee_profile and request.user.employee_profile.pk == employee.pk:
         return True
-    return has_module_perm(request.user, 'team', 'view')
+    return has_module_perm(request.user, 'team', 'view', tenant=request.tenant)
 
 
 # ---------------------------------------------------------------------------
@@ -57,7 +59,8 @@ def _can_view_employee(request, employee):
 @require_permission('team', 'view')
 def employee_list(request):
     """Show all employees with search and multi-facet filtering."""
-    qs = Employee.objects.select_related('user', 'role').prefetch_related('branches')
+    from django.db.models import Q
+    qs = Employee.objects.filter(tenant=request.tenant).select_related('user', 'role').prefetch_related('branches')
 
     q = request.GET.get('q', '').strip()
     role_id = request.GET.get('role', '').strip()
@@ -66,7 +69,6 @@ def employee_list(request):
     branch_id = request.GET.get('branch', '').strip()
 
     if q:
-        from django.db.models import Q
         qs = qs.filter(
             Q(full_name__icontains=q) |
             Q(employee_id__icontains=q) |
@@ -89,9 +91,9 @@ def employee_list(request):
     return render(request, 'team/employee_list.html', {
         'page_obj': page,
         'employees': page.object_list,
-        'roles': Role.objects.all(),
+        'roles': Role.objects.filter(Q(tenant=request.tenant) | Q(tenant__isnull=True)),
         'departments': [c[0] for c in Employee.DEPT_CHOICES],
-        'branches': Branch.objects.filter(is_active=True),
+        'branches': Branch.objects.filter(tenant=request.tenant, is_active=True),
         'statuses': Employee.STATUS_CHOICES,
         'q': q,
         'sel_role': role_id,
@@ -99,7 +101,7 @@ def employee_list(request):
         'sel_status': status,
         'sel_branch': branch_id,
         'total_count': paginator.count,
-        'can_add_employee': has_module_perm(request.user, 'team', 'add'),
+        'can_add_employee': has_module_perm(request.user, 'team', 'add', tenant=request.tenant),
     })
 
 
@@ -115,11 +117,11 @@ def employee_create(request):
         Role.ensure_builtin_roles()
 
     if request.method == 'POST':
-        form = EmployeeCreateForm(request.POST, request.FILES)
+        form = EmployeeCreateForm(request.POST, request.FILES, tenant=request.tenant)
         if form.is_valid():
             # Privilege escalation guard: Only admins can assign the Admin role
             chosen_role = form.cleaned_data.get('role')
-            if chosen_role and chosen_role.name == Role.ROLE_ADMIN and not is_admin_user(request.user):
+            if chosen_role and chosen_role.name == Role.ROLE_ADMIN and not is_admin_user(request.user, tenant=request.tenant):
                 form.add_error('role', 'Only administrators can assign the Admin role.')
             else:
                 employee = form.save(created_by=request.user)
@@ -131,7 +133,7 @@ def employee_create(request):
                 messages.success(request, msg)
                 return redirect('team:employee_detail', pk=employee.pk)
     else:
-        form = EmployeeCreateForm()
+        form = EmployeeCreateForm(tenant=request.tenant)
 
     return render(request, 'team/employee_form.html', {
         'form': form,
@@ -151,6 +153,7 @@ def employee_detail(request, pk):
         Employee.objects.select_related('user', 'role')
                         .prefetch_related('branches', 'permissions', 'documents'),
         pk=pk,
+        tenant=request.tenant,
     )
     if not _can_view_employee(request, employee):
         raise PermissionDenied("You do not have permission to view this employee profile.")
@@ -160,9 +163,9 @@ def employee_detail(request, pk):
         and request.user.employee_profile
         and request.user.employee_profile.pk == employee.pk
     )
-    can_edit = has_module_perm(request.user, 'team', 'edit')
+    can_edit = has_module_perm(request.user, 'team', 'edit', tenant=request.tenant)
     can_manage_perms = can_edit and not is_self and (
-        is_admin_user(request.user) or employee.role.name != Role.ROLE_ADMIN
+        is_admin_user(request.user, tenant=request.tenant) or employee.role.name != Role.ROLE_ADMIN
     )
 
     doc_form = EmployeeDocumentForm()
@@ -175,7 +178,7 @@ def employee_detail(request, pk):
         'is_self': is_self,
         'can_edit': can_edit,
         'can_manage_perms': can_manage_perms,
-        'is_admin': is_admin_user(request.user),
+        'is_admin': is_admin_user(request.user, tenant=request.tenant),
     })
 
 
@@ -187,7 +190,7 @@ def employee_detail(request, pk):
 @require_permission('team', 'edit')
 def employee_edit(request, pk):
     """Edit an employee's business details."""
-    employee = get_object_or_404(Employee.objects.select_related('user', 'role'), pk=pk)
+    employee = get_object_or_404(Employee.objects.select_related('user', 'role'), pk=pk, tenant=request.tenant)
 
     is_self = (
         hasattr(request.user, 'employee_profile')
@@ -196,20 +199,20 @@ def employee_edit(request, pk):
     )
 
     if request.method == 'POST':
-        form = EmployeeEditForm(request.POST, request.FILES, instance=employee)
+        form = EmployeeEditForm(request.POST, request.FILES, instance=employee, tenant=request.tenant)
         if form.is_valid():
             # Privilege escalation guard:
             new_role = form.cleaned_data.get('role')
-            if is_self and new_role != employee.role and not is_admin_user(request.user):
+            if is_self and new_role != employee.role and not is_admin_user(request.user, tenant=request.tenant):
                 form.add_error('role', 'You cannot change your own role.')
-            elif new_role and new_role.name == Role.ROLE_ADMIN and not is_admin_user(request.user):
+            elif new_role and new_role.name == Role.ROLE_ADMIN and not is_admin_user(request.user, tenant=request.tenant):
                 form.add_error('role', 'Only administrators can assign the Admin role.')
             else:
                 emp = form.save()
                 messages.success(request, f'{emp.full_name} updated successfully.')
                 return redirect('team:employee_detail', pk=emp.pk)
     else:
-        form = EmployeeEditForm(instance=employee)
+        form = EmployeeEditForm(instance=employee, tenant=request.tenant)
 
     return render(request, 'team/employee_form.html', {
         'form': form,
@@ -230,7 +233,7 @@ def employee_toggle_status(request, pk):
     if request.method != 'POST':
         return redirect('team:employee_list')
 
-    employee = get_object_or_404(Employee.objects.select_related('user'), pk=pk)
+    employee = get_object_or_404(Employee.objects.select_related('user'), pk=pk, tenant=request.tenant)
 
     # Self-deactivation protection
     if hasattr(request.user, 'employee_profile') and request.user.employee_profile and request.user.employee_profile.pk == employee.pk:
@@ -262,14 +265,14 @@ def employee_toggle_status(request, pk):
 @require_permission('team', 'edit')
 def employee_password_reset(request, pk):
     """Allows Admin/Manager to directly set/reset the linked User password."""
-    employee = get_object_or_404(Employee.objects.select_related('user', 'role'), pk=pk)
+    employee = get_object_or_404(Employee.objects.select_related('user', 'role'), pk=pk, tenant=request.tenant)
 
     if not employee.user:
         messages.error(request, 'This employee does not have a linked user account.')
         return redirect('team:employee_detail', pk=pk)
 
     # Protect Admin accounts: only admins can reset another admin's password
-    if employee.role.name == Role.ROLE_ADMIN and not is_admin_user(request.user):
+    if employee.role.name == Role.ROLE_ADMIN and not is_admin_user(request.user, tenant=request.tenant):
         raise PermissionDenied("Only administrators can reset an administrator's password.")
 
     if request.method == 'POST':
@@ -298,7 +301,7 @@ def employee_password_reset(request, pk):
 @require_permission('team', 'edit')
 def employee_link_account(request, pk):
     """Enable login access for an employee who was created without a User account."""
-    employee = get_object_or_404(Employee, pk=pk)
+    employee = get_object_or_404(Employee, pk=pk, tenant=request.tenant)
 
     if employee.user:
         messages.info(request, f'{employee.full_name} already has a linked user account ({employee.user.username}).')
@@ -330,14 +333,14 @@ def employee_link_account(request, pk):
 @require_permission('team', 'edit')
 def employee_permissions(request, pk):
     """Admin/Manager manages per-module permissions for one employee."""
-    employee = get_object_or_404(Employee.objects.select_related('role'), pk=pk)
+    employee = get_object_or_404(Employee.objects.select_related('role'), pk=pk, tenant=request.tenant)
 
     # Self-permission editing protection
     if hasattr(request.user, 'employee_profile') and request.user.employee_profile and request.user.employee_profile.pk == employee.pk:
         raise PermissionDenied("You cannot modify your own permissions.")
 
     # Only admins can edit permissions of an Admin
-    if employee.role.name == Role.ROLE_ADMIN and not is_admin_user(request.user):
+    if employee.role.name == Role.ROLE_ADMIN and not is_admin_user(request.user, tenant=request.tenant):
         raise PermissionDenied("Only administrators can modify permissions for an Admin.")
 
     if request.method == 'POST':
@@ -376,7 +379,7 @@ def employee_reset_permissions(request, pk):
     if request.method != 'POST':
         return redirect('team:employee_list')
 
-    employee = get_object_or_404(Employee.objects.select_related('role'), pk=pk)
+    employee = get_object_or_404(Employee.objects.select_related('role'), pk=pk, tenant=request.tenant)
 
     # Self-protection
     if hasattr(request.user, 'employee_profile') and request.user.employee_profile and request.user.employee_profile.pk == employee.pk:
@@ -395,12 +398,12 @@ def employee_reset_permissions(request, pk):
 @require_permission('team', 'edit')
 def employee_branches(request, pk):
     """Admin manages which branches an employee can access."""
-    employee = get_object_or_404(Employee, pk=pk)
-    all_branches = Branch.objects.filter(is_active=True)
+    employee = get_object_or_404(Employee, pk=pk, tenant=request.tenant)
+    all_branches = Branch.objects.filter(tenant=request.tenant, is_active=True)
 
     if request.method == 'POST':
         branch_ids = request.POST.getlist('branches')
-        employee.branches.set(Branch.objects.filter(pk__in=branch_ids))
+        employee.branches.set(Branch.objects.filter(tenant=request.tenant, pk__in=branch_ids))
         messages.success(request, f'Branch access updated for {employee.full_name}.')
         return redirect('team:employee_detail', pk=pk)
 
@@ -419,10 +422,11 @@ def employee_branches(request, pk):
 @require_permission('team', 'view')
 def role_list(request):
     """Overview of all built-in and custom roles with employee counts and defaults."""
+    from django.db.models import Q
     if not Role.objects.exists():
         Role.ensure_builtin_roles()
 
-    roles = Role.objects.all().prefetch_related('employees')
+    roles = Role.objects.filter(Q(tenant=request.tenant) | Q(tenant__isnull=True)).prefetch_related('employees')
 
     role_data = []
     for r in roles:
@@ -433,13 +437,13 @@ def role_list(request):
         ]
         role_data.append({
             'role': r,
-            'employee_count': r.employees.count(),
+            'employee_count': r.employees.filter(tenant=request.tenant).count(),
             'active_modules': active_modules,
         })
 
     return render(request, 'team/role_list.html', {
         'role_data': role_data,
-        'can_manage_roles': has_module_perm(request.user, 'team', 'edit'),
+        'can_manage_roles': has_module_perm(request.user, 'team', 'edit', tenant=request.tenant),
     })
 
 
@@ -460,15 +464,16 @@ def role_seed(request):
 def role_create(request):
     """Create a new custom role."""
     if request.method == 'POST':
-        form = RoleForm(request.POST)
+        form = RoleForm(request.POST, tenant=request.tenant)
         if form.is_valid():
             role = form.save(commit=False)
+            role.tenant = request.tenant
             role.is_builtin = False
             role.save()
             messages.success(request, f'Role "{role.name}" created successfully.')
             return redirect('team:role_list')
     else:
-        form = RoleForm()
+        form = RoleForm(tenant=request.tenant)
 
     return render(request, 'team/role_form.html', {
         'form': form,
@@ -481,16 +486,16 @@ def role_create(request):
 @require_permission('team', 'edit')
 def role_edit(request, pk):
     """Edit description or name of a custom role (built-in roles cannot be renamed)."""
-    role = get_object_or_404(Role, pk=pk)
+    role = get_object_or_404(Role, pk=pk, tenant=request.tenant)
 
     if request.method == 'POST':
-        form = RoleForm(request.POST, instance=role)
+        form = RoleForm(request.POST, instance=role, tenant=request.tenant)
         if form.is_valid():
             form.save()
             messages.success(request, f'Role "{role.name}" updated.')
             return redirect('team:role_list')
     else:
-        form = RoleForm(instance=role)
+        form = RoleForm(instance=role, tenant=request.tenant)
 
     return render(request, 'team/role_form.html', {
         'form': form,
@@ -508,13 +513,14 @@ def role_edit(request, pk):
 @require_permission('team', 'edit')
 def employee_document_upload(request, pk):
     """Upload a document to an employee record."""
-    employee = get_object_or_404(Employee, pk=pk)
+    employee = get_object_or_404(Employee, pk=pk, tenant=request.tenant)
 
     if request.method == 'POST':
         form = EmployeeDocumentForm(request.POST, request.FILES)
         if form.is_valid():
             doc = form.save(commit=False)
             doc.employee = employee
+            doc.tenant = request.tenant
             doc.uploaded_by = request.user
             doc.save()
             messages.success(request, f'Document "{doc.title}" uploaded.')
@@ -529,7 +535,8 @@ def employee_document_upload(request, pk):
 def employee_document_delete(request, pk, doc_pk):
     """POST only: delete an uploaded employee document."""
     if request.method == 'POST':
-        doc = get_object_or_404(EmployeeDocument, pk=doc_pk, employee_id=pk)
+        employee = get_object_or_404(Employee, pk=pk, tenant=request.tenant)
+        doc = get_object_or_404(EmployeeDocument, pk=doc_pk, employee=employee, tenant=request.tenant)
         title = doc.title
         doc.delete()
         messages.success(request, f'Document "{title}" deleted.')
@@ -543,7 +550,7 @@ def employee_document_delete(request, pk, doc_pk):
 @login_required
 @require_permission('team', 'view')
 def branch_list(request):
-    branches = Branch.objects.all()
+    branches = Branch.objects.filter(tenant=request.tenant)
     return render(request, 'team/branch_list.html', {'branches': branches})
 
 
@@ -551,13 +558,15 @@ def branch_list(request):
 @require_permission('team', 'edit')
 def branch_create(request):
     if request.method == 'POST':
-        form = BranchForm(request.POST)
+        form = BranchForm(request.POST, tenant=request.tenant)
         if form.is_valid():
-            branch = form.save()
+            branch = form.save(commit=False)
+            branch.tenant = request.tenant
+            branch.save()
             messages.success(request, f'Branch "{branch.name}" created.')
             return redirect('team:branch_list')
     else:
-        form = BranchForm()
+        form = BranchForm(tenant=request.tenant)
     return render(request, 'team/branch_form.html', {
         'form': form,
         'form_title': 'Add Branch',
@@ -567,15 +576,15 @@ def branch_create(request):
 @login_required
 @require_permission('team', 'edit')
 def branch_edit(request, pk):
-    branch = get_object_or_404(Branch, pk=pk)
+    branch = get_object_or_404(Branch, pk=pk, tenant=request.tenant)
     if request.method == 'POST':
-        form = BranchForm(request.POST, instance=branch)
+        form = BranchForm(request.POST, instance=branch, tenant=request.tenant)
         if form.is_valid():
             form.save()
             messages.success(request, f'Branch "{branch.name}" updated.')
             return redirect('team:branch_list')
     else:
-        form = BranchForm(instance=branch)
+        form = BranchForm(instance=branch, tenant=request.tenant)
     return render(request, 'team/branch_form.html', {
         'form': form,
         'form_title': f'Edit Branch – {branch.name}',

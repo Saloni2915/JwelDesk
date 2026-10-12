@@ -39,35 +39,29 @@ class ModulePermChecker:
 
 
 class UserPermsChecker:
-    def __init__(self, user):
+    def __init__(self, user, tenant=None):
         self.user = user
+        self.tenant = tenant
         self._cache = {}
 
     def has(self, module, action='view'):
         key = (module, action)
         if key not in self._cache:
-            self._cache[key] = has_module_perm(self.user, module, action)
+            self._cache[key] = has_module_perm(self.user, module, action, tenant=self.tenant)
         return self._cache[key]
 
     @property
     def is_admin(self):
-        return is_admin_user(self.user)
+        return is_admin_user(self.user, tenant=self.tenant)
 
     def __getattr__(self, module):
         return ModulePermChecker(self, module)
 
 
 def team_permissions(request):
-    """Context processor returning `user_perms` object."""
+    """Context processor returning `user_perms` object scoped to request.tenant."""
     user = getattr(request, 'user', None)
-    if user and user.is_authenticated and not user.is_staff and user.username != 'regularuser':
-        emp = getattr(user, 'employee_profile', None)
-        if not emp:
-            user.is_staff = True
-            try:
-                user.save(update_fields=['is_staff'])
-            except Exception:
-                pass
+    tenant = getattr(request, 'tenant', None)
     return {
-        'user_perms': UserPermsChecker(user),
+        'user_perms': UserPermsChecker(user, tenant=tenant),
     }

@@ -76,16 +76,17 @@ def _available_quantity():
 # INVENTORY VALUATION / SUMMARY
 # ==============================================================================
 
-def inventory_value(queryset=None):
+def inventory_value(queryset=None, tenant=None):
     """
-    Total stock value of the given items (defaults to the whole inventory).
+    Total stock value of the given items (defaults to the whole inventory of the tenant).
 
     Value reuses the existing pricing field: ``selling_price`` is the price of
     one piece, so the stock value of an item is ``quantity x selling_price``.
     Only pieces that are actually available are valued - sold and reserved
     pieces are excluded, exactly like they are excluded from available stock.
     """
-    queryset = JewelleryItem.objects.all() if queryset is None else queryset
+    if queryset is None:
+        queryset = JewelleryItem.objects.filter(tenant=tenant) if tenant else JewelleryItem.objects.all()
     total = queryset.aggregate(total=Coalesce(
         Sum(Case(
             When(status='Available', then=F('quantity') * F('selling_price')),
@@ -103,9 +104,9 @@ def item_stock_value(item):
     return item.estimated_value.quantize(Decimal('0.01'))
 
 
-def inventory_summary(threshold=None):
+def inventory_summary(threshold=None, tenant=None):
     """
-    Return the inventory KPI block used by the inventory pages.
+    Return the inventory KPI block used by the inventory pages scoped to tenant.
 
     Every number is derived from existing inventory fields (quantity, status,
     metal_type, net_weight, selling_price) - nothing is invented, and no live
@@ -114,7 +115,9 @@ def inventory_summary(threshold=None):
     threshold = get_low_stock_threshold(threshold)
     available = _available_quantity()
 
-    totals = JewelleryItem.objects.aggregate(
+    qs = JewelleryItem.objects.filter(tenant=tenant) if tenant else JewelleryItem.objects.all()
+
+    totals = qs.aggregate(
         total_items=Count('id'),
         total_designs=Count('design_code', distinct=True),
         available_stock=Coalesce(Sum(available), 0, output_field=IntegerField()),
@@ -151,7 +154,7 @@ def inventory_summary(threshold=None):
             Decimal('0.000'), output_field=WEIGHT_FIELD),
     )
 
-    designs = low_stock_designs(threshold)
+    designs = low_stock_designs(threshold, tenant=tenant)
     totals['inventory_value'] = (totals['inventory_value'] or Decimal('0.00')
                                  ).quantize(Decimal('0.01'))
     totals['gold_weight'] = (totals['gold_weight'] or Decimal('0.000')
@@ -169,9 +172,9 @@ def inventory_summary(threshold=None):
 # LOW STOCK DETECTION
 # ==============================================================================
 
-def low_stock_design_codes(threshold=None):
+def low_stock_design_codes(threshold=None, tenant=None):
     """
-    Return the set of design codes that are running low.
+    Return the set of design codes that are running low for the tenant.
 
     A design is "low stock" when it still has something available (so it is not
     simply out of stock) but the available pieces are at or below the
@@ -179,8 +182,9 @@ def low_stock_design_codes(threshold=None):
     physical pieces of the same design are separate rows sharing a code.
     """
     threshold = get_low_stock_threshold(threshold)
+    qs = JewelleryItem.objects.filter(tenant=tenant) if tenant else JewelleryItem.objects.all()
     rows = (
-        JewelleryItem.objects
+        qs
         .exclude(design_code='')
         .values('design_code')
         .annotate(available=Sum(_available_quantity()))
@@ -189,17 +193,18 @@ def low_stock_design_codes(threshold=None):
     return {row['design_code'] for row in rows}
 
 
-def low_stock_items(threshold=None):
-    """QuerySet of available items whose design is running low."""
-    codes = low_stock_design_codes(threshold)
+def low_stock_items(threshold=None, tenant=None):
+    """QuerySet of available items whose design is running low within the tenant."""
+    codes = low_stock_design_codes(threshold, tenant=tenant)
     if not codes:
         return JewelleryItem.objects.none()
-    return (JewelleryItem.objects
+    qs = JewelleryItem.objects.filter(tenant=tenant) if tenant else JewelleryItem.objects.all()
+    return (qs
             .filter(status='Available', quantity__gt=0, design_code__in=codes)
             .select_related('category'))
 
 
-def low_stock_designs(threshold=None):
+def low_stock_designs(threshold=None, tenant=None):
     """
     Design-level low stock report for the UI.
 
@@ -207,7 +212,7 @@ def low_stock_designs(threshold=None):
     left) ordered from the most urgent to the least urgent.
     """
     threshold = get_low_stock_threshold(threshold)
-    items = low_stock_items(threshold).order_by('design_code', '-created_at')
+    items = low_stock_items(threshold, tenant=tenant).order_by('design_code', '-created_at')
     designs = {}
     for item in items:
         design = designs.setdefault(item.design_code, {

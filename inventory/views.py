@@ -65,7 +65,7 @@ def dashboard(request):
     from custom_orders.models import CustomOrder
 
     # ---- Inventory summary & counts (single unified aggregate) -----------
-    summary = stock.inventory_summary()
+    summary = stock.inventory_summary(tenant=request.tenant)
     total_items = summary.get('total_items', 0)
     available_items = summary.get('available_stock', 0)
     inventory_value = summary.get('inventory_value')
@@ -73,10 +73,10 @@ def dashboard(request):
     low_stock_design_count = summary.get('low_stock_design_count', 0)
 
     # Sold items count
-    sold_items = JewelleryItem.objects.filter(status='Sold').count()
+    sold_items = JewelleryItem.objects.filter(status='Sold', tenant=request.tenant).count()
 
     # ---- Sales aggregates (combined in 1 single SQL query) ----------------
-    sales_aggregates = Sale.objects.aggregate(
+    sales_aggregates = Sale.objects.filter(tenant=request.tenant).aggregate(
         today_amount=Sum('sale_price', filter=Q(sale_date__date=today)),
         today_count=Count('id', filter=Q(sale_date__date=today)),
         total_amount=Sum('sale_price'),
@@ -88,7 +88,7 @@ def dashboard(request):
     total_sales_count = sales_aggregates['total_count'] or 0
 
     # Outstanding = total sales - total payments (never stored, always derived)
-    payments_total = Payment.objects.aggregate(
+    payments_total = Payment.objects.filter(tenant=request.tenant).aggregate(
         total=Sum('amount'))['total'] or Decimal('0.00')
     try:
         outstanding_amount = Decimal(total_sales_amount) - Decimal(payments_total)
@@ -97,11 +97,12 @@ def dashboard(request):
     if outstanding_amount < 0:
         outstanding_amount = Decimal('0.00')
 
-    customer_count = Customer.objects.count()
+    customer_count = Customer.objects.filter(tenant=request.tenant).count()
 
     # Pending custom orders = everything not Delivered/Cancelled
     pending_orders_qs = (
-        CustomOrder.objects.select_related('customer', 'category')
+        CustomOrder.objects.filter(tenant=request.tenant)
+        .select_related('customer', 'category')
         .exclude(status__in=[CustomOrder.STATUS_DELIVERED,
                              CustomOrder.STATUS_CANCELLED])
         .order_by('-created_at')
@@ -111,7 +112,8 @@ def dashboard(request):
 
     # ---- Recent sales (latest 5) with prefetched payments (avoids N+1 queries) ---
     recent_sales = (
-        Sale.objects.select_related('customer', 'jewellery_item')
+        Sale.objects.filter(tenant=request.tenant)
+        .select_related('customer', 'jewellery_item')
         .prefetch_related('payments')
         .order_by('-sale_date')[:5]
     )
@@ -119,7 +121,8 @@ def dashboard(request):
     # ---- 7-day sales overview (CSS/SVG bars, no JS dependency) ------------
     week_start = today - datetime.timedelta(days=6)
     per_day = (
-        Sale.objects.filter(sale_date__date__gte=week_start,
+        Sale.objects.filter(tenant=request.tenant,
+                            sale_date__date__gte=week_start,
                             sale_date__date__lte=today)
         .annotate(day=TruncDate('sale_date'))
         .values('day')
@@ -144,10 +147,10 @@ def dashboard(request):
         row['pct'] = round((value / chart_max * 100)) if chart_max else 0
 
     # Recent enquiries (latest 5)
-    recent_enquiries = Enquiry.objects.select_related('customer', 'category').order_by('-created_at')[:5]
+    recent_enquiries = Enquiry.objects.filter(tenant=request.tenant).select_related('customer', 'category').order_by('-created_at')[:5]
 
     # Upcoming follow-ups (today or in future, ordered by followup date)
-    upcoming_followups = Enquiry.objects.select_related('customer', 'category').filter(
+    upcoming_followups = Enquiry.objects.filter(tenant=request.tenant).select_related('customer', 'category').filter(
         next_followup_date__gte=today
     ).exclude(
         status__in=['Purchased', 'Closed']
@@ -195,8 +198,8 @@ def dashboard(request):
 @login_required
 def inventory_list(request):
     """List all jewellery items with search, filters and stock summary."""
-    items = JewelleryItem.objects.select_related('category').all()
-    categories = Category.objects.all()
+    items = JewelleryItem.objects.filter(tenant=request.tenant).select_related('category')
+    categories = Category.objects.filter(tenant=request.tenant)
 
     # Low-stock threshold: configurable per request (?threshold=) otherwise
     # taken from settings.INVENTORY_LOW_STOCK_THRESHOLD.
@@ -254,7 +257,7 @@ def inventory_list(request):
         items = items.filter(status=status)
 
     # Stock summary & low-stock designs (computed once to prevent duplicate GROUP BY queries)
-    inventory_summary = stock.inventory_summary(threshold)
+    inventory_summary = stock.inventory_summary(threshold, tenant=request.tenant)
     low_stock_codes = {d['design_code'] for d in inventory_summary.get('low_stock_designs', [])}
 
     stock_filter = request.GET.get('stock', '').strip()
@@ -292,15 +295,18 @@ def inventory_list(request):
 
     # Purity choices (cached in process memory for 1h to avoid repeated SELECT DISTINCT)
     from django.core.cache import cache
-    purity_choices = cache.get('inventory:purity_choices')
+    tenant_id = request.tenant.id if getattr(request, 'tenant', None) else 0
+    purity_cache_key = f'inventory:purity_choices:tenant:{tenant_id}'
+    purity_choices = cache.get(purity_cache_key)
     if purity_choices is None:
         purity_choices = list(
-            JewelleryItem.objects.exclude(purity='')
+            JewelleryItem.objects.filter(tenant=request.tenant)
+            .exclude(purity='')
             .order_by('purity')
             .values_list('purity', flat=True)
             .distinct()
         )
-        cache.set('inventory:purity_choices', purity_choices, 3600)
+        cache.set(purity_cache_key, purity_choices, 3600)
 
     context = {
         'items': page_obj,
@@ -337,7 +343,7 @@ def inventory_add(request):
         initial_data['design_code'] = request.GET.get('design_code')
     if 'duplicate_from' in request.GET:
         try:
-            source_item = JewelleryItem.objects.get(pk=request.GET.get('duplicate_from'))
+            source_item = JewelleryItem.objects.get(pk=request.GET.get('duplicate_from'), tenant=request.tenant)
             initial_data.update({
                 'design_code': source_item.design_code,
                 'name': source_item.name,
@@ -362,10 +368,13 @@ def inventory_add(request):
             pass
 
     if request.method == 'POST':
-        form = JewelleryItemForm(request.POST)
+        form = JewelleryItemForm(request.POST, tenant=request.tenant)
         if form.is_valid():
             with transaction.atomic():
-                item = form.save()
+                item = form.save(commit=False)
+                item.tenant = request.tenant
+                item.save()
+                form.save_m2m()
                 # Opening stock is written to the movement history too, so the
                 # stock ledger starts from zero for every item.
                 stock.record_initial_stock(item, user=request.user)
@@ -374,7 +383,7 @@ def inventory_add(request):
         else:
             messages.error(request, "Failed to save jewellery piece. Please check the highlighted errors below.")
     else:
-        form = JewelleryItemForm(initial=initial_data)
+        form = JewelleryItemForm(initial=initial_data, tenant=request.tenant)
 
     context = {
         'form': form,
@@ -387,13 +396,14 @@ def inventory_add(request):
 @login_required
 def inventory_detail(request, pk):
     """View details of a jewellery item, its stock position and other pieces of the same design."""
-    item = get_object_or_404(JewelleryItem.objects.select_related('category'), pk=pk)
+    item = get_object_or_404(JewelleryItem.objects.select_related('category'), pk=pk, tenant=request.tenant)
     # Check if item has been sold
     sale = item.sales.select_related('customer').first() if hasattr(item, 'sales') else None
 
     # Other physical pieces sharing the same design code
     other_pieces = JewelleryItem.objects.filter(
-        design_code=item.design_code
+        design_code=item.design_code,
+        tenant=request.tenant
     ).exclude(pk=item.pk).order_by('-status', '-created_at') if item.design_code else []
 
     # Recent stock movement history (the full ledger lives on its own page)
@@ -402,7 +412,7 @@ def inventory_detail(request, pk):
     threshold = stock.get_low_stock_threshold()
     is_low_stock = (
         item.status == 'Available' and item.quantity > 0
-        and item.design_code in stock.low_stock_design_codes(threshold))
+        and item.design_code in stock.low_stock_design_codes(threshold, tenant=request.tenant))
 
     context = {
         'item': item,
@@ -421,9 +431,9 @@ def inventory_detail(request, pk):
 @login_required
 def inventory_edit(request, pk):
     """Edit an existing jewellery item."""
-    item = get_object_or_404(JewelleryItem, pk=pk)
+    item = get_object_or_404(JewelleryItem, pk=pk, tenant=request.tenant)
     if request.method == 'POST':
-        form = JewelleryItemForm(request.POST, instance=item)
+        form = JewelleryItemForm(request.POST, instance=item, tenant=request.tenant)
         if form.is_valid():
             item = form.save()
             messages.success(request, f"Jewellery item '{item.name}' ({item.item_code}) updated successfully.")
@@ -431,7 +441,7 @@ def inventory_edit(request, pk):
         else:
             messages.error(request, "Failed to update jewellery piece. Please check the highlighted errors below.")
     else:
-        form = JewelleryItemForm(instance=item)
+        form = JewelleryItemForm(instance=item, tenant=request.tenant)
 
     context = {
         'form': form,
@@ -445,7 +455,7 @@ def inventory_edit(request, pk):
 @login_required
 def inventory_delete(request, pk):
     """Delete a jewellery item."""
-    item = get_object_or_404(JewelleryItem, pk=pk)
+    item = get_object_or_404(JewelleryItem, pk=pk, tenant=request.tenant)
     if request.method == 'POST':
         item_name = item.name
         item_code = item.item_code
@@ -485,7 +495,7 @@ def stock_adjust(request, pk):
     handled by `inventory.stock.apply_stock_change`, so this view only wires the
     form to that service.
     """
-    item = get_object_or_404(JewelleryItem.objects.select_related('category'), pk=pk)
+    item = get_object_or_404(JewelleryItem.objects.select_related('category'), pk=pk, tenant=request.tenant)
     threshold = stock.get_low_stock_threshold()
 
     if request.method == 'POST':
@@ -518,7 +528,7 @@ def stock_adjust(request, pk):
         'movement_count': item.stock_movements.count(),
         'low_stock_threshold': threshold,
         'is_low_stock': (item.status == 'Available' and item.quantity > 0
-                         and item.design_code in stock.low_stock_design_codes(threshold)),
+                         and item.design_code in stock.low_stock_design_codes(threshold, tenant=request.tenant)),
     }
     return render(request, 'inventory/stock_adjust.html', context)
 
@@ -526,7 +536,7 @@ def stock_adjust(request, pk):
 @login_required
 def stock_movement_list(request):
     """Stock movement history for the whole inventory, with filters."""
-    movements = StockMovement.objects.select_related('item', 'created_by', 'sale')
+    movements = StockMovement.objects.filter(tenant=request.tenant).select_related('item', 'created_by', 'sale')
 
     # Search (tag number, piece ID, item name, design code or notes)
     q = request.GET.get('q', '').strip()
@@ -542,7 +552,7 @@ def stock_movement_list(request):
     # Single item filter (linked from the item detail page)
     item_id = request.GET.get('item', '').strip()
     if item_id.isdigit():
-        movements = movements.filter(item_id=item_id)
+        movements = movements.filter(item_id=item_id, item__tenant=request.tenant)
 
     # Movement type filter
     movement_type = request.GET.get('type', '').strip()
@@ -591,8 +601,8 @@ def stock_movement_list(request):
 @login_required
 def category_list(request):
     """List all categories with item count and inline create form."""
-    categories = Category.objects.annotate(items_count=Count('items')).all()
-    form = CategoryForm()
+    categories = Category.objects.filter(tenant=request.tenant).annotate(items_count=Count('items')).all()
+    form = CategoryForm(tenant=request.tenant)
 
     context = {
         'categories': categories,
@@ -606,9 +616,11 @@ def category_list(request):
 def category_add(request):
     """Add a new jewellery category."""
     if request.method == 'POST':
-        form = CategoryForm(request.POST)
+        form = CategoryForm(request.POST, tenant=request.tenant)
         if form.is_valid():
-            category = form.save()
+            category = form.save(commit=False)
+            category.tenant = request.tenant
+            category.save()
             messages.success(request, f"Category '{category.name}' created successfully.")
             next_url = request.POST.get('next') or request.GET.get('next')
             if next_url:
@@ -616,7 +628,7 @@ def category_add(request):
             return redirect('category_list')
         else:
             messages.error(request, "Failed to create category. Please check for errors.")
-            categories = Category.objects.annotate(items_count=Count('items')).all()
+            categories = Category.objects.filter(tenant=request.tenant).annotate(items_count=Count('items')).all()
             return render(request, 'inventory/category_list.html', {
                 'categories': categories,
                 'form': form,
@@ -628,15 +640,15 @@ def category_add(request):
 @login_required
 def category_edit(request, pk):
     """Edit an existing category."""
-    category = get_object_or_404(Category, pk=pk)
+    category = get_object_or_404(Category, pk=pk, tenant=request.tenant)
     if request.method == 'POST':
-        form = CategoryForm(request.POST, instance=category)
+        form = CategoryForm(request.POST, instance=category, tenant=request.tenant)
         if form.is_valid():
             category = form.save()
             messages.success(request, f"Category '{category.name}' updated successfully.")
             return redirect('category_list')
     else:
-        form = CategoryForm(instance=category)
+        form = CategoryForm(instance=category, tenant=request.tenant)
 
     context = {
         'form': form,
@@ -649,7 +661,7 @@ def category_edit(request, pk):
 @login_required
 def category_delete(request, pk):
     """Delete a category with protection check."""
-    category = get_object_or_404(Category.objects.annotate(items_count=Count('items')), pk=pk)
+    category = get_object_or_404(Category.objects.annotate(items_count=Count('items')), pk=pk, tenant=request.tenant)
     if request.method == 'POST':
         try:
             cat_name = category.name
@@ -744,7 +756,7 @@ def preview_inventory_import(request):
         'rows': data_rows,
     }
 
-    _, _, summary = validate_import_rows(data_rows)
+    _, _, summary = validate_import_rows(data_rows, tenant=request.tenant)
 
     if summary['invalid_count']:
         messages.error(
@@ -776,7 +788,7 @@ def confirm_inventory_import(request):
         return redirect('inventory_import')
 
     filename = stored_import.get('filename', 'uploaded file')
-    valid_rows, invalid_rows, _ = validate_import_rows(stored_import['rows'])
+    valid_rows, invalid_rows, _ = validate_import_rows(stored_import['rows'], tenant=request.tenant)
 
     if invalid_rows:
         messages.error(
@@ -791,7 +803,7 @@ def confirm_inventory_import(request):
         return redirect('inventory_import')
 
     try:
-        imported_count = import_valid_rows(valid_rows, user=request.user)
+        imported_count = import_valid_rows(valid_rows, user=request.user, tenant=request.tenant)
     except (ValidationError, IntegrityError, InvalidOperation) as exc:
         clear_stored_import(request)
         messages.error(
@@ -841,7 +853,7 @@ def inventory_import(request):
     if not stored_import or not stored_import.get('rows'):
         return render(request, 'inventory/import.html', context)
 
-    valid_rows, invalid_rows, summary = validate_import_rows(stored_import['rows'])
+    valid_rows, invalid_rows, summary = validate_import_rows(stored_import['rows'], tenant=request.tenant)
     duplicate_rows = get_duplicate_rows(invalid_rows)
 
     paginator = Paginator(valid_rows, PREVIEW_VALID_ROWS_PER_PAGE)
@@ -888,11 +900,13 @@ def metal_price_refresh(request):
         snapshot = result.get('snapshot') or {}
         if snapshot.get('gold_price_per_gram'):
             MetalRate.objects.update_or_create(
+                tenant=request.tenant,
                 metal_type='Gold',
                 defaults={'rate_per_gram': snapshot['gold_price_per_gram'], 'source': 'Live API'}
             )
         if snapshot.get('silver_price_per_gram'):
             MetalRate.objects.update_or_create(
+                tenant=request.tenant,
                 metal_type='Silver',
                 defaults={'rate_per_gram': snapshot['silver_price_per_gram'], 'source': 'Live API'}
             )
@@ -915,46 +929,43 @@ def pricing_calculator(request):
     making charges, stones, GST and direct inventory item prefill / price updating.
     """
     from . import pricing
-    from team.permissions import has_module_perm, is_admin_user
+    from team.permissions import has_module_perm
     from django.core.exceptions import PermissionDenied
 
-    # Check permission (viewing pricing requires inventory:view or metal_prices:view or admin/staff)
     user = request.user
+    tenant = getattr(request, 'tenant', None)
     can_view = (
-        user.is_superuser or user.is_staff or
-        has_module_perm(user, 'inventory', 'view') or
-        has_module_perm(user, 'metal_prices', 'view') or
-        not hasattr(user, 'employee_profile')
+        user.is_superuser or
+        has_module_perm(user, 'inventory', 'view', tenant=tenant) or
+        has_module_perm(user, 'metal_prices', 'view', tenant=tenant)
     )
     if not can_view:
         raise PermissionDenied("You do not have permission to access the Pricing Engine.")
 
     can_edit_items = (
-        user.is_superuser or user.is_staff or
-        has_module_perm(user, 'inventory', 'edit') or
-        not hasattr(user, 'employee_profile')
+        user.is_superuser or
+        has_module_perm(user, 'inventory', 'edit', tenant=tenant)
     )
 
     can_edit_rates = (
-        user.is_superuser or user.is_staff or
-        has_module_perm(user, 'metal_prices', 'edit') or
-        not hasattr(user, 'employee_profile')
+        user.is_superuser or
+        has_module_perm(user, 'metal_prices', 'edit', tenant=tenant)
     )
 
     # Available items for dropdown selector
-    available_items = JewelleryItem.objects.filter(status='Available').select_related('category').order_by('name')
+    available_items = JewelleryItem.objects.filter(status='Available', tenant=request.tenant).select_related('category').order_by('name')
 
     selected_item = None
     item_id = request.GET.get('item') or request.POST.get('selected_item_id')
     if item_id:
         try:
-            selected_item = JewelleryItem.objects.get(pk=item_id)
+            selected_item = JewelleryItem.objects.get(pk=item_id, tenant=request.tenant)
         except (JewelleryItem.DoesNotExist, ValueError):
             selected_item = None
 
     # Base rates
-    active_gold_rate = pricing.get_current_metal_rate('Gold')
-    active_silver_rate = pricing.get_current_metal_rate('Silver')
+    active_gold_rate = pricing.get_current_metal_rate('Gold', tenant=request.tenant)
+    active_silver_rate = pricing.get_current_metal_rate('Silver', tenant=request.tenant)
 
     # Initial form values
     if request.method == 'POST':
@@ -988,6 +999,7 @@ def pricing_calculator(request):
             other_charges=other_charges,
             other_charges_description=other_charges_desc,
             tax_percent=tax_percent,
+            tenant=request.tenant,
         )
 
         # Action: Apply calculated price to existing inventory piece
@@ -1051,6 +1063,7 @@ def pricing_calculator(request):
             other_charges=other_charges,
             other_charges_description=other_charges_desc,
             tax_percent=tax_percent,
+            tenant=request.tenant,
         )
 
     # Derived rates for display bar
@@ -1146,6 +1159,7 @@ def api_calculate_price(request):
             stone_charges=stone_charges,
             other_charges=other_charges,
             tax_percent=tax_pct,
+            tenant=getattr(request, 'tenant', None),
         )
         return JsonResponse({'ok': True, 'breakdown': breakdown.to_dict()})
     except Exception as exc:
@@ -1161,28 +1175,27 @@ def metal_rates_view(request):
     """
     from . import pricing
     from .forms import MetalRatesUpdateForm
-    from team.permissions import has_module_perm, is_admin_user
+    from team.permissions import has_module_perm
     from django.core.exceptions import PermissionDenied
 
     user = request.user
+    tenant = getattr(request, 'tenant', None)
     can_view = (
-        user.is_superuser or user.is_staff or
-        has_module_perm(user, 'metal_prices', 'view') or
-        not hasattr(user, 'employee_profile')
+        user.is_superuser or
+        has_module_perm(user, 'metal_prices', 'view', tenant=tenant)
     )
     if not can_view:
         raise PermissionDenied("You do not have permission to view metal prices.")
 
     can_edit = (
-        user.is_superuser or user.is_staff or
-        has_module_perm(user, 'metal_prices', 'edit') or
-        not hasattr(user, 'employee_profile')
+        user.is_superuser or
+        has_module_perm(user, 'metal_prices', 'edit', tenant=tenant)
     )
 
     # Fetch DB records
-    gold_rate_obj = MetalRate.objects.filter(metal_type='Gold').first()
-    silver_rate_obj = MetalRate.objects.filter(metal_type='Silver').first()
-    plat_rate_obj = MetalRate.objects.filter(metal_type='Platinum').first()
+    gold_rate_obj = MetalRate.objects.filter(metal_type='Gold', tenant=request.tenant).first()
+    silver_rate_obj = MetalRate.objects.filter(metal_type='Silver', tenant=request.tenant).first()
+    plat_rate_obj = MetalRate.objects.filter(metal_type='Platinum', tenant=request.tenant).first()
 
     gold_24k = gold_rate_obj.rate_per_gram if gold_rate_obj else pricing.FALLBACK_GOLD_24K_RATE
     silver_999 = silver_rate_obj.rate_per_gram if silver_rate_obj else pricing.FALLBACK_SILVER_999_RATE
@@ -1199,11 +1212,13 @@ def metal_rates_view(request):
                 snapshot = result.get('snapshot') or {}
                 if snapshot.get('gold_price_per_gram'):
                     MetalRate.objects.update_or_create(
+                        tenant=request.tenant,
                         metal_type='Gold',
                         defaults={'rate_per_gram': snapshot['gold_price_per_gram'], 'source': 'Live API', 'updated_by': user}
                     )
                 if snapshot.get('silver_price_per_gram'):
                     MetalRate.objects.update_or_create(
+                        tenant=request.tenant,
                         metal_type='Silver',
                         defaults={'rate_per_gram': snapshot['silver_price_per_gram'], 'source': 'Live API', 'updated_by': user}
                     )
@@ -1222,15 +1237,18 @@ def metal_rates_view(request):
                 source = form.cleaned_data.get('source') or 'Shop Board Rate'
 
                 MetalRate.objects.update_or_create(
+                    tenant=request.tenant,
                     metal_type='Gold',
                     defaults={'rate_per_gram': g_rate, 'source': source, 'updated_by': user}
                 )
                 MetalRate.objects.update_or_create(
+                    tenant=request.tenant,
                     metal_type='Silver',
                     defaults={'rate_per_gram': s_rate, 'source': source, 'updated_by': user}
                 )
                 if p_rate:
                     MetalRate.objects.update_or_create(
+                        tenant=request.tenant,
                         metal_type='Platinum',
                         defaults={'rate_per_gram': p_rate, 'source': source, 'updated_by': user}
                     )

@@ -18,6 +18,14 @@ class Sale(models.Model):
         ('Exchange', 'Exchange / Old Gold'),
     ]
 
+    tenant = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.CASCADE,
+        related_name='sales',
+        null=True,
+        blank=True,
+        help_text="Tenant shop owning this sale"
+    )
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='sales')
     jewellery_item = models.ForeignKey(JewelleryItem, on_delete=models.PROTECT, related_name='sales')
     sale_price = models.DecimalField(max_digits=12, decimal_places=2)
@@ -72,6 +80,14 @@ class Payment(models.Model):
         ('Exchange', 'Exchange / Old Gold'),
     ]
 
+    tenant = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.CASCADE,
+        related_name='payments',
+        null=True,
+        blank=True,
+        help_text="Tenant shop owning this payment"
+    )
     sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='payments')
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS, default='Cash')
@@ -88,6 +104,11 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"Payment of Rs. {self.amount} on Sale #{self.sale_id}"
+
+    def save(self, *args, **kwargs):
+        if not self.tenant_id and self.sale_id and getattr(self.sale, 'tenant_id', None):
+            self.tenant_id = self.sale.tenant_id
+        super().save(*args, **kwargs)
 
     def clean(self):
         """Reject non-positive amounts and payments above remaining due."""
@@ -119,6 +140,14 @@ class Enquiry(models.Model):
         ('Closed', 'Closed'),
     ]
 
+    tenant = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.CASCADE,
+        related_name='enquiries',
+        null=True,
+        blank=True,
+        help_text="Tenant shop owning this enquiry"
+    )
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='enquiries')
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='enquiries')
     interested_item = models.CharField(
@@ -139,21 +168,34 @@ class Enquiry(models.Model):
         return f"Enquiry #{self.id} - {self.customer.name} ({self.interested_item})"
 
 
-def generate_old_gold_number(transaction_type='Exchange'):
+def generate_old_gold_number(transaction_type='Exchange', tenant=None):
     """
     Generate unique sequential reference for old gold transactions:
-    OGX-00001 for Exchange, OGB-00001 for Buyback.
+    OGX-00001 for Exchange, OGB-00001 for Buyback. Scoped per tenant.
     """
     prefix = 'OGX' if transaction_type == 'Exchange' else 'OGB' if transaction_type == 'Buyback' else 'OG'
-    latest = OldGoldTransaction.objects.filter(transaction_number__startswith=prefix).order_by('-id').first()
+    qs = OldGoldTransaction.objects.filter(transaction_number__startswith=prefix)
+    if tenant:
+        qs = qs.filter(tenant=tenant)
+    latest = qs.order_by('-id').first()
     next_num = 1
     if latest and latest.transaction_number:
         try:
             num = int(latest.transaction_number.split('-')[-1])
             next_num = num + 1
         except (ValueError, IndexError):
-            next_num = OldGoldTransaction.objects.count() + 1
-    return f"{prefix}-{next_num:05d}"
+            next_num = qs.count() + 1
+    candidate = f"{prefix}-{next_num:05d}"
+    exists_qs = OldGoldTransaction.objects.filter(transaction_number=candidate)
+    if tenant:
+        exists_qs = exists_qs.filter(tenant=tenant)
+    while exists_qs.exists():
+        next_num += 1
+        candidate = f"{prefix}-{next_num:05d}"
+        exists_qs = OldGoldTransaction.objects.filter(transaction_number=candidate)
+        if tenant:
+            exists_qs = exists_qs.filter(tenant=tenant)
+    return candidate
 
 
 class OldGoldTransaction(models.Model):
@@ -208,11 +250,18 @@ class OldGoldTransaction(models.Model):
         ('Refined Bar', 'Refined Bullion Bar Received'),
     ]
 
+    tenant = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.CASCADE,
+        related_name='old_gold_transactions',
+        null=True,
+        blank=True,
+        help_text="Tenant shop owning this transaction"
+    )
     transaction_number = models.CharField(
         max_length=50,
-        unique=True,
         db_index=True,
-        help_text="Unique voucher reference (e.g. OGX-00001, OGB-00001)"
+        help_text="Voucher reference (e.g. OGX-00001, OGB-00001)"
     )
     transaction_type = models.CharField(
         max_length=20,
@@ -407,6 +456,12 @@ class OldGoldTransaction(models.Model):
         ordering = ['-created_at', '-id']
         verbose_name = 'Old Gold Transaction'
         verbose_name_plural = 'Old Gold Transactions'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tenant', 'transaction_number'],
+                name='unique_tenant_old_gold_tx_number',
+            ),
+        ]
 
     def __str__(self):
         return f"{self.transaction_number} - {self.customer.name} ({self.get_transaction_type_display()} - Rs. {self.final_value:,.2f})"

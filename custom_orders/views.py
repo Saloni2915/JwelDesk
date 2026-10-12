@@ -17,7 +17,7 @@ CUSTOM_ORDERS_PER_PAGE = 15
 @login_required
 def custom_order_list(request):
     """List custom orders with search, status, and expected-delivery filters."""
-    orders = CustomOrder.objects.select_related('customer', 'category').all()
+    orders = CustomOrder.objects.filter(tenant=request.tenant).select_related('customer', 'category')
     today = timezone.localdate()
 
     q = request.GET.get('q', '').strip()
@@ -65,9 +65,10 @@ def custom_order_add(request):
         initial['customer'] = int(customer_param)
 
     if request.method == 'POST':
-        form = CustomOrderForm(request.POST, request.FILES)
+        form = CustomOrderForm(request.POST, request.FILES, tenant=request.tenant)
         if form.is_valid():
             order = form.save(commit=False)
+            order.tenant = request.tenant
             order.status = CustomOrder.STATUS_ENQUIRY
             order.save()
             messages.success(
@@ -76,7 +77,7 @@ def custom_order_add(request):
             return redirect('custom_orders:custom_order_detail', pk=order.pk)
         messages.error(request, "Could not create the custom order. Please fix the errors below.")
     else:
-        form = CustomOrderForm(initial=initial)
+        form = CustomOrderForm(initial=initial, tenant=request.tenant)
 
     context = {
         'form': form,
@@ -90,7 +91,10 @@ def custom_order_add(request):
 def custom_order_detail(request, pk):
     """Show the full order with allowed next statuses."""
     order = get_object_or_404(
-        CustomOrder.objects.select_related('customer', 'category'), pk=pk)
+        CustomOrder.objects.select_related('customer', 'category'),
+        pk=pk,
+        tenant=request.tenant,
+    )
     # Only offer transitions allowed by the shop workflow, in workflow order.
     status_map = dict(CustomOrder.STATUS_CHOICES)
     allowed_statuses = [
@@ -118,7 +122,7 @@ def custom_order_detail(request, pk):
 @login_required
 def custom_order_edit(request, pk):
     """Edit a custom order; delivered/cancelled orders are read-only."""
-    order = get_object_or_404(CustomOrder, pk=pk)
+    order = get_object_or_404(CustomOrder, pk=pk, tenant=request.tenant)
     if order.status in (CustomOrder.STATUS_DELIVERED, CustomOrder.STATUS_CANCELLED):
         messages.error(
             request,
@@ -126,7 +130,7 @@ def custom_order_edit(request, pk):
         return redirect('custom_orders:custom_order_detail', pk=order.pk)
 
     if request.method == 'POST':
-        form = CustomOrderForm(request.POST, request.FILES, instance=order)
+        form = CustomOrderForm(request.POST, request.FILES, instance=order, tenant=request.tenant)
         if form.is_valid():
             order = form.save()
             messages.success(
@@ -135,7 +139,7 @@ def custom_order_edit(request, pk):
             return redirect('custom_orders:custom_order_detail', pk=order.pk)
         messages.error(request, "Could not update the custom order. Please fix the errors below.")
     else:
-        form = CustomOrderForm(instance=order)
+        form = CustomOrderForm(instance=order, tenant=request.tenant)
 
     context = {
         'form': form,
@@ -149,7 +153,7 @@ def custom_order_edit(request, pk):
 @login_required
 def custom_order_delete(request, pk):
     """Delete a draft-stage order, or cancel an order already in progress."""
-    order = get_object_or_404(CustomOrder, pk=pk)
+    order = get_object_or_404(CustomOrder, pk=pk, tenant=request.tenant)
 
     if request.method == 'POST':
         if order.status in (CustomOrder.STATUS_DELIVERED, CustomOrder.STATUS_CANCELLED):
@@ -184,7 +188,7 @@ def custom_order_delete(request, pk):
 @login_required
 def custom_order_status(request, pk):
     """Change the order status, enforcing the allowed shop workflow."""
-    order = get_object_or_404(CustomOrder, pk=pk)
+    order = get_object_or_404(CustomOrder, pk=pk, tenant=request.tenant)
     if request.method != 'POST':
         return redirect('custom_orders:custom_order_detail', pk=order.pk)
 

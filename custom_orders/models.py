@@ -52,10 +52,17 @@ class CustomOrder(models.Model):
         STATUS_CANCELLED: set(),
     }
 
+    tenant = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.CASCADE,
+        related_name='custom_orders',
+        null=True,
+        blank=True,
+        help_text="Tenant shop owning this custom order"
+    )
     customer = models.ForeignKey(Customer, on_delete=models.PROTECT, related_name='custom_orders')
     order_number = models.CharField(
         max_length=20,
-        unique=True,
         blank=True,
         editable=False,
         help_text="Auto-generated reference, e.g. CO-2026-0001.",
@@ -100,6 +107,12 @@ class CustomOrder(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tenant', 'order_number'],
+                name='unique_tenant_custom_order_number',
+            ),
+        ]
 
     def __str__(self):
         return f"{self.order_number or 'Unsaved'} - {self.customer} ({self.status})"
@@ -116,6 +129,8 @@ class CustomOrder(models.Model):
         """Calculate live estimate using the Jewellery Pricing Engine."""
         from inventory import pricing
         kwargs = {}
+        if self.tenant_id:
+            kwargs['tenant'] = self.tenant
         if base_rate is not None:
             kwargs['base_metal_rate'] = base_rate
         if tax_percent is not None:

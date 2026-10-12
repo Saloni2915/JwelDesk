@@ -59,7 +59,8 @@ def sale_list(request):
 
     with connection.execute_wrapper(tracker):
         sales = (
-            Sale.objects.select_related('customer', 'jewellery_item')
+            Sale.objects.filter(tenant=request.tenant)
+            .select_related('customer', 'jewellery_item')
             .prefetch_related('payments')
             .order_by('-sale_date')
         )
@@ -84,7 +85,7 @@ def sale_list(request):
         # Stage 1: KPI summary metrics across sales
         t_kpi_start = time.perf_counter()
         q_kpi_before = tracker.count
-        all_sales = Sale.objects.all()
+        all_sales = Sale.objects.filter(tenant=request.tenant)
         total_revenue_all = all_sales.aggregate(total=Sum('sale_price'))['total'] or Decimal('0.00')
         total_sales_count = all_sales.count()
 
@@ -156,21 +157,22 @@ def sale_add(request):
     if 'item' in request.GET:
         initial_data['jewellery_item'] = request.GET.get('item')
         try:
-            item_obj = JewelleryItem.objects.get(pk=request.GET.get('item'))
+            item_obj = JewelleryItem.objects.get(pk=request.GET.get('item'), tenant=request.tenant)
             initial_data['sale_price'] = request.GET.get('price') or item_obj.selling_price
         except JewelleryItem.DoesNotExist:
             pass
 
     if request.method == 'POST':
-        form = SaleForm(request.POST)
+        form = SaleForm(request.POST, tenant=request.tenant)
         if form.is_valid():
             with transaction.atomic():
                 sale = form.save(commit=False)
+                sale.tenant = request.tenant
                 item = sale.jewellery_item
 
                 # Business rule validation: the item must still be in stock.
                 # Re-fetch with select_for_update to prevent race conditions
-                locked_item = JewelleryItem.objects.select_for_update().get(pk=item.pk)
+                locked_item = JewelleryItem.objects.select_for_update().get(pk=item.pk, tenant=request.tenant)
                 if locked_item.status == 'Sold' or locked_item.quantity <= 0:
                     messages.error(request, f"Cannot complete sale: '{locked_item.name}' ({locked_item.item_code}) is already SOLD.")
                     return render(request, 'sales/sale_form.html', {'form': form, 'page_title': 'Create Sale'})
@@ -192,7 +194,7 @@ def sale_add(request):
                         f"reduced to {movement.stock_after}.")
                 return redirect('sale_detail', pk=sale.pk)
     else:
-        form = SaleForm(initial=initial_data)
+        form = SaleForm(initial=initial_data, tenant=request.tenant)
 
     import json
     from inventory import metal_prices
@@ -235,7 +237,7 @@ def sale_add(request):
             'purchases_amount': float(c.total_purchases_amount or 0),
         })
 
-    last_sale = Sale.objects.order_by('-id').first()
+    last_sale = Sale.objects.filter(tenant=request.tenant).order_by('-id').first()
     next_inv_id = (last_sale.id + 1) if last_sale else 1
     draft_invoice_number = f"INV-2026-{next_inv_id:04d}"
 
@@ -257,7 +259,10 @@ def sale_detail(request, pk):
     from .invoice_utils import calculate_invoice_breakdown, get_state_from_gstin
 
     sale = get_object_or_404(
-        Sale.objects.select_related('customer', 'jewellery_item', 'jewellery_item__category'), pk=pk)
+        Sale.objects.select_related('customer', 'jewellery_item', 'jewellery_item__category'),
+        pk=pk,
+        tenant=request.tenant,
+    )
 
     # Read GST preference from query param ?gst=1 or ?gst=0 (defaults to True)
     gst_param = request.GET.get('gst', '1').strip().lower()
@@ -267,7 +272,7 @@ def sale_detail(request, pk):
     breakdown_nogst = calculate_invoice_breakdown(sale, include_gst=False)
     active_breakdown = breakdown_gst if include_gst else breakdown_nogst
 
-    company = CompanySettings.objects.first()
+    company = CompanySettings.load(tenant=request.tenant)
     gstin = company.gstin if company else ''
     state_name, state_code = get_state_from_gstin(gstin)
 
@@ -294,7 +299,10 @@ def sale_invoice_pdf(request, pk):
     from .invoice_pdf import build_invoice_pdf
 
     sale = get_object_or_404(
-        Sale.objects.select_related('customer', 'jewellery_item', 'jewellery_item__category'), pk=pk)
+        Sale.objects.select_related('customer', 'jewellery_item', 'jewellery_item__category'),
+        pk=pk,
+        tenant=request.tenant,
+    )
 
     gst_param = request.GET.get('gst', '1').strip().lower()
     include_gst = gst_param not in ('0', 'false', 'no', 'none')
@@ -313,7 +321,7 @@ def sale_invoice_pdf(request, pk):
 @login_required
 def enquiry_list(request):
     """List enquiries with search, status and date filters."""
-    enquiries = Enquiry.objects.select_related('customer', 'category').order_by('-created_at')
+    enquiries = Enquiry.objects.filter(tenant=request.tenant).select_related('customer', 'category').order_by('-created_at')
 
     # Search (Customer name or interested item)
     q = request.GET.get('q', '').strip()
@@ -364,13 +372,15 @@ def enquiry_add(request):
         initial_data['customer'] = request.GET.get('customer')
 
     if request.method == 'POST':
-        form = EnquiryForm(request.POST)
+        form = EnquiryForm(request.POST, tenant=request.tenant)
         if form.is_valid():
-            enquiry = form.save()
+            enquiry = form.save(commit=False)
+            enquiry.tenant = request.tenant
+            enquiry.save()
             messages.success(request, f"Enquiry for '{enquiry.customer.name}' recorded successfully.")
             return redirect('enquiry_detail', pk=enquiry.pk)
     else:
-        form = EnquiryForm(initial=initial_data)
+        form = EnquiryForm(initial=initial_data, tenant=request.tenant)
 
     context = {
         'form': form,
@@ -383,7 +393,7 @@ def enquiry_add(request):
 @login_required
 def enquiry_detail(request, pk):
     """View enquiry details."""
-    enquiry = get_object_or_404(Enquiry.objects.select_related('customer', 'category'), pk=pk)
+    enquiry = get_object_or_404(Enquiry.objects.select_related('customer', 'category'), pk=pk, tenant=request.tenant)
     context = {
         'enquiry': enquiry,
     }
@@ -393,15 +403,15 @@ def enquiry_detail(request, pk):
 @login_required
 def enquiry_edit(request, pk):
     """Edit an enquiry."""
-    enquiry = get_object_or_404(Enquiry, pk=pk)
+    enquiry = get_object_or_404(Enquiry, pk=pk, tenant=request.tenant)
     if request.method == 'POST':
-        form = EnquiryForm(request.POST, instance=enquiry)
+        form = EnquiryForm(request.POST, instance=enquiry, tenant=request.tenant)
         if form.is_valid():
             enquiry = form.save()
             messages.success(request, f"Enquiry updated successfully.")
             return redirect('enquiry_detail', pk=enquiry.pk)
     else:
-        form = EnquiryForm(instance=enquiry)
+        form = EnquiryForm(instance=enquiry, tenant=request.tenant)
 
     context = {
         'form': form,
@@ -415,7 +425,7 @@ def enquiry_edit(request, pk):
 @login_required
 def enquiry_delete(request, pk):
     """Delete an enquiry."""
-    enquiry = get_object_or_404(Enquiry, pk=pk)
+    enquiry = get_object_or_404(Enquiry, pk=pk, tenant=request.tenant)
     if request.method == 'POST':
         enquiry.delete()
         messages.success(request, "Enquiry deleted successfully.")
@@ -494,6 +504,7 @@ def sales_report(request):
 
     sales = (
         Sale.objects
+        .filter(tenant=request.tenant)
         .select_related('customer', 'jewellery_item')
         .prefetch_related('payments')
         .filter(sale_date__date__gte=start_date, sale_date__date__lte=end_date)
@@ -514,6 +525,7 @@ def sales_report(request):
 
     # Old gold transactions in date range (combined in 1 single aggregate query)
     old_gold_aggr = OldGoldTransaction.objects.filter(
+        tenant=request.tenant,
         created_at__date__gte=start_date,
         created_at__date__lte=end_date,
         status=OldGoldTransaction.STATUS_COMPLETED
@@ -568,7 +580,7 @@ def payment_add(request, pk):
     GET simply returns to the sale; POST validates through PaymentForm
     (amount > 0 and <= remaining due) before saving.
     """
-    sale = get_object_or_404(Sale, pk=pk)
+    sale = get_object_or_404(Sale, pk=pk, tenant=request.tenant)
     if request.method != 'POST':
         return redirect('sale_detail', pk=sale.pk)
 
@@ -576,6 +588,7 @@ def payment_add(request, pk):
     if form.is_valid():
         payment = form.save(commit=False)
         payment.sale = sale
+        payment.tenant = request.tenant
         payment.save()
         messages.success(
             request,
@@ -598,7 +611,8 @@ def payment_list(request):
     and recording new payments against any sale with pending dues.
     """
     payments = (
-        Payment.objects.select_related('sale', 'sale__customer', 'sale__jewellery_item')
+        Payment.objects.filter(tenant=request.tenant)
+        .select_related('sale', 'sale__customer', 'sale__jewellery_item')
         .order_by('-payment_date', '-id')
     )
 
@@ -646,9 +660,11 @@ def payment_list(request):
 
     # Handle Recording Payment directly from this page (POST)
     if request.method == 'POST':
-        form = StandalonePaymentForm(request.POST)
+        form = StandalonePaymentForm(request.POST, tenant=request.tenant)
         if form.is_valid():
-            payment = form.save()
+            payment = form.save(commit=False)
+            payment.tenant = request.tenant
+            payment.save()
             messages.success(
                 request,
                 f"Payment of \u20b9{payment.amount:,.2f} recorded successfully for Invoice INV-{payment.sale.id:05d} "
@@ -664,15 +680,15 @@ def payment_list(request):
         initial_data = {}
         if initial_sale_id and initial_sale_id.isdigit():
             initial_data['sale'] = int(initial_sale_id)
-        form = StandalonePaymentForm(initial=initial_data)
+        form = StandalonePaymentForm(initial=initial_data, tenant=request.tenant)
 
     # KPI Metrics
-    all_payments = Payment.objects.all()
+    all_payments = Payment.objects.filter(tenant=request.tenant)
     total_collected = all_payments.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
     today_collected = all_payments.filter(payment_date__date=today).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
 
     # Total outstanding dues across all sales
-    all_sales = Sale.objects.select_related('customer', 'jewellery_item').prefetch_related('payments').all()
+    all_sales = Sale.objects.filter(tenant=request.tenant).select_related('customer', 'jewellery_item').prefetch_related('payments').all()
     total_outstanding_due = sum(s.due_amount for s in all_sales)
     pending_sales_count = sum(1 for s in all_sales if s.due_amount > 0)
 
@@ -722,7 +738,7 @@ def old_gold_list(request):
     Transaction history for Old Gold Exchanges and Buybacks.
     Provides searching, type filtering, status filtering, and aggregate summaries.
     """
-    transactions = OldGoldTransaction.objects.select_related(
+    transactions = OldGoldTransaction.objects.filter(tenant=request.tenant).select_related(
         'customer', 'new_sale', 'new_sale__jewellery_item', 'processed_by'
     ).order_by('-created_at', '-id')
 
@@ -749,7 +765,7 @@ def old_gold_list(request):
         transactions = transactions.filter(status=status)
 
     # Totals across all completed transactions
-    completed_txs = OldGoldTransaction.objects.filter(status=OldGoldTransaction.STATUS_COMPLETED)
+    completed_txs = OldGoldTransaction.objects.filter(tenant=request.tenant, status=OldGoldTransaction.STATUS_COMPLETED)
     total_val_all = completed_txs.aggregate(total=Sum('final_value'))['total'] or Decimal('0.00')
     total_net_wt_all = completed_txs.aggregate(total=Sum('net_weight'))['total'] or Decimal('0.000')
     exchange_count_all = completed_txs.filter(transaction_type=OldGoldTransaction.TYPE_EXCHANGE).count()
@@ -791,18 +807,18 @@ def old_gold_exchange_create(request):
     if 'item' in request.GET:
         initial_data['new_jewellery_item'] = request.GET.get('item')
         try:
-            it = JewelleryItem.objects.get(pk=request.GET.get('item'))
+            it = JewelleryItem.objects.get(pk=request.GET.get('item'), tenant=request.tenant)
             initial_data['new_sale_price'] = it.selling_price
         except JewelleryItem.DoesNotExist:
             pass
 
     if request.method == 'POST':
-        form = OldGoldExchangeForm(request.POST)
+        form = OldGoldExchangeForm(request.POST, tenant=request.tenant)
         if form.is_valid():
             with transaction.atomic():
                 # Re-fetch item with select_for_update
                 new_item = form.cleaned_data['new_jewellery_item']
-                locked_item = JewelleryItem.objects.select_for_update().get(pk=new_item.pk)
+                locked_item = JewelleryItem.objects.select_for_update().get(pk=new_item.pk, tenant=request.tenant)
                 if locked_item.status == 'Sold' or locked_item.quantity <= 0:
                     messages.error(request, f"Cannot exchange: '{locked_item.name}' ({locked_item.item_code}) is already SOLD.")
                     return render(request, 'sales/old_gold_exchange_form.html', {'form': form, 'page_title': 'Old Gold Exchange'})
@@ -821,10 +837,11 @@ def old_gold_exchange_create(request):
 
                 new_price = raw_data['new_sale_price']
                 diff_amount = new_price - val['final_value']
-                tx_number = generate_old_gold_number(OldGoldTransaction.TYPE_EXCHANGE)
+                tx_number = generate_old_gold_number(OldGoldTransaction.TYPE_EXCHANGE, tenant=request.tenant)
 
                 # 1. Create Sale for new jewellery piece
                 sale = Sale.objects.create(
+                    tenant=request.tenant,
                     customer=raw_data['customer'],
                     jewellery_item=locked_item,
                     sale_price=new_price,
@@ -839,6 +856,7 @@ def old_gold_exchange_create(request):
                 # 3. Apply Old Gold Credit as Payment against Sale
                 old_gold_credit = min(sale.sale_price, val['final_value'])
                 Payment.objects.create(
+                    tenant=request.tenant,
                     sale=sale,
                     amount=old_gold_credit,
                     payment_method='Exchange',
@@ -851,6 +869,7 @@ def old_gold_exchange_create(request):
                 settlement_ref = raw_data.get('settlement_payment_reference') or ''
                 if diff_amount > 0 and settlement_method:
                     Payment.objects.create(
+                        tenant=request.tenant,
                         sale=sale,
                         amount=diff_amount,
                         payment_method=settlement_method,
@@ -860,6 +879,7 @@ def old_gold_exchange_create(request):
 
                 # 5. Create OldGoldTransaction record
                 og_tx = form.save(commit=False)
+                og_tx.tenant = request.tenant
                 og_tx.transaction_number = tx_number
                 og_tx.transaction_type = OldGoldTransaction.TYPE_EXCHANGE
                 og_tx.net_weight = val['net_weight']
@@ -887,7 +907,7 @@ def old_gold_exchange_create(request):
                 )
                 return redirect('old_gold_detail', pk=og_tx.pk)
     else:
-        form = OldGoldExchangeForm(initial=initial_data)
+        form = OldGoldExchangeForm(initial=initial_data, tenant=request.tenant)
 
     context = {
         'form': form,
@@ -910,7 +930,7 @@ def old_gold_buyback_create(request):
         initial_data['customer'] = request.GET.get('customer')
 
     if request.method == 'POST':
-        form = OldGoldBuybackForm(request.POST)
+        form = OldGoldBuybackForm(request.POST, tenant=request.tenant)
         if form.is_valid():
             with transaction.atomic():
                 raw_data = form.cleaned_data
@@ -923,9 +943,10 @@ def old_gold_buyback_create(request):
                     applicable_rate=raw_data.get('applicable_rate'),
                     deduction_percent=raw_data.get('deduction_percent') or Decimal('0.00'),
                 )
-                tx_number = generate_old_gold_number(OldGoldTransaction.TYPE_BUYBACK)
+                tx_number = generate_old_gold_number(OldGoldTransaction.TYPE_BUYBACK, tenant=request.tenant)
 
                 og_tx = form.save(commit=False)
+                og_tx.tenant = request.tenant
                 og_tx.transaction_number = tx_number
                 og_tx.transaction_type = OldGoldTransaction.TYPE_BUYBACK
                 og_tx.net_weight = val['net_weight']
@@ -949,7 +970,7 @@ def old_gold_buyback_create(request):
                 )
                 return redirect('old_gold_detail', pk=og_tx.pk)
     else:
-        form = OldGoldBuybackForm(initial=initial_data)
+        form = OldGoldBuybackForm(initial=initial_data, tenant=request.tenant)
 
     context = {
         'form': form,
@@ -969,9 +990,10 @@ def old_gold_detail(request, pk):
             'customer', 'new_sale', 'new_sale__jewellery_item',
             'processed_by', 'cancelled_by'
         ),
-        pk=pk
+        pk=pk,
+        tenant=request.tenant,
     )
-    company = CompanySettings.objects.first()
+    company = CompanySettings.load(tenant=request.tenant)
     cancel_form = OldGoldCancelForm()
 
     context = {
@@ -989,7 +1011,7 @@ def old_gold_cancel(request, pk):
     """
     Safely cancel an Old Gold transaction with mandatory reason and audit logging.
     """
-    transaction_obj = get_object_or_404(OldGoldTransaction, pk=pk)
+    transaction_obj = get_object_or_404(OldGoldTransaction, pk=pk, tenant=request.tenant)
     if request.method != 'POST':
         return redirect('old_gold_detail', pk=transaction_obj.pk)
 
@@ -1023,7 +1045,7 @@ def old_gold_rate_api(request):
     purity = request.GET.get('purity', '22K').strip()
     custom_purity = request.GET.get('custom_purity', '').strip()
 
-    base_rate = pricing.get_current_metal_rate(metal_type)
+    base_rate = pricing.get_current_metal_rate(metal_type, tenant=getattr(request, 'tenant', None))
     if purity == 'Other' and custom_purity:
         p_factor = pricing.to_decimal(custom_purity) / Decimal('100.00')
     else:

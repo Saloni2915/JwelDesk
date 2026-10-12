@@ -40,11 +40,38 @@ class CustomOrderForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.tenant = kwargs.pop('tenant', None)
         super().__init__(*args, **kwargs)
         self.fields['reference_image'].validators.append(
             FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png', 'gif', 'pdf']))
         self.fields['reference_image'].help_text = (
             'Reference photo/design brought by the customer (JPG, PNG, GIF or PDF).')
+        if self.tenant:
+            from customers.models import Customer
+            from inventory.models import Category
+            self.fields['customer'].queryset = Customer.objects.filter(tenant=self.tenant)
+            self.fields['category'].queryset = Category.objects.filter(tenant=self.tenant)
+
+    def clean_customer(self):
+        customer = self.cleaned_data.get('customer')
+        if customer and self.tenant and customer.tenant_id != self.tenant.id:
+            raise forms.ValidationError("Invalid customer for this store.")
+        return customer
+
+    def clean_category(self):
+        category = self.cleaned_data.get('category')
+        if category and self.tenant and category.tenant_id != self.tenant.id:
+            raise forms.ValidationError("Invalid category for this store.")
+        return category
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.tenant and not instance.tenant_id:
+            instance.tenant = self.tenant
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
 
 
 class CustomOrderStatusForm(forms.Form):

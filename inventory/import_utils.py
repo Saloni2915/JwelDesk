@@ -139,7 +139,7 @@ def parse_excel_file(uploaded_file):
     return normalized_headers, data_rows
 
 
-def validate_import_rows(data_rows):
+def validate_import_rows(data_rows, tenant=None):
     """
     Validate imported rows against schema, business rules, and database constraints.
     Returns:
@@ -150,16 +150,20 @@ def validate_import_rows(data_rows):
     valid_rows = []
     invalid_rows = []
     seen_file_codes = set()
+    item_qs = JewelleryItem.objects.all()
+    if tenant is not None:
+        item_qs = item_qs.filter(tenant=tenant)
+
     existing_db_codes = set(
-        JewelleryItem.objects.values_list('item_code', flat=True)
+        item_qs.values_list('item_code', flat=True)
     )
     seen_file_tags = set()
     existing_db_tags = set(
-        JewelleryItem.objects.exclude(tag_number='').values_list('tag_number', flat=True)
+        item_qs.exclude(tag_number='').values_list('tag_number', flat=True)
     )
     seen_file_huids = set()
     existing_db_huids = set(
-        JewelleryItem.objects.exclude(huid='').values_list('huid', flat=True)
+        item_qs.exclude(huid='').values_list('huid', flat=True)
     )
 
     for row in data_rows:
@@ -419,7 +423,7 @@ def get_duplicate_rows(invalid_rows):
     return duplicate_rows
 
 
-def create_jewellery_item_from_row(row, category):
+def create_jewellery_item_from_row(row, category, tenant=None):
     """
     Create and return one `JewelleryItem` from a row produced by `validate_import_rows`.
 
@@ -442,6 +446,8 @@ def create_jewellery_item_from_row(row, category):
             'selling_price': Decimal(row['selling_price']),
             'status': row['status'],
         }
+        if tenant is not None:
+            kwargs['tenant'] = tenant
         if row.get('tag_number'):
             kwargs['tag_number'] = row['tag_number']
         if row.get('huid'):
@@ -460,7 +466,7 @@ def create_jewellery_item_from_row(row, category):
         ) from exc
 
 
-def import_valid_rows(valid_rows, user=None):
+def import_valid_rows(valid_rows, user=None, tenant=None):
     """
     Insert every row of `valid_rows` inside a single atomic database transaction.
 
@@ -480,13 +486,16 @@ def import_valid_rows(valid_rows, user=None):
             category_name = row['category_name']
             category = category_cache.get(category_name)
             if category is None:
+                get_or_create_kwargs = {'name': category_name}
+                if tenant is not None:
+                    get_or_create_kwargs['tenant'] = tenant
                 category, _ = Category.objects.get_or_create(
-                    name=category_name,
                     defaults={'description': 'Created automatically during bulk inventory import.'},
+                    **get_or_create_kwargs,
                 )
                 category_cache[category_name] = category
 
-            item = create_jewellery_item_from_row(row, category)
+            item = create_jewellery_item_from_row(row, category, tenant=tenant)
             record_initial_stock(
                 item,
                 user=user,

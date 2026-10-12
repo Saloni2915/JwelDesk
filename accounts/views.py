@@ -82,15 +82,6 @@ class JewelDeskLoginView(LoginView):
     template_name = 'accounts/login.html'
     redirect_authenticated_user = True
 
-    def form_valid(self, form):
-        user = form.get_user()
-        if user and not user.is_staff:
-            emp = getattr(user, 'employee_profile', None)
-            if not emp:
-                user.is_staff = True
-                user.save(update_fields=['is_staff'])
-        return super().form_valid(form)
-
 
 # Function alias so the URLconf entry ``views.login_view`` keeps working
 # without any URL changes.
@@ -132,7 +123,7 @@ def signup_view(request):
 
             messages.success(
                 request,
-                'Your account has been created successfully! You can now sign in with your credentials.'
+                'Your account and shop have been created successfully! You can now sign in with your credentials.'
             )
             return redirect('accounts:login')
         else:
@@ -165,19 +156,23 @@ def logout_view(request):
 
 @login_required
 def company_settings(request):
-    """Edit the single company/business settings record (admin/store owner only)."""
-    # Verify authorization: Superuser, staff, or account without employee profile (primary store owner)
-    is_owner_or_admin = request.user.is_active and (request.user.is_staff or request.user.is_superuser)
-    if not is_owner_or_admin:
+    """Edit the company/business settings record for the user's active tenant."""
+    tenant = getattr(request, 'tenant', None)
+    if not tenant:
+        messages.error(request, 'No active store found for your account.')
+        return redirect('dashboard')
+
+    from team.permissions import is_admin_user
+    if not (is_admin_user(request.user, tenant=tenant) or tenant.owner_id == request.user.id):
         messages.error(request, 'Access restricted. Only store administrators can modify company settings.')
         return redirect('dashboard')
 
     try:
-        settings_obj = CompanySettings.load()
+        settings_obj = CompanySettings.load(tenant=tenant)
     except Exception as e:
         import logging
         logging.getLogger(__name__).warning("Error loading company settings: %s", e)
-        settings_obj = CompanySettings(company_name='JewelDesk')
+        settings_obj = CompanySettings(tenant=tenant, company_name=tenant.name)
 
     if request.method == 'POST':
         # 1. 1-Click quick restore of official brand insignia
@@ -188,7 +183,7 @@ def company_settings(request):
                 static_logo = settings.BASE_DIR / 'static' / 'images' / 'branding' / 'company_logo.png'
                 if static_logo.exists():
                     logo_bytes = static_logo.read_bytes()
-                    final_name = 'company/logo.png'
+                    final_name = f'company/logo_{tenant.id}.png'
                     save_logo_blob(final_name, logo_bytes, 'image/png')
                     dest = Path(settings.MEDIA_ROOT) / final_name
                     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -197,7 +192,7 @@ def company_settings(request):
                     settings_obj.save()
                     try:
                         from django.core.cache import cache
-                        cache.delete('company_settings:singleton')
+                        cache.delete(f'company_settings:tenant:{tenant.id}')
                     except Exception:
                         pass
                     messages.success(request, 'JewelDesk official brand insignia restored successfully!')
@@ -224,7 +219,9 @@ def company_settings(request):
                 logo_bytes = None
 
             try:
-                instance = form.save()
+                instance = form.save(commit=False)
+                instance.tenant = tenant
+                instance.save()
 
                 if logo_cleared:
                     clear_logo_blob()
@@ -245,7 +242,7 @@ def company_settings(request):
 
                 try:
                     from django.core.cache import cache
-                    cache.delete('company_settings:singleton')
+                    cache.delete(f'company_settings:tenant:{tenant.id}')
                 except Exception:
                     pass
                 messages.success(request, 'Company settings and showroom logo updated successfully!')

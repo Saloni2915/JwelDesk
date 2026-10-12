@@ -105,12 +105,57 @@ def validate_logo_extension(value):
             + ', '.join(ALLOWED_LOGO_EXTENSIONS))
 
 
-class CompanySettings(models.Model):
-    """Single-record company/shop profile used on invoices and the UI.
+class Tenant(models.Model):
+    """Independent jewellery shop / business showroom tenant.
 
-    There is intentionally only one row (pk=1); see save().
+    All tenant-owned business data (inventory, sales, customers, karigar,
+    custom orders, team, and company settings) is strictly isolated by tenant.
     """
 
+    name = models.CharField(max_length=200, help_text="Jewellery shop or business name")
+    slug = models.SlugField(max_length=220, unique=True, blank=True)
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='owned_tenants',
+        help_text="Shop owner / primary administrator"
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = 'Tenant / Shop'
+        verbose_name_plural = 'Tenants / Shops'
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            from django.utils.text import slugify
+            base_slug = slugify(self.name) or 'shop'
+            slug = base_slug
+            idx = 1
+            while Tenant.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{idx}"
+                idx += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+
+class CompanySettings(models.Model):
+    """Company/shop profile used on invoices and the UI, isolated per tenant."""
+
+    tenant = models.OneToOneField(
+        Tenant,
+        on_delete=models.CASCADE,
+        related_name='company_settings',
+        null=True,
+        blank=True,
+        help_text="The jewellery shop tenant owning these settings."
+    )
     company_name = models.CharField(max_length=200, blank=True)
     logo = models.FileField(
         upload_to='company/', null=True, blank=True,
@@ -135,12 +180,7 @@ class CompanySettings(models.Model):
 
     @property
     def name(self):
-        """Display name for templates (alias of ``company_name``).
-
-        The header and sidebar render ``{{ company.name }}``. Falling back to
-        the product name keeps the branding readable before the shop has been
-        configured in Company Settings.
-        """
+        """Display name for templates (alias of ``company_name``)."""
         return self.company_name or 'JewelDesk'
 
     def ensure_logo_file(self):
@@ -169,34 +209,34 @@ class CompanySettings(models.Model):
             return None
 
     def save(self, *args, **kwargs):
-        # Singleton: attach to existing record if one exists, otherwise initialize pk=1
-        if not self.pk:
-            try:
-                existing = CompanySettings.objects.first()
-                if existing:
-                    self.pk = existing.pk
-                    self._state.adding = False
-                else:
-                    self.pk = 1
-            except Exception:
-                self.pk = 1
         super().save(*args, **kwargs)
         try:
             from django.core.cache import cache
             cache.delete('company_settings:singleton')
+            if self.tenant_id:
+                cache.delete(f'company_settings:tenant:{self.tenant_id}')
         except Exception:
             pass
 
     @classmethod
-    def load(cls):
-        """Return the current settings row, creating a blank one if needed.
-        
-        Guaranteed to never raise an unhandled database exception that breaks page rendering.
-        """
+    def load(cls, tenant=None):
+        """Return settings row for the given tenant, creating a blank one if needed."""
         try:
+            if tenant:
+                obj = cls.objects.filter(tenant=tenant).first()
+                if obj is None:
+                    obj = cls.objects.create(tenant=tenant, company_name=tenant.name)
+                return obj
+            from .models import Tenant
+            first_tenant = Tenant.objects.first()
+            if first_tenant:
+                obj = cls.objects.filter(tenant=first_tenant).first()
+                if obj is None:
+                    obj = cls.objects.create(tenant=first_tenant, company_name=first_tenant.name)
+                return obj
             obj = cls.objects.first()
             if obj is None:
-                obj = cls.objects.create(pk=1, company_name='JewelDesk')
+                obj = cls.objects.create(company_name='JewelDesk')
             return obj
         except Exception as e:
             import logging

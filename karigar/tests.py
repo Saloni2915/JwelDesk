@@ -34,6 +34,9 @@ class KarigarTestCaseBase(TestCase):
             password='AdminPassword123!'
         )
 
+        from accounts.models import Tenant
+        self.tenant = Tenant.objects.create(name='Karigar Workshop', owner=self.admin_user)
+
         # Standard non-permission user
         self.plain_user = User.objects.create_user(
             username='staff@jeweldesk.com',
@@ -42,7 +45,7 @@ class KarigarTestCaseBase(TestCase):
         )
 
         # Setup Branch & Roles
-        self.branch = Branch.objects.create(name='Main Flagship')
+        self.branch = Branch.objects.create(tenant=self.tenant, name='Main Flagship')
         Role.ensure_builtin_roles()
         self.admin_role = Role.objects.get(name=Role.ROLE_ADMIN)
         self.sales_role = Role.objects.get(name=Role.ROLE_SALES)
@@ -50,6 +53,7 @@ class KarigarTestCaseBase(TestCase):
 
         # Employee with restricted support role (view only, no edit/add for karigar)
         self.support_emp = Employee.objects.create(
+            tenant=self.tenant,
             user=self.plain_user,
             employee_id='EMP-9001',
             full_name='Support User',
@@ -62,8 +66,9 @@ class KarigarTestCaseBase(TestCase):
         self.support_emp.apply_default_permissions()
 
         # Create sample Category and JewelleryItem
-        self.category = Category.objects.create(name='Bangles')
+        self.category = Category.objects.create(tenant=self.tenant, name='Bangles')
         self.item = JewelleryItem.objects.create(
+            tenant=self.tenant,
             item_code='JW-BNG-001',
             name='22K Floral Gold Kangan',
             category=self.category,
@@ -79,6 +84,7 @@ class KarigarTestCaseBase(TestCase):
 
         # Create sample Customer
         self.customer = Customer.objects.create(
+            tenant=self.tenant,
             name='Ramesh Kothari',
             mobile='9820011223',
             email='ramesh@example.com',
@@ -86,6 +92,7 @@ class KarigarTestCaseBase(TestCase):
 
         # Create sample Karigar
         self.karigar = Karigar.objects.create(
+            tenant=self.tenant,
             name='Suresh Soni',
             mobile='9811122233',
             specialization='Gold Jewellery',
@@ -108,6 +115,7 @@ class KarigarMasterTests(KarigarTestCaseBase):
     def test_karigar_duplicate_code_prevention(self):
         with self.assertRaises(Exception):
             Karigar.objects.create(
+                tenant=self.tenant,
                 karigar_code=self.karigar.karigar_code,
                 name='Duplicate Artisan',
                 mobile='9999988888',
@@ -320,6 +328,7 @@ class CustomOrderIntegrationTests(KarigarTestCaseBase):
 
         # Create Custom Order in Confirmed state
         order = CustomOrder.objects.create(
+            tenant=self.tenant,
             customer=self.customer,
             category=self.category,
             design_description='Bespoke Peacock Kada',
@@ -514,7 +523,7 @@ class ReportsAndExportsTests(KarigarTestCaseBase):
         # 1. HTML Reports page loads
         response = self.client.get(reverse('karigar:reports'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Karigar &amp; Manufacturing Reports')
+        self.assertContains(response, 'Karigar Reports')
 
         # 2. Work report CSV export
         csv_resp = self.client.get(reverse('karigar:reports') + '?tab=work&export=csv')

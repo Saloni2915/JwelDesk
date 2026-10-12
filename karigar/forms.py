@@ -74,6 +74,7 @@ class KarigarForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.tenant = kwargs.pop('tenant', None)
         super().__init__(*args, **kwargs)
         self.fields['karigar_code'].required = False
         if not self.instance.pk:
@@ -92,11 +93,21 @@ class KarigarForm(forms.ModelForm):
         code = self.cleaned_data.get('karigar_code', '').strip()
         if code:
             existing = Karigar.objects.filter(karigar_code__iexact=code)
+            if self.tenant:
+                existing = existing.filter(tenant=self.tenant)
             if self.instance.pk:
                 existing = existing.exclude(pk=self.instance.pk)
             if existing.exists():
                 raise forms.ValidationError(f"Karigar code '{code}' is already in use.")
         return code
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.tenant and not instance.tenant_id:
+            instance.tenant = self.tenant
+        if commit:
+            instance.save()
+        return instance
 
 
 class KarigarWorkAssignmentForm(forms.ModelForm):
@@ -203,19 +214,29 @@ class KarigarWorkAssignmentForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.tenant = kwargs.pop('tenant', None)
         super().__init__(*args, **kwargs)
         # Only active karigars for new assignments
-        self.fields['karigar'].queryset = Karigar.objects.filter(status=Karigar.STATUS_ACTIVE)
-        # Clean select options
-        self.fields['customer'].queryset = Customer.objects.order_by('name')
+        if self.tenant:
+            self.fields['karigar'].queryset = Karigar.objects.filter(tenant=self.tenant, status=Karigar.STATUS_ACTIVE)
+            self.fields['customer'].queryset = Customer.objects.filter(tenant=self.tenant).order_by('name')
+            self.fields['custom_order'].queryset = CustomOrder.objects.filter(tenant=self.tenant).exclude(
+                status__in=[CustomOrder.STATUS_DELIVERED, CustomOrder.STATUS_CANCELLED]
+            ).order_by('-id')
+            self.fields['inventory_item'].queryset = JewelleryItem.objects.filter(
+                tenant=self.tenant, status='Available'
+            ).order_by('name')
+        else:
+            self.fields['karigar'].queryset = Karigar.objects.filter(status=Karigar.STATUS_ACTIVE)
+            self.fields['customer'].queryset = Customer.objects.order_by('name')
+            self.fields['custom_order'].queryset = CustomOrder.objects.exclude(
+                status__in=[CustomOrder.STATUS_DELIVERED, CustomOrder.STATUS_CANCELLED]
+            ).order_by('-id')
+            self.fields['inventory_item'].queryset = JewelleryItem.objects.filter(
+                status='Available'
+            ).order_by('name')
         self.fields['customer'].required = False
-        self.fields['custom_order'].queryset = CustomOrder.objects.exclude(
-            status__in=[CustomOrder.STATUS_DELIVERED, CustomOrder.STATUS_CANCELLED]
-        ).order_by('-id')
         self.fields['custom_order'].required = False
-        self.fields['inventory_item'].queryset = JewelleryItem.objects.filter(
-            status='Available'
-        ).order_by('name')
         self.fields['inventory_item'].required = False
 
         if 'purity' in self.fields:
@@ -250,7 +271,30 @@ class KarigarWorkAssignmentForm(forms.ModelForm):
         if stone_issued > gross_issued:
             self.add_error('stone_weight_issued', 'Stone weight cannot exceed gross weight issued.')
 
+        if self.tenant:
+            kg = cleaned_data.get('karigar')
+            if kg and kg.tenant_id != self.tenant.id:
+                self.add_error('karigar', 'Invalid artisan for this store.')
+            cust = cleaned_data.get('customer')
+            if cust and cust.tenant_id != self.tenant.id:
+                self.add_error('customer', 'Invalid customer for this store.')
+            co = cleaned_data.get('custom_order')
+            if co and co.tenant_id != self.tenant.id:
+                self.add_error('custom_order', 'Invalid custom order for this store.')
+            item = cleaned_data.get('inventory_item')
+            if item and item.tenant_id != self.tenant.id:
+                self.add_error('inventory_item', 'Invalid inventory item for this store.')
+
         return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.tenant and not instance.tenant_id:
+            instance.tenant = self.tenant
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
 
 
 class KarigarReceiveWorkForm(forms.ModelForm):
@@ -400,6 +444,7 @@ class KarigarSettlementForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.tenant = kwargs.pop('tenant', None)
         karigar_id = kwargs.pop('karigar_id', None)
         super().__init__(*args, **kwargs)
 
@@ -408,21 +453,44 @@ class KarigarSettlementForm(forms.ModelForm):
 
         if karigar_id:
             try:
-                karigar = Karigar.objects.get(pk=karigar_id)
+                qs = Karigar.objects.filter(pk=karigar_id)
+                if self.tenant:
+                    qs = qs.filter(tenant=self.tenant)
+                karigar = qs.get()
                 self.fields['karigar'].initial = karigar
-                self.fields['karigar'].queryset = Karigar.objects.filter(pk=karigar_id)
+                self.fields['karigar'].queryset = qs
                 self.fields['assignments'].queryset = karigar.assignments.exclude(
                     status=KarigarWorkAssignment.STATUS_CANCELLED
                 ).exclude(payment_status='Paid')
             except Karigar.DoesNotExist:
                 self.fields['assignments'].queryset = KarigarWorkAssignment.objects.none()
         else:
-            self.fields['karigar'].queryset = Karigar.objects.filter(status=Karigar.STATUS_ACTIVE)
-            self.fields['assignments'].queryset = KarigarWorkAssignment.objects.exclude(
+            kg_qs = Karigar.objects.filter(status=Karigar.STATUS_ACTIVE)
+            asg_qs = KarigarWorkAssignment.objects.exclude(
                 status=KarigarWorkAssignment.STATUS_CANCELLED
             ).exclude(payment_status='Paid')
+            if self.tenant:
+                kg_qs = kg_qs.filter(tenant=self.tenant)
+                asg_qs = asg_qs.filter(tenant=self.tenant)
+            self.fields['karigar'].queryset = kg_qs
+            self.fields['assignments'].queryset = asg_qs
 
         self.fields['assignments'].required = False
+
+    def clean_karigar(self):
+        karigar = self.cleaned_data.get('karigar')
+        if karigar and self.tenant and karigar.tenant_id != self.tenant.id:
+            raise forms.ValidationError("Invalid artisan for this store.")
+        return karigar
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.tenant and not instance.tenant_id:
+            instance.tenant = self.tenant
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
 
 
 class KarigarCancelSettlementForm(forms.Form):

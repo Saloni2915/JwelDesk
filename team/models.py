@@ -45,7 +45,15 @@ class Branch(models.Model):
     Employees can be assigned to one or more branches. The Admin always has
     implicit access to all branches.
     """
-    name        = models.CharField(max_length=150, unique=True)
+    tenant      = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.CASCADE,
+        related_name='branches',
+        null=True,
+        blank=True,
+        help_text="Tenant shop owning this branch"
+    )
+    name        = models.CharField(max_length=150)
     address     = models.TextField(blank=True)
     phone       = models.CharField(max_length=20, blank=True)
     is_active   = models.BooleanField(default=True)
@@ -54,6 +62,12 @@ class Branch(models.Model):
     class Meta:
         verbose_name_plural = 'Branches'
         ordering = ['name']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tenant', 'name'],
+                name='unique_tenant_branch_name',
+            ),
+        ]
 
     def __str__(self):
         return self.name
@@ -94,7 +108,15 @@ class Role(models.Model):
         ROLE_CASHIER,
     ]
 
-    name        = models.CharField(max_length=100, unique=True)
+    tenant      = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.CASCADE,
+        related_name='roles',
+        null=True,
+        blank=True,
+        help_text="Tenant shop owning this custom role (null for system built-in roles)"
+    )
+    name        = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     is_builtin  = models.BooleanField(
         default=False,
@@ -104,6 +126,12 @@ class Role(models.Model):
 
     class Meta:
         ordering = ['name']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tenant', 'name'],
+                name='unique_tenant_role_name',
+            ),
+        ]
 
     def __str__(self):
         return self.name
@@ -312,16 +340,13 @@ class EmployeePermission(models.Model):
 # Employee
 # ---------------------------------------------------------------------------
 
-def _next_employee_id():
-    """Generate the next EMP-XXXX identifier atomically."""
+def _next_employee_id(tenant=None):
+    """Generate the next EMP-XXXX identifier atomically for the given tenant."""
     with transaction.atomic():
-        last = (
-            Employee.objects
-            .filter(employee_id__startswith='EMP-')
-            .order_by('-employee_id')
-            .values_list('employee_id', flat=True)
-            .first()
-        )
+        qs = Employee.objects.filter(employee_id__startswith='EMP-')
+        if tenant:
+            qs = qs.filter(tenant=tenant)
+        last = qs.order_by('-employee_id').values_list('employee_id', flat=True).first()
         if last:
             try:
                 num = int(last.split('-')[-1]) + 1
@@ -330,9 +355,15 @@ def _next_employee_id():
         else:
             num = 1
         candidate = f'EMP-{num:04d}'
-        while Employee.objects.filter(employee_id=candidate).exists():
+        check_qs = Employee.objects.filter(employee_id=candidate)
+        if tenant:
+            check_qs = check_qs.filter(tenant=tenant)
+        while check_qs.exists():
             num += 1
             candidate = f'EMP-{num:04d}'
+            check_qs = Employee.objects.filter(employee_id=candidate)
+            if tenant:
+                check_qs = check_qs.filter(tenant=tenant)
         return candidate
 
 
@@ -373,13 +404,23 @@ class Employee(models.Model):
         help_text='Django user account for this employee (optional).'
     )
 
+    # --- Tenant ownership ---------------------------------------------------
+    tenant = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.CASCADE,
+        related_name='employees',
+        null=True,
+        blank=True,
+        help_text="Tenant shop employing this staff member"
+    )
+
     # --- Identity -----------------------------------------------------------
     employee_id = models.CharField(
-        max_length=20, unique=True,
-        help_text='Auto-generated ID like EMP-0001.'
+        max_length=20,
+        help_text='ID like EMP-0001.'
     )
     full_name   = models.CharField(max_length=150)
-    email       = models.EmailField(unique=True)
+    email       = models.EmailField()
     mobile      = models.CharField(max_length=20, blank=True)
     designation = models.CharField(
         max_length=100, blank=True,
@@ -423,6 +464,16 @@ class Employee(models.Model):
 
     class Meta:
         ordering = ['full_name']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tenant', 'employee_id'],
+                name='unique_tenant_employee_id',
+            ),
+            models.UniqueConstraint(
+                fields=['tenant', 'email'],
+                name='unique_tenant_employee_email',
+            ),
+        ]
 
     def __str__(self):
         return f"{self.employee_id} – {self.full_name}"
@@ -431,7 +482,7 @@ class Employee(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.employee_id:
-            self.employee_id = _next_employee_id()
+            self.employee_id = _next_employee_id(tenant=self.tenant)
         super().save(*args, **kwargs)
 
     def activate(self):
@@ -507,6 +558,14 @@ class EmployeeDocument(models.Model):
         (DOC_OTHER,       'Other Document'),
     ]
 
+    tenant = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.CASCADE,
+        related_name='employee_documents',
+        null=True,
+        blank=True,
+        help_text="Tenant shop owning this employee document"
+    )
     employee    = models.ForeignKey(
         Employee, on_delete=models.CASCADE, related_name='documents'
     )
@@ -521,6 +580,11 @@ class EmployeeDocument(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='employee_docs_uploaded'
     )
+
+    def save(self, *args, **kwargs):
+        if not self.tenant_id and self.employee_id and getattr(self.employee, 'tenant_id', None):
+            self.tenant_id = self.employee.tenant_id
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ['-uploaded_at']

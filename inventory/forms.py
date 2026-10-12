@@ -77,8 +77,11 @@ class JewelleryItemForm(forms.ModelForm):
             'status': forms.Select(attrs={'class': 'form-select'}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, tenant=None, **kwargs):
+        self.tenant = tenant or (kwargs.get('instance').tenant if kwargs.get('instance') else None)
         super().__init__(*args, **kwargs)
+        if self.tenant:
+            self.fields['category'].queryset = Category.objects.filter(tenant=self.tenant)
         self.fields['tag_number'].required = False
         self.fields['design_code'].required = False
         self.fields['stone_weight'].required = False
@@ -109,11 +112,13 @@ class JewelleryItemForm(forms.ModelForm):
         if tag:
             tag = tag.strip()
             qs = JewelleryItem.objects.filter(tag_number__iexact=tag)
+            if self.tenant:
+                qs = qs.filter(tenant=self.tenant)
             if self.instance and self.instance.pk:
                 qs = qs.exclude(pk=self.instance.pk)
             if qs.exists():
                 raise forms.ValidationError(
-                    f"Tag number '{tag}' is already assigned to another item. "
+                    f"Tag number '{tag}' is already assigned to another item in your showroom. "
                     "Please enter a unique tag or leave blank to auto-generate."
                 )
         else:
@@ -125,11 +130,13 @@ class JewelleryItemForm(forms.ModelForm):
         if code:
             code = code.strip()
             qs = JewelleryItem.objects.filter(item_code__iexact=code)
+            if self.tenant:
+                qs = qs.filter(tenant=self.tenant)
             if self.instance and self.instance.pk:
                 qs = qs.exclude(pk=self.instance.pk)
             if qs.exists():
                 raise forms.ValidationError(
-                    f"Piece ID / Item Code '{code}' is already assigned to another piece. "
+                    f"Piece ID / Item Code '{code}' is already assigned to another piece in your showroom. "
                     "Each physical piece must have a unique Piece ID."
                 )
         return code
@@ -141,10 +148,12 @@ class JewelleryItemForm(forms.ModelForm):
             if len(huid) != 6 or not huid.isalnum():
                 raise forms.ValidationError("HUID must be exactly 6 alphanumeric characters.")
             qs = JewelleryItem.objects.filter(huid=huid)
+            if self.tenant:
+                qs = qs.filter(tenant=self.tenant)
             if self.instance and self.instance.pk:
                 qs = qs.exclude(pk=self.instance.pk)
             if qs.exists():
-                raise forms.ValidationError("This HUID is already assigned to another item.")
+                raise forms.ValidationError("This HUID is already assigned to another item in your showroom.")
         else:
             huid = ''
         return huid
@@ -213,6 +222,21 @@ class CategoryForm(forms.ModelForm):
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Rings'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Optional description...'}),
         }
+
+    def __init__(self, *args, tenant=None, **kwargs):
+        self.tenant = tenant or (kwargs.get('instance').tenant if kwargs.get('instance') else None)
+        super().__init__(*args, **kwargs)
+
+    def clean_name(self):
+        name = self.cleaned_data.get('name', '').strip()
+        qs = Category.objects.filter(name__iexact=name)
+        if self.tenant:
+            qs = qs.filter(tenant=self.tenant)
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError(f"Category '{name}' already exists in your showroom.")
+        return name
 
 
 class StockAdjustmentForm(forms.Form):

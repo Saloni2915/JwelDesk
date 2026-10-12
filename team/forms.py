@@ -32,10 +32,30 @@ class BranchForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.tenant = kwargs.pop('tenant', None)
         super().__init__(*args, **kwargs)
         for name, field in self.fields.items():
             if name != 'is_active':
                 field.widget.attrs.setdefault('class', 'form-control')
+
+    def clean_name(self):
+        name = self.cleaned_data['name'].strip()
+        qs = Branch.objects.filter(name__iexact=name)
+        if self.tenant:
+            qs = qs.filter(tenant=self.tenant)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError(f'A branch named "{name}" already exists.')
+        return name
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.tenant and not instance.tenant_id:
+            instance.tenant = self.tenant
+        if commit:
+            instance.save()
+        return instance
 
 
 # ---------------------------------------------------------------------------
@@ -106,6 +126,7 @@ class EmployeeCreateForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.tenant = kwargs.pop('tenant', None)
         super().__init__(*args, **kwargs)
         for name, field in self.fields.items():
             if name not in ('branches', 'password1', 'password2', 'username', 'account_mode', 'existing_user', 'photo'):
@@ -115,7 +136,12 @@ class EmployeeCreateForm(forms.ModelForm):
                         widget.attrs.setdefault('class', 'form-select')
                     else:
                         widget.attrs.setdefault('class', 'form-control')
-        self.fields['branches'].queryset = Branch.objects.filter(is_active=True)
+        if self.tenant:
+            from django.db.models import Q
+            self.fields['branches'].queryset = Branch.objects.filter(tenant=self.tenant, is_active=True)
+            self.fields['role'].queryset = Role.objects.filter(Q(tenant=self.tenant) | Q(tenant__isnull=True))
+        else:
+            self.fields['branches'].queryset = Branch.objects.filter(is_active=True)
         self.fields['joining_date'].required = False
         self.fields['joining_date'].initial = timezone.localdate
 
@@ -127,7 +153,10 @@ class EmployeeCreateForm(forms.ModelForm):
 
     def clean_email(self):
         email = (self.cleaned_data.get('email') or '').strip().lower()
-        if Employee.objects.filter(email__iexact=email).exists():
+        qs = Employee.objects.filter(email__iexact=email)
+        if self.tenant:
+            qs = qs.filter(tenant=self.tenant)
+        if qs.exists():
             raise forms.ValidationError('An employee with this email already exists.')
         return email
 
@@ -146,9 +175,6 @@ class EmployeeCreateForm(forms.ModelForm):
                 self.add_error('username', 'Username or email is required for login account.')
             elif User.objects.filter(username__iexact=username).exists():
                 self.add_error('username', f'A user with username "{username}" already exists.')
-
-            if email and User.objects.filter(email__iexact=email).exists():
-                self.add_error('email', 'A user account with this email already exists.')
 
             p1 = cleaned_data.get('password1', '')
             p2 = cleaned_data.get('password2', '')
@@ -197,20 +223,22 @@ class EmployeeCreateForm(forms.ModelForm):
                     last_name=last_name,
                 )
                 user.is_active = is_active
-                user.is_staff = True  # JewelDesk back-office access
-                user.save(update_fields=['is_active', 'is_staff', 'first_name', 'last_name'])
+                user.is_staff = False
+                user.is_superuser = False
+                user.save(update_fields=['is_active', 'is_staff', 'is_superuser', 'first_name', 'last_name'])
 
             elif mode == self.ACCOUNT_LINK_EXISTING:
                 user = self.cleaned_data['existing_user']
                 user.is_active = is_active
-                user.is_staff = True
-                user.save(update_fields=['is_active', 'is_staff'])
+                user.save(update_fields=['is_active'])
 
             employee = super().save(commit=False)
             employee.user = user
             employee.email = email
             employee.full_name = full_name
             employee.status = status
+            if self.tenant and not employee.tenant_id:
+                employee.tenant = self.tenant
             if created_by:
                 employee.created_by = created_by
             employee.save()
@@ -243,7 +271,10 @@ class EmployeeEditForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.tenant = kwargs.pop('tenant', None)
         super().__init__(*args, **kwargs)
+        if not self.tenant and self.instance and self.instance.tenant_id:
+            self.tenant = self.instance.tenant
         for name, field in self.fields.items():
             if name not in ('branches', 'photo'):
                 widget = field.widget
@@ -252,7 +283,12 @@ class EmployeeEditForm(forms.ModelForm):
                         widget.attrs.setdefault('class', 'form-select')
                     else:
                         widget.attrs.setdefault('class', 'form-control')
-        self.fields['branches'].queryset = Branch.objects.filter(is_active=True)
+        if self.tenant:
+            from django.db.models import Q
+            self.fields['branches'].queryset = Branch.objects.filter(tenant=self.tenant, is_active=True)
+            self.fields['role'].queryset = Role.objects.filter(Q(tenant=self.tenant) | Q(tenant__isnull=True))
+        else:
+            self.fields['branches'].queryset = Branch.objects.filter(is_active=True)
         self.fields['joining_date'].required = False
 
     def clean_joining_date(self):
@@ -262,16 +298,12 @@ class EmployeeEditForm(forms.ModelForm):
     def clean_email(self):
         email = (self.cleaned_data.get('email') or '').strip().lower()
         qs = Employee.objects.filter(email__iexact=email)
+        if self.tenant:
+            qs = qs.filter(tenant=self.tenant)
         if self.instance.pk:
             qs = qs.exclude(pk=self.instance.pk)
         if qs.exists():
             raise forms.ValidationError('Another employee already uses this email.')
-
-        # Also check User model if linked
-        if self.instance.pk and hasattr(self.instance, 'user') and self.instance.user:
-            qs2 = User.objects.filter(email__iexact=email).exclude(pk=self.instance.user.pk)
-            if qs2.exists():
-                raise forms.ValidationError('A user account with this email already exists.')
         return email
 
     def save(self, commit=True):
@@ -407,14 +439,14 @@ class EmployeeLinkAccountForm(forms.Form):
                     first_name=parts[0] if parts else '',
                     last_name=' '.join(parts[1:]) if len(parts) > 1 else '',
                 )
-                user.is_staff = True
+                user.is_staff = False
+                user.is_superuser = False
                 user.is_active = is_active
-                user.save(update_fields=['is_staff', 'is_active'])
+                user.save(update_fields=['is_staff', 'is_superuser', 'is_active'])
             else:
                 user = self.cleaned_data['existing_user']
-                user.is_staff = True
                 user.is_active = is_active
-                user.save(update_fields=['is_staff', 'is_active'])
+                user.save(update_fields=['is_active'])
 
             self.employee.user = user
             self.employee.save(update_fields=['user'])
@@ -434,9 +466,16 @@ class RoleForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Describe the role and responsibilities'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        self.tenant = kwargs.pop('tenant', None)
+        super().__init__(*args, **kwargs)
+
     def clean_name(self):
+        from django.db.models import Q
         name = self.cleaned_data['name'].strip()
         qs = Role.objects.filter(name__iexact=name)
+        if self.tenant:
+            qs = qs.filter(Q(tenant=self.tenant) | Q(tenant__isnull=True))
         if self.instance.pk:
             qs = qs.exclude(pk=self.instance.pk)
             if self.instance.is_builtin and self.instance.name != name:
@@ -444,6 +483,14 @@ class RoleForm(forms.ModelForm):
         if qs.exists():
             raise forms.ValidationError(f'A role named "{name}" already exists.')
         return name
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.tenant and not instance.tenant_id:
+            instance.tenant = self.tenant
+        if commit:
+            instance.save()
+        return instance
 
 
 # ---------------------------------------------------------------------------

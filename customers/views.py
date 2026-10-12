@@ -8,9 +8,10 @@ from .forms import CustomerForm
 
 
 @login_required
+@login_required
 def customer_list(request):
     """List all customers with search by name or mobile."""
-    customers = Customer.objects.annotate(purchases_count=Count('sales')).order_by('-created_at')
+    customers = Customer.objects.filter(tenant=request.tenant).annotate(purchases_count=Count('sales')).order_by('-created_at')
 
     # Search filter
     q = request.GET.get('q', '').strip()
@@ -34,13 +35,15 @@ def customer_list(request):
 def customer_add(request):
     """Add a new customer."""
     if request.method == 'POST':
-        form = CustomerForm(request.POST)
+        form = CustomerForm(request.POST, tenant=request.tenant)
         if form.is_valid():
-            customer = form.save()
+            customer = form.save(commit=False)
+            customer.tenant = request.tenant
+            customer.save()
             messages.success(request, f"Customer '{customer.name}' added successfully.")
             return redirect('customer_detail', pk=customer.pk)
     else:
-        form = CustomerForm()
+        form = CustomerForm(tenant=request.tenant)
 
     context = {
         'form': form,
@@ -53,7 +56,7 @@ def customer_add(request):
 @login_required
 def customer_detail(request, pk):
     """View customer profile, purchase history, and enquiries."""
-    customer = get_object_or_404(Customer, pk=pk)
+    customer = get_object_or_404(Customer, pk=pk, tenant=request.tenant)
     sales = customer.sales.select_related('jewellery_item').prefetch_related('payments').order_by('-sale_date')
     enquiries = customer.enquiries.select_related('category').order_by('-created_at')
 
@@ -71,15 +74,15 @@ def customer_detail(request, pk):
 @login_required
 def customer_edit(request, pk):
     """Edit customer information."""
-    customer = get_object_or_404(Customer, pk=pk)
+    customer = get_object_or_404(Customer, pk=pk, tenant=request.tenant)
     if request.method == 'POST':
-        form = CustomerForm(request.POST, instance=customer)
+        form = CustomerForm(request.POST, instance=customer, tenant=request.tenant)
         if form.is_valid():
             customer = form.save()
             messages.success(request, f"Customer '{customer.name}' updated successfully.")
             return redirect('customer_detail', pk=customer.pk)
     else:
-        form = CustomerForm(instance=customer)
+        form = CustomerForm(instance=customer, tenant=request.tenant)
 
     context = {
         'form': form,
@@ -93,7 +96,7 @@ def customer_edit(request, pk):
 @login_required
 def customer_delete(request, pk):
     """Delete a customer."""
-    customer = get_object_or_404(Customer, pk=pk)
+    customer = get_object_or_404(Customer, pk=pk, tenant=request.tenant)
     if request.method == 'POST':
         cust_name = customer.name
         try:

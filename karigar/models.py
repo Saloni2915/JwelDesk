@@ -14,58 +14,85 @@ from inventory import pricing
 # SEQUENTIAL REFERENCE GENERATORS
 # ==============================================================================
 
-def generate_karigar_code():
-    """Generate sequential Karigar code: KRG-0001, KRG-0002, etc."""
-    latest = Karigar.objects.filter(karigar_code__startswith='KRG-').order_by('-id').first()
+def generate_karigar_code(tenant=None):
+    """Generate sequential Karigar code: KRG-0001, KRG-0002, etc. Scoped per tenant."""
+    qs = Karigar.objects.filter(karigar_code__startswith='KRG-')
+    if tenant:
+        qs = qs.filter(tenant=tenant)
+    latest = qs.order_by('-id').first()
     next_num = 1
     if latest and latest.karigar_code:
         try:
             num = int(latest.karigar_code.split('-')[-1])
             next_num = num + 1
         except (ValueError, IndexError):
-            next_num = Karigar.objects.count() + 1
+            next_num = qs.count() + 1
     candidate = f"KRG-{next_num:04d}"
-    while Karigar.objects.filter(karigar_code=candidate).exists():
+    collision_qs = Karigar.objects.filter(karigar_code=candidate)
+    if tenant:
+        collision_qs = collision_qs.filter(tenant=tenant)
+    while collision_qs.exists():
         next_num += 1
         candidate = f"KRG-{next_num:04d}"
+        collision_qs = Karigar.objects.filter(karigar_code=candidate)
+        if tenant:
+            collision_qs = collision_qs.filter(tenant=tenant)
     return candidate
 
 
-def generate_assignment_number():
-    """Generate sequential assignment number: WA-YYYY-XXXX."""
+def generate_assignment_number(tenant=None):
+    """Generate sequential assignment number: WA-YYYY-XXXX. Scoped per tenant."""
     year = timezone.now().strftime('%Y')
     prefix = f"WA-{year}-"
-    latest = KarigarWorkAssignment.objects.filter(assignment_number__startswith=prefix).order_by('-id').first()
+    qs = KarigarWorkAssignment.objects.filter(assignment_number__startswith=prefix)
+    if tenant:
+        qs = qs.filter(tenant=tenant)
+    latest = qs.order_by('-id').first()
     next_num = 1
     if latest and latest.assignment_number:
         try:
             num = int(latest.assignment_number.split('-')[-1])
             next_num = num + 1
         except (ValueError, IndexError):
-            next_num = KarigarWorkAssignment.objects.filter(assignment_number__startswith=prefix).count() + 1
+            next_num = qs.count() + 1
     candidate = f"{prefix}{next_num:04d}"
-    while KarigarWorkAssignment.objects.filter(assignment_number=candidate).exists():
+    collision_qs = KarigarWorkAssignment.objects.filter(assignment_number=candidate)
+    if tenant:
+        collision_qs = collision_qs.filter(tenant=tenant)
+    while collision_qs.exists():
         next_num += 1
         candidate = f"{prefix}{next_num:04d}"
+        collision_qs = KarigarWorkAssignment.objects.filter(assignment_number=candidate)
+        if tenant:
+            collision_qs = collision_qs.filter(tenant=tenant)
     return candidate
 
 
-def generate_settlement_number():
-    """Generate sequential settlement voucher: KST-YYYY-XXXX."""
+def generate_settlement_number(tenant=None):
+    """Generate sequential settlement voucher: KST-YYYY-XXXX. Scoped per tenant."""
     year = timezone.now().strftime('%Y')
     prefix = f"KST-{year}-"
-    latest = KarigarSettlement.objects.filter(settlement_number__startswith=prefix).order_by('-id').first()
+    qs = KarigarSettlement.objects.filter(settlement_number__startswith=prefix)
+    if tenant:
+        qs = qs.filter(tenant=tenant)
+    latest = qs.order_by('-id').first()
     next_num = 1
     if latest and latest.settlement_number:
         try:
             num = int(latest.settlement_number.split('-')[-1])
             next_num = num + 1
         except (ValueError, IndexError):
-            next_num = KarigarSettlement.objects.filter(settlement_number__startswith=prefix).count() + 1
+            next_num = qs.count() + 1
     candidate = f"{prefix}{next_num:04d}"
-    while KarigarSettlement.objects.filter(settlement_number=candidate).exists():
+    collision_qs = KarigarSettlement.objects.filter(settlement_number=candidate)
+    if tenant:
+        collision_qs = collision_qs.filter(tenant=tenant)
+    while collision_qs.exists():
         next_num += 1
         candidate = f"{prefix}{next_num:04d}"
+        collision_qs = KarigarSettlement.objects.filter(settlement_number=candidate)
+        if tenant:
+            collision_qs = collision_qs.filter(tenant=tenant)
     return candidate
 
 
@@ -100,11 +127,18 @@ class Karigar(models.Model):
         ('Other', 'Other Work'),
     ]
 
+    tenant = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.CASCADE,
+        related_name='karigars',
+        null=True,
+        blank=True,
+        help_text="Tenant shop employing this artisan"
+    )
     karigar_code = models.CharField(
         max_length=30,
-        unique=True,
         db_index=True,
-        help_text="Unique artisan ID (e.g. KRG-0001)"
+        help_text="Artisan ID (e.g. KRG-0001)"
     )
     name = models.CharField(max_length=150, help_text="Artisan / Workshop Name")
     mobile = models.CharField(max_length=20)
@@ -139,6 +173,12 @@ class Karigar(models.Model):
         ordering = ['name']
         verbose_name = 'Karigar'
         verbose_name_plural = 'Karigars'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tenant', 'karigar_code'],
+                name='unique_tenant_karigar_code',
+            ),
+        ]
 
     def __str__(self):
         return f"{self.karigar_code} - {self.name} ({self.specialization})"
@@ -150,7 +190,7 @@ class Karigar(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.karigar_code:
-            self.karigar_code = generate_karigar_code()
+            self.karigar_code = generate_karigar_code(tenant=self.tenant)
         super().save(*args, **kwargs)
 
     # ---- Statistics & Balance Properties -------------------------------------
@@ -282,11 +322,18 @@ class KarigarWorkAssignment(models.Model):
         ('Paid', 'Paid'),
     ]
 
+    tenant = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.CASCADE,
+        related_name='karigar_assignments',
+        null=True,
+        blank=True,
+        help_text="Tenant shop owning this assignment"
+    )
     assignment_number = models.CharField(
         max_length=30,
-        unique=True,
         db_index=True,
-        help_text="Unique assignment reference (e.g. WA-2026-0001)"
+        help_text="Assignment reference (e.g. WA-2026-0001)"
     )
     karigar = models.ForeignKey(
         Karigar,
@@ -527,6 +574,12 @@ class KarigarWorkAssignment(models.Model):
         ordering = ['-issue_date', '-id']
         verbose_name = 'Work Assignment'
         verbose_name_plural = 'Work Assignments'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tenant', 'assignment_number'],
+                name='unique_tenant_karigar_assignment_number',
+            ),
+        ]
 
     def __str__(self):
         return f"{self.assignment_number} - {self.karigar.name} ({self.work_type})"
@@ -593,7 +646,7 @@ class KarigarWorkAssignment(models.Model):
             self.labour_charge = pricing.round_curr(rate * wt_basis)
         elif c_type == 'Percentage':
             # Percentage on metal base value
-            base_rate = pricing.get_current_metal_rate(self.metal_type)
+            base_rate = pricing.get_current_metal_rate(self.metal_type, tenant=self.tenant)
             p_factor = pricing.parse_purity_factor(self.metal_type, self.purity)
             metal_val = (self.net_weight_received or self.net_weight_issued) * (base_rate * p_factor)
             self.labour_charge = pricing.round_curr(metal_val * (rate / Decimal('100.00')))
@@ -641,8 +694,10 @@ class KarigarWorkAssignment(models.Model):
             raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
+        if not self.tenant_id and self.karigar_id and getattr(self.karigar, 'tenant_id', None):
+            self.tenant_id = self.karigar.tenant_id
         if not self.assignment_number:
-            self.assignment_number = generate_assignment_number()
+            self.assignment_number = generate_assignment_number(tenant=self.tenant)
         self.calculate_weights()
         self.calculate_charges()
         super().save(*args, **kwargs)
@@ -673,11 +728,18 @@ class KarigarSettlement(models.Model):
         (STATUS_CANCELLED, 'Cancelled'),
     ]
 
+    tenant = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.CASCADE,
+        related_name='karigar_settlements',
+        null=True,
+        blank=True,
+        help_text="Tenant shop owning this settlement"
+    )
     settlement_number = models.CharField(
         max_length=30,
-        unique=True,
         db_index=True,
-        help_text="Unique settlement reference (e.g. KST-2026-0001)"
+        help_text="Settlement reference (e.g. KST-2026-0001)"
     )
     karigar = models.ForeignKey(
         Karigar,
@@ -735,6 +797,12 @@ class KarigarSettlement(models.Model):
         ordering = ['-payment_date', '-id']
         verbose_name = 'Karigar Settlement'
         verbose_name_plural = 'Karigar Settlements'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tenant', 'settlement_number'],
+                name='unique_tenant_karigar_settlement_number',
+            ),
+        ]
 
     def __str__(self):
         return f"{self.settlement_number} - {self.karigar.name} (₹{self.amount:,.2f})"
@@ -745,8 +813,10 @@ class KarigarSettlement(models.Model):
             raise ValidationError({'amount': 'Settlement amount must be greater than zero.'})
 
     def save(self, *args, **kwargs):
+        if not self.tenant_id and self.karigar_id and getattr(self.karigar, 'tenant_id', None):
+            self.tenant_id = self.karigar.tenant_id
         if not self.settlement_number:
-            self.settlement_number = generate_settlement_number()
+            self.settlement_number = generate_settlement_number(tenant=self.tenant)
         super().save(*args, **kwargs)
 
     def cancel(self, user, reason):

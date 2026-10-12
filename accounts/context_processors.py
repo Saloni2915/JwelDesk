@@ -12,32 +12,43 @@ from .models import CompanySettings
 
 
 def company_settings_context(request):
-    """Return ``{'company': <branding>}`` for template renders.
+    """Return ``{'company': <branding>, 'current_tenant': <tenant>}`` for template renders.
 
     - On the public landing page, branding is not needed, so DB query is bypassed entirely.
-    - On all other pages, the row is read from cache (invalidated when saved in Company Settings),
+    - On all other pages, the row is read for request.tenant from cache (invalidated when saved),
       saving an expensive remote DB round-trip on every page navigation.
     """
     path = getattr(request, 'path', '')
+    tenant = getattr(request, 'tenant', None)
     if path in ('/', '/landing/'):
-        return {'company': _make_fallback_company()}
+        return {
+            'company': _make_fallback_company(),
+            'current_tenant': tenant,
+        }
 
-    return {'company': _load_company()}
+    return {
+        'company': _load_company(tenant=tenant),
+        'current_tenant': tenant,
+    }
 
 
-def _load_company():
-    """Return the cached CompanySettings row, or a safe fallback object."""
+def _load_company(tenant=None):
+    """Return the cached CompanySettings row for the tenant, or a safe fallback object."""
+    if not tenant:
+        return _make_fallback_company()
+
+    cache_key = f'company_settings:tenant:{tenant.id}'
     try:
-        cached = cache.get('company_settings:singleton')
+        cached = cache.get(cache_key)
         if cached is not None:
             return cached
 
-        company = CompanySettings.objects.first()
+        company = CompanySettings.load(tenant=tenant)
         if company is None:
             return _make_fallback_company()
 
         try:
-            cache.set('company_settings:singleton', company, timeout=15)
+            cache.set(cache_key, company, timeout=60)
         except Exception:
             pass
         return company
