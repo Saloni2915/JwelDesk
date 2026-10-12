@@ -175,7 +175,7 @@
                         </div>
                     </li>
 
-                    <!-- 3. Inventory -->
+                    <!-- 3. Stock -->
                     <li class="nav-item">
                         <a class="nav-link sidebar-dropdown-toggle {% if 'inventory' in request.resolver_match.url_name or request.resolver_match.url_name == 'stock_movement_list' or '/inventory/' in request.path %}parent-active{% else %}collapsed{% endif %}"
                            data-bs-toggle="collapse"
@@ -185,7 +185,7 @@
                            aria-controls="submenu-inventory">
                             <span class="sidebar-item-content">
                                 <i class="bi bi-gem sidebar-item-icon"></i>
-                                <span class="sidebar-item-title">Inventory</span>
+                                <span class="sidebar-item-title">Jewellery Stock</span>
                             </span>
                             <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
@@ -194,19 +194,19 @@
                                 <li class="nav-item">
                                     <a class="nav-link {% if 'inventory' in request.resolver_match.url_name and 'import' not in request.resolver_match.url_name and request.resolver_match.url_name != 'stock_movement_list' %}active{% endif %}"
                                        href="{% url 'inventory_list' %}">
-                                        <i class="bi bi-gem"></i> Jewellery Stock
+                                        <i class="bi bi-gem"></i> All Stock Items
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link {% if request.resolver_match.url_name == 'stock_movement_list' %}active{% endif %}"
                                        href="{% url 'stock_movement_list' %}">
-                                        <i class="bi bi-arrow-left-right"></i> Stock Movements
+                                        <i class="bi bi-arrow-left-right"></i> Stock History
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link {% if request.resolver_match.url_name == 'inventory_import' or request.resolver_match.url_name == 'inventory_import_sample' %}active{% endif %}"
                                        href="{% url 'inventory_import' %}">
-                                        <i class="bi bi-upload"></i> Import Inventory
+                                        <i class="bi bi-upload"></i> Import Stock
                                     </a>
                                 </li>
                             </ul>
@@ -232,7 +232,7 @@
                                 <li class="nav-item">
                                     <a class="nav-link {% if request.resolver_match.url_name == 'pricing_calculator' or '/pricing/' in request.path %}active{% endif %}"
                                        href="{% url 'pricing_calculator' %}">
-                                        <i class="bi bi-calculator"></i> Pricing Engine
+                                        <i class="bi bi-calculator"></i> Price Calculator
                                     </a>
                                 </li>
                                 <li class="nav-item">
@@ -264,7 +264,7 @@
                                 <li class="nav-item">
                                     <a class="nav-link {% if 'customer' in request.resolver_match.url_name or '/customers/' in request.path %}active{% endif %}"
                                        href="{% url 'customer_list' %}">
-                                        <i class="bi bi-people"></i> Customers Directory
+                                        <i class="bi bi-people"></i> All Customers
                                     </a>
                                 </li>
                                 <li class="nav-item">
@@ -309,7 +309,7 @@
                         </div>
                     </li>
 
-                    <!-- 7. Manufacturing & Artisans (Karigar) -->
+                    <!-- 7. Karigar & Workshop -->
                     {% if user.is_superuser or user.is_staff or user_perms.karigar.can_view or not user.employee_profile %}
                     <li class="nav-item">
                         <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.app_name == 'karigar' or '/karigar/' in request.path %}parent-active{% else %}collapsed{% endif %}"
@@ -320,7 +320,7 @@
                            aria-controls="submenu-karigar">
                             <span class="sidebar-item-content">
                                 <i class="bi bi-person-workspace sidebar-item-icon"></i>
-                                <span class="sidebar-item-title">Manufacturing &amp; Karigars</span>
+                                <span class="sidebar-item-title">Karigar &amp; Workshop</span>
                             </span>
                             <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
@@ -335,13 +335,13 @@
                                 <li class="nav-item">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and 'karigar_' in request.resolver_match.url_name %}active{% endif %}"
                                        href="{% url 'karigar:karigar_list' %}">
-                                        <i class="bi bi-person-workspace"></i> Karigars / Artisans
+                                        <i class="bi bi-person-workspace"></i> Karigar List
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'assignment_list' or request.resolver_match.url_name == 'assignment_create' or request.resolver_match.url_name == 'assignment_detail' or request.resolver_match.url_name == 'assignment_edit' %}active{% endif %}"
                                        href="{% url 'karigar:assignment_list' %}">
-                                        <i class="bi bi-clipboard2-check"></i> Work Assignments
+                                        <i class="bi bi-clipboard2-check"></i> Karigar Jobs
                                     </a>
                                 </li>
                                 <li class="nav-item">
@@ -353,7 +353,7 @@
                                 <li class="nav-item">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and 'settlement_' in request.resolver_match.url_name %}active{% endif %}"
                                        href="{% url 'karigar:settlement_list' %}">
-                                        <i class="bi bi-cash-stack"></i> Settlements &amp; Dues
+                                        <i class="bi bi-cash-stack"></i> Karigar Payments
                                     </a>
                                 </li>
                                 <li class="nav-item">

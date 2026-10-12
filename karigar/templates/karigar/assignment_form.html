@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ page_title }} — JewelDesk Atelier{% endblock %}
+{% block title %}{{ page_title }} — JewelDesk{% endblock %}
 
 {% block page_title %}{{ page_title }}{% endblock %}
 
@@ -9,9 +9,9 @@
     <!-- Header -->
     <div class="jd-header">
         <div>
-            <div class="jd-badge"><i class="bi bi-hammer me-1"></i> Job Card Issue & Allocation</div>
+            <div class="jd-badge"><i class="bi bi-hammer me-1"></i> Karigar Job Card</div>
             <h1 class="jd-title">{{ page_title }}</h1>
-            <p class="jd-subtitle">Issue gold, silver, gemstones, CAD files, and specify craftsmanship rates for workshop artisans.</p>
+            <p class="jd-subtitle">Issue gold, silver, stones, design photo, and enter making charges for the karigar.</p>
         </div>
         <div>
             <a href="{% if is_edit %}{% url 'karigar:assignment_detail' assignment.id %}{% else %}{% url 'karigar:assignment_list' %}{% endif %}" class="jd-btn-ghost">
@@ -37,25 +37,25 @@
                 <!-- Basic Job Details -->
                 <div class="jd-card p-4 mb-4">
                     <div class="d-flex align-items-center gap-2 mb-4 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
-                        <span class="text-gold fw-bold"><i class="bi bi-hammer me-1"></i> Job Assignment Directives</span>
+                        <span class="text-gold fw-bold"><i class="bi bi-hammer me-1"></i> Job Details</span>
                     </div>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label text-gold small fw-bold">Artisan / Karigar <span class="text-danger">*</span></label>
+                            <label class="form-label text-gold small fw-bold">Karigar <span class="text-danger">*</span></label>
                             {{ form.karigar }}
                             {% if form.karigar.errors %}
                             <div class="text-danger small mt-1">{{ form.karigar.errors.0 }}</div>
                             {% endif %}
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label text-gold small fw-bold">Work Craft Type <span class="text-danger">*</span></label>
+                            <label class="form-label text-gold small fw-bold">Work Type <span class="text-danger">*</span></label>
                             {{ form.work_type }}
                             {% if form.work_type.errors %}
                             <div class="text-danger small mt-1">{{ form.work_type.errors.0 }}</div>
                             {% endif %}
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label text-gold small fw-bold">Priority Rank</label>
+                            <label class="form-label text-gold small fw-bold">Priority</label>
                             {{ form.priority }}
                             {% if form.priority.errors %}
                             <div class="text-danger small mt-1">{{ form.priority.errors.0 }}</div>
@@ -63,7 +63,7 @@
                         </div>
 
                         <div class="col-12">
-                            <label class="form-label text-gold small fw-bold">Job Instructions / CAD Bench Directives <span class="text-danger">*</span></label>
+                            <label class="form-label text-gold small fw-bold">Work Instructions / Notes <span class="text-danger">*</span></label>
                             {{ form.description }}
                             {% if form.description.errors %}
                             <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>
@@ -72,7 +72,7 @@
                         </div>
 
                         <div class="col-12">
-                            <label class="form-label text-gold small fw-bold">Reference Sketch / Design CAD Image</label>
+                            <label class="form-label text-gold small fw-bold">Design Photo / Reference Image</label>
                             {{ form.reference_image }}
                             {% if form.reference_image.errors %}
                             <div class="text-danger small mt-1">{{ form.reference_image.errors.0 }}</div>
@@ -84,19 +84,19 @@
                 <!-- Material Issued & Weight Accountability -->
                 <div class="jd-card p-4 mb-4">
                     <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
-                        <span class="text-gold fw-bold"><i class="bi bi-gem me-1"></i> Metal Weight Issue &amp; Wastage Terms</span>
+                        <span class="text-gold fw-bold"><i class="bi bi-gem me-1"></i> Metal Weight &amp; Wastage</span>
                         <span class="jd-badge" style="background: rgba(236,200,106,0.15); color: #ECC86A;">0.001g Precision Scale</span>
                     </div>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label text-gold small fw-bold">Metal Alloy</label>
+                            <label class="form-label text-gold small fw-bold">Metal Type</label>
                             {{ form.metal_type }}
                             {% if form.metal_type.errors %}
                             <div class="text-danger small mt-1">{{ form.metal_type.errors.0 }}</div>
                             {% endif %}
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label text-gold small fw-bold">Metal Purity</label>
+                            <label class="form-label text-gold small fw-bold">Purity</label>
                             {{ form.purity }}
                             {% if form.purity.errors %}
                             <div class="text-danger small mt-1">{{ form.purity.errors.0 }}</div>
@@ -111,7 +111,7 @@
                             {% endif %}
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label text-gold small fw-bold">Stones / Findings Wt (g)</label>
+                            <label class="form-label text-gold small fw-bold">Stone / Other Weight (g)</label>
                             {{ form.stone_weight_issued }}
                             {% if form.stone_weight_issued.errors %}
                             <div class="text-danger small mt-1">{{ form.stone_weight_issued.errors.0 }}</div>
@@ -131,7 +131,7 @@
 
                     <!-- Live net weight banner -->
                     <div class="p-3 rounded-3 mt-4 d-flex justify-content-between align-items-center" style="background: rgba(236,200,106,0.08); border: 1px solid rgba(236,200,106,0.3);">
-                        <span class="text-gold small fw-bold"><i class="bi bi-info-circle me-1"></i> Net Precious Metal Weight Issued:</span>
+                        <span class="text-gold small fw-bold"><i class="bi bi-info-circle me-1"></i> Net Metal Weight Issued:</span>
                         <span class="fw-bold font-monospace fs-5 text-white" id="net-weight-preview">0.000 g</span>
                     </div>
                 </div>
@@ -139,7 +139,7 @@
                 <!-- Labour & Making Charges -->
                 <div class="jd-card p-4">
                     <div class="d-flex align-items-center gap-2 mb-4 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
-                        <span class="text-gold fw-bold"><i class="bi bi-cash-coin me-1"></i> Labour &amp; Craftsmanship Charges</span>
+                        <span class="text-gold fw-bold"><i class="bi bi-cash-coin me-1"></i> Labour &amp; Making Charges</span>
                     </div>
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -166,7 +166,7 @@
                             {% endif %}
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label text-gold small fw-bold">Other Approved Charges (₹)</label>
+                            <label class="form-label text-gold small fw-bold">Other Charges (₹)</label>
                             {{ form.other_charges }}
                             {% if form.other_charges.errors %}
                             <div class="text-danger small mt-1">{{ form.other_charges.errors.0 }}</div>
@@ -188,7 +188,7 @@
                 <!-- Timeline & Schedule -->
                 <div class="jd-card p-4 mb-4">
                     <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
-                        <span class="text-gold fw-bold"><i class="bi bi-calendar-event me-1"></i> Schedule &amp; Deadlines</span>
+                        <span class="text-gold fw-bold"><i class="bi bi-calendar-event me-1"></i> Dates &amp; Deadline</span>
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-gold small fw-bold">Issue Date <span class="text-danger">*</span></label>
@@ -203,17 +203,17 @@
                         {% if form.expected_completion_date.errors %}
                         <div class="text-danger small mt-1">{{ form.expected_completion_date.errors.0 }}</div>
                         {% endif %}
-                        <small class="text-muted d-block mt-1">Target delivery from artisan workshop</small>
+                        <small class="text-muted d-block mt-1">Expected completion from karigar</small>
                     </div>
                 </div>
 
                 <!-- Customer & Inventory Links -->
                 <div class="jd-card p-4 mb-4">
                     <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
-                        <span class="text-gold fw-bold"><i class="bi bi-link-45deg me-1"></i> Order &amp; Inventory Links</span>
+                        <span class="text-gold fw-bold"><i class="bi bi-link-45deg me-1"></i> Customer &amp; Stock Link</span>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-gold small fw-bold">Customer Patron (Optional)</label>
+                        <label class="form-label text-gold small fw-bold">Customer (Optional)</label>
                         {{ form.customer }}
                         {% if form.customer.errors %}
                         <div class="text-danger small mt-1">{{ form.customer.errors.0 }}</div>
@@ -221,7 +221,7 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label text-gold small fw-bold">Custom Bespoke Order (Optional)</label>
+                        <label class="form-label text-gold small fw-bold">Custom Order (Optional)</label>
                         {{ form.custom_order }}
                         {% if form.custom_order.errors %}
                         <div class="text-danger small mt-1">{{ form.custom_order.errors.0 }}</div>
@@ -229,12 +229,12 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label text-gold small fw-bold">Showroom Inventory SKU (Optional)</label>
+                        <label class="form-label text-gold small fw-bold">Shop Stock Item (Optional)</label>
                         {{ form.inventory_item }}
                         {% if form.inventory_item.errors %}
                         <div class="text-danger small mt-1">{{ form.inventory_item.errors.0 }}</div>
                         {% endif %}
-                        <small class="text-muted d-block mt-1">Select if existing showroom stock is sent for repair or resizing.</small>
+                        <small class="text-muted d-block mt-1">Select if existing shop item is sent for repair or work.</small>
                     </div>
 
                     {% if form.issue_stock_item %}
@@ -248,7 +248,7 @@
                     {% endif %}
 
                     <div class="mb-3">
-                        <label class="form-label text-gold small fw-bold">Internal Workshop Notes</label>
+                        <label class="form-label text-gold small fw-bold">Internal Notes</label>
                         {{ form.notes }}
                     </div>
                 </div>
@@ -256,7 +256,7 @@
                 <!-- Submit Buttons -->
                 <div class="d-flex flex-column gap-2">
                     <button type="submit" class="jd-btn-gold justify-content-center">
-                        <i class="bi bi-check-lg me-1"></i> {% if is_edit %}Update Assignment{% else %}Issue Assignment{% endif %}
+                        <i class="bi bi-check-lg me-1"></i> {% if is_edit %}Save Job{% else %}Give Work to Karigar{% endif %}
                     </button>
                     <a href="{% if is_edit %}{% url 'karigar:assignment_detail' assignment.id %}{% else %}{% url 'karigar:assignment_list' %}{% endif %}" class="jd-btn-ghost text-center">
                         Cancel

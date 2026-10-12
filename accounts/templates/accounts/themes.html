@@ -8,7 +8,7 @@
         <div class="jd-title-wrap">
             <span class="jd-badge"><i class="bi bi-palette2"></i> Appearance &amp; Personalization</span>
             <h1 class="jd-title"><i class="bi bi-brush"></i> Themes &amp; Visual Style</h1>
-            <p class="jd-subtitle">Choose how JewelDesk looks across all modules, counter terminals, and reports</p>
+            <p class="jd-subtitle">Choose how JewelDesk looks across all pages and reports</p>
         </div>
     </div>
 
@@ -21,7 +21,7 @@
             <div>
                 <div class="text-uppercase fw-bold" style="color: var(--jd-ivory-dim); letter-spacing: 0.05em; font-size: 0.72rem;">Current Active Theme</div>
                 <div class="h5 mb-0 fw-bold" id="currentActiveThemeLabel" style="color: var(--jd-ivory); font-family: var(--jd-font-headline);">
-                    {% if current_theme == 'gold' %}Gold / Premium (Chocolate &amp; Champagne Gold){% elif current_theme == 'dark' %}Dark (Obsidian Midnight Titanium){% else %}Light (Royal Alabaster Showroom){% endif %}
+                    {% if current_theme == 'gold' %}Gold (Warm Dark &amp; Gold){% elif current_theme == 'dark' %}Dark (Midnight Dark){% else %}Light (Clean White &amp; Gold){% endif %}
                 </div>
             </div>
         </div>
@@ -50,7 +50,7 @@
             </div>
             <div class="p-3 pt-2">
                 <h6 class="theme-name mb-1">Light</h6>
-                <p class="theme-desc mb-3">Royal Alabaster porcelain surfaces with burnished gold accents and crisp high-contrast text.</p>
+                <p class="theme-desc mb-3">Clean bright white background with gold accents and clear text.</p>
                 <button type="button" class="btn btn-sm w-100 theme-apply-btn" data-theme="light">{% if current_theme == 'light' %}✓ Selected{% else %}Apply{% endif %}</button>
             </div>
         </div>
@@ -74,7 +74,7 @@
             </div>
             <div class="p-3 pt-2">
                 <h6 class="theme-name mb-1">Dark</h6>
-                <p class="theme-desc mb-3">Obsidian midnight surfaces with electric gold accents and crisp starlight white text.</p>
+                <p class="theme-desc mb-3">Deep dark background with gold accents and high contrast text.</p>
                 <button type="button" class="btn btn-sm w-100 theme-apply-btn" data-theme="dark">{% if current_theme == 'dark' %}✓ Selected{% else %}Apply{% endif %}</button>
             </div>
         </div>
@@ -97,8 +97,8 @@
                 </div>
             </div>
             <div class="p-3 pt-2">
-                <h6 class="theme-name mb-1">Gold / Premium</h6>
-                <p class="theme-desc mb-3">Signature dark roast chocolate & mocha surfaces with champagne gold accents and warm ivory text.</p>
+                <h6 class="theme-name mb-1">Gold</h6>
+                <p class="theme-desc mb-3">Warm dark brown background with gold accents and warm text.</p>
                 <button type="button" class="btn btn-sm w-100 theme-apply-btn" data-theme="gold">{% if current_theme == 'gold' %}✓ Selected{% else %}Apply{% endif %}</button>
             </div>
         </div>
@@ -127,9 +127,9 @@ document.addEventListener('DOMContentLoaded', function () {
             x.textContent = on ? '✓ Selected' : 'Apply';
         });
         if (labelEl) {
-            if (theme === 'gold') labelEl.textContent = 'Gold / Premium (Chocolate & Champagne Gold)';
-            else if (theme === 'dark') labelEl.textContent = 'Dark (Obsidian Midnight Titanium)';
-            else labelEl.textContent = 'Light (Royal Alabaster Showroom)';
+            if (theme === 'gold') labelEl.textContent = 'Gold (Warm Dark & Gold)';
+            else if (theme === 'dark') labelEl.textContent = 'Dark (Midnight Dark)';
+            else labelEl.textContent = 'Light (Clean White & Gold)';
         }
     }
 

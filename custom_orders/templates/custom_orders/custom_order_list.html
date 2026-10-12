@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Bespoke & Custom Orders — JewelDesk Atelier{% endblock %}
+{% block title %}Custom Jewellery Orders — JewelDesk{% endblock %}
 
 {% block page_title %}Custom Orders{% endblock %}
 
@@ -9,9 +9,9 @@
     <!-- Header -->
     <div class="jd-header">
         <div>
-            <div class="jd-badge"><i class="bi bi-gem me-1"></i> Bespoke Commissions & Atelier Work</div>
+            <div class="jd-badge"><i class="bi bi-gem me-1"></i> Custom Jewellery Orders</div>
             <h1 class="jd-title">Custom Jewellery Orders</h1>
-            <p class="jd-subtitle">Track bespoke artisan orders, CAD models, metal allocations, and customer milestones.</p>
+            <p class="jd-subtitle">Track custom jewellery orders, karigar progress, advance payments, and delivery dates.</p>
         </div>
         <div class="d-flex align-items-center gap-2">
             <a href="{% url 'custom_orders:custom_order_add' %}" class="jd-btn-gold">
@@ -130,7 +130,7 @@
                             {% endif %}
                         </td>
                         <td class="text-end pe-3">
-                            <a href="{% url 'custom_orders:custom_order_detail' order.id %}" class="jd-btn-ghost btn-sm" title="View Order Atelier">
+                            <a href="{% url 'custom_orders:custom_order_detail' order.id %}" class="jd-btn-ghost btn-sm" title="View Order">
                                 <i class="bi bi-eye me-1"></i> View
                             </a>
                         </td>
@@ -142,7 +142,7 @@
                                 <i class="bi bi-gem"></i>
                             </div>
                             <h5 class="text-white fw-bold mb-1">No Custom Orders Found</h5>
-                            <p class="text-muted small mb-3">Begin tailoring bespoke jewellery orders for your patrons.</p>
+                            <p class="text-muted small mb-3">Create and track custom jewellery orders for your customers.</p>
                             <a href="{% url 'custom_orders:custom_order_add' %}" class="jd-btn-gold">
                                 <i class="bi bi-plus-lg me-1"></i> New Custom Order
                             </a>

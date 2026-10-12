@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ order.order_number }} — Custom Order | JewelDesk Atelier{% endblock %}
+{% block title %}{{ order.order_number }} — Custom Order | JewelDesk{% endblock %}
 
 {% block page_title %}{{ order.order_number }}{% endblock %}
 
@@ -10,11 +10,11 @@
     <div class="jd-header">
         <div>
             <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="jd-badge"><i class="bi bi-hammer me-1"></i> Custom Atelier Order</span>
+                <span class="jd-badge"><i class="bi bi-hammer me-1"></i> Custom Order</span>
                 {% include 'custom_orders/includes/status_badge.html' with status=order.status %}
             </div>
             <h1 class="jd-title font-monospace" style="letter-spacing: 0.05em;">{{ order.order_number }}</h1>
-            <p class="jd-subtitle">Patron: <strong class="text-white">{{ order.customer.name }}</strong> &bull; Created {{ order.created_at|date:"M d, Y" }}</p>
+            <p class="jd-subtitle">Customer: <strong class="text-white">{{ order.customer.name }}</strong> &bull; Created {{ order.created_at|date:"M d, Y" }}</p>
         </div>
         <div class="d-flex align-items-center gap-2 flex-wrap">
             {% if order.status != 'Delivered' and order.status != 'Cancelled' %}
@@ -23,7 +23,7 @@
             </a>
             {% endif %}
             <a href="{% url 'custom_orders:custom_order_delete' order.id %}" class="jd-btn-danger-ghost">
-                <i class="bi bi-trash me-1"></i> Delete / Cancel
+                <i class="bi bi-trash me-1"></i> Delete Order
             </a>
             <a href="{% url 'custom_orders:custom_order_list' %}" class="jd-btn-ghost">
                 <i class="bi bi-arrow-left me-1"></i> Back to Orders
@@ -39,20 +39,20 @@
             <div class="jd-card p-4 mb-4">
                 <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4" style="border-color: rgba(236,200,106,0.12) !important;">
                     <h5 class="font-serif fw-bold text-white mb-0" style="font-family: 'Cinzel', serif;">
-                        <i class="bi bi-gem text-gold me-2"></i> Jewellery Specification
+                        <i class="bi bi-gem text-gold me-2"></i> Order Details
                     </h5>
                     <span class="jd-tag"><i class="bi bi-tag me-1"></i>{{ order.category.name }}</span>
                 </div>
 
                 <div class="mb-4 p-3 rounded-3" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06);">
-                    <div class="text-muted small mb-1"><i class="bi bi-card-text me-1"></i> Design Description & Notes</div>
+                    <div class="text-muted small mb-1"><i class="bi bi-card-text me-1"></i> Design Description &amp; Notes</div>
                     <div class="text-white fs-6" style="line-height: 1.6;">{{ order.design_description|linebreaksbr }}</div>
                 </div>
 
                 <div class="row g-3">
                     <div class="col-sm-6">
                         <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(236,200,106,0.1);">
-                            <div class="text-muted small">Metal & Alloy</div>
+                            <div class="text-muted small">Metal &amp; Purity</div>
                             <div class="text-white fw-bold fs-6 mt-1">
                                 {% if order.metal_type == 'Gold' %}
                                 <span class="text-gold"><i class="bi bi-circle-fill me-1" style="font-size: 0.6rem;"></i>Gold ({{ order.purity }})</span>
@@ -68,7 +68,7 @@
                     </div>
                     <div class="col-sm-6">
                         <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(236,200,106,0.1);">
-                            <div class="text-muted small">Weight Estimates</div>
+                            <div class="text-muted small">Estimated Weight</div>
                             <div class="text-white fw-bold fs-6 mt-1 font-monospace">
                                 Gross: {{ order.approx_gross_weight }}g &bull; Net: {{ order.approx_net_weight }}g
                             </div>
@@ -76,7 +76,7 @@
                     </div>
                     <div class="col-sm-6">
                         <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(236,200,106,0.1);">
-                            <div class="text-muted small">Making Charge Estimate</div>
+                            <div class="text-muted small">Making Charge</div>
                             <div class="text-white fw-bold fs-6 mt-1 font-monospace">
                                 ₹{{ order.making_charge }}
                             </div>
@@ -92,7 +92,7 @@
                     </div>
                     <div class="col-sm-4">
                         <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06);">
-                            <div class="text-muted small">Patron Budget</div>
+                            <div class="text-muted small">Customer Budget</div>
                             <div class="text-white fw-semibold mt-1 font-monospace">
                                 {% if order.customer_budget %}₹{{ order.customer_budget }}{% else %}—{% endif %}
                             </div>
@@ -100,7 +100,7 @@
                     </div>
                     <div class="col-sm-4">
                         <div class="p-3 rounded-3" style="background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.25);">
-                            <div class="text-success small">Advance Received</div>
+                            <div class="text-success small">Advance Paid</div>
                             <div class="text-success fw-bold mt-1 font-monospace">
                                 ₹{{ order.advance_amount }}
                             </div>
@@ -108,7 +108,7 @@
                     </div>
                     <div class="col-sm-4">
                         <div class="p-3 rounded-3" style="background: {% if order.remaining_amount > 0 %}rgba(239, 68, 68, 0.08){% else %}rgba(0,0,0,0.25){% endif %}; border: 1px solid {% if order.remaining_amount > 0 %}rgba(239, 68, 68, 0.3){% else %}rgba(255,255,255,0.06){% endif %};">
-                            <div class="{% if order.remaining_amount > 0 %}text-danger{% else %}text-muted{% endif %} small">Ledger Balance</div>
+                            <div class="{% if order.remaining_amount > 0 %}text-danger{% else %}text-muted{% endif %} small">Balance Due</div>
                             <div class="{% if order.remaining_amount > 0 %}text-danger{% else %}text-white{% endif %} fw-bold mt-1 font-monospace">
                                 ₹{{ order.remaining_amount }}
                             </div>
@@ -127,7 +127,7 @@
                     </div>
                     <div class="col-sm-6">
                         <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06);">
-                            <div class="text-muted small">Actual Handover Date</div>
+                            <div class="text-muted small">Actual Delivery Date</div>
                             <div class="text-white fw-semibold mt-1">
                                 {% if order.actual_delivery_date %}{{ order.actual_delivery_date|date:"M d, Y" }}{% else %}<span class="text-muted">— (Pending)</span>{% endif %}
                             </div>
@@ -140,7 +140,7 @@
             <div class="jd-card p-4">
                 <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4" style="border-color: rgba(236,200,106,0.12) !important;">
                     <h5 class="font-serif fw-bold text-white mb-0" style="font-family: 'Cinzel', serif;">
-                        <i class="bi bi-camera text-gold me-2"></i> Reference Sketch / CAD File
+                        <i class="bi bi-camera text-gold me-2"></i> Design Photo / Reference Image
                     </h5>
                 </div>
                 <div class="text-center p-3 rounded-3" style="background: rgba(0,0,0,0.3); border: 1px dashed rgba(236,200,106,0.2);">
@@ -149,7 +149,7 @@
                         <div class="py-4">
                             <i class="bi bi-file-earmark-pdf text-danger display-3 mb-3 d-block"></i>
                             <a href="{{ order.reference_image.url }}" target="_blank" class="jd-btn-gold">
-                                <i class="bi bi-file-earmark-arrow-down me-1"></i> Open Reference CAD Document (PDF)
+                                <i class="bi bi-file-earmark-arrow-down me-1"></i> Open Reference File (PDF)
                             </a>
                         </div>
                         {% else %}
@@ -157,25 +157,25 @@
                             <a href="{{ order.reference_image.url }}" target="_blank" title="Click to open full scale">
                                 <img src="{{ order.reference_image.url }}" alt="Reference design" class="img-fluid rounded-3 shadow-lg" style="max-height: 480px; border: 1px solid rgba(236,200,106,0.25);">
                             </a>
-                            <div class="mt-2 text-muted small"><i class="bi bi-zoom-in me-1"></i> Click design photo to inspect high-resolution render</div>
+                            <div class="mt-2 text-muted small"><i class="bi bi-zoom-in me-1"></i> Click image to view full size</div>
                         </div>
                         {% endif %}
                     {% else %}
                     <div class="py-5 text-muted">
                         <i class="bi bi-image fs-1 d-block mb-2 text-gold opacity-50"></i>
-                        <p class="mb-0">No reference CAD drawing or photograph uploaded for this order.</p>
+                        <p class="mb-0">No design photo or sketch uploaded for this order.</p>
                     </div>
                     {% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- Sidebar: Patron & Workflow Pipeline -->
+        <!-- Sidebar: Customer & Status -->
         <div class="col-lg-4">
             <!-- Customer Card -->
             <div class="jd-card p-4 mb-4">
                 <div class="border-bottom pb-3 mb-3" style="border-color: rgba(236,200,106,0.12) !important;">
-                    <span class="text-gold small fw-bold text-uppercase" style="letter-spacing: 0.08em;">Patron Concierge</span>
+                    <span class="text-gold small fw-bold text-uppercase" style="letter-spacing: 0.08em;">Customer Details</span>
                     <h5 class="font-serif fw-bold text-white mb-0 mt-1" style="font-family: 'Cinzel', serif;">
                         <a href="{% url 'customer_detail' order.customer.id %}" class="text-white text-decoration-none">
                             {{ order.customer.name }}
@@ -199,18 +199,18 @@
                     </div>
                     {% endif %}
                     <div class="mt-1 pt-2 border-top" style="border-color: rgba(255,255,255,0.06) !important;">
-                        <span class="text-muted small d-block mb-1">Residence:</span>
+                        <span class="text-muted small d-block mb-1">Address:</span>
                         <span class="text-light small">{{ order.customer.address|default:"—"|linebreaksbr }}</span>
                     </div>
                 </div>
 
                 <div class="d-flex gap-2">
-                    <a href="https://wa.me/91{{ order.customer.mobile|cut:' ' }}?text=Hello%20{{ order.customer.name|urlencode }},%20regarding%20your%20bespoke%20jewellery%20order%20{{ order.order_number }}..."
+                    <a href="https://wa.me/91{{ order.customer.mobile|cut:' ' }}?text=Hello%20{{ order.customer.name|urlencode }},%20regarding%20your%20custom%20jewellery%20order%20{{ order.order_number }}..."
                        target="_blank" class="btn btn-sm flex-grow-1" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #6ee7b7;">
                         <i class="bi bi-whatsapp me-1"></i> WhatsApp
                     </a>
                     <a href="{% url 'customer_detail' order.customer.id %}" class="jd-btn-ghost btn-sm flex-grow-1 text-center">
-                        <i class="bi bi-person me-1"></i> Profile
+                        <i class="bi bi-person me-1"></i> View Customer
                     </a>
                 </div>
             </div>
@@ -218,19 +218,19 @@
             <!-- Workflow Stage Transition -->
             <div class="jd-card p-4 mb-4">
                 <div class="border-bottom pb-3 mb-3" style="border-color: rgba(236,200,106,0.12) !important;">
-                    <span class="text-gold small fw-bold text-uppercase" style="letter-spacing: 0.08em;">Workflow Pipeline</span>
-                    <h5 class="font-serif fw-bold text-white mb-0 mt-1" style="font-family: 'Cinzel', serif;">Order Stage</h5>
+                    <span class="text-gold small fw-bold text-uppercase" style="letter-spacing: 0.08em;">Order Status</span>
+                    <h5 class="font-serif fw-bold text-white mb-0 mt-1" style="font-family: 'Cinzel', serif;">Update Status</h5>
                 </div>
 
                 <div class="mb-3">
-                    <div class="text-muted small mb-2">Current Pipeline Stage:</div>
+                    <div class="text-muted small mb-2">Current Status:</div>
                     {% include 'custom_orders/includes/status_badge.html' with status=order.status %}
                 </div>
 
                 {% if status_form %}
                 <form method="post" action="{% url 'custom_orders:custom_order_status' order.id %}">
                     {% csrf_token %}
-                    <label for="{{ status_form.status.id_for_label }}" class="form-label text-muted small">Move this bespoke commission to:</label>
+                    <label for="{{ status_form.status.id_for_label }}" class="form-label text-muted small">Update status to:</label>
                     <div class="mb-3">
                         {{ status_form.status }}
                         {% if status_form.status.errors %}
@@ -238,12 +238,12 @@
                         {% endif %}
                     </div>
                     <button type="submit" class="jd-btn-gold w-100 justify-content-center">
-                        <i class="bi bi-arrow-right-circle me-1"></i> Update Stage
+                        <i class="bi bi-arrow-right-circle me-1"></i> Save Status
                     </button>
                 </form>
                 {% else %}
                 <div class="p-3 rounded-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
-                    <small class="text-muted">This order is marked as <strong>{{ order.status }}</strong>. No further pipeline transitions are required.</small>
+                    <small class="text-muted">This order is marked as <strong>{{ order.status }}</strong>. No further status updates needed.</small>
                 </div>
                 {% endif %}
             </div>
@@ -252,7 +252,7 @@
             <!-- Workshop Notes -->
             <div class="jd-card p-4 mb-4">
                 <div class="border-bottom pb-2 mb-3" style="border-color: rgba(236,200,106,0.12) !important;">
-                    <h6 class="text-gold fw-bold mb-0"><i class="bi bi-sticky me-1"></i> Workshop Notes</h6>
+                    <h6 class="text-gold fw-bold mb-0"><i class="bi bi-sticky me-1"></i> Karigar &amp; Workshop Notes</h6>
                 </div>
                 <p class="text-light small mb-0">{{ order.notes|linebreaksbr }}</p>
             </div>
@@ -261,10 +261,10 @@
             <!-- Metadata Timestamps -->
             <div class="jd-card p-4">
                 <div class="border-bottom pb-2 mb-3" style="border-color: rgba(236,200,106,0.12) !important;">
-                    <h6 class="text-gold fw-bold mb-0"><i class="bi bi-clock-history me-1"></i> Atelier Audit Trail</h6>
+                    <h6 class="text-gold fw-bold mb-0"><i class="bi bi-clock-history me-1"></i> Order History</h6>
                 </div>
                 <div class="d-flex justify-content-between py-1">
-                    <span class="text-muted small">Commissioned:</span>
+                    <span class="text-muted small">Order Placed:</span>
                     <span class="text-light small font-monospace">{{ order.created_at|date:"M d, Y h:i A" }}</span>
                 </div>
                 <div class="d-flex justify-content-between py-1">

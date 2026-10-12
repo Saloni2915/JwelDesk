@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Bulk Inventory Stock Import — JewelDesk Atelier{% endblock %}
+{% block title %}Import Stock — JewelDesk{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/inventory_atelier.css' %}?v={% now "U" %}" rel="stylesheet">
@@ -13,15 +13,15 @@
     <!-- 1. Header & Quick Actions -->
     <div class="jd-inv-header">
         <div class="jd-inv-title-wrap">
-            <h1><i class="bi bi-upload text-warning me-2"></i>Bulk Inventory Stock Import</h1>
-            <p class="jd-inv-subtitle">Batch inward showroom stock from spreadsheets with automated validation, HUID checks &amp; rollback safety</p>
+            <h1><i class="bi bi-upload text-warning me-2"></i>Import Stock</h1>
+            <p class="jd-inv-subtitle">Upload stock items from a CSV or Excel file with verification before saving</p>
         </div>
         <div class="jd-inv-header-actions">
             <a href="{% url 'inventory_import_sample' %}" class="jd-btn-gold">
                 <i class="bi bi-download"></i> Download Sample CSV
             </a>
             <a href="{% url 'inventory_list' %}" class="jd-btn-ghost">
-                <i class="bi bi-arrow-left"></i> Back to Inventory
+                <i class="bi bi-arrow-left"></i> Back to Stock
             </a>
         </div>
     </div>
@@ -36,7 +36,7 @@
                 <div class="jd-form-card-header">
                     <h2>
                         <i class="bi bi-file-earmark-arrow-up text-warning"></i>
-                        Upload Jewellery Stock File
+                        Upload Stock File
                     </h2>
                 </div>
                 <div class="jd-form-card-body">
@@ -73,7 +73,7 @@
                 <div class="jd-inv-table-header">
                     <h2>
                         <i class="bi bi-table text-warning"></i>
-                        Expected Columns Specification
+                        Column Guide
                     </h2>
                 </div>
                 <div class="jd-inv-table-scroll">

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Old Gold Outright Buyback — JewelDesk Atelier{% endblock %}
+{% block title %}Old Gold Buyback — JewelDesk{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/sales_bullion.css' %}?v={% now "U" %}" rel="stylesheet">
@@ -13,12 +13,12 @@
     <!-- Header & Actions -->
     <div class="jd-sb-header">
         <div class="jd-sb-title-wrap">
-            <h1><i class="bi bi-cash-stack text-warning me-2"></i>Old Gold Outright Buyback Counter</h1>
-            <p class="jd-sb-subtitle">Customer scrap jewellery outright purchase with instant cash, UPI, or bank payout</p>
+            <h1><i class="bi bi-cash-stack text-warning me-2"></i>Old Gold Buyback</h1>
+            <p class="jd-sb-subtitle">Purchase old gold or silver from customer with cash, UPI, or bank transfer</p>
         </div>
         <div class="jd-sb-header-actions">
             <a href="{% url 'old_gold_list' %}" class="jd-btn-ghost">
-                <i class="bi bi-arrow-left"></i> Transactions Ledger
+                <i class="bi bi-arrow-left"></i> Transactions List
             </a>
             <a href="{% url 'old_gold_exchange_create' %}" class="jd-btn-ghost">
                 <i class="bi bi-arrow-repeat"></i> Gold Exchange
@@ -48,7 +48,7 @@
                     <div class="jd-og-card-header">
                         <h2>
                             <i class="bi bi-person-bounding-box text-warning"></i>
-                            1. Customer Identification &amp; KYC
+                            1. Customer Details
                         </h2>
                         <a href="{% url 'customer_add' %}?next={{ request.path }}" class="jd-btn-ghost py-1 px-2" style="font-size: 0.78rem;">
                             <i class="bi bi-person-plus"></i> Add Customer
@@ -68,9 +68,9 @@
                     <div class="jd-og-card-header">
                         <h2>
                             <i class="bi bi-coin text-warning"></i>
-                            2. Scrap Gold Intake &amp; Assay Testing
+                            2. Old Gold Details &amp; Testing
                         </h2>
-                        <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">Vault Intake</span>
+                        <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">Old Gold Intake</span>
                     </div>
                     <div class="jd-og-card-body">
                         <div class="row g-3">
@@ -79,11 +79,11 @@
                                 {{ form.metal_type }}
                             </div>
                             <div class="col-md-6 col-12">
-                                <label class="jd-og-field-label">Scrap Category</label>
+                                <label class="jd-og-field-label">Gold / Silver Type</label>
                                 {{ form.old_gold_type }}
                             </div>
                             <div class="col-12">
-                                <label class="jd-og-field-label">Jewellery Physical Description <span class="text-danger">*</span></label>
+                                <label class="jd-og-field-label">Old Item Description <span class="text-danger">*</span></label>
                                 {{ form.item_description }}
                                 <small class="text-muted d-block mt-1">e.g. Broken 22K bangles, melted lump, cut pieces</small>
                                 {% if form.item_description.errors %}
@@ -122,13 +122,13 @@
                                 {{ form.applicable_rate }}
                             </div>
                             <div class="col-md-4 col-12">
-                                <label class="jd-og-field-label">Melting Wastage %</label>
+                                <label class="jd-og-field-label">Melting Loss %</label>
                                 {{ form.deduction_percent }}
-                                <small class="text-muted d-block mt-1">Melting / dross deduction</small>
+                                <small class="text-muted d-block mt-1">Melting deduction percentage</small>
                             </div>
 
                             <div class="col-12">
-                                <label class="jd-og-field-label">Appraisal Remarks / Testing Notes</label>
+                                <label class="jd-og-field-label">Notes / Remarks</label>
                                 {{ form.notes }}
                             </div>
                         </div>
@@ -140,14 +140,14 @@
                     <div class="jd-og-card-header">
                         <h2>
                             <i class="bi bi-wallet2 text-warning"></i>
-                            3. Customer Payout Disbursement
+                            3. Customer Payment Details
                         </h2>
-                        <span class="badge bg-info bg-opacity-25 text-info border border-info border-opacity-25">Cashier Outflow</span>
+                        <span class="badge bg-info bg-opacity-25 text-info border border-info border-opacity-25">Payment Out</span>
                     </div>
                     <div class="jd-og-card-body">
                         <div class="row g-3">
                             <div class="col-md-6 col-12">
-                                <label class="jd-og-field-label">Payout Method <span class="text-danger">*</span></label>
+                                <label class="jd-og-field-label">Payment Method <span class="text-danger">*</span></label>
                                 {{ form.payment_method }}
                                 {% if form.payment_method.errors %}
                                 <div class="text-danger small mt-1">{{ form.payment_method.errors.0 }}</div>
@@ -172,13 +172,13 @@
             <div class="jd-og-col-right">
                 <div class="jd-og-voucher-card">
                     <div class="jd-og-voucher-title">
-                        <span><i class="bi bi-cash-stack text-warning me-2"></i>Buyback Payout</span>
+                        <span><i class="bi bi-cash-stack text-warning me-2"></i>Old Gold Payout</span>
                         <span class="badge bg-warning text-dark font-monospace" id="live_purity_badge">22K</span>
                     </div>
 
                     <div class="jd-og-calc-list">
                         <div class="jd-og-calc-row">
-                            <span class="text-muted">Gross Scrap Weight:</span>
+                            <span class="text-muted">Gross Weight:</span>
                             <strong id="calc_gross_wt">0.000 g</strong>
                         </div>
                         <div class="jd-og-calc-row text-danger">
@@ -198,11 +198,11 @@
                             <span id="calc_purity_factor">0.916667 (91.67%)</span>
                         </div>
                         <div class="jd-og-calc-row">
-                            <span class="text-muted">Effective Scrap Rate:</span>
+                            <span class="text-muted">Rate after Purity:</span>
                             <strong id="calc_effective_rate">₹0.00 /g</strong>
                         </div>
                         <div class="jd-og-calc-row">
-                            <span class="text-muted">Gross Metal Valuation:</span>
+                            <span class="text-muted">Total Metal Value:</span>
                             <strong id="calc_gross_val">₹0.00</strong>
                         </div>
                         <div class="jd-og-calc-row text-danger">
@@ -213,16 +213,16 @@
 
                     <!-- Final Payout Box -->
                     <div class="jd-og-final-box my-3">
-                        <div class="jd-og-final-label">Final Payout to Customer</div>
+                        <div class="jd-og-final-label">Final Amount to Pay Customer</div>
                         <div class="jd-og-final-val text-warning" id="calc_final_buyback">₹0.00</div>
                     </div>
 
                     <!-- Submit Button -->
                     <button type="submit" class="jd-btn-gold w-100 py-3 justify-content-center fs-6">
-                        <i class="bi bi-cash-coin me-1"></i> Disburse Payout &amp; Save Voucher
+                        <i class="bi bi-cash-coin me-1"></i> Save Buyback &amp; Pay Customer
                     </button>
                     <a href="{% url 'old_gold_list' %}" class="btn btn-link text-muted w-100 mt-2 text-decoration-none small">
-                        Cancel and return to ledger
+                        Cancel and return to list
                     </a>
                 </div>
             </div>

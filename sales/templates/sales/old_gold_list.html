@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Old Gold Bullion & Scrap Register — JewelDesk Atelier{% endblock %}
+{% block title %}Old Gold Transactions — JewelDesk{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/sales_bullion.css' %}?v={% now "U" %}" rel="stylesheet">
@@ -13,8 +13,8 @@
     <!-- 1. Header & Quick Actions -->
     <div class="jd-sb-header">
         <div class="jd-sb-title-wrap">
-            <h1><i class="bi bi-coin text-warning me-2"></i>Old Gold Bullion &amp; Scrap Register</h1>
-            <p class="jd-sb-subtitle">Vault intake ledger for customer scrap gold exchanges and outright buyback payouts</p>
+            <h1><i class="bi bi-coin text-warning me-2"></i>Old Gold Transactions</h1>
+            <p class="jd-sb-subtitle">Record of customer old gold exchanges and cash buybacks</p>
         </div>
         <div class="jd-sb-header-actions">
             <a href="{% url 'old_gold_exchange_create' %}" class="jd-btn-gold">
@@ -36,7 +36,7 @@
                 </div>
                 <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">Acquired</span>
             </div>
-            <div class="jd-sb-kpi-label">Total Scrap Value</div>
+            <div class="jd-sb-kpi-label">Total Old Gold Value</div>
             <div class="jd-sb-kpi-val text-warning">₹{{ total_val_all|floatformat:2 }}</div>
             <div class="jd-sb-kpi-sub">Total credit &amp; payout value</div>
         </div>
@@ -67,17 +67,17 @@
             <div class="jd-sb-kpi-sub">Customer cash/bank payouts</div>
         </div>
 
-        <!-- Net Scrap Weight in Vault -->
+        <!-- Net Scrap Weight in Stock -->
         <div class="jd-sb-kpi-card">
             <div class="jd-sb-kpi-top">
                 <div class="jd-sb-kpi-icon icon-amber">
                     <i class="bi bi-shield-shaded"></i>
                 </div>
-                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">Vault Metal</span>
+                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">Metal Stock</span>
             </div>
-            <div class="jd-sb-kpi-label">Net Scrap Weight</div>
+            <div class="jd-sb-kpi-label">Net Old Gold Weight</div>
             <div class="jd-sb-kpi-val text-warning">{{ total_net_wt_all|floatformat:3 }} g</div>
-            <div class="jd-sb-kpi-sub">Secured in Showroom Melting Vault</div>
+            <div class="jd-sb-kpi-sub">Total old gold received</div>
         </div>
     </div>
 

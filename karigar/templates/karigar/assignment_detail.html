@@ -1,8 +1,8 @@
 {% extends 'base.html' %}
 
-{% block title %}Work Assignment {{ assignment.assignment_number }} — JewelDesk Atelier{% endblock %}
+{% block title %}Work Assignment {{ assignment.assignment_number }} — JewelDesk{% endblock %}
 
-{% block page_title %}Work Order: {{ assignment.assignment_number }}{% endblock %}
+{% block page_title %}Karigar Job: {{ assignment.assignment_number }}{% endblock %}
 
 {% block page_actions %}
 <div class="d-flex flex-wrap gap-2">
@@ -28,12 +28,12 @@
 
         {% if assignment.status != 'Received' and assignment.status != 'Cancelled' %}
         <a href="{% url 'karigar:assignment_receive' assignment.id %}" class="jd-btn-gold btn-sm">
-            <i class="bi bi-box-arrow-in-down me-1"></i> Receive Work &amp; Verify
+            <i class="bi bi-box-arrow-in-down me-1"></i> Receive Work
         </a>
         <a href="{% url 'karigar:assignment_edit' assignment.id %}" class="jd-btn-ghost btn-sm">
             <i class="bi bi-pencil me-1"></i> Edit
         </a>
-        <form method="post" action="{% url 'karigar:assignment_status_update' assignment.id %}" class="d-inline" onsubmit="return confirm('Cancel this work assignment? Any deducted stock will be safely returned.');">
+        <form method="post" action="{% url 'karigar:assignment_status_update' assignment.id %}" class="d-inline" onsubmit="return confirm('Cancel this job? Any deducted stock will be returned.');">
             {% csrf_token %}
             <input type="hidden" name="status" value="Cancelled">
             <button type="submit" class="jd-btn-danger-ghost btn-sm">
@@ -45,12 +45,12 @@
 
     {% if user_perms.karigar.can_add and assignment.due_charge_amount > 0 and assignment.status != 'Cancelled' %}
     <a href="{% url 'karigar:settlement_create' %}?karigar={{ assignment.karigar.id }}&assignment={{ assignment.id }}" class="btn btn-sm" style="background: rgba(236,200,106,0.15); border: 1px solid rgba(236,200,106,0.4); color: #ECC86A;">
-        <i class="bi bi-cash-stack me-1"></i> Pay Labour Dues
+        <i class="bi bi-cash-stack me-1"></i> Pay Karigar
     </a>
     {% endif %}
 
     <a href="{% url 'karigar:assignment_list' %}" class="jd-btn-ghost btn-sm">
-        <i class="bi bi-arrow-left me-1"></i> All Assignments
+        <i class="bi bi-arrow-left me-1"></i> All Karigar Jobs
     </a>
 </div>
 {% endblock %}
@@ -75,13 +75,13 @@
             <div class="d-flex flex-wrap align-items-center gap-2">
                 <!-- Status Badge -->
                 {% if assignment.status == 'Assigned' %}
-                <span class="jd-stage-pill" style="background: rgba(255,255,255,0.06); color: rgba(250,244,234,0.7); border: 1px solid rgba(255,255,255,0.15);">Assigned (Job Issued)</span>
+                <span class="jd-stage-pill" style="background: rgba(255,255,255,0.06); color: rgba(250,244,234,0.7); border: 1px solid rgba(255,255,255,0.15);">Assigned (Work Given)</span>
                 {% elif assignment.status == 'In Progress' %}
                 <span class="jd-stage-pill" style="background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.35);">In Progress</span>
                 {% elif assignment.status == 'Completed' %}
-                <span class="jd-stage-pill" style="background: rgba(168,85,247,0.15); color: #d8b4fe; border: 1px solid rgba(168,85,247,0.35);">Completed (Ready)</span>
+                <span class="jd-stage-pill" style="background: rgba(168,85,247,0.15); color: #d8b4fe; border: 1px solid rgba(168,85,247,0.35);">Completed (Ready to Receive)</span>
                 {% elif assignment.status == 'Received' %}
-                <span class="jd-stage-pill" style="background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.35);">Received &amp; Stock Verified</span>
+                <span class="jd-stage-pill" style="background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.35);">Received</span>
                 {% elif assignment.status == 'Cancelled' %}
                 <span class="jd-stage-pill" style="background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.35);">Cancelled</span>
                 {% endif %}
@@ -112,13 +112,13 @@
                 </div>
 
                 <div class="p-3 rounded-3 mb-3" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);">
-                    <div class="text-muted small fw-semibold text-uppercase mb-1">Bench Directives &amp; Specifications</div>
+                    <div class="text-muted small fw-semibold text-uppercase mb-1">Instructions &amp; Specifications</div>
                     <div class="text-white fs-6" style="white-space: pre-line; line-height: 1.6;">{{ assignment.description }}</div>
                 </div>
 
                 {% if assignment.reference_image %}
                 <div class="mb-4 text-center p-3 rounded-3" style="background: rgba(0,0,0,0.3); border: 1px dashed rgba(236,200,106,0.25);">
-                    <span class="text-gold small fw-bold text-uppercase d-block mb-2">Design CAD Sketch / Photo Reference</span>
+                    <span class="text-gold small fw-bold text-uppercase d-block mb-2">Design Photo / Reference Image</span>
                     <a href="{{ assignment.reference_image.url }}" target="_blank">
                         <img src="{{ assignment.reference_image.url }}" alt="Design Reference" class="img-fluid rounded-3 shadow" style="max-height: 240px; border: 1px solid rgba(236,200,106,0.25);">
                     </a>
@@ -128,13 +128,13 @@
                 <div class="row g-3">
                     <div class="col-md-4">
                         <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06);">
-                            <span class="text-muted small d-block">Metal Alloy &amp; Purity</span>
+                            <span class="text-muted small d-block">Metal &amp; Purity</span>
                             <span class="text-gold fw-bold">{{ assignment.metal_type }} ({{ assignment.purity }})</span>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06);">
-                            <span class="text-muted small d-block">Target Patron</span>
+                            <span class="text-muted small d-block">Customer</span>
                             {% if assignment.customer %}
                             <a href="{% url 'customer_detail' assignment.customer.id %}" class="fw-bold text-white text-decoration-none">
                                 {{ assignment.customer.name }}
@@ -147,7 +147,7 @@
                     </div>
                     <div class="col-md-4">
                         <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06);">
-                            <span class="text-muted small d-block">Custom Order Docket</span>
+                            <span class="text-muted small d-block">Custom Order</span>
                             {% if assignment.custom_order %}
                             <a href="{% url 'custom_orders:custom_order_detail' assignment.custom_order.id %}" class="text-gold fw-bold font-monospace text-decoration-none">
                                 #{{ assignment.custom_order.order_number }}
@@ -163,7 +163,7 @@
             <!-- Material / Weight Accountability -->
             <div class="jd-card p-4 mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
-                    <span class="text-gold fw-bold"><i class="bi bi-scale me-1"></i> Material &amp; Weight Accountability</span>
+                    <span class="text-gold fw-bold"><i class="bi bi-scale me-1"></i> Metal &amp; Weight Details</span>
                     <span class="jd-badge" style="background: rgba(236,200,106,0.15); color: #ECC86A;">Issued &rarr; Received &rarr; Wastage</span>
                 </div>
 
@@ -195,7 +195,7 @@
                     <div class="col-sm-6 col-md-3">
                         <div class="p-3 rounded-3" style="background: {% if assignment.has_excess_wastage %}rgba(239, 68, 68, 0.12){% else %}rgba(16, 185, 129, 0.12){% endif %}; border: 1px solid {% if assignment.has_excess_wastage %}rgba(239, 68, 68, 0.4){% else %}rgba(16, 185, 129, 0.4){% endif %};">
                             <span class="small fw-semibold text-uppercase d-block {% if assignment.has_excess_wastage %}text-danger{% else %}text-success{% endif %}">
-                                Loss / Difference
+                                Loss / Wastage
                             </span>
                             <span class="fs-4 fw-bold font-monospace {% if assignment.has_excess_wastage %}text-danger{% else %}text-success{% endif %}">
                                 {{ assignment.weight_difference|floatformat:3 }} g
@@ -212,50 +212,50 @@
                     <table class="jd-table">
                         <thead>
                             <tr>
-                                <th>Accountability Metric</th>
-                                <th>Formula / Basis</th>
+                                <th>Weight Metric</th>
+                                <th>Details</th>
                                 <th class="text-end pe-3">Weight</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td>Gross Precious Metal Issued</td>
-                                <td class="text-muted small">Raw metal or scrap provided to artisan</td>
+                                <td>Gross Metal Issued</td>
+                                <td class="text-muted small">Raw metal or scrap given to karigar</td>
                                 <td class="text-end pe-3 font-monospace fw-semibold text-white">{{ assignment.gross_weight_issued|floatformat:3 }} g</td>
                             </tr>
                             <tr>
-                                <td>Stones / Findings Issued</td>
-                                <td class="text-muted small">Weight of non-metal stones or findings</td>
+                                <td>Stone / Other Weight Issued</td>
+                                <td class="text-muted small">Weight of stones or other material</td>
                                 <td class="text-end pe-3 font-monospace text-muted">- {{ assignment.stone_weight_issued|floatformat:3 }} g</td>
                             </tr>
                             <tr style="background: rgba(236,200,106,0.06);">
-                                <td class="fw-bold text-gold">Net Precious Metal Issued</td>
+                                <td class="fw-bold text-gold">Net Metal Issued</td>
                                 <td class="text-muted small">Gross Issued &minus; Stone Issued</td>
                                 <td class="text-end pe-3 font-monospace fw-bold text-gold">{{ assignment.net_weight_issued|floatformat:3 }} g</td>
                             </tr>
                             <tr>
-                                <td>Finished Piece Net Received</td>
+                                <td>Finished Net Weight Received</td>
                                 <td class="text-muted small">Gross Received ({{ assignment.gross_weight_received|floatformat:3 }}g) &minus; Stone ({{ assignment.stone_weight_received|floatformat:3 }}g)</td>
                                 <td class="text-end pe-3 font-monospace fw-semibold text-success">{{ assignment.net_weight_received|floatformat:3 }} g</td>
                             </tr>
                             <tr>
-                                <td>Scrap / Filings Returned Back</td>
-                                <td class="text-muted small">Precious metal scrap returned by artisan</td>
+                                <td>Scrap Returned</td>
+                                <td class="text-muted small">Metal scrap returned by karigar</td>
                                 <td class="text-end pe-3 font-monospace fw-semibold text-white">{{ assignment.scrap_weight_returned|floatformat:3 }} g</td>
                             </tr>
                             <tr>
-                                <td>Actual Manufacturing Loss</td>
+                                <td>Actual Wastage Loss</td>
                                 <td class="text-muted small">Net Issued &minus; (Net Received + Scrap)</td>
                                 <td class="text-end pe-3 font-monospace fw-semibold text-danger">{{ assignment.actual_wastage_weight|floatformat:3 }} g</td>
                             </tr>
                             <tr>
-                                <td>Allowed Wastage Allowance</td>
+                                <td>Allowed Wastage</td>
                                 <td class="text-muted small">{{ assignment.wastage_allowed_percent }}% of Net Issued ({{ assignment.net_weight_issued|floatformat:3 }}g)</td>
                                 <td class="text-end pe-3 font-monospace text-light">{{ assignment.wastage_weight_allowed|floatformat:3 }} g</td>
                             </tr>
                             <tr style="background: {% if assignment.has_excess_wastage %}rgba(239, 68, 68, 0.1){% else %}rgba(16, 185, 129, 0.1){% endif %};">
-                                <td class="fw-bold {% if assignment.has_excess_wastage %}text-danger{% else %}text-success{% endif %}">Accountability Variance</td>
-                                <td class="text-muted small">Actual Loss &minus; Allowed Wastage (+ve = Loss, -ve = Recovery)</td>
+                                <td class="fw-bold {% if assignment.has_excess_wastage %}text-danger{% else %}text-success{% endif %}">Wastage Difference</td>
+                                <td class="text-muted small">Actual Loss &minus; Allowed Wastage</td>
                                 <td class="text-end pe-3 font-monospace fw-bold {% if assignment.has_excess_wastage %}text-danger{% else %}text-success{% endif %}">
                                     {{ assignment.weight_difference|floatformat:3 }} g
                                 </td>
@@ -268,7 +268,7 @@
             <!-- Labour Charges Breakdown -->
             <div class="jd-card p-4">
                 <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
-                    <span class="text-gold fw-bold"><i class="bi bi-cash-coin me-1"></i> Making / Labour Charges Breakdown</span>
+                    <span class="text-gold fw-bold"><i class="bi bi-cash-coin me-1"></i> Labour &amp; Making Charges</span>
                     <span class="jd-tag">{{ assignment.making_charge_type }}</span>
                 </div>
                 <div class="row g-4 align-items-center">
@@ -288,18 +288,18 @@
                         {% if assignment.other_charges > 0 %}
                         <div class="d-flex justify-content-between py-2">
                             <span class="text-muted small">Other Charges:</span>
-                            <span class="text-white font-monospace">₹{{ assignment.other_charges|floatformat:2 }} <small class="text-muted">({{ assignment.other_charges_description|default:"Approved charges" }})</small></span>
+                            <span class="text-white font-monospace">₹{{ assignment.other_charges|floatformat:2 }} <small class="text-muted">({{ assignment.other_charges_description|default:"Charges" }})</small></span>
                         </div>
                         {% endif %}
                     </div>
                     <div class="col-md-6">
                         <div class="p-4 rounded-3 text-center" style="background: rgba(236,200,106,0.06); border: 1px solid rgba(236,200,106,0.25);">
-                            <span class="text-gold small fw-bold text-uppercase d-block">Total Karigar Charge</span>
+                            <span class="text-gold small fw-bold text-uppercase d-block">Total Labour Charges</span>
                             <span class="fs-2 fw-bold font-monospace text-gold">₹{{ assignment.total_charge|floatformat:2 }}</span>
 
                             <div class="d-flex justify-content-around mt-3 pt-2 border-top small" style="border-color: rgba(236,200,106,0.15) !important;">
                                 <div>
-                                    <span class="text-muted d-block">Settled</span>
+                                    <span class="text-muted d-block">Paid</span>
                                     <span class="fw-bold font-monospace text-success">₹{{ assignment.paid_amount|floatformat:2 }}</span>
                                 </div>
                                 <div>
@@ -320,7 +320,7 @@
             <!-- Schedule & Timeline -->
             <div class="jd-card p-4 mb-4">
                 <div class="border-bottom pb-2 mb-3" style="border-color: rgba(236,200,106,0.12) !important;">
-                    <h6 class="text-gold fw-bold mb-0"><i class="bi bi-clock-history me-1"></i> Schedule &amp; Deadlines</h6>
+                    <h6 class="text-gold fw-bold mb-0"><i class="bi bi-clock-history me-1"></i> Dates &amp; Schedule</h6>
                 </div>
                 <div class="d-flex flex-column gap-2 small">
                     <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
@@ -341,7 +341,7 @@
                     {% endif %}
                     {% if assignment.received_date %}
                     <div class="d-flex justify-content-between py-1">
-                        <span class="text-muted">Received into Stock:</span>
+                        <span class="text-muted">Received Date:</span>
                         <span class="text-success font-monospace fw-bold">{{ assignment.received_date|date:"d M Y" }}</span>
                     </div>
                     {% endif %}
@@ -351,38 +351,38 @@
             <!-- Inventory Movement Audit -->
             <div class="jd-card p-4 mb-4">
                 <div class="border-bottom pb-2 mb-3" style="border-color: rgba(236,200,106,0.12) !important;">
-                    <h6 class="text-gold fw-bold mb-0"><i class="bi bi-boxes me-1"></i> Inventory Movement Audit</h6>
+                    <h6 class="text-gold fw-bold mb-0"><i class="bi bi-boxes me-1"></i> Stock Movement</h6>
                 </div>
                 {% if assignment.inventory_item %}
                 <div class="mb-3">
-                    <span class="text-muted small d-block">Showroom Piece</span>
+                    <span class="text-muted small d-block">Stock Item</span>
                     <a href="{% url 'inventory_detail' assignment.inventory_item.id %}" class="fw-bold text-white text-decoration-none">
                         {{ assignment.inventory_item.item_code }} — {{ assignment.inventory_item.name }}
                     </a>
                 </div>
 
                 <div class="p-2 rounded-3 mb-2 small" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);">
-                    <div class="fw-semibold text-gold mb-1"><i class="bi bi-box-arrow-up-right me-1 text-danger"></i> Issue Movement:</div>
+                    <div class="fw-semibold text-gold mb-1"><i class="bi bi-box-arrow-up-right me-1 text-danger"></i> Issued Stock:</div>
                     {% if assignment.stock_movement_issued %}
                     <div class="text-muted font-monospace">Movement #{{ assignment.stock_movement_issued.id }} &bull; Qty: -1</div>
                     <div class="text-light small">{{ assignment.stock_movement_issued.reason }}</div>
                     {% else %}
-                    <div class="text-muted">No stock deduction performed at issue.</div>
+                    <div class="text-muted">No stock deduction at issue.</div>
                     {% endif %}
                 </div>
 
                 <div class="p-2 rounded-3 small" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);">
-                    <div class="fw-semibold text-gold mb-1"><i class="bi bi-box-arrow-in-down-left me-1 text-success"></i> Receipt Movement:</div>
+                    <div class="fw-semibold text-gold mb-1"><i class="bi bi-box-arrow-in-down-left me-1 text-success"></i> Received Stock:</div>
                     {% if assignment.stock_movement_received %}
                     <div class="text-muted font-monospace">Movement #{{ assignment.stock_movement_received.id }} &bull; Qty: +1</div>
                     <div class="text-light small">{{ assignment.stock_movement_received.reason }}</div>
                     {% else %}
-                    <div class="text-muted">Not yet received into showroom stock.</div>
+                    <div class="text-muted">Not yet received into stock.</div>
                     {% endif %}
                 </div>
                 {% else %}
                 <p class="text-muted small mb-0">
-                    This work was issued for raw metal custom crafting. No pre-existing showroom piece was deducted.
+                    This job used raw metal. No existing showroom stock was deducted.
                 </p>
                 {% endif %}
             </div>
@@ -390,7 +390,7 @@
             <!-- Personnel & Audit Trail -->
             <div class="jd-card p-4 mb-4">
                 <div class="border-bottom pb-2 mb-3" style="border-color: rgba(236,200,106,0.12) !important;">
-                    <h6 class="text-gold fw-bold mb-0"><i class="bi bi-shield-check me-1"></i> Audit Trail</h6>
+                    <h6 class="text-gold fw-bold mb-0"><i class="bi bi-shield-check me-1"></i> History &amp; User Details</h6>
                 </div>
                 <div class="d-flex flex-column gap-2 small">
                     <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
@@ -418,7 +418,7 @@
             {% if settlements %}
             <div class="jd-card p-4">
                 <div class="border-bottom pb-2 mb-3" style="border-color: rgba(236,200,106,0.12) !important;">
-                    <h6 class="text-gold fw-bold mb-0"><i class="bi bi-receipt me-1"></i> Linked Payments</h6>
+                    <h6 class="text-gold fw-bold mb-0"><i class="bi bi-receipt me-1"></i> Karigar Payments</h6>
                 </div>
                 <div class="d-flex flex-column gap-2">
                     {% for st in settlements %}

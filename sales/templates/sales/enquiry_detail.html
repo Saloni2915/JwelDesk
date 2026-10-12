@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Enquiry #{{ enquiry.id }} — JewelDesk Atelier{% endblock %}
+{% block title %}Enquiry #{{ enquiry.id }} — JewelDesk{% endblock %}
 
 {% block page_title %}Enquiry #{{ enquiry.id }}{% endblock %}
 
@@ -24,9 +24,9 @@
     <div class="jd-header">
         <div>
             <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="jd-badge"><i class="bi bi-chat-quote me-1"></i> Patron Lead Docket</span>
+                <span class="jd-badge"><i class="bi bi-chat-quote me-1"></i> Customer Enquiry</span>
                 {% if enquiry.status == 'New' %}
-                <span class="jd-stage-pill" style="background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.35);">New Lead</span>
+                <span class="jd-stage-pill" style="background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.35);">New</span>
                 {% elif enquiry.status == 'Contacted' %}
                 <span class="jd-stage-pill" style="background: rgba(245,158,11,0.15); color: #fcd34d; border: 1px solid rgba(245,158,11,0.35);">Contacted</span>
                 {% elif enquiry.status == 'Interested' %}
@@ -53,7 +53,7 @@
             <div class="jd-card p-4">
                 <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4" style="border-color: rgba(236,200,106,0.12) !important;">
                     <h5 class="font-serif fw-bold text-white mb-0" style="font-family: 'Cinzel', serif;">
-                        <i class="bi bi-info-circle text-gold me-2"></i> Enquiry Dossier
+                        <i class="bi bi-info-circle text-gold me-2"></i> Enquiry Details
                     </h5>
                     {% if enquiry.category %}
                     <span class="jd-tag"><i class="bi bi-tag me-1"></i>{{ enquiry.category.name }}</span>
@@ -63,7 +63,7 @@
                 <div class="row g-3">
                     <div class="col-sm-6">
                         <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06);">
-                            <span class="text-muted small d-block">Patron Customer</span>
+                            <span class="text-muted small d-block">Customer</span>
                             <a href="{% url 'customer_detail' enquiry.customer.id %}" class="fs-6 fw-bold text-white text-decoration-none mt-1 d-block">
                                 {{ enquiry.customer.name }}
                             </a>
@@ -71,7 +71,7 @@
                     </div>
                     <div class="col-sm-6">
                         <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06);">
-                            <span class="text-muted small d-block">Mobile Contact</span>
+                            <span class="text-muted small d-block">Mobile Number</span>
                             <div class="d-flex align-items-center gap-2 mt-1">
                                 <span class="fs-6 font-monospace text-gold fw-semibold">{{ enquiry.customer.mobile }}</span>
                                 <a href="https://wa.me/91{{ enquiry.customer.mobile|cut:' ' }}" target="_blank" class="text-success small" title="WhatsApp Customer">
@@ -83,13 +83,13 @@
 
                     <div class="col-sm-6">
                         <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06);">
-                            <span class="text-muted small d-block">Interested Item / Jewellery Piece</span>
+                            <span class="text-muted small d-block">Interested Item</span>
                             <span class="fs-6 fw-bold text-white mt-1 d-block">{{ enquiry.interested_item }}</span>
                         </div>
                     </div>
                     <div class="col-sm-6">
                         <div class="p-3 rounded-3" style="background: rgba(236,200,106,0.06); border: 1px solid rgba(236,200,106,0.25);">
-                            <span class="text-gold small d-block">Target Budget</span>
+                            <span class="text-gold small d-block">Budget</span>
                             <span class="fs-5 fw-bold font-monospace text-gold mt-1 d-block">
                                 {% if enquiry.budget %}₹{{ enquiry.budget }}{% else %}<span class="text-muted fs-6">Not specified</span>{% endif %}
                             </span>
@@ -98,7 +98,7 @@
 
                     <div class="col-sm-6">
                         <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06);">
-                            <span class="text-muted small d-block">Scheduled Follow-up Date</span>
+                            <span class="text-muted small d-block">Follow-up Date</span>
                             <div class="fs-6 text-white mt-1">
                                 {% if enquiry.next_followup_date %}
                                 <i class="bi bi-calendar-check me-1 text-gold"></i> {{ enquiry.next_followup_date|date:"M d, Y" }}
@@ -110,14 +110,14 @@
                     </div>
                     <div class="col-sm-6">
                         <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06);">
-                            <span class="text-muted small d-block">Created Audit Timestamp</span>
+                            <span class="text-muted small d-block">Date Created</span>
                             <span class="fs-6 text-light font-monospace mt-1 d-block">{{ enquiry.created_at|date:"M d, Y, h:i A" }}</span>
                         </div>
                     </div>
 
                     <div class="col-12">
                         <div class="p-3 rounded-3" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);">
-                            <span class="text-gold small fw-bold text-uppercase d-block mb-1">Customer Requirements &amp; Notes</span>
+                            <span class="text-gold small fw-bold text-uppercase d-block mb-1">Notes &amp; Details</span>
                             <div class="text-light" style="line-height: 1.6;">{{ enquiry.notes|default:"No special notes added."|linebreaksbr }}</div>
                         </div>
                     </div>
@@ -129,21 +129,21 @@
         <div class="col-lg-4">
             <div class="jd-card p-4">
                 <div class="border-bottom pb-2 mb-3" style="border-color: rgba(236,200,106,0.12) !important;">
-                    <h6 class="text-gold fw-bold mb-0"><i class="bi bi-lightning-charge me-1"></i> Patron Engagement Actions</h6>
+                    <h6 class="text-gold fw-bold mb-0"><i class="bi bi-lightning-charge me-1"></i> Actions</h6>
                 </div>
                 <div class="d-flex flex-column gap-2">
                     <a href="{% url 'sale_add' %}?customer={{ enquiry.customer.id }}" class="jd-btn-gold justify-content-center">
-                        <i class="bi bi-cart-plus me-1"></i> Convert into Sale Invoice
+                        <i class="bi bi-cart-plus me-1"></i> Create Sale Bill
                     </a>
                     <a href="https://wa.me/91{{ enquiry.customer.mobile|cut:' ' }}?text=Hello%20{{ enquiry.customer.name|urlencode }},%20following%20up%20on%20your%20enquiry%20regarding%20{{ enquiry.interested_item|urlencode }}..."
                        target="_blank" class="btn btn-sm text-center" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #6ee7b7;">
-                        <i class="bi bi-whatsapp me-1"></i> Send WhatsApp Follow-up
+                        <i class="bi bi-whatsapp me-1"></i> Send WhatsApp Message
                     </a>
                     <a href="tel:{{ enquiry.customer.mobile }}" class="jd-btn-ghost text-center">
-                        <i class="bi bi-telephone me-1"></i> Call Customer Directly
+                        <i class="bi bi-telephone me-1"></i> Call Customer
                     </a>
                     <a href="{% url 'enquiry_edit' enquiry.id %}" class="jd-btn-ghost text-center">
-                        <i class="bi bi-pencil me-1"></i> Update Lead Status / Schedule
+                        <i class="bi bi-pencil me-1"></i> Edit Enquiry
                     </a>
                 </div>
             </div>

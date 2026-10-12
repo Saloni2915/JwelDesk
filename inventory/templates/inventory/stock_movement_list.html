@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Stock Movements & Audit Trail — JewelDesk Atelier{% endblock %}
+{% block title %}Stock History — JewelDesk{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/inventory_atelier.css' %}?v={% now "U" %}" rel="stylesheet">
@@ -13,15 +13,15 @@
     <!-- 1. Header & Actions -->
     <div class="jd-inv-header">
         <div class="jd-inv-title-wrap">
-            <h1><i class="bi bi-arrow-left-right text-warning me-2"></i>Stock Movements &amp; Audit Trail</h1>
-            <p class="jd-inv-subtitle">Immutable log of all showroom additions, counter sales deductions, and physical vault adjustments</p>
+            <h1><i class="bi bi-arrow-left-right text-warning me-2"></i>Stock History</h1>
+            <p class="jd-inv-subtitle">Complete history of stock added, sold, and adjusted</p>
         </div>
         <div class="jd-inv-header-actions">
             <a href="{% url 'inventory_list' %}" class="jd-btn-gold">
-                <i class="bi bi-gem"></i> Inventory Register
+                <i class="bi bi-gem"></i> All Stock Items
             </a>
             <a href="{% url 'inventory_add' %}" class="jd-btn-ghost">
-                <i class="bi bi-plus-circle"></i> + Add Jewellery
+                <i class="bi bi-plus-circle"></i> + Add Stock Item
             </a>
         </div>
     </div>
@@ -36,9 +36,9 @@
                     </div>
                     <span class="badge bg-secondary bg-opacity-25 text-light">Filtered</span>
                 </div>
-                <div class="jd-inv-kpi-label">Audit Movements</div>
+                <div class="jd-inv-kpi-label">Total Movements</div>
                 <div class="jd-inv-kpi-val">{{ totals.movement_count }}</div>
-                <div class="jd-inv-kpi-sub">Total recorded events</div>
+                <div class="jd-inv-kpi-sub">Total stock records</div>
             </div>
         </div>
 
@@ -48,11 +48,11 @@
                     <div class="jd-inv-kpi-icon icon-green">
                         <i class="bi bi-box-arrow-in-down"></i>
                     </div>
-                    <span class="badge bg-success bg-opacity-25 text-success">Vault In</span>
+                    <span class="badge bg-success bg-opacity-25 text-success">Stock Added</span>
                 </div>
-                <div class="jd-inv-kpi-label">Stock Inward</div>
+                <div class="jd-inv-kpi-label">Total Added</div>
                 <div class="jd-inv-kpi-val text-success">+{{ totals.stock_in }}</div>
-                <div class="jd-inv-kpi-sub">Pieces added to vault</div>
+                <div class="jd-inv-kpi-sub">Items added to stock</div>
             </div>
         </div>
 
@@ -62,11 +62,11 @@
                     <div class="jd-inv-kpi-icon icon-amber">
                         <i class="bi bi-box-arrow-up"></i>
                     </div>
-                    <span class="badge bg-danger bg-opacity-25 text-danger">Vault Out</span>
+                    <span class="badge bg-danger bg-opacity-25 text-danger">Stock Reduced</span>
                 </div>
-                <div class="jd-inv-kpi-label">Stock Outward</div>
+                <div class="jd-inv-kpi-label">Total Reduced</div>
                 <div class="jd-inv-kpi-val text-danger">{{ totals.stock_out }}</div>
-                <div class="jd-inv-kpi-sub">Pieces sold, damaged, or transferred</div>
+                <div class="jd-inv-kpi-sub">Items sold or removed</div>
             </div>
         </div>
     </div>
@@ -108,7 +108,7 @@
             </div>
             {% if is_item_filter %}
             <div class="mt-2 pt-2 border-top border-secondary border-opacity-25 small text-warning">
-                <i class="bi bi-funnel-fill me-1"></i> Filtered by single inventory piece
+                <i class="bi bi-funnel-fill me-1"></i> Filtered by single item
             </div>
             {% endif %}
         </form>
@@ -119,10 +119,10 @@
         <div class="jd-inv-table-header">
             <h2>
                 <i class="bi bi-journal-text text-warning"></i>
-                Stock Audit Ledger
+                Stock History List
             </h2>
             <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 font-monospace">
-                {{ page_obj.paginator.count }} Recorded Events
+                {{ page_obj.paginator.count }} Records
             </span>
         </div>
         <div class="jd-inv-table-scroll">
@@ -130,14 +130,14 @@
                 <thead>
                     <tr>
                         <th>Date &amp; Time</th>
-                        <th>Tag / Piece ID</th>
-                        <th>Ornament Name</th>
+                        <th>Tag / Item Code</th>
+                        <th>Item Name</th>
                         <th>Movement Type</th>
                         <th class="text-end">Qty Change</th>
                         <th class="text-end">Before &rarr; After</th>
                         <th>Reason</th>
                         <th>Notes</th>
-                        <th class="text-end pe-3">Audited By</th>
+                        <th class="text-end pe-3">Done By</th>
                     </tr>
                 </thead>
                 <tbody>

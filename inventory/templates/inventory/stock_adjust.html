@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Adjust Stock: {{ item.name }} — JewelDesk Atelier{% endblock %}
+{% block title %}Adjust Stock: {{ item.name }} — JewelDesk{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/inventory_atelier.css' %}?v={% now "U" %}" rel="stylesheet">
@@ -13,14 +13,14 @@
     <!-- 1. Header & Actions -->
     <div class="jd-inv-header">
         <div class="jd-inv-title-wrap">
-            <h1><i class="bi bi-arrow-left-right text-warning me-2"></i>Adjust Vault Stock: {{ item.name }}</h1>
+            <h1><i class="bi bi-arrow-left-right text-warning me-2"></i>Update Stock Count: {{ item.name }}</h1>
             <p class="jd-inv-subtitle">
                 Tag: <strong>{{ item.tag_number|default:item.item_code }}</strong> &middot; Current Available: <strong class="text-warning">{{ item.quantity }} piece(s)</strong>
             </p>
         </div>
         <div class="jd-inv-header-actions">
             <a href="{% url 'inventory_detail' item.id %}" class="jd-btn-ghost">
-                <i class="bi bi-arrow-left"></i> Back to Piece Detail
+                <i class="bi bi-arrow-left"></i> Back to Item Details
             </a>
             <a href="{% url 'stock_movement_list' %}?item={{ item.id }}" class="jd-btn-ghost">
                 <i class="bi bi-clock-history"></i> Full Item History
@@ -37,7 +37,7 @@
                 <div class="jd-form-card-header">
                     <h2>
                         <i class="bi bi-sliders text-warning"></i>
-                        Record Physical Stock Adjustment
+                        Update Stock Count
                     </h2>
                 </div>
                 <div class="jd-form-card-body">
@@ -70,7 +70,7 @@
                                 <div class="jd-field-help">{{ form.quantity.help_text }}</div>
                             </div>
                             <div>
-                                <label class="jd-field-label">Physical Counted Stock (Audit)</label>
+                                <label class="jd-field-label">Actual Counted Stock</label>
                                 {{ form.new_stock }}
                                 {% if form.new_stock.errors %}
                                 <div class="text-danger small mt-1">{{ form.new_stock.errors.0 }}</div>
@@ -89,7 +89,7 @@
                         </div>
 
                         <div class="mb-4">
-                            <label class="jd-field-label">Internal Audit Notes</label>
+                            <label class="jd-field-label">Notes</label>
                             {{ form.notes }}
                             {% if form.notes.errors %}
                             <div class="text-danger small mt-1">{{ form.notes.errors.0 }}</div>
@@ -98,12 +98,12 @@
 
                         <div class="alert alert-warning py-2 mb-4 bg-warning bg-opacity-10 border-warning border-opacity-25 text-light small">
                             <i class="bi bi-shield-check text-warning me-1"></i>
-                            Stock cannot go below 0. Every adjustment is cryptographically timestamped with user credentials (<strong>{{ request.user.username }}</strong>) and permanently logged.
+                            Stock cannot go below 0. Every stock update is recorded with user (<strong>{{ request.user.username }}</strong>) and saved in stock history.
                         </div>
 
                         <div class="d-flex gap-2">
                             <button type="submit" class="jd-btn-gold flex-grow-1 py-2 fs-6">
-                                <i class="bi bi-check-circle-fill"></i> Apply Stock Adjustment
+                                <i class="bi bi-check-circle-fill"></i> Save Stock Update
                             </button>
                             <a href="{% url 'inventory_detail' item.id %}" class="jd-btn-ghost py-2">
                                 Cancel
@@ -128,7 +128,7 @@
                 <div class="jd-detail-card-body">
                     <div class="jd-spec-list">
                         <div class="jd-spec-item">
-                            <div class="jd-spec-label">Piece ID / Code</div>
+                            <div class="jd-spec-label">Item Code</div>
                             <div class="jd-spec-val font-monospace">{{ item.item_code }}</div>
                         </div>
                         <div class="jd-spec-item">
@@ -160,7 +160,7 @@
                 <div class="jd-detail-card-header">
                     <h2>
                         <i class="bi bi-clock-history text-warning"></i>
-                        Recent Stock Events
+                        Recent Stock History
                     </h2>
                     {% if movement_count %}
                     <a href="{% url 'stock_movement_list' %}?item={{ item.id }}" class="jd-btn-ghost py-1 px-2" style="font-size: 0.78rem;">

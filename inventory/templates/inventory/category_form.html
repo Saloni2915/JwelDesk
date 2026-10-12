@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{{ page_title|default:"Edit Category" }} — JewelDesk Atelier{% endblock %}
+{% block title %}{{ page_title|default:"Edit Category" }} — JewelDesk{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/inventory_atelier.css' %}?v={% now "U" %}" rel="stylesheet">
@@ -13,7 +13,7 @@
     <div class="jd-inv-header">
         <div class="jd-inv-title-wrap">
             <h1><i class="bi bi-tag text-warning me-2"></i>{{ page_title|default:"Edit Category" }}</h1>
-            <p class="jd-inv-subtitle">Modify collection designation and catalog taxonomy</p>
+            <p class="jd-inv-subtitle">Edit category name and description</p>
         </div>
         <div class="jd-inv-header-actions">
             <a href="{% url 'category_list' %}" class="jd-btn-ghost">
@@ -28,7 +28,7 @@
                 <div class="jd-form-card-header">
                     <h2>
                         <i class="bi bi-pencil-square text-warning"></i>
-                        Category Specifications
+                        Category Details
                     </h2>
                 </div>
                 <div class="jd-form-card-body">
@@ -52,7 +52,7 @@
                         </div>
 
                         <div class="mb-4">
-                            <label class="jd-field-label">Description / Scope</label>
+                            <label class="jd-field-label">Description</label>
                             {{ form.description }}
                             {% if form.description.errors %}
                             <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>

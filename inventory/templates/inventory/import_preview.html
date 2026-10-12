@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Import Validation Report — JewelDesk Atelier{% endblock %}
+{% block title %}Import Preview — JewelDesk{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/inventory_atelier.css' %}?v={% now "U" %}" rel="stylesheet">
@@ -13,7 +13,7 @@
     <!-- 1. Header & Actions -->
     <div class="jd-inv-header">
         <div class="jd-inv-title-wrap">
-            <h1><i class="bi bi-file-earmark-check text-warning me-2"></i>Import Validation Preview</h1>
+            <h1><i class="bi bi-file-earmark-check text-warning me-2"></i>Import Preview</h1>
             <p class="jd-inv-subtitle">
                 File: <strong class="text-light font-monospace">{{ stored_filename }}</strong> &middot;
                 {% if can_import %}
@@ -29,7 +29,7 @@
                 {% csrf_token %}
                 <input type="hidden" name="action" value="confirm">
                 <button type="submit" class="jd-btn-gold">
-                    <i class="bi bi-check-circle-fill"></i> Confirm Import ({{ summary.valid_count }} Pieces)
+                    <i class="bi bi-check-circle-fill"></i> Confirm Import ({{ summary.valid_count }} Items)
                 </button>
             </form>
             {% else %}
@@ -91,7 +91,7 @@
                     <div class="jd-inv-kpi-icon icon-amber"><i class="bi bi-files"></i></div>
                     <span class="badge bg-warning bg-opacity-25 text-warning">Collision</span>
                 </div>
-                <div class="jd-inv-kpi-label">Duplicate Piece IDs</div>
+                <div class="jd-inv-kpi-label">Duplicate Item Codes</div>
                 <div class="jd-inv-kpi-val {% if duplicate_count %}text-warning{% endif %}">{{ duplicate_count }}</div>
             </div>
         </div>
@@ -203,12 +203,12 @@
                         <th>Row</th>
                         <th>Piece ID</th>
                         <th>Design Code</th>
-                        <th>Ornament Name</th>
+                        <th>Item Name</th>
                         <th>Category</th>
                         <th>Metal / Purity</th>
                         <th>Weights (g)</th>
                         <th>Price</th>
-                        <th>Vault Status</th>
+                        <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -259,13 +259,13 @@
     <div class="mt-4 p-3 rounded jd-spec-banner border border-success border-opacity-30 d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div class="small">
             <i class="bi bi-shield-lock-fill text-success me-1"></i>
-            {{ summary.valid_count }} piece(s) will be inserted into the showroom vault in a single atomic ACID transaction.
+            {{ summary.valid_count }} item(s) are ready to be added to your inventory.
         </div>
         <form method="post" class="d-inline m-0">
             {% csrf_token %}
             <input type="hidden" name="action" value="confirm">
             <button type="submit" class="jd-btn-gold px-4 py-2 fs-6">
-                <i class="bi bi-check2-circle"></i> Confirm &amp; Commit {{ summary.valid_count }} Pieces
+                <i class="bi bi-check2-circle"></i> Confirm &amp; Add {{ summary.valid_count }} Items
             </button>
         </form>
     </div>

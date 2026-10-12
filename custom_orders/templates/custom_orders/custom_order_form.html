@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}{% if is_edit %}Edit {{ order.order_number }}{% else %}New Bespoke Order{% endif %} — JewelDesk Atelier{% endblock %}
+{% block title %}{% if is_edit %}Edit {{ order.order_number }}{% else %}New Custom Order{% endif %} — JewelDesk{% endblock %}
 
 {% block page_title %}{{ page_title }}{% endblock %}
 
@@ -9,9 +9,9 @@
     <!-- Header -->
     <div class="jd-header">
         <div>
-            <div class="jd-badge"><i class="bi bi-hammer me-1"></i> Bespoke Atelier Creation</div>
-            <h1 class="jd-title">{% if is_edit %}Edit {{ order.order_number }}{% else %}New Bespoke Order{% endif %}</h1>
-            <p class="jd-subtitle">Configure customer specifications, CAD drawings, metals, and real-time live bullion pricing.</p>
+            <div class="jd-badge"><i class="bi bi-hammer me-1"></i> Custom Order</div>
+            <h1 class="jd-title">{% if is_edit %}Edit {{ order.order_number }}{% else %}New Custom Order{% endif %}</h1>
+            <p class="jd-subtitle">Enter customer requirements, design photos, metal weights, and pricing.</p>
         </div>
         <div>
             <a href="{% if is_edit %}{% url 'custom_orders:custom_order_detail' order.id %}{% else %}{% url 'custom_orders:custom_order_list' %}{% endif %}" class="jd-btn-ghost">
@@ -35,22 +35,22 @@
                     </div>
                     {% endif %}
 
-                    <!-- Section: Patron -->
+                    <!-- Section: Customer -->
                     <div class="mb-5">
                         <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
-                            <span class="text-gold fw-bold"><i class="bi bi-person-circle me-1"></i> Patron Details</span>
+                            <span class="text-gold fw-bold"><i class="bi bi-person-circle me-1"></i> Customer Details</span>
                         </div>
                         <div class="row g-3">
                             <div class="col-md-12">
                                 <label for="{{ form.customer.id_for_label }}" class="form-label text-gold small fw-bold">
-                                    Customer Patron <span class="text-danger">*</span>
+                                    Customer <span class="text-danger">*</span>
                                 </label>
                                 {{ form.customer }}
                                 {% if form.customer.errors %}
                                 <div class="text-danger small mt-1">{{ form.customer.errors.0 }}</div>
                                 {% endif %}
                                 <div class="form-text small text-muted mt-1">
-                                    Patron not in directory yet? <a href="{% url 'customer_add' %}" target="_blank" class="text-gold text-decoration-none"><i class="bi bi-plus"></i> Register New Customer</a>
+                                    Customer not in list? <a href="{% url 'customer_add' %}" target="_blank" class="text-gold text-decoration-none"><i class="bi bi-plus"></i> Add New Customer</a>
                                 </div>
                             </div>
                         </div>
@@ -59,12 +59,12 @@
                     <!-- Section: Design & Reference -->
                     <div class="mb-5">
                         <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
-                            <span class="text-gold fw-bold"><i class="bi bi-gem me-1"></i> Design & CAD Specifications</span>
+                            <span class="text-gold fw-bold"><i class="bi bi-gem me-1"></i> Design &amp; Photos</span>
                         </div>
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label for="{{ form.category.id_for_label }}" class="form-label text-gold small fw-bold">
-                                    Jewellery Type <span class="text-danger">*</span>
+                                    Jewellery Category <span class="text-danger">*</span>
                                 </label>
                                 {{ form.category }}
                                 {% if form.category.errors %}
@@ -73,7 +73,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label for="{{ form.reference_image.id_for_label }}" class="form-label text-gold small fw-bold">
-                                    Reference Photo / CAD Drawing
+                                    Design Photo / Reference Image
                                 </label>
                                 {{ form.reference_image }}
                                 {% if form.reference_image.errors %}
@@ -87,7 +87,7 @@
                             </div>
                             <div class="col-md-12">
                                 <label for="{{ form.design_description.id_for_label }}" class="form-label text-gold small fw-bold">
-                                    Detailed Design Description <span class="text-danger">*</span>
+                                    Design Description <span class="text-danger">*</span>
                                 </label>
                                 {{ form.design_description }}
                                 {% if form.design_description.errors %}
@@ -100,12 +100,12 @@
                     <!-- Section: Metal & Weight -->
                     <div class="mb-5">
                         <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
-                            <span class="text-gold fw-bold"><i class="bi bi-minecart-loaded me-1"></i> Precious Metal & Purity</span>
+                            <span class="text-gold fw-bold"><i class="bi bi-minecart-loaded me-1"></i> Metal &amp; Weight</span>
                         </div>
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label for="{{ form.metal_type.id_for_label }}" class="form-label text-gold small fw-bold">
-                                    Metal Alloy <span class="text-danger">*</span>
+                                    Metal Type <span class="text-danger">*</span>
                                 </label>
                                 {{ form.metal_type }}
                                 {% if form.metal_type.errors %}
@@ -114,7 +114,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label for="{{ form.purity.id_for_label }}" class="form-label text-gold small fw-bold">
-                                    Purity Hallmark <span class="text-danger">*</span>
+                                    Purity <span class="text-danger">*</span>
                                 </label>
                                 {{ form.purity }}
                                 {% if form.purity.errors %}
@@ -145,7 +145,7 @@
                     <!-- Section: Pricing & Schedule -->
                     <div class="mb-4">
                         <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
-                            <span class="text-gold fw-bold"><i class="bi bi-cash-stack me-1"></i> Commercial Terms & Delivery</span>
+                            <span class="text-gold fw-bold"><i class="bi bi-cash-stack me-1"></i> Pricing &amp; Delivery</span>
                         </div>
                         <div class="row g-3">
                             <div class="col-md-6">
@@ -168,11 +168,11 @@
                                 {% if form.estimated_price.errors %}
                                 <div class="text-danger small mt-1">{{ form.estimated_price.errors.0 }}</div>
                                 {% endif %}
-                                <div class="form-text small mt-1 text-muted" id="co-estimate-hint">Inclusive of metal, craftsmanship &amp; 3% GST.</div>
+                                <div class="form-text small mt-1 text-muted" id="co-estimate-hint">Includes metal value, making charges, and 3% GST.</div>
                             </div>
                             <div class="col-md-6">
                                 <label for="{{ form.customer_budget.id_for_label }}" class="form-label text-gold small fw-bold">
-                                    Patron Budget Target (₹)
+                                    Customer Budget (₹)
                                 </label>
                                 {{ form.customer_budget }}
                                 {% if form.customer_budget.errors %}
@@ -181,17 +181,17 @@
                             </div>
                             <div class="col-md-6">
                                 <label for="{{ form.advance_amount.id_for_label }}" class="form-label text-gold small fw-bold">
-                                    Advance Retainer Received (₹)
+                                    Advance Amount Received (₹)
                                 </label>
                                 {{ form.advance_amount }}
                                 {% if form.advance_amount.errors %}
                                 <div class="text-danger small mt-1">{{ form.advance_amount.errors.0 }}</div>
                                 {% endif %}
-                                <div class="form-text small text-muted">Remaining balance calculated upon billing.</div>
+                                <div class="form-text small text-muted">Remaining balance will be billed on delivery.</div>
                             </div>
                             <div class="col-md-6">
                                 <label for="{{ form.expected_delivery_date.id_for_label }}" class="form-label text-gold small fw-bold">
-                                    Target Delivery Date
+                                    Expected Delivery Date
                                 </label>
                                 {{ form.expected_delivery_date }}
                                 {% if form.expected_delivery_date.errors %}
@@ -200,17 +200,17 @@
                             </div>
                             <div class="col-md-6">
                                 <label for="{{ form.actual_delivery_date.id_for_label }}" class="form-label text-gold small fw-bold">
-                                    Actual Delivery Handover Date
+                                    Actual Delivery Date
                                 </label>
                                 {{ form.actual_delivery_date }}
                                 {% if form.actual_delivery_date.errors %}
                                 <div class="text-danger small mt-1">{{ form.actual_delivery_date.errors.0 }}</div>
                                 {% endif %}
-                                <div class="form-text small text-muted">Leave empty until handover is executed.</div>
+                                <div class="form-text small text-muted">Leave blank until order is delivered.</div>
                             </div>
                             <div class="col-md-12">
                                 <label for="{{ form.notes.id_for_label }}" class="form-label text-gold small fw-bold">
-                                    Workshop & Karigar Notes
+                                    Karigar &amp; Workshop Notes
                                 </label>
                                 {{ form.notes }}
                                 {% if form.notes.errors %}
@@ -228,7 +228,7 @@
                         <a href="{% url 'custom_orders:custom_order_list' %}" class="jd-btn-ghost">Cancel</a>
                         {% endif %}
                         <button type="submit" class="jd-btn-gold">
-                            <i class="bi bi-check2-circle me-1"></i> {% if is_edit %}Save Changes{% else %}Commit Bespoke Order{% endif %}
+                            <i class="bi bi-check2-circle me-1"></i> {% if is_edit %}Save Changes{% else %}Save Custom Order{% endif %}
                         </button>
                     </div>
                 </form>

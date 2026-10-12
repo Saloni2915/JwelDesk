@@ -1,8 +1,8 @@
 {% extends 'base.html' %}
 
-{% block title %}Settlement Voucher {{ settlement.settlement_number }} — JewelDesk Atelier{% endblock %}
+{% block title %}Payment Voucher {{ settlement.settlement_number }} — JewelDesk{% endblock %}
 
-{% block page_title %}Settlement Voucher: {{ settlement.settlement_number }}{% endblock %}
+{% block page_title %}Payment Voucher: {{ settlement.settlement_number }}{% endblock %}
 
 {% block page_actions %}
 <div class="d-flex gap-2">
@@ -11,11 +11,11 @@
     </button>
     {% if settlement.status == 'Completed' and user_perms.karigar.can_delete %}
     <a href="{% url 'karigar:settlement_cancel' settlement.id %}" class="jd-btn-danger-ghost btn-sm">
-        <i class="bi bi-x-circle me-1"></i> Cancel Voucher
+        <i class="bi bi-x-circle me-1"></i> Cancel Payment
     </a>
     {% endif %}
     <a href="{% url 'karigar:settlement_list' %}" class="jd-btn-ghost btn-sm">
-        <i class="bi bi-arrow-left me-1"></i> Settlements
+        <i class="bi bi-arrow-left me-1"></i> All Payments
     </a>
 </div>
 {% endblock %}
@@ -28,14 +28,14 @@
             <div class="jd-card p-4 p-md-5 print-area">
                 <div class="d-flex justify-content-between align-items-center border-bottom pb-4 mb-4" style="border-color: rgba(236,200,106,0.15) !important;">
                     <div>
-                        <span class="text-gold small fw-bold text-uppercase" style="letter-spacing: 0.08em;">Artisan Labour Payment Voucher</span>
+                        <span class="text-gold small fw-bold text-uppercase" style="letter-spacing: 0.08em;">Karigar Payment Voucher</span>
                         <h3 class="mb-0 fw-bold font-monospace text-white mt-1">{{ settlement.settlement_number }}</h3>
                     </div>
                     <div>
                         {% if settlement.status == 'Completed' %}
-                        <span class="jd-stage-pill" style="background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.35);">Paid / Settled</span>
+                        <span class="jd-stage-pill" style="background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.35);">Paid</span>
                         {% else %}
-                        <span class="jd-stage-pill" style="background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.35);">Cancelled Voucher</span>
+                        <span class="jd-stage-pill" style="background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.35);">Cancelled</span>
                         {% endif %}
                     </div>
                 </div>
@@ -43,7 +43,7 @@
                 <!-- Cancelled Alert if applicable -->
                 {% if settlement.status == 'Cancelled' %}
                 <div class="alert alert-danger py-3 px-4 mb-4" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5;">
-                    <h6 class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> This settlement has been cancelled</h6>
+                    <h6 class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> This payment has been cancelled</h6>
                     <div class="small">
                         Cancelled by: {{ settlement.cancelled_by.get_full_name|default:settlement.cancelled_by.username }}
                         on {{ settlement.cancelled_at|date:"d M Y, H:i" }}
@@ -57,7 +57,7 @@
                 <!-- Top Voucher Overview -->
                 <div class="row g-4 mb-4 border-bottom pb-4" style="border-color: rgba(236,200,106,0.12) !important;">
                     <div class="col-md-6">
-                        <span class="text-gold small fw-bold text-uppercase d-block mb-1">Payee (Artisan):</span>
+                        <span class="text-gold small fw-bold text-uppercase d-block mb-1">Karigar:</span>
                         <h4 class="fw-bold mb-1 text-white">
                             <a href="{% url 'karigar:karigar_detail' settlement.karigar.id %}" class="text-white text-decoration-none">
                                 {{ settlement.karigar.name }}
@@ -69,9 +69,9 @@
                         {% endif %}
                     </div>
                     <div class="col-md-6 text-md-end">
-                        <span class="text-gold small fw-bold text-uppercase d-block mb-1">Disbursed Amount:</span>
+                        <span class="text-gold small fw-bold text-uppercase d-block mb-1">Paid Amount:</span>
                         <h2 class="fw-bold text-success font-monospace mb-0">₹{{ settlement.amount|floatformat:2 }}</h2>
-                        <div class="small text-light mt-1">Cleared on {{ settlement.payment_date|date:"d M Y" }}</div>
+                        <div class="small text-light mt-1">Paid on {{ settlement.payment_date|date:"d M Y" }}</div>
                         <div class="small text-muted">{{ settlement.payment_method }} {% if settlement.payment_reference %}(Ref: {{ settlement.payment_reference }}){% endif %}</div>
                     </div>
                 </div>
@@ -79,11 +79,11 @@
                 <!-- Processed Info -->
                 <div class="row g-3 mb-4 small">
                     <div class="col-sm-6">
-                        <span class="text-muted d-block">Authorized By:</span>
+                        <span class="text-muted d-block">Paid By:</span>
                         <span class="text-white fw-semibold">{{ settlement.processed_by.get_full_name|default:settlement.processed_by.username|default:"System" }}</span>
                     </div>
                     <div class="col-sm-6 text-sm-end">
-                        <span class="text-muted d-block">Creation Audit:</span>
+                        <span class="text-muted d-block">Created On:</span>
                         <span class="text-light font-monospace">{{ settlement.created_at|date:"d M Y, H:i" }}</span>
                     </div>
                 </div>
@@ -91,7 +91,7 @@
                 <!-- Allocated Assignments -->
                 {% if assignments %}
                 <div class="mb-4">
-                    <h6 class="fw-bold text-gold mb-3"><i class="bi bi-list-check me-2"></i> Allocated Work Assignments</h6>
+                    <h6 class="fw-bold text-gold mb-3"><i class="bi bi-list-check me-2"></i> Linked Karigar Jobs</h6>
                     <div class="table-responsive">
                         <table class="jd-table">
                             <thead>
@@ -99,8 +99,8 @@
                                     <th>Job #</th>
                                     <th>Work Type</th>
                                     <th>Metal Issued</th>
-                                    <th>Total Charge</th>
-                                    <th>Settled Amount</th>
+                                    <th>Labour Charges</th>
+                                    <th>Amount Paid</th>
                                     <th>Status</th>
                                 </tr>
                             </thead>
@@ -133,7 +133,7 @@
 
                 {% if settlement.notes %}
                 <div class="p-3 rounded-3 small mb-4" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);">
-                    <strong class="d-block text-gold text-uppercase mb-1">Notes / Terms:</strong>
+                    <strong class="d-block text-gold text-uppercase mb-1">Notes:</strong>
                     <span class="text-light">{{ settlement.notes|linebreaksbr }}</span>
                 </div>
                 {% endif %}
@@ -141,10 +141,10 @@
                 <!-- Signature block for print -->
                 <div class="row pt-5 mt-4 border-top text-center small text-muted" style="border-color: rgba(255,255,255,0.1) !important;">
                     <div class="col-6">
-                        <div class="border-top pt-2 mx-4" style="border-color: rgba(255,255,255,0.2) !important;">Authorized Atelier Signatory</div>
+                        <div class="border-top pt-2 mx-4" style="border-color: rgba(255,255,255,0.2) !important;">Authorized Signature</div>
                     </div>
                     <div class="col-6">
-                        <div class="border-top pt-2 mx-4" style="border-color: rgba(255,255,255,0.2) !important;">Artisan Acknowledgment</div>
+                        <div class="border-top pt-2 mx-4" style="border-color: rgba(255,255,255,0.2) !important;">Karigar Signature</div>
                     </div>
                 </div>
             </div>

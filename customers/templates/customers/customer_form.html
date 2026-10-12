@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{{ page_title|default:"Register Patron" }} — JewelDesk Atelier{% endblock %}
+{% block title %}{{ page_title|default:"Add Customer" }} — JewelDesk{% endblock %}
 
 {% block content %}
 <div class="jd-canvas">
@@ -9,12 +9,12 @@
     <!-- 1. Header & Actions -->
     <div class="jd-header">
         <div class="jd-title-wrap">
-            <h1><i class="bi bi-person-plus text-warning me-2"></i>{{ page_title|default:"Patron Registration" }}</h1>
-            <p class="jd-subtitle">Record client contact profile, KYC identification &amp; billing address</p>
+            <h1><i class="bi bi-person-plus text-warning me-2"></i>{{ page_title|default:"Add Customer" }}</h1>
+            <p class="jd-subtitle">Save customer contact details and address</p>
         </div>
         <div class="jd-header-actions">
             <a href="{% url 'customer_list' %}" class="jd-btn-ghost">
-                <i class="bi bi-arrow-left"></i> Client Directory
+                <i class="bi bi-arrow-left"></i> Customer List
             </a>
         </div>
     </div>
@@ -25,7 +25,7 @@
                 <div class="jd-card-header">
                     <h2>
                         <i class="bi bi-person-lines-fill text-warning"></i>
-                        Patron Information &amp; Contact Details
+                        Customer Details
                     </h2>
                 </div>
                 <div class="jd-card-body">
@@ -42,7 +42,7 @@
 
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="jd-field-label">Full Legal Name <span class="text-danger">*</span></label>
+                                <label class="jd-field-label">Full Name <span class="text-danger">*</span></label>
                                 {{ form.name }}
                                 {% if form.name.errors %}
                                 <div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>
@@ -50,12 +50,12 @@
                             </div>
 
                             <div class="col-md-6">
-                                <label class="jd-field-label">Primary Mobile Number <span class="text-danger">*</span></label>
+                                <label class="jd-field-label">Mobile Number <span class="text-danger">*</span></label>
                                 {{ form.mobile }}
                                 {% if form.mobile.errors %}
                                 <div class="text-danger small mt-1">{{ form.mobile.errors.0 }}</div>
                                 {% endif %}
-                                <div class="jd-field-help">10-digit mobile number for WhatsApp invoicing.</div>
+                                <div class="jd-field-help">10-digit mobile number for WhatsApp bills.</div>
                             </div>
                         </div>
 
@@ -65,21 +65,21 @@
                             {% if form.email.errors %}
                             <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
                             {% endif %}
-                            <div class="jd-field-help">Optional email for PDF billing invoices.</div>
+                            <div class="jd-field-help">Optional email for sending invoices.</div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="jd-field-label">Physical / Street Address</label>
+                            <label class="jd-field-label">Address</label>
                             {{ form.address }}
                             {% if form.address.errors %}
                             <div class="text-danger small mt-1">{{ form.address.errors.0 }}</div>
                             {% endif %}
-                            <div class="jd-field-help">Residence or business shipping address for invoice dispatch.</div>
+                            <div class="jd-field-help">Customer address for billing and delivery.</div>
                         </div>
 
                         <div class="d-flex gap-2 pt-3 border-top border-secondary border-opacity-25">
                             <button type="submit" class="jd-btn-gold flex-grow-1 py-2 fs-6">
-                                <i class="bi bi-check-circle-fill"></i> Save Patron Profile
+                                <i class="bi bi-check-circle-fill"></i> Save Customer
                             </button>
                             <a href="{% url 'customer_list' %}" class="jd-btn-ghost py-2">
                                 Cancel

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Sales Payments & Receipts Ledger — JewelDesk Atelier{% endblock %}
+{% block title %}Payments &amp; Receipts — JewelDesk{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/sales_bullion.css' %}?v={% now "U" %}" rel="stylesheet">
@@ -24,15 +24,15 @@
     <!-- 1. Header & Actions -->
     <div class="jd-sb-header">
         <div class="jd-sb-title-wrap">
-            <h1><i class="bi bi-cash-coin text-warning me-2"></i>Sales Payments &amp; Receipts Ledger</h1>
-            <p class="jd-sb-subtitle">Customer payment collections, money receipts, settlement history &amp; dues management</p>
+            <h1><i class="bi bi-cash-coin text-warning me-2"></i>Payments &amp; Receipts</h1>
+            <p class="jd-sb-subtitle">Record and view all customer payments, receipts, and pending balances</p>
         </div>
         <div class="jd-sb-header-actions">
             <a href="{% url 'sale_list' %}" class="jd-btn-ghost">
-                <i class="bi bi-receipt"></i> All Sales Invoices
+                <i class="bi bi-receipt"></i> All Sales Bills
             </a>
             <button type="button" class="jd-btn-gold" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">
-                <i class="bi bi-plus-circle-fill"></i> + Receive Payment
+                <i class="bi bi-plus-circle-fill"></i> + Add Payment
             </button>
         </div>
     </div>
@@ -141,7 +141,7 @@
         <div class="jd-sb-table-header">
             <h2>
                 <i class="bi bi-list-check text-warning"></i>
-                Payment Receipts Register
+                Payments List
             </h2>
             <span class="badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-25 font-monospace">
                 Showing {{ payments|length }} of {{ total_count }} Entries
@@ -156,11 +156,11 @@
                         <th>Date &amp; Time</th>
                         <th>Invoice #</th>
                         <th>Customer</th>
-                        <th>Jewellery Ornament</th>
+                        <th>Item Name</th>
                         <th>Payment Mode</th>
                         <th>Reference / Txn</th>
                         <th class="text-end">Amount Paid</th>
-                        <th>Invoice Due Status</th>
+                        <th>Due Status</th>
                         <th class="text-center">Action</th>
                     </tr>
                 </thead>

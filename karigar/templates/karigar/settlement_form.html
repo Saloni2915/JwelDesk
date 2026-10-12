@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ page_title }} — JewelDesk Atelier{% endblock %}
+{% block title %}{{ page_title }} — JewelDesk{% endblock %}
 
 {% block page_title %}{{ page_title }}{% endblock %}
 
@@ -9,9 +9,9 @@
     <!-- Header -->
     <div class="jd-header">
         <div>
-            <div class="jd-badge"><i class="bi bi-cash-coin me-1"></i> Labour Payment Voucher</div>
+            <div class="jd-badge"><i class="bi bi-cash-coin me-1"></i> Karigar Payment Voucher</div>
             <h1 class="jd-title">{{ page_title }}</h1>
-            <p class="jd-subtitle">Disburse artisan making charges, advances, or link settlements directly to workshop job cards.</p>
+            <p class="jd-subtitle">Record making charge payments, advances, or link to karigar jobs.</p>
         </div>
         <div>
             <a href="{% url 'karigar:settlement_list' %}" class="jd-btn-ghost">
@@ -35,12 +35,12 @@
             <div class="col-lg-8">
                 <div class="jd-card p-4 p-md-5 mb-4">
                     <div class="d-flex align-items-center gap-2 mb-4 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
-                        <span class="text-gold fw-bold"><i class="bi bi-cash-stack me-1"></i> Payment Voucher Details</span>
+                        <span class="text-gold fw-bold"><i class="bi bi-cash-stack me-1"></i> Payment Details</span>
                     </div>
 
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label text-gold small fw-bold">Artisan / Karigar <span class="text-danger">*</span></label>
+                            <label class="form-label text-gold small fw-bold">Karigar <span class="text-danger">*</span></label>
                             {{ form.karigar }}
                             {% if form.karigar.errors %}
                             <div class="text-danger small mt-1">{{ form.karigar.errors.0 }}</div>
@@ -56,7 +56,7 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label text-gold small fw-bold">Settlement Amount (₹) <span class="text-danger">*</span></label>
+                            <label class="form-label text-gold small fw-bold">Payment Amount (₹) <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text bg-transparent text-gold" style="border-color: rgba(236,200,106,0.25);">₹</span>
                                 {{ form.amount }}
@@ -75,25 +75,25 @@
                         </div>
 
                         <div class="col-12">
-                            <label class="form-label text-gold small fw-bold">Payment Reference / UTR / Cheque / Txn ID</label>
+                            <label class="form-label text-gold small fw-bold">Ref / UTR / Cheque / Txn ID</label>
                             {{ form.payment_reference }}
                             {% if form.payment_reference.errors %}
                             <div class="text-danger small mt-1">{{ form.payment_reference.errors.0 }}</div>
                             {% endif %}
-                            <small class="text-muted d-block mt-1">Bank UTR, UPI Reference, Cheque No, or internal voucher slip ID.</small>
+                            <small class="text-muted d-block mt-1">Bank UTR, UPI reference, or cheque number.</small>
                         </div>
 
                         <div class="col-12">
-                            <label class="form-label text-gold small fw-bold">Allocate Towards Work Assignments (Optional)</label>
+                            <label class="form-label text-gold small fw-bold">Link to Karigar Jobs (Optional)</label>
                             {{ form.assignments }}
                             {% if form.assignments.errors %}
                             <div class="text-danger small mt-1">{{ form.assignments.errors.0 }}</div>
                             {% endif %}
-                            <small class="text-muted d-block mt-1">Select specific assignments to mark as settled. Leave unselected for advance payment on account.</small>
+                            <small class="text-muted d-block mt-1">Select specific jobs to mark as paid. Leave empty for advance payment on account.</small>
                         </div>
 
                         <div class="col-12">
-                            <label class="form-label text-gold small fw-bold">Payment Remarks &amp; Notes</label>
+                            <label class="form-label text-gold small fw-bold">Payment Notes / Remarks</label>
                             {{ form.notes }}
                         </div>
                     </div>
@@ -103,7 +103,7 @@
                             Cancel
                         </a>
                         <button type="submit" class="jd-btn-gold">
-                            <i class="bi bi-check2-circle me-1"></i> Record &amp; Post Settlement
+                            <i class="bi bi-check2-circle me-1"></i> Save Payment
                         </button>
                     </div>
                 </div>

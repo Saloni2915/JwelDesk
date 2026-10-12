@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Delete / Cancel {{ order.order_number }} — JewelDesk Atelier{% endblock %}
+{% block title %}Delete / Cancel {{ order.order_number }} — JewelDesk{% endblock %}
 
 {% block page_title %}Delete / Cancel Custom Order{% endblock %}
 
@@ -18,7 +18,7 @@
                 {% if order.status == 'Enquiry' or order.status == 'Estimate' %}
                 <div class="jd-badge mb-2" style="background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3);">Permanent Deletion</div>
                 <h3 class="font-serif fw-bold text-white mb-2" style="font-family: 'Cinzel', serif;">Delete Custom Order?</h3>
-                <p class="text-muted small mb-4">This bespoke order is at the <strong>{{ order.status|lower }}</strong> stage and will be permanently deleted from the database.</p>
+                <p class="text-muted small mb-4">This custom order is at the <strong>{{ order.status|lower }}</strong> stage and will be permanently deleted from the database.</p>
 
                 <div class="p-3 rounded-3 text-start mb-4" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(236, 200, 106, 0.12);">
                     <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
@@ -26,11 +26,11 @@
                         <span class="text-gold font-monospace fw-bold">{{ order.order_number }}</span>
                     </div>
                     <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
-                        <span class="text-muted small">Customer Patron:</span>
+                        <span class="text-muted small">Customer:</span>
                         <span class="text-white fw-semibold">{{ order.customer.name }}</span>
                     </div>
                     <div class="d-flex justify-content-between py-1">
-                        <span class="text-muted small">Current Stage:</span>
+                        <span class="text-muted small">Current Status:</span>
                         <span>{% include 'custom_orders/includes/status_badge.html' with status=order.status %}</span>
                     </div>
                 </div>
@@ -46,9 +46,9 @@
                 </form>
 
                 {% elif order.status == 'Delivered' or order.status == 'Cancelled' %}
-                <div class="jd-badge mb-2">Immutable Atelier Record</div>
+                <div class="jd-badge mb-2">Saved Record</div>
                 <h3 class="font-serif fw-bold text-white mb-2" style="font-family: 'Cinzel', serif;">Order Cannot Be Deleted</h3>
-                <p class="text-muted small mb-4">Custom orders that have already reached the <strong>{{ order.status|lower }}</strong> status are archived permanently for auditing and shop compliance.</p>
+                <p class="text-muted small mb-4">Custom orders that have already reached the <strong>{{ order.status|lower }}</strong> status cannot be deleted because they are part of sales and accounts records.</p>
 
                 <div class="p-3 rounded-3 text-start mb-4" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(236, 200, 106, 0.12);">
                     <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
@@ -66,9 +66,9 @@
                 </a>
 
                 {% else %}
-                <div class="jd-badge mb-2" style="background: rgba(245, 158, 11, 0.15); color: #fcd34d; border-color: rgba(245, 158, 11, 0.3);">Pipeline Cancellation</div>
+                <div class="jd-badge mb-2" style="background: rgba(245, 158, 11, 0.15); color: #fcd34d; border-color: rgba(245, 158, 11, 0.3);">Cancel Order</div>
                 <h3 class="font-serif fw-bold text-white mb-2" style="font-family: 'Cinzel', serif;">Cancel Active Custom Order?</h3>
-                <p class="text-muted small mb-4">This commission will be marked as <strong>Cancelled</strong>. The record and advance ledger will be preserved for history.</p>
+                <p class="text-muted small mb-4">This order will be marked as <strong>Cancelled</strong>. The record and advance payment will be saved in history.</p>
 
                 <div class="p-3 rounded-3 text-start mb-4" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(236, 200, 106, 0.12);">
                     <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
@@ -76,11 +76,11 @@
                         <span class="text-gold font-monospace fw-bold">{{ order.order_number }}</span>
                     </div>
                     <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
-                        <span class="text-muted small">Patron:</span>
+                        <span class="text-muted small">Customer:</span>
                         <span class="text-white fw-semibold">{{ order.customer.name }}</span>
                     </div>
                     <div class="d-flex justify-content-between py-1">
-                        <span class="text-muted small">Advance Retainer:</span>
+                        <span class="text-muted small">Advance Amount:</span>
                         <span class="text-success font-monospace fw-bold">₹{{ order.advance_amount }}</span>
                     </div>
                 </div>
@@ -90,7 +90,7 @@
                     <div class="d-flex justify-content-center gap-3">
                         <a href="{% url 'custom_orders:custom_order_detail' order.id %}" class="jd-btn-ghost">Keep Order Active</a>
                         <button type="submit" class="jd-btn-danger-ghost" style="background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #fee2e2;">
-                            <i class="bi bi-x-circle me-1"></i> Cancel Commission
+                            <i class="bi bi-x-circle me-1"></i> Confirm Cancellation
                         </button>
                     </div>
                 </form>

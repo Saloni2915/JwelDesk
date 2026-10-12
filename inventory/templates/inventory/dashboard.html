@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Jewellery Business Cockpit — JewelDesk{% endblock %}
+{% block title %}Shop Dashboard — JewelDesk{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/dashboard_cockpit.css' %}?v={% now "U" %}" rel="stylesheet">
@@ -10,11 +10,11 @@
 {% block content %}
 <div class="jd-cockpit-canvas">
 
-    <!-- 1. Live Bullion Rates Ribbon (Top Bar) -->
-    <div class="jd-bullion-ribbon" role="region" aria-label="Live Bullion Market Rates">
+    <!-- 1. Live Gold & Silver Rates Ribbon (Top Bar) -->
+    <div class="jd-bullion-ribbon" role="region" aria-label="Live Gold &amp; Silver Rates">
         <div class="d-flex align-items-center gap-3">
             <span class="jd-bullion-label">
-                <i class="bi bi-graph-up-arrow"></i> Live Bullion:
+                <i class="bi bi-graph-up-arrow"></i> Live Rates:
             </span>
             <div class="jd-bullion-rates-group">
                 <span class="jd-bullion-rate-pill">
@@ -47,22 +47,22 @@
             </span>
             <form method="post" action="{% url 'metal_price_refresh' %}" class="d-inline m-0">
                 {% csrf_token %}
-                <button type="submit" class="jd-bullion-refresh-btn" title="Refresh Bullion Rates" aria-label="Refresh rates">
+                <button type="submit" class="jd-bullion-refresh-btn" title="Refresh Metal Rates" aria-label="Refresh rates">
                     <i class="bi bi-arrow-clockwise fs-6"></i>
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- 2. Cockpit Header & Action CTAs -->
+    <!-- 2. Dashboard Header & Action CTAs -->
     <div class="jd-cockpit-header">
         <div class="jd-cockpit-title-wrap">
-            <h1>Jewellery Business Cockpit</h1>
-            <p class="jd-cockpit-subtitle">Real-time retail showroom intelligence &amp; bullion ledger</p>
+            <h1>Shop Dashboard</h1>
+            <p class="jd-cockpit-subtitle">Real-time overview of sales, stock, and metal rates</p>
         </div>
         <div class="jd-cockpit-header-actions">
             <a href="{% url 'inventory_add' %}" class="jd-btn-cockpit-ghost">
-                <i class="bi bi-plus-lg"></i> Add Inventory
+                <i class="bi bi-plus-lg"></i> Add Stock
             </a>
             <a href="{% url 'sale_add' %}" class="jd-btn-cockpit-gold">
                 <i class="bi bi-cart-plus"></i> New Sale
@@ -99,7 +99,7 @@
             </div>
             <div class="jd-kpi-label">Total Revenue</div>
             <div class="jd-kpi-val">₹{{ total_sales_amount|floatformat:2 }}</div>
-            <div class="jd-kpi-sub">{{ total_sales_count }} total showroom sale{{ total_sales_count|pluralize }}</div>
+            <div class="jd-kpi-sub">{{ total_sales_count }} total sale{{ total_sales_count|pluralize }}</div>
         </div>
 
         <!-- Outstanding Due -->
@@ -114,7 +114,7 @@
             </div>
             <div class="jd-kpi-label">Outstanding Due</div>
             <div class="jd-kpi-val">₹{{ outstanding_amount|floatformat:2 }}</div>
-            <div class="jd-kpi-sub">Customer credit receivables</div>
+            <div class="jd-kpi-sub">Pending balance from customers</div>
         </div>
 
         <!-- Inventory Value -->
@@ -129,7 +129,7 @@
             </div>
             <div class="jd-kpi-label">Inventory Value</div>
             <div class="jd-kpi-val">₹{{ inventory_value|floatformat:2 }}</div>
-            <div class="jd-kpi-sub">{{ available_items }} item{{ available_items|pluralize }} secured in vault</div>
+            <div class="jd-kpi-sub">{{ available_items }} item{{ available_items|pluralize }} in stock</div>
         </div>
     </div>
 
@@ -138,13 +138,13 @@
         <span class="jd-shortcuts-label"><i class="bi bi-lightning-charge text-warning me-1"></i> Quick Shortcuts:</span>
         <div class="jd-shortcuts-group">
             <a href="{% url 'sale_add' %}" class="jd-shortcut-tile">
-                <i class="bi bi-cart-plus"></i> New Sale POS
+                <i class="bi bi-cart-plus"></i> New Sale
             </a>
             <a href="{% url 'customer_add' %}" class="jd-shortcut-tile">
                 <i class="bi bi-person-plus"></i> Add Customer
             </a>
             <a href="{% url 'inventory_add' %}" class="jd-shortcut-tile">
-                <i class="bi bi-plus-circle"></i> Add Inventory Item
+                <i class="bi bi-plus-circle"></i> Add Stock Item
             </a>
             <a href="{% url 'custom_orders:custom_order_add' %}" class="jd-shortcut-tile">
                 <i class="bi bi-hammer"></i> New Custom Order
@@ -163,7 +163,7 @@
                 <div class="jd-card-header">
                     <div class="jd-card-title-group">
                         <h3><i class="bi bi-bar-chart-line text-warning me-1"></i> 7-Day Revenue Analytics</h3>
-                        <p>Showroom daily sales performance ledger</p>
+                        <p>Daily sales performance for the last 7 days</p>
                     </div>
                     <a href="{% url 'sales_report' %}" class="jd-card-header-link">Full Report &rarr;</a>
                 </div>
@@ -190,7 +190,7 @@
                         </span>
                         {% else %}
                         <span class="text-muted small">
-                            <i class="bi bi-info-circle me-1"></i> Baseline tracks active &middot; Bars rise dynamically as daily POS sales are billed
+                            <i class="bi bi-info-circle me-1"></i> Bars rise dynamically as sales are billed
                         </span>
                         {% endif %}
                     </div>
@@ -198,7 +198,7 @@
                     <div class="jd-cockpit-empty">
                         <i class="bi bi-bar-chart"></i>
                         <p class="fw-semibold text-light mb-1">No sales recorded yet this week</p>
-                        <p class="small text-muted mb-3">Daily revenue bars will visualize automatically once bills are generated.</p>
+                        <p class="small text-muted mb-3">Daily revenue bars will appear automatically once bills are generated.</p>
                         <a href="{% url 'sale_add' %}" class="jd-btn-cockpit-gold">
                             <i class="bi bi-cart-plus"></i> Record First Sale
                         </a>
@@ -211,8 +211,8 @@
             <div class="jd-card">
                 <div class="jd-card-header">
                     <div class="jd-card-title-group">
-                        <h3><i class="bi bi-receipt text-warning me-1"></i> Recent Showroom Sales</h3>
-                        <p>Live transaction register across sales counters</p>
+                        <h3><i class="bi bi-receipt text-warning me-1"></i> Recent Sales</h3>
+                        <p>Latest completed sales and bills</p>
                     </div>
                     <a href="{% url 'sale_list' %}" class="jd-card-header-link">View All Sales &rarr;</a>
                 </div>
@@ -374,7 +374,7 @@
                 <div class="jd-card-header">
                     <div class="jd-card-title-group">
                         <h3><i class="bi bi-exclamation-triangle text-warning me-1"></i> Low Stock Designs</h3>
-                        <p>Items requiring replenishment</p>
+                        <p>Designs with low stock</p>
                     </div>
                     <span class="jd-alert-pill jd-alert-pill-amber">Action Req</span>
                 </div>
@@ -383,10 +383,10 @@
                         {% for d in low_stock_designs %}
                         <a href="{% url 'inventory_list' %}?q={{ d.design_code }}" class="jd-stock-item">
                             <div class="jd-stock-item-info">
-                                <div class="jd-stock-meta">
-                                    <span class="text-warning fw-semibold font-monospace">{{ d.design_code }}</span>
-                                    <span>&middot; {{ d.category }}{% if d.metal_type %} ({{ d.metal_type }}){% endif %}</span>
-                                </div>
+                                 <div class="jd-stock-meta">
+                                     <span class="text-warning fw-semibold font-monospace">{{ d.design_code }}</span>
+                                     <span>&middot; {{ d.category }}{% if d.metal_type %} ({{ d.metal_type }}){% endif %}</span>
+                                 </div>
                                 <div class="jd-stock-name">{{ d.name }}</div>
                             </div>
                             <span class="jd-alert-pill {% if d.available <= 1 %}jd-alert-pill-red{% else %}jd-alert-pill-amber{% endif %}">
@@ -397,12 +397,12 @@
                         <div class="jd-cockpit-empty py-3">
                             <i class="bi bi-check2-circle text-success" style="font-size: 1.6rem;"></i>
                             <p class="fw-semibold text-light mb-1">Stock levels healthy</p>
-                            <p class="small text-muted mb-0">All active jewellery designs meet minimum threshold.</p>
+                            <p class="small text-muted mb-0">All jewellery designs have sufficient stock.</p>
                         </div>
                         {% endfor %}
                     </div>
                     <div class="text-center mt-3 pt-2 border-top border-secondary border-opacity-25">
-                        <a href="{% url 'inventory_list' %}" class="jd-card-header-link">Manage Full Inventory &rarr;</a>
+                        <a href="{% url 'inventory_list' %}" class="jd-card-header-link">View All Stock &rarr;</a>
                     </div>
                 </div>
             </div>
@@ -412,7 +412,7 @@
                 <div class="jd-card-header">
                     <div class="jd-card-title-group">
                         <h3><i class="bi bi-hammer text-warning me-1"></i> Pending Custom Orders</h3>
-                        <p>Bespoke client crafting schedule</p>
+                        <p>Custom jewellery orders in progress</p>
                     </div>
                     <span class="jd-stage-pill">Workshop</span>
                 </div>
@@ -434,7 +434,7 @@
                         <div class="jd-cockpit-empty py-3">
                             <i class="bi bi-inbox" style="font-size: 1.6rem;"></i>
                             <p class="fw-semibold text-light mb-1">No pending custom orders</p>
-                            <p class="small text-muted mb-3">Custom pieces will appear here once commissioned.</p>
+                            <p class="small text-muted mb-3">Custom orders will appear here once created.</p>
                             <a href="{% url 'custom_orders:custom_order_add' %}" class="jd-btn-cockpit-ghost py-1 px-3">
                                 <i class="bi bi-plus-lg"></i> New Order
                             </a>
@@ -451,8 +451,8 @@
             <div class="jd-card">
                 <div class="jd-card-header">
                     <div class="jd-card-title-group">
-                        <h3><i class="bi bi-coin text-warning me-1"></i> Bullion Rate Breakdown</h3>
-                        <p>Market purity rates per gram</p>
+                        <h3><i class="bi bi-coin text-warning me-1"></i> Metal Rates Breakdown</h3>
+                        <p>Current gold &amp; silver rates per gram</p>
                     </div>
                     <i class="bi bi-graph-up text-warning"></i>
                 </div>
@@ -460,7 +460,7 @@
                     <div class="jd-breakdown-row">
                         <div>
                             <div class="jd-breakdown-name">24K Pure Gold (99.9%)</div>
-                            <div class="jd-breakdown-sub">London Bullion Market</div>
+                            <div class="jd-breakdown-sub">Market Benchmark</div>
                         </div>
                         <div>
                             <div class="jd-breakdown-price">
@@ -494,8 +494,8 @@
 
                     <div class="jd-breakdown-row">
                         <div>
-                            <div class="jd-breakdown-name">Silver 999 Bullion</div>
-                            <div class="jd-breakdown-sub">MCX Benchmark</div>
+                            <div class="jd-breakdown-name">Silver 999 Pure</div>
+                            <div class="jd-breakdown-sub">MCX Market Rate</div>
                         </div>
                         <div>
                             <div class="jd-breakdown-price">
@@ -509,7 +509,7 @@
                         {% if metal_prices.last_updated %}
                             Last updated {{ metal_prices.last_updated|date:"M d, Y h:i A" }}
                         {% else %}
-                            Live MCX &amp; Bullion Feed Active
+                            Live Market Rates Active
                         {% endif %}
                     </div>
                 </div>

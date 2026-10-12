@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Old Gold Exchange — JewelDesk Atelier{% endblock %}
+{% block title %}Old Gold Exchange — JewelDesk{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/sales_bullion.css' %}?v={% now "U" %}" rel="stylesheet">
@@ -13,12 +13,12 @@
     <!-- Header & Back Action -->
     <div class="jd-sb-header">
         <div class="jd-sb-title-wrap">
-            <h1><i class="bi bi-arrow-repeat text-warning me-2"></i>Old Gold Exchange Counter</h1>
-            <p class="jd-sb-subtitle">Exchange customer scrap jewellery for new showroom ornaments with live purity testing</p>
+            <h1><i class="bi bi-arrow-repeat text-warning me-2"></i>Old Gold Exchange</h1>
+            <p class="jd-sb-subtitle">Exchange customer old jewellery for new jewellery items</p>
         </div>
         <div class="jd-sb-header-actions">
             <a href="{% url 'old_gold_list' %}" class="jd-btn-ghost">
-                <i class="bi bi-arrow-left"></i> Transactions Ledger
+                <i class="bi bi-arrow-left"></i> Transactions History
             </a>
             <a href="{% url 'old_gold_buyback_create' %}" class="jd-btn-ghost">
                 <i class="bi bi-cash-stack"></i> Outright Buyback
@@ -48,7 +48,7 @@
                     <div class="jd-og-card-header">
                         <h2>
                             <i class="bi bi-person-bounding-box text-warning"></i>
-                            1. Customer Identification
+                            1. Customer Details
                         </h2>
                         <a href="{% url 'customer_add' %}?next={{ request.path }}" class="jd-btn-ghost py-1 px-2" style="font-size: 0.78rem;">
                             <i class="bi bi-person-plus"></i> Add Customer
@@ -68,9 +68,9 @@
                     <div class="jd-og-card-header">
                         <h2>
                             <i class="bi bi-coin text-warning"></i>
-                            2. Old Gold Scrap Valuation &amp; Assay
+                            2. Old Gold Valuation
                         </h2>
-                        <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">Vault Intake</span>
+                        <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">Old Gold</span>
                     </div>
                     <div class="jd-og-card-body">
                         <div class="row g-3">
@@ -128,7 +128,7 @@
                             </div>
 
                             <div class="col-12">
-                                <label class="jd-og-field-label">Appraisal Notes / Assayer Remarks</label>
+                                <label class="jd-og-field-label">Notes / Remarks</label>
                                 {{ form.notes }}
                             </div>
                         </div>
@@ -140,14 +140,14 @@
                     <div class="jd-og-card-header">
                         <h2>
                             <i class="bi bi-gem text-warning"></i>
-                            3. New Jewellery Piece Selection
+                            3. Select New Jewellery Item
                         </h2>
                         <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25">Showroom Sale</span>
                     </div>
                     <div class="jd-og-card-body">
                         <div class="row g-3">
                             <div class="col-12">
-                                <label class="jd-og-field-label">Select New Piece from Inventory <span class="text-danger">*</span></label>
+                                <label class="jd-og-field-label">Select New Item from Stock <span class="text-danger">*</span></label>
                                 {{ form.new_jewellery_item }}
                                 {% if form.new_jewellery_item.errors %}
                                 <div class="text-danger small mt-1">{{ form.new_jewellery_item.errors.0 }}</div>
@@ -237,17 +237,17 @@
 
                     <!-- Final Balance Card -->
                     <div id="balance_card" class="p-3 rounded-3 text-center my-3 jd-sb-balance-box">
-                        <span class="small text-muted d-block mb-1" id="balance_title">Net Settlement Due</span>
+                        <span class="small text-muted d-block mb-1" id="balance_title">Balance Amount to Pay</span>
                         <h2 class="fw-bold mb-0 text-warning" id="calc_balance_amount">₹0.00</h2>
                         <small class="text-muted d-block mt-1" id="balance_subtitle">Enter scrap weights &amp; select new piece</small>
                     </div>
 
                     <!-- Submit Button -->
                     <button type="submit" class="jd-btn-gold w-100 py-3 justify-content-center fs-6">
-                        <i class="bi bi-patch-check-fill me-1"></i> Complete Exchange &amp; Settle
+                        <i class="bi bi-patch-check-fill me-1"></i> Save Exchange
                     </button>
                     <a href="{% url 'old_gold_list' %}" class="btn btn-link text-muted w-100 mt-2 text-decoration-none small">
-                        Cancel and return to ledger
+                        Cancel and return to list
                     </a>
                 </div>
             </div>
@@ -349,17 +349,17 @@
         if (calcCreditApplied) calcCreditApplied.textContent = '- ' + formatInr(creditApplied);
 
         if (balance > 0) {
-            if (balanceTitle) balanceTitle.textContent = 'Customer Owes Counter';
+            if (balanceTitle) balanceTitle.textContent = 'Customer Has to Pay';
             if (calcBalanceAmount) calcBalanceAmount.textContent = formatInr(balance);
-            if (balanceSubtitle) balanceSubtitle.textContent = 'Remaining difference payable by customer';
+            if (balanceSubtitle) balanceSubtitle.textContent = 'Remaining amount to be paid by customer';
         } else if (balance < 0) {
-            if (balanceTitle) balanceTitle.textContent = 'Store Refund Due to Customer';
+            if (balanceTitle) balanceTitle.textContent = 'Refund to Customer';
             if (calcBalanceAmount) calcBalanceAmount.textContent = formatInr(Math.abs(balance));
-            if (balanceSubtitle) balanceSubtitle.textContent = 'Old gold exceeds new jewellery price';
+            if (balanceSubtitle) balanceSubtitle.textContent = 'Old gold value is more than new jewellery price';
         } else {
-            if (balanceTitle) balanceTitle.textContent = 'Even Exchange';
+            if (balanceTitle) balanceTitle.textContent = 'Zero Balance';
             if (calcBalanceAmount) calcBalanceAmount.textContent = '₹0.00';
-            if (balanceSubtitle) balanceSubtitle.textContent = 'Full credit matched perfectly';
+            if (balanceSubtitle) balanceSubtitle.textContent = 'Old gold value matches new item price';
         }
     }
 

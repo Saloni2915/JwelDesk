@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Employees &amp; Staff Directory — JewelDesk Atelier{% endblock %}
+{% block title %}Staff Directory — JewelDesk{% endblock %}
 {% block page_title %}Team Management{% endblock %}
 
 {% block page_actions %}
@@ -25,9 +25,9 @@
   <!-- Header -->
   <div class="jd-header">
     <div>
-      <div class="jd-badge"><i class="bi bi-people me-1"></i> Human Resources &amp; Access Controls</div>
-      <h1 class="jd-title">Employees &amp; Staff Directory</h1>
-      <p class="jd-subtitle">Manage showroom associates, goldsmith supervisors, inventory managers, and branch access.</p>
+      <div class="jd-badge"><i class="bi bi-people me-1"></i> Staff Directory</div>
+      <h1 class="jd-title">Staff Directory</h1>
+      <p class="jd-subtitle">Manage shop staff, roles, and branch access.</p>
     </div>
     <div class="d-flex align-items-center gap-2">
       {% if can_add_employee or user_perms.team.can_add or not user.employee_profile %}

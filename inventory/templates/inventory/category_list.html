@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Jewellery Categories & Collections — JewelDesk Atelier{% endblock %}
+{% block title %}Jewellery Categories — JewelDesk{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/inventory_atelier.css' %}?v={% now "U" %}" rel="stylesheet">
@@ -13,15 +13,15 @@
     <!-- 1. Header & Actions -->
     <div class="jd-inv-header">
         <div class="jd-inv-title-wrap">
-            <h1><i class="bi bi-tags text-warning me-2"></i>Jewellery Categories &amp; Collections</h1>
-            <p class="jd-inv-subtitle">Taxonomy management for showroom showcases, ring trays, necklace vaults &amp; loose gemstones</p>
+            <h1><i class="bi bi-tags text-warning me-2"></i>Jewellery Categories</h1>
+            <p class="jd-inv-subtitle">Organize jewellery categories such as rings, bangles, necklaces, and chains</p>
         </div>
         <div class="jd-inv-header-actions">
             <a href="{% url 'inventory_list' %}" class="jd-btn-gold">
-                <i class="bi bi-gem"></i> Inventory Register
+                <i class="bi bi-gem"></i> All Stock Items
             </a>
             <a href="{% url 'inventory_add' %}" class="jd-btn-ghost">
-                <i class="bi bi-plus-circle"></i> + Add Jewellery
+                <i class="bi bi-plus-circle"></i> + Add Stock Item
             </a>
         </div>
     </div>
@@ -35,7 +35,7 @@
                 <div class="jd-inv-table-header">
                     <h2>
                         <i class="bi bi-collection text-warning"></i>
-                        Active Showroom Categories
+                        All Categories
                     </h2>
                     <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 font-monospace">
                         {{ categories.count }} Categories
@@ -47,7 +47,7 @@
                             <tr>
                                 <th>Category Name</th>
                                 <th>Description</th>
-                                <th>In Vault</th>
+                                <th>Items in Stock</th>
                                 <th class="text-end pe-3">Actions</th>
                             </tr>
                         </thead>
@@ -75,7 +75,7 @@
                                             <i class="bi bi-trash"></i>
                                         </a>
                                         {% else %}
-                                        <span class="jd-tbl-btn text-muted opacity-50" title="Cannot delete: active items in vault">
+                                        <span class="jd-tbl-btn text-muted opacity-50" title="Cannot delete: items exist in stock">
                                             <i class="bi bi-lock"></i>
                                         </span>
                                         {% endif %}
@@ -119,7 +119,7 @@
                         </div>
 
                         <div class="mb-4">
-                            <label class="jd-field-label">Description / Scope</label>
+                            <label class="jd-field-label">Description</label>
                             {{ form.description }}
                             {% if form.description.errors %}
                             <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>

@@ -1,26 +1,26 @@
 {% extends 'base.html' %}
 
-{% block title %}Karigar Settlements &amp; Labour Dues — JewelDesk Atelier{% endblock %}
+{% block title %}Karigar Payments — JewelDesk{% endblock %}
 
-{% block page_title %}Artisan Settlements &amp; Labour Payments{% endblock %}
+{% block page_title %}Karigar Payments{% endblock %}
 
 {% block content %}
 <div class="jd-canvas">
     <!-- Header -->
     <div class="jd-header">
         <div>
-            <div class="jd-badge"><i class="bi bi-cash-coin me-1"></i> Artisan Banking &amp; Vouchers</div>
-            <h1 class="jd-title">Karigar Labour Settlements</h1>
-            <p class="jd-subtitle">Disbursed cash, bank NEFT, and UPI vouchers clearing making charges and dues.</p>
+            <div class="jd-badge"><i class="bi bi-cash-coin me-1"></i> Karigar Payments</div>
+            <h1 class="jd-title">Karigar Payments</h1>
+            <p class="jd-subtitle">Cash, bank transfer, and UPI payments made to karigars for making charges.</p>
         </div>
         <div class="d-flex align-items-center gap-2">
             {% if user_perms.karigar.can_add %}
             <a href="{% url 'karigar:settlement_create' %}" class="jd-btn-gold">
-                <i class="bi bi-cash-stack me-1"></i> Record Settlement
+                <i class="bi bi-cash-stack me-1"></i> Pay Karigar
             </a>
             {% endif %}
             <a href="{% url 'karigar:dashboard' %}" class="jd-btn-ghost">
-                <i class="bi bi-speedometer2 me-1"></i> Workshop Cockpit
+                <i class="bi bi-speedometer2 me-1"></i> Workshop Dashboard
             </a>
         </div>
     </div>
@@ -32,12 +32,12 @@
                 <div class="input-group">
                     <span class="input-group-text bg-transparent border-end-0 text-gold" style="border-color: rgba(236,200,106,0.2);"><i class="bi bi-search"></i></span>
                     <input type="text" name="q" value="{{ q }}" class="jd-input border-start-0"
-                           placeholder="Search voucher #, artisan name, or txn ref...">
+                           placeholder="Search voucher #, karigar, or reference...">
                 </div>
             </div>
             <div class="col-lg-3 col-md-3">
                 <select name="karigar" class="jd-select">
-                    <option value="">All Artisans</option>
+                    <option value="">All Karigars</option>
                     {% for k in karigars %}
                     <option value="{{ k.id }}" {% if selected_karigar == k.id|stringformat:"s" %}selected{% endif %}>{{ k.name }}</option>
                     {% endfor %}
@@ -75,11 +75,11 @@
     <!-- Total Settled KPI Banner -->
     <div class="jd-card p-3 mb-4 d-flex justify-content-between align-items-center jd-atelier-banner">
         <div>
-            <span class="text-gold small fw-bold text-uppercase">Total Settled via Filtered Vouchers:</span>
+            <span class="text-gold small fw-bold text-uppercase">Total Paid:</span>
             <span class="fs-4 fw-bold text-success font-monospace ms-2">₹{{ total_amount|floatformat:2 }}</span>
         </div>
         <div class="text-muted small">
-            Voucher audit trail recorded in database
+            Payment voucher history
         </div>
     </div>
 
@@ -90,12 +90,12 @@
                 <thead>
                     <tr>
                         <th>Voucher #</th>
-                        <th>Artisan</th>
+                        <th>Karigar</th>
                         <th>Payment Date</th>
                         <th>Payment Method</th>
-                        <th>Reference / Txn #</th>
+                        <th>Ref / Txn #</th>
                         <th>Status</th>
-                        <th>Processed By</th>
+                        <th>Paid By</th>
                         <th class="text-end pe-3">Amount</th>
                         <th class="text-end pe-3">Actions</th>
                     </tr>
@@ -129,7 +129,7 @@
                             ₹{{ st.amount|floatformat:2 }}
                         </td>
                         <td class="text-end pe-3">
-                            <a href="{% url 'karigar:settlement_detail' st.id %}" class="jd-btn-ghost btn-sm py-1 px-2" title="View Voucher">
+                            <a href="{% url 'karigar:settlement_detail' st.id %}" class="jd-btn-ghost btn-sm py-1 px-2" title="View Payment">
                                 <i class="bi bi-eye"></i>
                             </a>
                         </td>
@@ -140,11 +140,11 @@
                             <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(236, 200, 106, 0.08); display: inline-flex; align-items: center; justify-content: center; color: var(--gold-primary); font-size: 1.75rem; margin-bottom: 1rem;">
                                 <i class="bi bi-wallet2"></i>
                             </div>
-                            <h5 class="text-white fw-bold mb-1">No Settlement Vouchers Found</h5>
-                            <p class="text-muted small mb-3">No payments match your active filters or search query.</p>
+                            <h5 class="text-white fw-bold mb-1">No Karigar Payments Found</h5>
+                            <p class="text-muted small mb-3">No payments match your active filters or search.</p>
                             {% if user_perms.karigar.can_add %}
                             <a href="{% url 'karigar:settlement_create' %}" class="jd-btn-gold">
-                                <i class="bi bi-cash-stack me-1"></i> Record Settlement
+                                <i class="bi bi-cash-stack me-1"></i> Pay Karigar
                             </a>
                             {% endif %}
                         </td>

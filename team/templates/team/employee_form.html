@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}{{ form_title }} — JewelDesk Atelier{% endblock %}
+{% block title %}{{ form_title }} — JewelDesk{% endblock %}
 {% block page_title %}{{ form_title }}{% endblock %}
 
 {% block page_actions %}
@@ -15,9 +15,9 @@
   <!-- Header -->
   <div class="jd-header">
     <div>
-      <div class="jd-badge"><i class="bi bi-person-lines-fill me-1"></i> Human Resources Dossier</div>
+      <div class="jd-badge"><i class="bi bi-person-lines-fill me-1"></i> Staff Member</div>
       <h1 class="jd-title">{{ form_title }}</h1>
-      <p class="jd-subtitle">Configure associate profile, organizational designation, branch privileges, and login credentials.</p>
+      <p class="jd-subtitle">Staff profile, designation, branch access, and login account.</p>
     </div>
     <div>
       <a href="{% url 'team:employee_list' %}" class="jd-btn-ghost">
@@ -41,12 +41,12 @@
           <!-- Section 1: Personal & Professional Identity -->
           <div class="mb-5">
             <div class="d-flex align-items-center gap-2 mb-4 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
-              <span class="text-gold fw-bold"><i class="bi bi-person-badge me-1"></i> 1. Personal &amp; Professional Details</span>
+              <span class="text-gold fw-bold"><i class="bi bi-person-badge me-1"></i> 1. Personal &amp; Contact Details</span>
             </div>
             <div class="row g-3">
               <div class="col-md-6">
                 <label for="{{ form.full_name.id_for_label }}" class="form-label text-gold small fw-bold">
-                  Full Legal Name <span class="text-danger">*</span>
+                  Full Name <span class="text-danger">*</span>
                 </label>
                 {{ form.full_name }}
                 {% if form.full_name.errors %}
@@ -55,7 +55,7 @@
               </div>
               <div class="col-md-6">
                 <label for="{{ form.email.id_for_label }}" class="form-label text-gold small fw-bold">
-                  Official Email Address <span class="text-danger">*</span>
+                  Email Address <span class="text-danger">*</span>
                 </label>
                 {{ form.email }}
                 {% if form.email.errors %}
@@ -72,7 +72,7 @@
                 {% endif %}
               </div>
               <div class="col-md-4">
-                <label for="{{ form.designation.id_for_label }}" class="form-label text-gold small fw-bold">Designation / Atelier Title</label>
+                <label for="{{ form.designation.id_for_label }}" class="form-label text-gold small fw-bold">Designation / Job Title</label>
                 {{ form.designation }}
                 {% if form.designation.errors %}
                   <div class="text-danger small mt-1">{{ form.designation.errors.0 }}</div>
@@ -142,7 +142,7 @@
               </div>
 
               <div class="col-md-8">
-                <label class="form-label text-gold small fw-bold d-block">Branch Access Privileges</label>
+                <label class="form-label text-gold small fw-bold d-block">Branch Access</label>
                 <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(236,200,106,0.15);">
                   <div class="row">
                     {% for checkbox in form.branches %}
@@ -160,7 +160,7 @@
                     </div>
                     {% endfor %}
                   </div>
-                  <small class="text-muted d-block mt-2 font-italic">Unchecked = associate has access across all showroom locations.</small>
+                  <small class="text-muted d-block mt-2 font-italic">Unchecked = staff member has access to all branches.</small>
                 </div>
               </div>
             </div>
@@ -170,7 +170,7 @@
           {% if is_create %}
           <div class="mb-5">
             <div class="d-flex align-items-center gap-2 mb-4 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
-              <span class="text-gold fw-bold"><i class="bi bi-shield-lock me-1"></i> 3. System Login Account Setup</span>
+              <span class="text-gold fw-bold"><i class="bi bi-shield-lock me-1"></i> 3. Login Account Setup</span>
             </div>
 
             <!-- Account Mode Selector -->
@@ -227,7 +227,7 @@
             <div id="section-link-existing" class="p-4 rounded-3 mt-3" style="display:none; background: rgba(255,255,255,0.02); border: 1px solid rgba(236,200,106,0.2);">
               <div class="col-md-8">
                 <label for="{{ form.existing_user.id_for_label }}" class="form-label text-gold small fw-bold">
-                  Select Existing Django User
+                  Select Existing User Account
                 </label>
                 {{ form.existing_user }}
                 {% if form.existing_user.errors %}

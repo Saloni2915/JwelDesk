@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{{ page_title|default:"Add Jewellery Piece" }} — JewelDesk Atelier{% endblock %}
+{% block title %}{{ page_title|default:"Add Jewellery Item" }} — JewelDesk{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/inventory_atelier.css' %}?v={% now "U" %}" rel="stylesheet">
@@ -13,15 +13,15 @@
     <!-- 1. Header & Actions -->
     <div class="jd-inv-header">
         <div class="jd-inv-title-wrap">
-            <h1><i class="bi bi-gem text-warning me-2"></i>{{ page_title|default:"Jewellery Item Specification" }}</h1>
-            <p class="jd-inv-subtitle">Record physical piece specifications, hallmark verification, gold weight assays &amp; showroom pricing</p>
+            <h1><i class="bi bi-gem text-warning me-2"></i>{{ page_title|default:"Add Jewellery Item" }}</h1>
+            <p class="jd-inv-subtitle">Enter jewellery item details, hallmark status, weights, and price</p>
         </div>
         <div class="jd-inv-header-actions">
             <a href="{% url 'inventory_list' %}" class="jd-btn-ghost">
-                <i class="bi bi-arrow-left"></i> Back to Inventory
+                <i class="bi bi-arrow-left"></i> Back to Stock
             </a>
             <a href="{% url 'pricing_calculator' %}" class="jd-btn-ghost" target="_blank">
-                <i class="bi bi-calculator"></i> Open Pricing Engine
+                <i class="bi bi-calculator"></i> Open Price Calculator
             </a>
         </div>
     </div>
@@ -54,7 +54,7 @@
                     <div class="jd-form-card-header">
                         <h2>
                             <i class="bi bi-tag-fill text-warning"></i>
-                            1. Jewellery Identity &amp; Cataloging
+                            1. Item Details
                         </h2>
                     </div>
                     <div class="jd-form-card-body">
@@ -68,7 +68,7 @@
                                 <div class="jd-field-help">Unique physical tag (e.g. JWL-000001). Leave blank to auto-generate.</div>
                             </div>
                             <div>
-                                <label class="jd-field-label">Piece ID / Item Code <span class="text-danger">*</span></label>
+                                <label class="jd-field-label">Item Code <span class="text-danger">*</span></label>
                                 {{ form.item_code }}
                                 {% if form.item_code.errors %}
                                 <div class="text-danger small mt-1">{{ form.item_code.errors.0 }}</div>
@@ -96,12 +96,12 @@
                         </div>
 
                         <div class="jd-field-group">
-                            <label class="jd-field-label">Ornament Name <span class="text-danger">*</span></label>
+                            <label class="jd-field-label">Item Name <span class="text-danger">*</span></label>
                             {{ form.name }}
                             {% if form.name.errors %}
                             <div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>
                             {% endif %}
-                            <div class="jd-field-help">Descriptive name for invoices and display (e.g. 22K Traditional Bridal Choker).</div>
+                            <div class="jd-field-help">Item name shown on bills and tags (e.g. 22K Traditional Bridal Choker).</div>
                         </div>
                     </div>
                 </div>
@@ -111,7 +111,7 @@
                     <div class="jd-form-card-header">
                         <h2>
                             <i class="bi bi-shield-lock-fill text-warning"></i>
-                            2. Authentication &amp; BIS Hallmarking
+                            2. Hallmark &amp; HUID Details
                         </h2>
                     </div>
                     <div class="jd-form-card-body">
@@ -161,7 +161,7 @@
                     <div class="jd-form-card-header">
                         <h2>
                             <i class="bi bi-speedometer2 text-warning"></i>
-                            3. Metal &amp; Weight Specifications
+                            3. Metal &amp; Weights
                         </h2>
                     </div>
                     <div class="jd-form-card-body">
@@ -209,12 +209,12 @@
                     </div>
                 </div>
 
-                <!-- 4. Pricing, Making Charges & Vault Status Card -->
+                <!-- 4. Pricing, Making Charges & Stock Status Card -->
                 <div class="jd-form-card">
                     <div class="jd-form-card-header">
                         <h2>
                             <i class="bi bi-currency-rupee text-warning"></i>
-                            4. Showroom Pricing &amp; Charges
+                            4. Pricing &amp; Stock Status
                         </h2>
                     </div>
                     <div class="jd-form-card-body">
@@ -268,7 +268,7 @@
                                 {% endif %}
                             </div>
                             <div>
-                                <label class="jd-field-label">Showroom Stock Status <span class="text-danger">*</span></label>
+                                <label class="jd-field-label">Stock Status <span class="text-danger">*</span></label>
                                 {{ form.status }}
                                 {% if form.status.errors %}
                                 <div class="text-danger small mt-1">{{ form.status.errors.0 }}</div>
@@ -279,7 +279,7 @@
                         <!-- Submit CTA Group -->
                         <div class="mt-4 pt-3 border-top border-secondary border-opacity-25 d-flex gap-2">
                             <button type="submit" class="jd-btn-gold flex-grow-1 py-2 fs-6">
-                                <i class="bi bi-check-circle-fill"></i> Save Piece to Vault
+                                <i class="bi bi-check-circle-fill"></i> Save Item
                             </button>
                             <a href="{% url 'inventory_list' %}" class="jd-btn-ghost py-2">
                                 Cancel

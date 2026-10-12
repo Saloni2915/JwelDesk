@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Jewellery Pricing Engine — JewelDesk Atelier{% endblock %}
+{% block title %}Jewellery Price Calculator — JewelDesk{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/inventory_atelier.css' %}?v={% now "U" %}" rel="stylesheet">
@@ -13,15 +13,15 @@
     <!-- 1. Header & Actions -->
     <div class="jd-inv-header">
         <div class="jd-inv-title-wrap">
-            <h1><i class="bi bi-calculator text-warning me-2"></i>Dynamic Jewellery Pricing Engine</h1>
-            <p class="jd-inv-subtitle">Real-time bullion assay computation, making markup formulas, stone charges &amp; 3% statutory GST</p>
+            <h1><i class="bi bi-calculator text-warning me-2"></i>Jewellery Price Calculator</h1>
+            <p class="jd-inv-subtitle">Calculate jewellery prices with metal rates, making charges, wastage, and GST</p>
         </div>
         <div class="jd-inv-header-actions">
             <a href="{% url 'metal_rates' %}" class="jd-btn-ghost">
-                <i class="bi bi-coin text-warning"></i> Today's Board Rates
+                <i class="bi bi-coin text-warning"></i> Today's Metal Rates
             </a>
             <a href="{% url 'inventory_list' %}" class="jd-btn-ghost">
-                <i class="bi bi-gem"></i> Inventory Register
+                <i class="bi bi-gem"></i> All Stock Items
             </a>
         </div>
     </div>
@@ -87,11 +87,11 @@
             <div class="jd-form-card mb-3">
                 <div class="jd-form-card-body p-3">
                     <label class="jd-field-label small mb-1">
-                        <i class="bi bi-upc-scan text-warning me-1"></i> Pre-fill from Existing Vault Item
+                        <i class="bi bi-upc-scan text-warning me-1"></i> Pre-fill from Existing Stock Item
                     </label>
                     <div class="d-flex gap-2">
                         <select id="item_loader" class="jd-inv-select" onchange="loadSelectedPiece()">
-                            <option value="">-- Choose inventory item to calculate tag price --</option>
+                            <option value="">-- Choose stock item to calculate price --</option>
                             {% for it in inventory_items %}
                             <option value="{{ it.pk }}" {% if selected_item and selected_item.pk == it.pk %}selected{% endif %}>
                                 [{{ it.tag_number|default:it.item_code }}] {{ it.name }} ({{ it.metal_type }} {{ it.purity }}, {{ it.net_weight }}g) - Tag ₹{{ it.selling_price }}
@@ -112,7 +112,7 @@
                 <div class="jd-form-card-header">
                     <h2>
                         <i class="bi bi-sliders text-warning"></i>
-                        Quotation Parameters
+                        Price Calculator Inputs
                     </h2>
                     {% if selected_item %}
                     <span class="badge bg-warning text-dark font-monospace">
@@ -249,7 +249,7 @@
 
         </div>
 
-        <!-- RIGHT COLUMN: Sticky Live Quotation Breakdown Cockpit -->
+        <!-- RIGHT COLUMN: Sticky Live Quotation Breakdown -->
         <div>
             <div class="jd-quote-summary-card">
                 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -261,7 +261,7 @@
 
                 <!-- Grand Total Display -->
                 <div class="jd-quote-grand-display">
-                    <div class="text-uppercase small text-muted mb-1">Final Showroom Price (Incl. 3% GST)</div>
+                    <div class="text-uppercase small text-muted mb-1">Final Selling Price (Incl. 3% GST)</div>
                     <div class="display-6 fw-bold font-monospace" id="disp-final-price">
                         ₹{{ breakdown.final_price|floatformat:2 }}
                     </div>
@@ -333,7 +333,7 @@
                 </div>
 
                 <div class="jd-quote-total-row">
-                    <span>Grand Quotation</span>
+                    <span>Final Total Price</span>
                     <span id="disp-final-price-footer">₹{{ breakdown.final_price|floatformat:2 }}</span>
                 </div>
 
@@ -341,15 +341,15 @@
                 <div class="mt-4 d-grid gap-2">
                     {% if selected_item %}
                     <a href="{% url 'sale_add' %}?item={{ selected_item.pk }}" class="jd-btn-gold">
-                        <i class="bi bi-cart-plus-fill"></i> Bill at Sales POS Now
+                        <i class="bi bi-cart-plus-fill"></i> Create Sale Bill Now
                     </a>
                     {% else %}
                     <a href="{% url 'inventory_add' %}" class="jd-btn-gold">
-                        <i class="bi bi-plus-circle"></i> Create Inventory Piece With This Price
+                        <i class="bi bi-plus-circle"></i> Add Stock Item With This Price
                     </a>
                     {% endif %}
                     <a href="{% url 'custom_orders:custom_order_add' %}" class="jd-btn-ghost">
-                        <i class="bi bi-hammer"></i> Create Custom Order Quotation
+                        <i class="bi bi-hammer"></i> Create Custom Order With This Price
                     </a>
                 </div>
             </div>

@@ -1,8 +1,8 @@
 {% extends 'base.html' %}
 
-{% block title %}Pending &amp; Overdue Work — JewelDesk Atelier{% endblock %}
+{% block title %}Pending &amp; Overdue Work — JewelDesk{% endblock %}
 
-{% block page_title %}Pending &amp; Overdue Work Assignments{% endblock %}
+{% block page_title %}Pending &amp; Overdue Karigar Jobs{% endblock %}
 
 {% block content %}
 <div class="jd-canvas">
@@ -10,17 +10,17 @@
     <div class="jd-header">
         <div>
             <div class="jd-badge" style="background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3);">
-                <i class="bi bi-alarm me-1"></i> Workshop Time Watch
+                <i class="bi bi-alarm me-1"></i> Pending &amp; Overdue Jobs
             </div>
-            <h1 class="jd-title">Pending &amp; Overdue Assignments</h1>
-            <p class="jd-subtitle">Urgent artisan deadlines, delayed goldsmith deliveries, and work in progress tracking.</p>
+            <h1 class="jd-title">Pending &amp; Overdue Jobs</h1>
+            <p class="jd-subtitle">Overdue deadlines, delayed karigar deliveries, and work in progress.</p>
         </div>
         <div class="d-flex align-items-center gap-2">
             <a href="{% url 'karigar:assignment_list' %}" class="jd-btn-gold">
-                <i class="bi bi-list-task me-1"></i> All Assignments
+                <i class="bi bi-list-task me-1"></i> All Karigar Jobs
             </a>
             <a href="{% url 'karigar:dashboard' %}" class="jd-btn-ghost">
-                <i class="bi bi-speedometer2 me-1"></i> Workshop Cockpit
+                <i class="bi bi-speedometer2 me-1"></i> Workshop Dashboard
             </a>
         </div>
     </div>
@@ -28,17 +28,17 @@
     <!-- Overdue Section -->
     <div class="jd-card mb-4 p-0 overflow-hidden" style="border: 1px solid rgba(239, 68, 68, 0.45); box-shadow: 0 16px 40px rgba(239, 68, 68, 0.08);">
         <div class="p-3 px-4 d-flex justify-content-between align-items-center" style="background: rgba(239, 68, 68, 0.15); border-bottom: 1px solid rgba(239, 68, 68, 0.3);">
-            <h6 class="mb-0 fw-bold text-danger"><i class="bi bi-exclamation-octagon me-2"></i> Overdue Workshop Deadlines ({{ overdue_list.count }})</h6>
+            <h6 class="mb-0 fw-bold text-danger"><i class="bi bi-exclamation-octagon me-2"></i> Overdue Jobs ({{ overdue_list.count }})</h6>
             <span class="badge bg-danger text-white">Immediate Attention Required</span>
         </div>
         <div class="table-responsive">
             <table class="jd-table">
                 <thead>
                     <tr>
-                        <th>Job Ref</th>
-                        <th>Artisan</th>
+                        <th>Job #</th>
+                        <th>Karigar</th>
                         <th>Work Type</th>
-                        <th>Target Customer / Item</th>
+                        <th>Customer / Item</th>
                         <th>Expected Date</th>
                         <th>Priority</th>
                         <th>Status</th>
@@ -70,7 +70,7 @@
                         <td><span class="jd-stage-pill">{{ asg.status }}</span></td>
                         <td class="text-end pe-3">
                             <div class="d-flex justify-content-end gap-1">
-                                <a href="{% url 'karigar:assignment_detail' asg.id %}" class="jd-btn-danger-ghost btn-sm py-1 px-2">Inspect</a>
+                                <a href="{% url 'karigar:assignment_detail' asg.id %}" class="jd-btn-danger-ghost btn-sm py-1 px-2">View</a>
                                 {% if user_perms.karigar.can_edit %}
                                 <a href="{% url 'karigar:assignment_receive' asg.id %}" class="btn btn-sm py-1 px-2" style="background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); color: #6ee7b7;">Receive</a>
                                 {% endif %}
@@ -81,7 +81,7 @@
                     <tr>
                         <td colspan="8" class="text-center py-4 text-success fw-medium">
                             <i class="bi bi-check-circle fs-3 d-block mb-1 text-success"></i>
-                            Excellent! There are no overdue assignments in the workshop.
+                            Excellent! There are no overdue jobs.
                         </td>
                     </tr>
                     {% endfor %}
@@ -94,17 +94,17 @@
     <div class="jd-table-card">
         <div class="p-4 border-bottom" style="border-color: rgba(236,200,106,0.12) !important;">
             <h5 class="font-serif fw-bold text-white mb-0" style="font-family: 'Cinzel', serif;">
-                <i class="bi bi-clock-history text-gold me-2"></i> Active Workshop Jobs (Assigned &amp; In-Progress)
+                <i class="bi bi-clock-history text-gold me-2"></i> Active Karigar Jobs (Assigned &amp; In Progress)
             </h5>
         </div>
         <div class="table-responsive">
             <table class="jd-table">
                 <thead>
                     <tr>
-                        <th>Job Ref</th>
-                        <th>Artisan</th>
+                        <th>Job #</th>
+                        <th>Karigar</th>
                         <th>Work Type</th>
-                        <th>Issued Net Wt</th>
+                        <th>Net Metal Given</th>
                         <th>Issued Date</th>
                         <th>Due Date</th>
                         <th>Priority</th>
@@ -152,7 +152,7 @@
                         <td class="text-end pe-3">
                             <div class="d-flex justify-content-end gap-1">
                                 <a href="{% url 'karigar:assignment_detail' asg.id %}" class="jd-btn-ghost btn-sm py-1 px-2">
-                                    Details
+                                    View
                                 </a>
                                 {% if user_perms.karigar.can_edit %}
                                 <a href="{% url 'karigar:assignment_receive' asg.id %}" class="btn btn-sm py-1 px-2" style="background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); color: #6ee7b7;">
@@ -165,7 +165,7 @@
                     {% empty %}
                     <tr>
                         <td colspan="9" class="text-center py-5 text-muted">
-                            No active pending assignments in workshop.
+                            No active pending jobs.
                         </td>
                     </tr>
                     {% endfor %}

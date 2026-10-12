@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}{{ employee.full_name }} — Team Atelier — JewelDesk{% endblock %}
+{% block title %}{{ employee.full_name }} — JewelDesk{% endblock %}
 {% block page_title %}{{ employee.full_name }}{% endblock %}
 
 {% block page_actions %}
@@ -88,7 +88,7 @@
 
         <!-- Account Status Block -->
         <div class="p-3 rounded-3 text-start" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(236,200,106,0.15);">
-          <span class="text-gold small fw-bold text-uppercase d-block mb-2"><i class="bi bi-key me-1"></i> Authentication Account</span>
+          <span class="text-gold small fw-bold text-uppercase d-block mb-2"><i class="bi bi-key me-1"></i> Login Account</span>
           {% if employee.user %}
             <div class="d-flex justify-content-between align-items-center mb-1 small">
               <span class="text-muted">Username:</span>
@@ -107,20 +107,20 @@
               {% csrf_token %}
               {% if employee.status == 'Active' %}
                 <button type="submit" class="jd-btn-danger-ghost w-100 justify-content-center btn-sm" id="btn-toggle-deactivate">
-                  <i class="bi bi-person-x me-1"></i> Deactivate Staff Access
+                  <i class="bi bi-person-x me-1"></i> Deactivate Account
                 </button>
               {% else %}
                 <button type="submit" class="btn btn-sm w-100 justify-content-center" style="background: rgba(16,185,129,0.2); border: 1px solid rgba(16,185,129,0.4); color: #6ee7b7;" id="btn-toggle-activate">
-                  <i class="bi bi-person-check me-1"></i> Restore Staff Access
+                  <i class="bi bi-person-check me-1"></i> Activate Account
                 </button>
               {% endif %}
             </form>
             {% endif %}
           {% else %}
-            <p class="text-muted small mb-2">No user authentication account is linked to this staff profile.</p>
+            <p class="text-muted small mb-2">No login account linked to this staff member.</p>
             {% if can_edit or not user.employee_profile %}
             <a href="{% url 'team:employee_link_account' employee.pk %}" class="jd-btn-gold btn-sm w-100 justify-content-center">
-              <i class="bi bi-person-plus me-1"></i> Create Login Credentials
+              <i class="bi bi-person-plus me-1"></i> Create Login Account
             </a>
             {% endif %}
           {% endif %}
@@ -137,7 +137,7 @@
         </div>
         {% if employee.role.name == 'Admin' %}
           <div class="p-2 rounded-3 small" style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd;">
-            <i class="bi bi-info-circle me-1"></i> Role <strong>Admin</strong> holds universal access to all showroom branches.
+            <i class="bi bi-info-circle me-1"></i> Role <strong>Admin</strong> has access to all shop branches.
           </div>
         {% else %}
           {% if employee.branches.all %}
@@ -163,15 +163,15 @@
         <div class="row g-3">
           <div class="col-md-8">
             <span class="text-muted small d-block">Role Description</span>
-            <p class="text-white fw-medium mb-0 mt-1">{{ employee.role.description|default:"Standard atelier organizational role." }}</p>
+            <p class="text-white fw-medium mb-0 mt-1">{{ employee.role.description|default:"Standard shop role." }}</p>
           </div>
           <div class="col-md-4">
-            <span class="text-muted small d-block">System Privilege Tier</span>
+            <span class="text-muted small d-block">Access Level</span>
             <div class="mt-1">
               {% if employee.role.name == 'Admin' %}
                 <span class="jd-badge" style="background: rgba(239,68,68,0.2); color: #fca5a5; border-color: rgba(239,68,68,0.4);"><i class="bi bi-shield-fill-check me-1"></i>Full Administrator</span>
               {% else %}
-                <span class="jd-badge">Modular Staff</span>
+                <span class="jd-badge">Staff Member</span>
               {% endif %}
             </div>
           </div>
@@ -182,7 +182,7 @@
       <div class="jd-card p-4 mb-4">
         <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3" style="border-color: rgba(236,200,106,0.12) !important;">
           <div>
-            <h6 class="text-gold fw-bold mb-0"><i class="bi bi-folder2-open me-2"></i> Employee Dossier &amp; KYC Documents</h6>
+            <h6 class="text-gold fw-bold mb-0"><i class="bi bi-folder2-open me-2"></i> Staff Documents &amp; ID Proofs</h6>
             <small class="text-muted">ID proofs, employment agreements, and certifications</small>
           </div>
           {% if can_edit %}
@@ -263,7 +263,7 @@
         {% else %}
         <div class="py-4 text-center text-muted small">
           <i class="bi bi-folder-x fs-1 d-block mb-2 text-gold opacity-50"></i>
-          No KYC or employee documents uploaded yet.
+          No employee documents uploaded yet.
         </div>
         {% endif %}
       </div>
@@ -273,13 +273,13 @@
         <div class="p-4 border-bottom d-flex justify-content-between align-items-center" style="border-color: rgba(236,200,106,0.12) !important;">
           <div>
             <h6 class="font-serif fw-bold text-white mb-0" style="font-family: 'Cinzel', serif;">
-              <i class="bi bi-shield-lock text-gold me-2"></i> Granular Permissions Matrix
+              <i class="bi bi-shield-lock text-gold me-2"></i> Permissions
             </h6>
-            <small class="text-muted">Per-module action authorization for this associate</small>
+            <small class="text-muted">Action permissions for this staff member</small>
           </div>
           {% if can_manage_perms %}
           <a href="{% url 'team:employee_permissions' employee.pk %}" class="jd-btn-gold btn-sm" id="btn-manage-perms">
-            <i class="bi bi-sliders me-1"></i> Configure Matrix
+            <i class="bi bi-sliders me-1"></i> Change Permissions
           </a>
           {% endif %}
         </div>
@@ -338,7 +338,7 @@
               {% empty %}
               <tr>
                 <td colspan="6" class="text-center py-4 text-muted">
-                  No custom permission overrides defined. Defaults for role "{{ employee.role.name }}" apply.
+                  No custom permissions defined. Default permissions for role "{{ employee.role.name }}" apply.
                 </td>
               </tr>
               {% endfor %}

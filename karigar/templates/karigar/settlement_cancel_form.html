@@ -1,12 +1,12 @@
 {% extends 'base.html' %}
 
-{% block title %}Cancel Settlement {{ settlement.settlement_number }} — JewelDesk Atelier{% endblock %}
+{% block title %}Cancel Payment {{ settlement.settlement_number }} — JewelDesk{% endblock %}
 
-{% block page_title %}Cancel Settlement Voucher{% endblock %}
+{% block page_title %}Cancel Payment Voucher{% endblock %}
 
 {% block page_actions %}
 <a href="{% url 'karigar:settlement_detail' settlement.id %}" class="jd-btn-ghost btn-sm">
-    <i class="bi bi-arrow-left me-1"></i> Back to Voucher
+    <i class="bi bi-arrow-left me-1"></i> Back to Payment
 </a>
 {% endblock %}
 
@@ -21,19 +21,19 @@
                     </div>
                 </div>
 
-                <div class="jd-badge mb-2" style="background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3);">Voucher Reversal</div>
-                <h3 class="font-serif fw-bold text-white mb-2" style="font-family: 'Cinzel', serif;">Cancel Settlement Voucher?</h3>
+                <div class="jd-badge mb-2" style="background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3);">Cancel Payment</div>
+                <h3 class="font-serif fw-bold text-white mb-2" style="font-family: 'Cinzel', serif;">Cancel Payment Voucher?</h3>
                 <p class="text-muted small mb-4">
-                    Cancelling voucher <strong class="text-white">{{ settlement.settlement_number }}</strong> will permanently mark it as Cancelled and reverse all payment amounts credited to linked work assignments.
+                    Cancelling voucher <strong class="text-white">{{ settlement.settlement_number }}</strong> will mark it as Cancelled and reverse payments for linked jobs.
                 </p>
 
                 <div class="p-3 rounded-3 text-start mb-4" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(236, 200, 106, 0.12);">
                     <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
-                        <span class="text-muted small">Artisan:</span>
+                        <span class="text-muted small">Karigar:</span>
                         <span class="text-white fw-bold">{{ settlement.karigar.name }}</span>
                     </div>
                     <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
-                        <span class="text-muted small">Settlement Amount:</span>
+                        <span class="text-muted small">Payment Amount:</span>
                         <span class="text-success font-monospace fw-bold">₹{{ settlement.amount|floatformat:2 }}</span>
                     </div>
                     <div class="d-flex justify-content-between py-1">
@@ -50,15 +50,15 @@
                         {% if form.cancellation_reason.errors %}
                         <div class="text-danger small mt-1">{{ form.cancellation_reason.errors.0 }}</div>
                         {% endif %}
-                        <div class="form-text small text-muted">This justification will be permanently stored in the audit trail.</div>
+                        <div class="form-text small text-muted">This reason will be saved with the record.</div>
                     </div>
 
                     <div class="d-flex justify-content-center gap-3">
                         <a href="{% url 'karigar:settlement_detail' settlement.id %}" class="jd-btn-ghost">
-                            Keep Voucher
+                            Don't Cancel
                         </a>
                         <button type="submit" class="jd-btn-danger-ghost" style="background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #fee2e2;">
-                            <i class="bi bi-x-circle me-1"></i> Confirm &amp; Cancel Settlement
+                            <i class="bi bi-x-circle me-1"></i> Confirm &amp; Cancel Payment
                         </button>
                     </div>
                 </form>

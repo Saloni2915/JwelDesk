@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Store Branches — JewelDesk Atelier{% endblock %}
-{% block page_title %}Store Branches{% endblock %}
+{% block title %}Branches — JewelDesk{% endblock %}
+{% block page_title %}Branches{% endblock %}
 
 {% block page_actions %}
   <a href="{% url 'team:employee_list' %}" class="jd-btn-ghost btn-sm" id="btn-back-team">
@@ -20,9 +20,9 @@
   <!-- Header -->
   <div class="jd-header">
     <div>
-      <div class="jd-badge"><i class="bi bi-shop me-1"></i> Showroom &amp; Vault Locations</div>
-      <h1 class="jd-title">Store &amp; Showroom Branches</h1>
-      <p class="jd-subtitle">Manage physical retail showrooms, flagship boutiques, and manufacturing workshop hubs.</p>
+      <div class="jd-badge"><i class="bi bi-shop me-1"></i> Shop Branches</div>
+      <h1 class="jd-title">Shop Branches</h1>
+      <p class="jd-subtitle">Manage shop branches and locations.</p>
     </div>
     <div>
       {% if user.is_staff or user.is_superuser or user_perms.team.can_edit or user_perms.team.can_add or not user.employee_profile %}
@@ -81,7 +81,7 @@
         <i class="bi bi-shop"></i>
       </div>
       <h5 class="text-white fw-bold mb-1">No Branches Created Yet</h5>
-      <p class="text-muted small mb-3">Add your main showroom, flagship boutique, or atelier workshop hub.</p>
+      <p class="text-muted small mb-3">Add your main shop or workshop branch.</p>
       {% if user.is_staff or user.is_superuser or user_perms.team.can_edit or user_perms.team.can_add or not user.employee_profile %}
       <a href="{% url 'team:branch_create' %}" class="jd-btn-gold">
         <i class="bi bi-plus-circle me-1"></i> Add First Branch

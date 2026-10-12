@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Jewellery Showroom POS Terminal — JewelDesk Atelier{% endblock %}
+{% block title %}New Sale — JewelDesk{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/pos_terminal.css' %}?v={% now "U" %}" rel="stylesheet">
@@ -13,7 +13,7 @@
     <!-- 1. Live Bullion & Terminal Ticker Bar (Top Bar) -->
     <div class="jd-pos-topbar" role="region" aria-label="POS Terminal Status">
         <div class="jd-pos-brand-group">
-            <h1><i class="bi bi-shop text-warning me-2"></i>JewelDesk Showroom Counter POS</h1>
+            <h1><i class="bi bi-shop text-warning me-2"></i>New Sale Bill</h1>
             <div class="jd-pos-bullion-pills d-none d-md-flex">
                 <span class="jd-pos-bullion-item">
                     <span class="jd-pos-pulse-dot"></span>
@@ -35,7 +35,7 @@
 
         <div class="jd-pos-terminal-meta">
             <div class="jd-pos-terminal-badge">
-                <div class="cashier"><i class="bi bi-person-badge text-warning me-1"></i>Terminal #01 ({{ cashier_name }})</div>
+                <div class="cashier"><i class="bi bi-person-badge text-warning me-1"></i>Counter #01 ({{ cashier_name }})</div>
                 <div class="invoice-id">Invoice: <span>{{ draft_invoice_number }}</span></div>
             </div>
             <a href="{% url 'sale_list' %}" class="jd-pos-btn-ghost d-none d-sm-inline-flex" title="View Sales History">
@@ -95,7 +95,7 @@
                     <div class="jd-pos-card-header">
                         <h2>
                             <i class="bi bi-person-bounding-box text-warning"></i>
-                            Customer Identification
+                            Select Customer
                         </h2>
                         <a href="{% url 'customer_add' %}" target="_blank" class="jd-pos-btn-ghost">
                             <i class="bi bi-person-plus"></i> Add Customer
@@ -129,7 +129,7 @@
                             <div>
                                 <div class="jd-pos-customer-name-group">
                                     <span class="jd-pos-customer-name" id="custCardName">Select a Customer</span>
-                                    <span class="jd-pos-tier-badge" id="custCardTier">Showroom VIP</span>
+                                    <span class="jd-pos-tier-badge" id="custCardTier">Customer</span>
                                 </div>
                                 <div class="jd-pos-customer-meta" id="custCardMeta">
                                     Mobile: <span id="custCardMobile">—</span> &middot; Outstanding: <span class="text-warning" id="custCardDue">₹0</span>
@@ -154,9 +154,9 @@
                     <div class="jd-pos-card-header">
                         <h2>
                             <i class="bi bi-upc-scan text-warning"></i>
-                            Item Selection &amp; HUID Scan
+                            Select Jewellery Item
                         </h2>
-                        <span class="text-secondary small font-monospace">Counter Inventory</span>
+                        <span class="text-secondary small font-monospace">Stock Item</span>
                     </div>
                     <div class="jd-pos-card-body">
 
@@ -178,7 +178,7 @@
                         <!-- Native Jewellery Item Form Field -->
                         <div class="mb-3">
                             <label for="{{ form.jewellery_item.id_for_label }}" class="form-label text-secondary small">
-                                Available Vault Inventory Item <span class="text-danger">*</span>
+                                Select Jewellery Item <span class="text-danger">*</span>
                             </label>
                             {{ form.jewellery_item }}
                             {% if form.jewellery_item.errors %}
@@ -201,7 +201,7 @@
                                         <span class="jd-pos-pill-tag" id="itemCardTag">TAG-XXXX</span>
                                         <span class="jd-pos-pill-tag" id="itemCardHuid">HUID: PENDING</span>
                                         <span class="jd-pos-pill-hallmark" id="itemCardHallmark">
-                                            <i class="bi bi-patch-check-fill"></i> BIS 916 Hallmarked
+                                             <i class="bi bi-patch-check-fill"></i> BIS 916 Hallmarked
                                         </span>
                                     </div>
                                 </div>
@@ -230,19 +230,19 @@
                             <!-- Item Financial Breakdown -->
                             <div class="jd-pos-calc-rows">
                                 <div class="jd-pos-calc-row">
-                                    <span id="goldCalcLabel">Metal Valuation:</span>
+                                    <span id="goldCalcLabel">Metal Price:</span>
                                     <strong id="goldCalcVal">₹0.00</strong>
                                 </div>
                                 <div class="jd-pos-calc-row">
-                                    <span>Making Charges &amp; Craftsmanship:</span>
+                                    <span>Making Charges:</span>
                                     <strong id="makingCalcVal">₹0.00</strong>
                                 </div>
                                 <div class="jd-pos-calc-row">
-                                    <span>Precious Gemstones / Enamel:</span>
+                                    <span>Stone Charges:</span>
                                     <strong id="stoneCalcVal">₹0.00</strong>
                                 </div>
                                 <div class="jd-pos-calc-row">
-                                    <span>Hallmarking / Certification Fee:</span>
+                                    <span>Hallmark Charges:</span>
                                     <strong>₹45.00</strong>
                                 </div>
                                 <div class="jd-pos-calc-total-row">
@@ -320,11 +320,11 @@
             <!-- RIGHT COLUMN (40%): Sticky Tax Invoice Summary & Payment Tender -->
             <div class="jd-pos-col-right">
 
-                <!-- SECTION E: Tax Invoice Calculation Ledger -->
+                <!-- SECTION E: Bill Summary -->
                 <div class="jd-pos-invoice-summary-card">
                     <div class="jd-pos-invoice-header">
-                        <h2>Tax Invoice Summary</h2>
-                        <span class="jd-pos-pill-tag text-warning border-warning">B2C Retail GST</span>
+                        <h2>Bill Summary</h2>
+                        <span class="jd-pos-pill-tag text-warning border-warning">Tax Invoice</span>
                     </div>
 
                     <div class="jd-pos-invoice-ledger">
@@ -360,7 +360,7 @@
 
                     <!-- Grand Total Payable -->
                     <div class="jd-pos-grand-total-box">
-                        <div class="jd-pos-grand-total-label">Grand Total Payable</div>
+                        <div class="jd-pos-grand-total-label">Final Total Amount</div>
                         <div class="jd-pos-grand-total-val" id="billGrandTotal">₹0.00</div>
                     </div>
 
@@ -375,7 +375,7 @@
                     <div class="jd-pos-card-header">
                         <h2>
                             <i class="bi bi-wallet2 text-warning"></i>
-                            Payment Tender &amp; Split Mode
+                            Payment Mode
                         </h2>
                     </div>
                     <div class="jd-pos-card-body">
@@ -399,7 +399,7 @@
                             <div class="jd-pos-tender-row">
                                 <span class="jd-pos-tender-label">
                                     <i class="bi bi-cash-stack text-warning"></i>
-                                    <span>Primary Tendered Amount</span>
+                                    <span>Amount Paid</span>
                                 </span>
                                 <input type="number" step="0.01" class="jd-pos-tender-input" id="tenderPrimaryInput" placeholder="0.00">
                             </div>
@@ -407,13 +407,13 @@
                             <div class="jd-pos-tender-row">
                                 <span class="jd-pos-tender-label">
                                     <i class="bi bi-qr-code-scan text-warning"></i>
-                                    <span>Secondary / UPI Tender</span>
+                                    <span>Second Payment / UPI</span>
                                 </span>
                                 <input type="number" step="0.01" class="jd-pos-tender-input" id="tenderSecondaryInput" value="0.00">
                             </div>
 
                             <div class="jd-pos-balance-due-row">
-                                <span class="text-secondary">Balance Customer Due:</span>
+                                <span class="text-secondary">Pending Balance:</span>
                                 <span class="due-val" id="tenderDueVal">₹0.00</span>
                             </div>
                         </div>
@@ -425,11 +425,11 @@
                 <div class="jd-pos-actions-wrap">
                     <button type="submit" class="jd-pos-btn-submit" id="btnCompleteSale">
                         <i class="bi bi-patch-check-fill"></i>
-                        <span>Complete Sale &amp; Generate Tax Invoice</span>
+                        <span>Complete Sale &amp; Save Bill</span>
                     </button>
 
                     <div class="jd-pos-secondary-actions-grid">
-                        <button type="button" class="jd-pos-btn-action-tile" onclick="alert('WhatsApp tax invoice receipt will be sent automatically to customer mobile after invoice completion.')">
+                        <button type="button" class="jd-pos-btn-action-tile" onclick="alert('WhatsApp bill will be sent automatically to customer mobile.')">
                             <i class="bi bi-whatsapp text-success"></i>
                             <span>WhatsApp Bill</span>
                         </button>
@@ -439,7 +439,7 @@
                         </button>
                         <a href="{% url 'sale_list' %}" class="jd-pos-btn-action-tile">
                             <i class="bi bi-arrow-left-circle"></i>
-                            <span>Cancel POS</span>
+                            <span>Cancel</span>
                         </a>
                     </div>
                 </div>
@@ -586,7 +586,7 @@
         if (currentItem) {
             itemCardTitle.textContent = currentItem.name;
             itemCardTag.textContent = currentItem.tag_number || ('TAG-' + currentItem.id);
-            itemCardHuid.textContent = currentItem.huid ? ('HUID: ' + currentItem.huid) : 'TAGGED VAULT';
+            itemCardHuid.textContent = currentItem.huid ? ('HUID: ' + currentItem.huid) : 'IN STOCK';
             specPurity.textContent = (currentItem.metal_type || 'Gold') + ' ' + (currentItem.purity || '22K');
             specGross.textContent = currentItem.gross_weight.toFixed(3) + 'g';
             specNet.textContent = currentItem.net_weight.toFixed(3) + 'g';

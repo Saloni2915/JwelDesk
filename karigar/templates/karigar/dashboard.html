@@ -1,28 +1,28 @@
 {% extends 'base.html' %}
 
-{% block title %}Manufacturing & Karigar Atelier — JewelDesk{% endblock %}
+{% block title %}Karigar & Workshop — JewelDesk{% endblock %}
 
-{% block page_title %}Artisan Workshop & Job Work{% endblock %}
+{% block page_title %}Karigar & Workshop{% endblock %}
 
 {% block content %}
 <div class="jd-canvas">
     <!-- Header -->
     <div class="jd-header">
         <div>
-            <div class="jd-badge"><i class="bi bi-hammer me-1"></i> Manufacturing & Artisan Workshop</div>
-            <h1 class="jd-title">Artisan & Job Work Operations</h1>
-            <p class="jd-subtitle">Live tracking of karigar job issues, precious metal custody ledgers, and labour settlements.</p>
+            <div class="jd-badge"><i class="bi bi-hammer me-1"></i> Karigar &amp; Workshop</div>
+            <h1 class="jd-title">Karigar &amp; Job Work</h1>
+            <p class="jd-subtitle">Track karigar work orders, gold/silver given, and labour payments.</p>
         </div>
         <div class="d-flex align-items-center gap-2 flex-wrap">
             {% if user_perms.karigar.can_add %}
             <a href="{% url 'karigar:assignment_create' %}" class="jd-btn-gold">
-                <i class="bi bi-hammer me-1"></i> Issue Assignment
+                <i class="bi bi-hammer me-1"></i> Give Work to Karigar
             </a>
             <a href="{% url 'karigar:karigar_create' %}" class="jd-btn-ghost">
-                <i class="bi bi-person-plus me-1"></i> Add Artisan
+                <i class="bi bi-person-plus me-1"></i> Add Karigar
             </a>
             <a href="{% url 'karigar:settlement_create' %}" class="jd-btn-ghost">
-                <i class="bi bi-cash-coin me-1"></i> Record Settlement
+                <i class="bi bi-cash-coin me-1"></i> Pay Karigar
             </a>
             {% endif %}
             <a href="{% url 'karigar:reports' %}" class="jd-btn-ghost">
@@ -36,12 +36,12 @@
         <!-- Active Karigars -->
         <div class="jd-kpi-card">
             <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="jd-kpi-label">Active Artisans</div>
+                <div class="jd-kpi-label">Active Karigars</div>
                 <div class="jd-kpi-icon"><i class="bi bi-person-workspace"></i></div>
             </div>
             <div class="jd-kpi-val">{{ total_active_karigars }} <span class="fs-6 fw-normal text-muted">/ {{ total_karigars }}</span></div>
             <div class="mt-2 small text-muted">
-                <a href="{% url 'karigar:karigar_list' %}" class="text-gold text-decoration-none">View directory &rarr;</a>
+                <a href="{% url 'karigar:karigar_list' %}" class="text-gold text-decoration-none">View Karigars &rarr;</a>
             </div>
         </div>
 
@@ -76,7 +76,7 @@
         <!-- Labour Dues Pending -->
         <div class="jd-kpi-card">
             <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="jd-kpi-label">Pending Labour Dues</div>
+                <div class="jd-kpi-label">Labour Charges Due</div>
                 <div class="jd-kpi-icon text-gold"><i class="bi bi-wallet2"></i></div>
             </div>
             <div class="jd-kpi-val text-gold font-monospace">₹{{ pending_dues|floatformat:2 }}</div>
@@ -91,7 +91,7 @@
         <div class="row align-items-center g-3">
             <div class="col-md-3">
                 <span class="text-gold fw-bold small text-uppercase" style="letter-spacing: 0.08em;">
-                    <i class="bi bi-gem me-1"></i> Metal in Artisan Custody
+                    <i class="bi bi-gem me-1"></i> Metal with Karigars
                 </span>
             </div>
             <div class="col-md-4">
@@ -109,7 +109,7 @@
                 </div>
             </div>
             <div class="col-md-1 text-end">
-                <a href="{% url 'karigar:reports' %}?tab=material" class="jd-btn-ghost btn-sm px-2" title="Inspect Custody Report">
+                <a href="{% url 'karigar:reports' %}?tab=material" class="jd-btn-ghost btn-sm px-2" title="View Metal Report">
                     <i class="bi bi-arrow-right"></i>
                 </a>
             </div>
@@ -123,7 +123,7 @@
             {% if overdue_list %}
             <div class="jd-card mb-4 p-0 overflow-hidden" style="border: 1px solid rgba(239, 68, 68, 0.4);">
                 <div class="px-4 py-3 d-flex justify-content-between align-items-center border-bottom" style="background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.3) !important;">
-                    <span class="text-danger fw-bold"><i class="bi bi-alarm me-2"></i> Overdue Attention Needed ({{ overdue_count }})</span>
+                    <span class="text-danger fw-bold"><i class="bi bi-alarm me-2"></i> Overdue Jobs ({{ overdue_count }})</span>
                     <a href="{% url 'karigar:pending_assignments' %}" class="text-danger text-decoration-none small">View All Overdue &rarr;</a>
                 </div>
                 <div class="table-responsive">
@@ -151,7 +151,7 @@
                                 <td class="text-danger fw-semibold">{{ asg.expected_completion_date|date:"d M Y" }}</td>
                                 <td><span class="badge bg-danger">{{ asg.priority }}</span></td>
                                 <td class="text-end pe-3">
-                                    <a href="{% url 'karigar:assignment_detail' asg.id %}" class="jd-btn-ghost btn-sm">Inspect</a>
+                                    <a href="{% url 'karigar:assignment_detail' asg.id %}" class="jd-btn-ghost btn-sm">View</a>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -165,16 +165,16 @@
             <div class="jd-table-card">
                 <div class="p-4 border-bottom d-flex justify-content-between align-items-center" style="border-color: rgba(236,200,106,0.12) !important;">
                     <h5 class="font-serif fw-bold text-white mb-0" style="font-family: 'Cinzel', serif;">
-                        <i class="bi bi-hammer text-gold me-2"></i> Recent Work Assignments
+                        <i class="bi bi-hammer text-gold me-2"></i> Recent Karigar Jobs
                     </h5>
-                    <a href="{% url 'karigar:assignment_list' %}" class="jd-btn-ghost btn-sm">All Assignments &rarr;</a>
+                    <a href="{% url 'karigar:assignment_list' %}" class="jd-btn-ghost btn-sm">All Jobs &rarr;</a>
                 </div>
                 <div class="table-responsive">
                     <table class="jd-table">
                         <thead>
                             <tr>
                                 <th>Job #</th>
-                                <th>Artisan</th>
+                                <th>Karigar</th>
                                 <th>Customer / Ref</th>
                                 <th>Work Type</th>
                                 <th>Issued Net</th>
@@ -201,7 +201,7 @@
                                     {% elif asg.inventory_item %}
                                     <span class="text-muted small d-block font-monospace">SKU: {{ asg.inventory_item.item_code }}</span>
                                     {% else %}
-                                    <span class="text-muted small">Showroom Vault</span>
+                                    <span class="text-muted small">Shop Stock</span>
                                     {% endif %}
                                 </td>
                                 <td><span class="jd-tag">{{ asg.work_type }}</span></td>
@@ -228,7 +228,7 @@
                             {% empty %}
                             <tr>
                                 <td colspan="7" class="text-center py-5 text-muted">
-                                    No work assignments issued yet. Click "+ Issue Assignment" to allocate job work.
+                                    No jobs given yet. Click "+ Give Work to Karigar" to assign work.
                                 </td>
                             </tr>
                             {% endfor %}
@@ -238,15 +238,15 @@
             </div>
         </div>
 
-        <!-- Right: Top Artisans & Recent Settlements -->
+        <!-- Right: Top Karigars & Recent Payments -->
         <div class="col-lg-4">
             <!-- Top Karigars Card -->
             <div class="jd-card p-4 mb-4">
                 <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3" style="border-color: rgba(236,200,106,0.12) !important;">
                     <h6 class="font-serif fw-bold text-white mb-0" style="font-family: 'Cinzel', serif;">
-                        <i class="bi bi-people text-gold me-2"></i> Top Active Artisans
+                        <i class="bi bi-people text-gold me-2"></i> Top Karigars
                     </h6>
-                    <a href="{% url 'karigar:karigar_list' %}" class="text-gold text-decoration-none small">Directory &rarr;</a>
+                    <a href="{% url 'karigar:karigar_list' %}" class="text-gold text-decoration-none small">All Karigars &rarr;</a>
                 </div>
                 <div class="d-flex flex-column gap-3">
                     {% for k in top_karigars %}
@@ -261,11 +261,11 @@
                             <span class="jd-badge" style="background: rgba(236,200,106,0.12); color: #ECC86A; border-color: rgba(236,200,106,0.3);">
                                 {{ k.active_count }} active
                             </span>
-                            <div class="small text-muted font-monospace mt-1">Dues: ₹{{ k.pending_balance|floatformat:0 }}</div>
+                            <div class="small text-muted font-monospace mt-1">Labour Due: ₹{{ k.pending_balance|floatformat:0 }}</div>
                         </div>
                     </div>
                     {% empty %}
-                    <p class="text-muted small text-center my-3">No active artisans found.</p>
+                    <p class="text-muted small text-center my-3">No active karigars found.</p>
                     {% endfor %}
                 </div>
             </div>
@@ -274,9 +274,9 @@
             <div class="jd-card p-4">
                 <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3" style="border-color: rgba(236,200,106,0.12) !important;">
                     <h6 class="font-serif fw-bold text-white mb-0" style="font-family: 'Cinzel', serif;">
-                        <i class="bi bi-receipt text-gold me-2"></i> Recent Settlements
+                        <i class="bi bi-receipt text-gold me-2"></i> Recent Karigar Payments
                     </h6>
-                    <a href="{% url 'karigar:settlement_list' %}" class="text-gold text-decoration-none small">All &rarr;</a>
+                    <a href="{% url 'karigar:settlement_list' %}" class="text-gold text-decoration-none small">All Payments &rarr;</a>
                 </div>
                 <div class="d-flex flex-column gap-3">
                     {% for st in recent_settlements %}
@@ -293,7 +293,7 @@
                         </div>
                     </div>
                     {% empty %}
-                    <p class="text-muted small text-center my-3">No settlements recorded yet.</p>
+                    <p class="text-muted small text-center my-3">No payments recorded yet.</p>
                     {% endfor %}
                 </div>
             </div>

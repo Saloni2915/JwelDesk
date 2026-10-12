@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Karigar: {{ karigar.name }} — JewelDesk Atelier{% endblock %}
+{% block title %}{{ karigar.name }} — Karigar Details | JewelDesk{% endblock %}
 
 {% block page_title %}{{ karigar.name }} ({{ karigar.karigar_code }}){% endblock %}
 
@@ -10,30 +10,30 @@
     <div class="jd-header">
         <div>
             <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="jd-badge"><i class="bi bi-person-badge me-1"></i> Artisan Ledger</span>
+                <span class="jd-badge"><i class="bi bi-person-badge me-1"></i> Karigar Details</span>
                 {% if karigar.status == 'Active' %}
-                <span class="jd-stage-pill" style="background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.35);">Active Artisan</span>
+                <span class="jd-stage-pill" style="background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.35);">Active</span>
                 {% else %}
                 <span class="jd-stage-pill" style="background: rgba(255,255,255,0.06); color: rgba(250,244,234,0.6); border: 1px solid rgba(255,255,255,0.15);">Inactive</span>
                 {% endif %}
             </div>
             <h1 class="jd-title">{{ karigar.name }} <span class="text-gold font-monospace fs-4">({{ karigar.karigar_code }})</span></h1>
-            <p class="jd-subtitle">{{ karigar.specialization }} &bull; Crafting with atelier since {{ karigar.joining_date|date:"M d, Y" }}</p>
+            <p class="jd-subtitle">{{ karigar.specialization }} &bull; Working since {{ karigar.joining_date|date:"M d, Y" }}</p>
         </div>
         <div class="d-flex align-items-center gap-2 flex-wrap">
             {% if user_perms.karigar.can_add and karigar.is_active %}
             <a href="{% url 'karigar:assignment_create' %}?karigar={{ karigar.id }}" class="jd-btn-gold">
-                <i class="bi bi-hammer me-1"></i> Issue Work
+                <i class="bi bi-hammer me-1"></i> Give Work
             </a>
             <a href="{% url 'karigar:settlement_create' %}?karigar={{ karigar.id }}" class="jd-btn-ghost text-success">
-                <i class="bi bi-cash-stack me-1"></i> Pay Settlement
+                <i class="bi bi-cash-stack me-1"></i> Pay Karigar
             </a>
             {% endif %}
             {% if user_perms.karigar.can_edit %}
             <a href="{% url 'karigar:karigar_edit' karigar.id %}" class="jd-btn-ghost">
                 <i class="bi bi-pencil me-1"></i> Edit
             </a>
-            <form method="post" action="{% url 'karigar:karigar_toggle_status' karigar.id %}" class="d-inline" onsubmit="return confirm('Confirm status toggle for this artisan?');">
+            <form method="post" action="{% url 'karigar:karigar_toggle_status' karigar.id %}" class="d-inline" onsubmit="return confirm('Confirm status toggle for this karigar?');">
                 {% csrf_token %}
                 {% if karigar.is_active %}
                 <button type="submit" class="jd-btn-danger-ghost btn-sm">
@@ -47,29 +47,29 @@
             </form>
             {% endif %}
             <a href="{% url 'karigar:karigar_list' %}" class="jd-btn-ghost">
-                <i class="bi bi-arrow-left me-1"></i> Directory
+                <i class="bi bi-arrow-left me-1"></i> Karigar List
             </a>
         </div>
     </div>
 
     <!-- Top KPI Grid -->
     <div class="jd-kpi-grid mb-4">
-        <!-- Metal in Custody -->
+        <!-- Metal with Karigar -->
         <div class="jd-kpi-card">
             <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="jd-kpi-label">Metal Currently in Custody</div>
+                <div class="jd-kpi-label">Metal with Karigar</div>
                 <div class="jd-kpi-icon text-gold"><i class="bi bi-gem"></i></div>
             </div>
             <div class="jd-kpi-val text-gold font-monospace">{{ karigar.current_net_metal_holding|floatformat:3 }} <span class="fs-6 fw-normal text-muted">g net</span></div>
             <div class="mt-2 small text-muted">
-                Across {{ karigar.active_assignments_count }} active assignment(s)
+                Across {{ karigar.active_assignments_count }} active job(s)
             </div>
         </div>
 
         <!-- Total Charges Earned -->
         <div class="jd-kpi-card">
             <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="jd-kpi-label">Lifetime Labour Charges</div>
+                <div class="jd-kpi-label">Total Labour Charges</div>
                 <div class="jd-kpi-icon"><i class="bi bi-hammer"></i></div>
             </div>
             <div class="jd-kpi-val text-info font-monospace">₹{{ karigar.total_charges|floatformat:2 }}</div>
@@ -81,19 +81,19 @@
         <!-- Total Settled -->
         <div class="jd-kpi-card">
             <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="jd-kpi-label">Disbursed Settlements</div>
+                <div class="jd-kpi-label">Total Paid</div>
                 <div class="jd-kpi-icon text-success"><i class="bi bi-cash-coin"></i></div>
             </div>
             <div class="jd-kpi-val text-success font-monospace">₹{{ karigar.total_paid|floatformat:2 }}</div>
             <div class="mt-2 small text-muted">
-                Total funds cleared to artisan
+                Total payments made
             </div>
         </div>
 
         <!-- Pending Balance Due -->
         <div class="jd-kpi-card">
             <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="jd-kpi-label">Pending Labour Balance</div>
+                <div class="jd-kpi-label">Pending Labour Due</div>
                 <div class="jd-kpi-icon" style="color: {% if karigar.pending_balance > 0 %}#f87171{% else %}#34d399{% endif %};">
                     <i class="bi bi-wallet2"></i>
                 </div>
@@ -102,7 +102,7 @@
                 ₹{{ karigar.pending_balance|floatformat:2 }}
             </div>
             <div class="mt-2 small text-muted">
-                Current outstanding payment liability
+                Outstanding labour charges
             </div>
         </div>
     </div>
@@ -111,10 +111,10 @@
     <div class="row g-4">
         <!-- Left: Contact & Cumulative Metal Stats -->
         <div class="col-lg-4">
-            <!-- Artisan Profile Card -->
+            <!-- Karigar Profile Card -->
             <div class="jd-card p-4 mb-4">
                 <div class="border-bottom pb-3 mb-3" style="border-color: rgba(236,200,106,0.12) !important;">
-                    <span class="text-gold small fw-bold text-uppercase" style="letter-spacing: 0.08em;">Artisan Contact & Dossier</span>
+                    <span class="text-gold small fw-bold text-uppercase" style="letter-spacing: 0.08em;">Karigar Details</span>
                     <h5 class="font-serif fw-bold text-white mb-0 mt-1" style="font-family: 'Cinzel', serif;">{{ karigar.name }}</h5>
                 </div>
 
@@ -143,19 +143,19 @@
                     {% endif %}
                     {% if karigar.pan_or_id %}
                     <div class="d-flex justify-content-between align-items-center">
-                        <span class="text-muted small">Govt / Tax ID:</span>
+                        <span class="text-muted small">PAN / ID:</span>
                         <span class="text-light font-monospace small">{{ karigar.pan_or_id }}</span>
                     </div>
                     {% endif %}
                     {% if karigar.address %}
                     <div class="pt-2 border-top" style="border-color: rgba(255,255,255,0.06) !important;">
-                        <span class="text-muted small d-block mb-1">Workshop Location:</span>
+                        <span class="text-muted small d-block mb-1">Workshop Address:</span>
                         <span class="text-light small">{{ karigar.address|linebreaksbr }}</span>
                     </div>
                     {% endif %}
                     {% if karigar.bank_details %}
                     <div class="pt-2 border-top" style="border-color: rgba(255,255,255,0.06) !important;">
-                        <span class="text-muted small d-block mb-1">Banking / UPI:</span>
+                        <span class="text-muted small d-block mb-1">Bank / UPI:</span>
                         <span class="text-light small font-monospace">{{ karigar.bank_details|linebreaksbr }}</span>
                     </div>
                     {% endif %}
@@ -170,16 +170,16 @@
             <div class="jd-card p-4">
                 <div class="border-bottom pb-3 mb-3" style="border-color: rgba(236,200,106,0.12) !important;">
                     <h6 class="font-serif fw-bold text-white mb-0" style="font-family: 'Cinzel', serif;">
-                        <i class="bi bi-speedometer2 text-gold me-2"></i> Cumulative Metal Audit
+                        <i class="bi bi-speedometer2 text-gold me-2"></i> Metal Account Summary
                     </h6>
                 </div>
                 <div class="d-flex flex-column gap-2">
                     <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
-                        <span class="text-muted small">Total Net Issued:</span>
+                        <span class="text-muted small">Total Metal Issued:</span>
                         <span class="text-white font-monospace fw-bold">{{ metal_stats.total_issued|default:0|floatformat:3 }} g</span>
                     </div>
                     <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
-                        <span class="text-muted small">Finished Received:</span>
+                        <span class="text-muted small">Finished Jewellery Received:</span>
                         <span class="text-success font-monospace fw-bold">{{ metal_stats.total_received|default:0|floatformat:3 }} g</span>
                     </div>
                     <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
@@ -187,7 +187,7 @@
                         <span class="text-white font-monospace fw-bold">{{ metal_stats.total_scrap|default:0|floatformat:3 }} g</span>
                     </div>
                     <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
-                        <span class="text-muted small">Actual Workshop Loss:</span>
+                        <span class="text-muted small">Actual Making Loss:</span>
                         <span class="text-danger font-monospace fw-semibold">{{ metal_stats.total_actual_loss|default:0|floatformat:3 }} g</span>
                     </div>
                     <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
@@ -195,7 +195,7 @@
                         <span class="text-white font-monospace">{{ metal_stats.total_allowed_loss|default:0|floatformat:3 }} g</span>
                     </div>
                     <div class="d-flex justify-content-between pt-2">
-                        <span class="text-muted small">Wastage Variance:</span>
+                        <span class="text-muted small">Wastage Difference:</span>
                         <span class="font-monospace fw-bold {% if metal_stats.total_diff > 0 %}text-danger{% else %}text-success{% endif %}">
                             {{ metal_stats.total_diff|default:0|floatformat:3 }} g
                         </span>
@@ -211,17 +211,17 @@
                     <ul class="nav nav-pills gap-2" id="karigarTabs" role="tablist">
                         <li class="nav-item">
                             <button class="nav-link active jd-btn-gold py-1 px-3" id="active-tab" data-bs-toggle="pill" data-bs-target="#active-work" type="button" role="tab">
-                                Active Assignments ({{ active_works.count }})
+                                Active Jobs ({{ active_works.count }})
                             </button>
                         </li>
                         <li class="nav-item">
                             <button class="nav-link jd-btn-ghost py-1 px-3" id="history-tab" data-bs-toggle="pill" data-bs-target="#work-history" type="button" role="tab">
-                                Completed History
+                                Job History
                             </button>
                         </li>
                         <li class="nav-item">
                             <button class="nav-link jd-btn-ghost py-1 px-3" id="settlements-tab" data-bs-toggle="pill" data-bs-target="#settlements" type="button" role="tab">
-                                Settlements &amp; Vouchers
+                                Payments &amp; Vouchers
                             </button>
                         </li>
                     </ul>
@@ -270,7 +270,7 @@
                                         <td class="text-end pe-3">
                                             <div class="d-flex justify-content-end gap-1">
                                                 <a href="{% url 'karigar:assignment_detail' asg.id %}" class="jd-btn-ghost btn-sm py-1 px-2">
-                                                    Inspect
+                                                    View
                                                 </a>
                                                 {% if user_perms.karigar.can_edit %}
                                                 <a href="{% url 'karigar:assignment_receive' asg.id %}" class="btn btn-sm py-1 px-2" style="background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); color: #6ee7b7;">
@@ -283,7 +283,7 @@
                                     {% empty %}
                                     <tr>
                                         <td colspan="7" class="text-center py-5 text-muted">
-                                            No active assignments in workshop for this artisan.
+                                            No active jobs in workshop for this karigar.
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -338,7 +338,7 @@
                                     {% empty %}
                                     <tr>
                                         <td colspan="8" class="text-center py-5 text-muted">
-                                            No completed assignments history yet.
+                                            No completed jobs history yet.
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -384,7 +384,7 @@
                                     {% empty %}
                                     <tr>
                                         <td colspan="6" class="text-center py-5 text-muted">
-                                            No settlements recorded for this artisan yet.
+                                            No payments recorded for this karigar yet.
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -392,6 +392,8 @@
                             </table>
                         </div>
                     </div>
+                </div>
+            </div>
                 </div>
             </div>
         </div>

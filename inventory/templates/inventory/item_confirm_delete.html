@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Delete Jewellery Item: {{ item.name }} — JewelDesk Atelier{% endblock %}
+{% block title %}Delete Jewellery Item: {{ item.name }} — JewelDesk{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/inventory_atelier.css' %}?v={% now "U" %}" rel="stylesheet">
@@ -18,9 +18,9 @@
                     </h2>
                 </div>
                 <div class="jd-form-card-body text-center p-4">
-                    <p class="fs-5 mb-3">Are you sure you want to permanently remove this jewellery piece from the vault?</p>
+                    <p class="fs-5 mb-3">Are you sure you want to permanently delete this jewellery item from stock?</p>
                     <div class="jd-spec-banner p-3 mb-4 text-start small">
-                        <p class="mb-1 text-muted">Piece ID: <strong class="font-monospace">{{ item.item_code }}</strong></p>
+                        <p class="mb-1 text-muted">Item Code: <strong class="font-monospace">{{ item.item_code }}</strong></p>
                         <p class="mb-1 text-muted">Tag: <strong class="text-warning font-monospace">{{ item.tag_number }}</strong></p>
                         <p class="mb-1 text-muted">Name: <strong>{{ item.name }}</strong></p>
                         <p class="mb-1 text-muted">Category: <strong>{{ item.category.name }}</strong></p>

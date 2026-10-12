@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Patron Enquiries — JewelDesk Atelier{% endblock %}
+{% block title %}Customer Enquiries — JewelDesk{% endblock %}
 
 {% block page_title %}Customer Enquiries{% endblock %}
 
@@ -9,13 +9,13 @@
     <!-- Header -->
     <div class="jd-header">
         <div>
-            <div class="jd-badge"><i class="bi bi-chat-quote me-1"></i> Patron Intent &amp; Clienteling</div>
+            <div class="jd-badge"><i class="bi bi-chat-quote me-1"></i> Customer Leads &amp; Follow-ups</div>
             <h1 class="jd-title">Customer Enquiries &amp; Leads</h1>
             <p class="jd-subtitle">Track customer requests, desired jewellery designs, budget targets, and follow-up schedules.</p>
         </div>
         <div>
             <a href="{% url 'enquiry_add' %}" class="jd-btn-gold">
-                <i class="bi bi-chat-left-plus me-1"></i> Record New Enquiry
+                <i class="bi bi-chat-left-plus me-1"></i> + New Enquiry
             </a>
         </div>
     </div>
@@ -32,7 +32,7 @@
             </div>
             <div class="col-lg-3 col-md-3">
                 <select name="status" class="jd-select">
-                    <option value="">All Lead Statuses</option>
+                    <option value="">All Statuses</option>
                     {% for key, val in status_choices %}
                     <option value="{{ key }}" {% if selected_status == key %}selected{% endif %}>{{ val }}</option>
                     {% endfor %}
@@ -40,7 +40,7 @@
             </div>
             <div class="col-lg-3 col-md-3">
                 <select name="followup" class="jd-select">
-                    <option value="">All Follow-up Windows</option>
+                    <option value="">All Follow-up Dates</option>
                     <option value="today" {% if selected_followup == 'today' %}selected{% endif %}>Follow-up Today</option>
                     <option value="upcoming" {% if selected_followup == 'upcoming' %}selected{% endif %}>Upcoming Follow-ups</option>
                     <option value="overdue" {% if selected_followup == 'overdue' %}selected{% endif %}>Overdue Follow-ups</option>
@@ -65,10 +65,10 @@
             <table class="jd-table">
                 <thead>
                     <tr>
-                        <th>Patron Customer</th>
+                        <th>Customer</th>
                         <th>Interested Item / Design</th>
-                        <th>Budget Target</th>
-                        <th>Lead Status</th>
+                        <th>Budget</th>
+                        <th>Status</th>
                         <th>Next Follow-up</th>
                         <th>Created Date</th>
                         <th class="text-end pe-3">Actions</th>
@@ -103,7 +103,7 @@
                         </td>
                         <td>
                             {% if enquiry.status == 'New' %}
-                            <span class="jd-stage-pill" style="background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.35);">New Lead</span>
+                            <span class="jd-stage-pill" style="background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.35);">New</span>
                             {% elif enquiry.status == 'Contacted' %}
                             <span class="jd-stage-pill" style="background: rgba(245,158,11,0.15); color: #fcd34d; border: 1px solid rgba(245,158,11,0.35);">Contacted</span>
                             {% elif enquiry.status == 'Interested' %}
@@ -144,8 +144,8 @@
                             <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(236, 200, 106, 0.08); display: inline-flex; align-items: center; justify-content: center; color: var(--gold-primary); font-size: 1.75rem; margin-bottom: 1rem;">
                                 <i class="bi bi-chat-left-dots"></i>
                             </div>
-                            <h5 class="text-white fw-bold mb-1">No Patron Enquiries Found</h5>
-                            <p class="text-muted small mb-3">Record customer desires, requests, and follow-up alerts.</p>
+                            <h5 class="text-white fw-bold mb-1">No Enquiries Found</h5>
+                            <p class="text-muted small mb-3">Record customer requests, designs, and follow-up dates.</p>
                             <a href="{% url 'enquiry_add' %}" class="jd-btn-gold">
                                 <i class="bi bi-chat-left-plus me-1"></i> Add Enquiry
                             </a>

@@ -1,8 +1,8 @@
 {% extends 'base.html' %}
 
-{% block title %}Manufacturing &amp; Karigar Reports — JewelDesk Atelier{% endblock %}
+{% block title %}Karigar Reports — JewelDesk{% endblock %}
 
-{% block page_title %}Karigar &amp; Manufacturing Reports{% endblock %}
+{% block page_title %}Karigar Reports{% endblock %}
 
 {% block page_actions %}
 <div class="d-flex gap-2">
@@ -10,7 +10,7 @@
         <i class="bi bi-file-earmark-excel me-1"></i> Export to CSV
     </a>
     <a href="{% url 'karigar:dashboard' %}" class="jd-btn-ghost btn-sm">
-        <i class="bi bi-speedometer2 me-1"></i> Workshop Cockpit
+        <i class="bi bi-speedometer2 me-1"></i> Workshop Dashboard
     </a>
 </div>
 {% endblock %}
@@ -20,13 +20,13 @@
     <!-- Header -->
     <div class="jd-header">
         <div>
-            <div class="jd-badge"><i class="bi bi-bar-chart-line me-1"></i> Workshop Intelligence &amp; Loss Control</div>
-            <h1 class="jd-title">Karigar &amp; Manufacturing Reports</h1>
-            <p class="jd-subtitle">Precious metal issue-to-receipt reconciliation, allowable wastage auditing, and labour dues analysis.</p>
+            <div class="jd-badge"><i class="bi bi-bar-chart-line me-1"></i> Karigar Reports</div>
+            <h1 class="jd-title">Karigar Reports</h1>
+            <p class="jd-subtitle">Metal given vs received, wastage tracking, and labour charges summary.</p>
         </div>
         <div class="d-flex align-items-center gap-2">
             <a href="?tab={{ tab }}&karigar={{ selected_karigar }}&start_date={{ start_date }}&end_date={{ end_date }}&export=csv" class="jd-btn-gold">
-                <i class="bi bi-file-earmark-arrow-down me-1"></i> Export Dataset (CSV)
+                <i class="bi bi-file-earmark-arrow-down me-1"></i> Export to CSV
             </a>
         </div>
     </div>
@@ -35,25 +35,25 @@
     <div class="jd-kpi-grid mb-4">
         <div class="jd-kpi-card">
             <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="jd-kpi-label">Total Net Metal Issued</div>
+                <div class="jd-kpi-label">Total Metal Given</div>
                 <div class="jd-kpi-icon text-gold"><i class="bi bi-gem"></i></div>
             </div>
             <div class="jd-kpi-val text-white font-monospace">{{ aggregates.total_issued_wt|floatformat:3 }} g</div>
-            <div class="mt-2 small text-muted">Across filtered time window</div>
+            <div class="mt-2 small text-muted">In selected period</div>
         </div>
 
         <div class="jd-kpi-card">
             <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="jd-kpi-label">Finished Net Received</div>
+                <div class="jd-kpi-label">Finished Metal Received</div>
                 <div class="jd-kpi-icon text-success"><i class="bi bi-check-circle"></i></div>
             </div>
             <div class="jd-kpi-val text-success font-monospace">{{ aggregates.total_received_wt|floatformat:3 }} g</div>
-            <div class="mt-2 small text-muted">Finished jewellery into vault</div>
+            <div class="mt-2 small text-muted">Finished jewellery received</div>
         </div>
 
         <div class="jd-kpi-card">
             <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="jd-kpi-label">Accountability Variance</div>
+                <div class="jd-kpi-label">Wastage Difference</div>
                 <div class="jd-kpi-icon" style="color: {% if aggregates.total_diff > 0 %}#f87171{% else %}#34d399{% endif %};">
                     <i class="bi bi-exclamation-triangle"></i>
                 </div>
@@ -66,11 +66,11 @@
 
         <div class="jd-kpi-card">
             <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="jd-kpi-label">Labour Charges Total</div>
+                <div class="jd-kpi-label">Total Labour Charges</div>
                 <div class="jd-kpi-icon"><i class="bi bi-cash-stack"></i></div>
             </div>
             <div class="jd-kpi-val text-gold font-monospace">₹{{ aggregates.total_charges|floatformat:2 }}</div>
-            <div class="mt-2 small text-muted">Pending balance: ₹{{ aggregates.pending_balance|floatformat:2 }}</div>
+            <div class="mt-2 small text-muted">Balance due: ₹{{ aggregates.pending_balance|floatformat:2 }}</div>
         </div>
     </div>
 
@@ -80,7 +80,7 @@
             <input type="hidden" name="tab" value="{{ tab }}">
             <div class="col-lg-4 col-md-4">
                 <select name="karigar" class="jd-select">
-                    <option value="">All Artisans</option>
+                    <option value="">All Karigars</option>
                     {% for k in karigars %}
                     <option value="{{ k.id }}" {% if selected_karigar == k.id|stringformat:"s" %}selected{% endif %}>{{ k.name }} ({{ k.karigar_code }})</option>
                     {% endfor %}
@@ -111,13 +111,13 @@
             <i class="bi bi-hammer me-1"></i> Work Report
         </a>
         <a class="{% if tab == 'material' %}jd-btn-gold{% else %}jd-btn-ghost{% endif %}" href="?tab=material&karigar={{ selected_karigar }}&start_date={{ start_date }}&end_date={{ end_date }}">
-            <i class="bi bi-scale me-1"></i> Material Accountability
+            <i class="bi bi-scale me-1"></i> Metal &amp; Wastage
         </a>
         <a class="{% if tab == 'charges' %}jd-btn-gold{% else %}jd-btn-ghost{% endif %}" href="?tab=charges&karigar={{ selected_karigar }}&start_date={{ start_date }}&end_date={{ end_date }}">
-            <i class="bi bi-cash-stack me-1"></i> Charges &amp; Dues
+            <i class="bi bi-cash-stack me-1"></i> Labour &amp; Balance
         </a>
         <a class="{% if tab == 'overdue' %}jd-btn-gold{% else %}jd-btn-ghost{% endif %} text-danger" href="?tab=overdue&karigar={{ selected_karigar }}&start_date={{ start_date }}&end_date={{ end_date }}">
-            <i class="bi bi-alarm me-1"></i> Overdue Work Report
+            <i class="bi bi-alarm me-1"></i> Overdue Jobs
         </a>
     </div>
 
@@ -129,14 +129,14 @@
             <table class="jd-table">
                 <thead>
                     <tr>
-                        <th>Job Ref</th>
-                        <th>Artisan</th>
+                        <th>Job #</th>
+                        <th>Karigar</th>
                         <th>Work Type</th>
                         <th>Issue Date</th>
                         <th>Expected Date</th>
                         <th>Actual Date</th>
                         <th>Status</th>
-                        <th class="text-end pe-3">Total Charge</th>
+                        <th class="text-end pe-3">Labour Charges</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -168,15 +168,15 @@
             <table class="jd-table">
                 <thead>
                     <tr>
-                        <th>Job Ref</th>
-                        <th>Artisan</th>
+                        <th>Job #</th>
+                        <th>Karigar</th>
                         <th>Metal</th>
-                        <th>Net Issued</th>
+                        <th>Net Given</th>
                         <th>Net Received</th>
                         <th>Scrap Returned</th>
                         <th>Actual Loss</th>
                         <th>Allowed Loss</th>
-                        <th class="text-end pe-3">Variance Diff</th>
+                        <th class="text-end pe-3">Wastage Diff</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -211,12 +211,12 @@
             <table class="jd-table">
                 <thead>
                     <tr>
-                        <th>Job Ref</th>
-                        <th>Artisan</th>
-                        <th>Charge Basis</th>
+                        <th>Job #</th>
+                        <th>Karigar</th>
+                        <th>Making Type</th>
                         <th>Rate</th>
-                        <th>Labour Charge</th>
-                        <th>Total Charge</th>
+                        <th>Making Charge</th>
+                        <th>Total Labour</th>
                         <th>Paid Amount</th>
                         <th class="text-end pe-3">Balance Due</th>
                     </tr>
@@ -252,8 +252,8 @@
             <table class="jd-table">
                 <thead>
                     <tr>
-                        <th>Job Ref</th>
-                        <th>Artisan</th>
+                        <th>Job #</th>
+                        <th>Karigar</th>
                         <th>Customer / Order</th>
                         <th>Due Date</th>
                         <th>Priority</th>
@@ -276,7 +276,7 @@
                         <td><span class="badge bg-danger">{{ asg.priority }}</span></td>
                         <td><span class="jd-stage-pill">{{ asg.status }}</span></td>
                         <td class="text-end pe-3">
-                            <a href="{% url 'karigar:assignment_detail' asg.id %}" class="jd-btn-danger-ghost btn-sm py-1 px-2">Inspect</a>
+                            <a href="{% url 'karigar:assignment_detail' asg.id %}" class="jd-btn-danger-ghost btn-sm py-1 px-2">View</a>
                         </td>
                     </tr>
                     {% endif %}

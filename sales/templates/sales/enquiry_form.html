@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ page_title }} — JewelDesk Atelier{% endblock %}
+{% block title %}{{ page_title }} — JewelDesk{% endblock %}
 
 {% block page_title %}{{ page_title }}{% endblock %}
 
@@ -15,9 +15,9 @@
     <!-- Header -->
     <div class="jd-header">
         <div>
-            <div class="jd-badge"><i class="bi bi-chat-left-dots me-1"></i> Patron Intent Record</div>
+            <div class="jd-badge"><i class="bi bi-chat-left-dots me-1"></i> Customer Enquiry</div>
             <h1 class="jd-title">{{ page_title }}</h1>
-            <p class="jd-subtitle">Record customer interest, desired precious metals, budget boundaries, and follow-up milestones.</p>
+            <p class="jd-subtitle">Record customer interest, desired jewellery, budget, and follow-up date.</p>
         </div>
         <div>
             <a href="{% url 'enquiry_list' %}" class="jd-btn-ghost">
@@ -41,13 +41,13 @@
                     {% endif %}
 
                     <div class="d-flex align-items-center gap-2 mb-4 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
-                        <span class="text-gold fw-bold"><i class="bi bi-chat-left-text me-1"></i> Enquiry Directives</span>
+                        <span class="text-gold fw-bold"><i class="bi bi-chat-left-text me-1"></i> Enquiry Details</span>
                     </div>
 
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label for="{{ form.customer.id_for_label }}" class="form-label text-gold small fw-bold">
-                                Customer Patron <span class="text-danger">*</span>
+                                Customer <span class="text-danger">*</span>
                             </label>
                             {{ form.customer }}
                             {% if form.customer.errors %}
@@ -87,7 +87,7 @@
 
                         <div class="col-md-6">
                             <label for="{{ form.status.id_for_label }}" class="form-label text-gold small fw-bold">
-                                Lead Status <span class="text-danger">*</span>
+                                Status <span class="text-danger">*</span>
                             </label>
                             {{ form.status }}
                             {% if form.status.errors %}
@@ -97,7 +97,7 @@
 
                         <div class="col-md-6">
                             <label for="{{ form.next_followup_date.id_for_label }}" class="form-label text-gold small fw-bold">
-                                Target Next Follow-up Date
+                                Next Follow-up Date
                             </label>
                             {{ form.next_followup_date }}
                             {% if form.next_followup_date.errors %}
@@ -107,7 +107,7 @@
 
                         <div class="col-md-12">
                             <label for="{{ form.notes.id_for_label }}" class="form-label text-gold small fw-bold">
-                                Customer Notes &amp; Special Requests
+                                Notes / Special Requests
                             </label>
                             {{ form.notes }}
                             {% if form.notes.errors %}

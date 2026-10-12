@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Sales Ledger & Invoices — JewelDesk Atelier{% endblock %}
+{% block title %}Sales &amp; Invoices — JewelDesk{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/sales_bullion.css' %}?v={% now "U" %}" rel="stylesheet">
@@ -13,15 +13,15 @@
     <!-- 1. Header & Actions -->
     <div class="jd-sb-header">
         <div class="jd-sb-title-wrap">
-            <h1><i class="bi bi-receipt text-warning me-2"></i>Showroom Sales Ledger &amp; Invoices</h1>
-            <p class="jd-sb-subtitle">Live register of retail counter transactions, tax receipts, and payment settlements</p>
+            <h1><i class="bi bi-receipt text-warning me-2"></i>Sales &amp; Invoices</h1>
+            <p class="jd-sb-subtitle">List of all sales bills, invoices, and customer payments</p>
         </div>
         <div class="jd-sb-header-actions">
             <a href="{% url 'old_gold_list' %}" class="jd-btn-ghost">
-                <i class="bi bi-arrow-repeat"></i> Old Gold Ledger
+                <i class="bi bi-arrow-repeat"></i> Old Gold History
             </a>
             <a href="{% url 'sale_add' %}" class="jd-btn-gold">
-                <i class="bi bi-cart-plus-fill"></i> + New Sale POS
+                <i class="bi bi-cart-plus-fill"></i> + New Sale
             </a>
         </div>
     </div>
@@ -51,7 +51,7 @@
             </div>
             <div class="jd-sb-kpi-label">Lifetime Revenue</div>
             <div class="jd-sb-kpi-val text-warning">₹{{ total_revenue_all|floatformat:2 }}</div>
-            <div class="jd-sb-kpi-sub">Across all sales counters</div>
+            <div class="jd-sb-kpi-sub">Total sales revenue</div>
         </div>
 
         <!-- Total Invoices Billed -->
@@ -64,7 +64,7 @@
             </div>
             <div class="jd-sb-kpi-label">Total Invoices</div>
             <div class="jd-sb-kpi-val">{{ total_sales_count }}</div>
-            <div class="jd-sb-kpi-sub">Official sales recorded</div>
+            <div class="jd-sb-kpi-sub">Total sales bills generated</div>
         </div>
 
         <!-- Terminal Status -->
@@ -75,9 +75,9 @@
                 </div>
                 <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">Online</span>
             </div>
-            <div class="jd-sb-kpi-label">Counter Terminal</div>
-            <div class="jd-sb-kpi-val text-warning">Node #01</div>
-            <div class="jd-sb-kpi-sub">GST &amp; BIS Hallmark Compliant</div>
+            <div class="jd-sb-kpi-label">Counter Status</div>
+            <div class="jd-sb-kpi-val text-warning">Counter #01</div>
+            <div class="jd-sb-kpi-sub">Active &amp; Ready</div>
         </div>
     </div>
 
@@ -129,9 +129,9 @@
                         <th>Jewellery Item &amp; Tag</th>
                         <th>Sale Amount</th>
                         <th>Payment Mode</th>
-                        <th>Settlement Status</th>
-                        <th>Transaction Date</th>
-                        <th class="text-end pe-3">Receipt Action</th>
+                        <th>Payment Status</th>
+                        <th>Date &amp; Time</th>
+                        <th class="text-end pe-3">Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -184,8 +184,8 @@
                             {{ sale.sale_date|date:"M d, Y h:i A" }}
                         </td>
                         <td class="text-end pe-3">
-                            <a href="{% url 'sale_detail' sale.id %}" class="btn btn-outline-warning btn-sm py-1 px-2 fw-semibold" title="View & Print Receipt">
-                                <i class="bi bi-receipt"></i> Receipt
+                            <a href="{% url 'sale_detail' sale.id %}" class="btn btn-outline-warning btn-sm py-1 px-2 fw-semibold" title="View & Print Bill">
+                                <i class="bi bi-receipt"></i> View Bill
                             </a>
                         </td>
                     </tr>
@@ -193,10 +193,10 @@
                     <tr>
                         <td colspan="8" class="text-center py-5 text-muted">
                             <i class="bi bi-cart-x fs-2 text-warning d-block mb-2 opacity-75"></i>
-                            <div class="fw-semibold text-light mb-1">No showroom sales found</div>
-                            <div class="small mb-3">Record your first sale using the Showroom POS Terminal.</div>
+                            <div class="fw-semibold text-light mb-1">No sales found</div>
+                            <div class="small mb-3">Record your first sale using the New Sale button.</div>
                             <a href="{% url 'sale_add' %}" class="jd-btn-gold">
-                                <i class="bi bi-cart-plus-fill"></i> Create First Sale
+                                <i class="bi bi-cart-plus-fill"></i> New Sale
                             </a>
                         </td>
                     </tr>

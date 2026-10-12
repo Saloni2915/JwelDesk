@@ -13,15 +13,15 @@
 {% block content %}
 <div class="jd-canvas">
 
-    <!-- Atelier Header -->
+    <!-- Header -->
     <header class="jd-header">
         <div class="jd-header-left">
             <span class="jd-badge-pill">
-                <i class="bi bi-person-check" aria-hidden="true"></i> Identity & Authentication
+                <i class="bi bi-person-check" aria-hidden="true"></i> Staff Login
             </span>
-            <h1 class="jd-title">Grant Staff Login Access</h1>
+            <h1 class="jd-title">Set Up Staff Login</h1>
             <p class="jd-subtitle">
-                Authorize system sign-in credentials for <strong>{{ employee.full_name }}</strong> (Employee ID: <code>{{ employee.employee_id }}</code> &bull; Email: {{ employee.email }}).
+                Create or link a login account for <strong>{{ employee.full_name }}</strong> (Staff ID: <code>{{ employee.employee_id }}</code> &bull; Email: {{ employee.email }}).
             </p>
         </div>
         <div class="jd-header-actions">
@@ -40,8 +40,8 @@
                             <i class="bi bi-shield-lock-fill"></i>
                         </div>
                         <div>
-                            <h2 class="jd-card-title mb-0">Staff Authentication Credentials</h2>
-                            <small class="text-muted">Create a new login user or associate an existing registered Django account</small>
+                            <h2 class="jd-card-title mb-0">Staff Login Details</h2>
+                            <small class="text-muted">Create a new login username or connect an existing user account</small>
                         </div>
                     </div>
                 </div>
@@ -61,7 +61,7 @@
 
                         <!-- Mode Switcher -->
                         <div class="mb-4">
-                            <label class="jd-label required">Provisioning Mode</label>
+                            <label class="jd-label required">Setup Option</label>
                             <div class="d-flex flex-wrap gap-4 p-3 rounded" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(236, 200, 106, 0.2);">
                                 {% for radio in form.mode %}
                                 <div class="form-check d-flex align-items-center gap-2">
@@ -78,23 +78,23 @@
                         <div id="create-mode-fields" class="p-4 rounded mb-4" style="background: rgba(21, 19, 14, 0.6); border: 1px solid rgba(236, 200, 106, 0.25);">
                             <div class="d-flex align-items-center gap-2 mb-3">
                                 <i class="bi bi-person-plus text-warning"></i>
-                                <span class="fw-semibold" style="color: var(--jd-gold);">New User Account Creation</span>
+                                <span class="fw-semibold" style="color: var(--jd-gold);">Create New User Account</span>
                             </div>
 
                             <div class="mb-3">
-                                <label for="{{ form.username.id_for_label }}" class="jd-label">Login Username</label>
+                                <label for="{{ form.username.id_for_label }}" class="jd-label">Username</label>
                                 {{ form.username }}
                                 {% if form.username.errors %}
                                     <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ form.username.errors.0 }}</div>
                                 {% endif %}
                                 <div class="form-text mt-1" style="color: #9E9171; font-size: 0.78rem;">
-                                    Leave blank to automatically default to employee email (<code>{{ employee.email }}</code>).
+                                    Leave blank to use staff email (<code>{{ employee.email }}</code>) as username.
                                 </div>
                             </div>
 
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label for="{{ form.password1.id_for_label }}" class="jd-label required">Initial Password</label>
+                                    <label for="{{ form.password1.id_for_label }}" class="jd-label required">Password</label>
                                     {{ form.password1 }}
                                     {% if form.password1.errors %}
                                         <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ form.password1.errors.0 }}</div>
@@ -114,10 +114,10 @@
                         <div id="link-mode-fields" class="p-4 rounded mb-4" style="background: rgba(21, 19, 14, 0.6); border: 1px solid rgba(236, 200, 106, 0.25); display:none;">
                             <div class="d-flex align-items-center gap-2 mb-3">
                                 <i class="bi bi-link-45deg text-warning"></i>
-                                <span class="fw-semibold" style="color: var(--jd-gold);">Link Existing Unassigned User</span>
+                                <span class="fw-semibold" style="color: var(--jd-gold);">Link Existing User Account</span>
                             </div>
 
-                            <label for="{{ form.existing_user.id_for_label }}" class="jd-label required">Select Existing Django Account</label>
+                            <label for="{{ form.existing_user.id_for_label }}" class="jd-label required">Select Existing User Account</label>
                             {{ form.existing_user }}
                             {% if form.existing_user.errors %}
                                 <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ form.existing_user.errors.0 }}</div>

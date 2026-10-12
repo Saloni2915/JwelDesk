@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Roles &amp; Access Permissions — JewelDesk Atelier{% endblock %}
+{% block title %}Roles &amp; Permissions — JewelDesk{% endblock %}
 {% block page_title %}Roles &amp; Permissions{% endblock %}
 
 {% block page_actions %}
@@ -10,10 +10,10 @@
   </a>
   {% if can_manage_roles or not user.employee_profile %}
   <a href="{% url 'team:role_seed' %}" class="jd-btn-ghost btn-sm ms-2" title="Restore or initialize standard built-in roles">
-    <i class="bi bi-arrow-repeat me-1"></i> Initialize Standard Roles
+    <i class="bi bi-arrow-repeat me-1"></i> Set Up Default Roles
   </a>
   <a href="{% url 'team:role_create' %}" class="jd-btn-gold btn-sm ms-2" id="btn-add-role">
-    <i class="bi bi-shield-plus me-1"></i> Add Custom Role
+    <i class="bi bi-shield-plus me-1"></i> Add Role
   </a>
   {% endif %}
 {% endblock %}
@@ -23,17 +23,17 @@
   <!-- Header -->
   <div class="jd-header">
     <div>
-      <div class="jd-badge"><i class="bi bi-shield-check me-1"></i> Security Architecture</div>
-      <h1 class="jd-title">System Roles &amp; Access Profiles</h1>
-      <p class="jd-subtitle">Standard enterprise roles and custom permission matrices for jewellery showroom and atelier staff.</p>
+      <div class="jd-badge"><i class="bi bi-shield-check me-1"></i> Access Control</div>
+      <h1 class="jd-title">Roles &amp; Permissions</h1>
+      <p class="jd-subtitle">Manage staff roles and access permissions across JewelDesk.</p>
     </div>
     <div class="d-flex align-items-center gap-2">
       {% if can_manage_roles or not user.employee_profile %}
       <a href="{% url 'team:role_seed' %}" class="jd-btn-ghost">
-        <i class="bi bi-arrow-repeat me-1"></i> Initialize Standard Roles
+        <i class="bi bi-arrow-repeat me-1"></i> Set Up Default Roles
       </a>
       <a href="{% url 'team:role_create' %}" class="jd-btn-gold" id="btn-add-role">
-        <i class="bi bi-shield-plus me-1"></i> Add Custom Role
+        <i class="bi bi-shield-plus me-1"></i> Add Role
       </a>
       {% endif %}
     </div>
@@ -48,7 +48,7 @@
             <th>Type</th>
             <th>Description</th>
             <th>Active Members</th>
-            <th>Default Accessible Modules</th>
+            <th>Allowed Sections</th>
             <th class="text-end pe-3">Actions</th>
           </tr>
         </thead>
@@ -95,10 +95,10 @@
                 <i class="bi bi-shield-slash"></i>
               </div>
               <h5 class="text-white fw-bold mb-1">No Roles Found</h5>
-              <p class="text-muted small mb-3">You can create custom roles or initialize all standard jewellery store roles with 1 click.</p>
+              <p class="text-muted small mb-3">You can create custom roles or set up standard jewellery shop roles with one click.</p>
               {% if can_manage_roles or not user.employee_profile %}
               <a href="{% url 'team:role_seed' %}" class="jd-btn-gold">
-                <i class="bi bi-magic me-1"></i> Initialize Standard Roles
+                <i class="bi bi-magic me-1"></i> Set Up Default Roles
               </a>
               {% endif %}
             </td>

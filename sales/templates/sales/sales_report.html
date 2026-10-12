@@ -1,12 +1,12 @@
 {% extends 'base.html' %}
 
-{% block title %}Showroom Sales Intelligence &amp; Reports — JewelDesk Atelier{% endblock %}
+{% block title %}Sales Reports — JewelDesk{% endblock %}
 
 {% block page_title %}Sales Report{% endblock %}
 
 {% block page_actions %}
 <a href="{% url 'sale_add' %}" class="jd-btn-gold btn-sm">
-    <i class="bi bi-cart-plus me-1"></i> New Counter Sale
+    <i class="bi bi-cart-plus me-1"></i> New Sale
 </a>
 {% endblock %}
 
@@ -15,13 +15,13 @@
     <!-- Header -->
     <div class="jd-header">
         <div>
-            <div class="jd-badge"><i class="bi bi-graph-up-arrow me-1"></i> Revenue &amp; Commercial Analytics</div>
-            <h1 class="jd-title">Showroom Sales &amp; Intake Report</h1>
-            <p class="jd-subtitle">Detailed breakdown of gross revenue, unit volumes, average ticket values, and bullion exchanges.</p>
+            <div class="jd-badge"><i class="bi bi-graph-up-arrow me-1"></i> Sales Reports</div>
+            <h1 class="jd-title">Sales &amp; Old Gold Report</h1>
+            <p class="jd-subtitle">Summary of total sales, items sold, average bill amount, and old gold transactions.</p>
         </div>
         <div>
             <a href="{% url 'sale_add' %}" class="jd-btn-gold">
-                <i class="bi bi-cart-plus me-1"></i> New POS Sale
+                <i class="bi bi-cart-plus me-1"></i> New Sale
             </a>
         </div>
     </div>
@@ -30,7 +30,7 @@
     <div class="jd-filter-card mb-4">
         <form method="get" class="row g-3 align-items-end">
             <div class="col-12 col-md-3">
-                <label for="report-period" class="form-label text-gold small fw-bold mb-1">Time Horizon</label>
+                <label for="report-period" class="form-label text-gold small fw-bold mb-1">Select Period</label>
                 <select name="period" id="report-period" class="jd-select" onchange="this.form.submit()">
                     <option value="today" {% if selected_period == 'today' %}selected{% endif %}>Today</option>
                     <option value="week" {% if selected_period == 'week' %}selected{% endif %}>This Week</option>
@@ -50,7 +50,7 @@
             </div>
             <div class="col-12 col-md-3 d-flex gap-2">
                 <button type="submit" class="jd-btn-gold flex-grow-1" title="Show Report">
-                    <i class="bi bi-funnel"></i> Query
+                    <i class="bi bi-funnel"></i> Apply Filter
                 </button>
                 <a href="{% url 'sales_report' %}" class="jd-btn-ghost px-3" title="Reset to Today">
                     <i class="bi bi-x-lg"></i>
@@ -76,7 +76,7 @@
                 <div class="jd-kpi-icon"><i class="bi bi-receipt"></i></div>
             </div>
             <div class="jd-kpi-val text-white font-monospace">{{ sales_count }}</div>
-            <div class="mt-2 small text-muted">Total retail checkout tickets</div>
+            <div class="mt-2 small text-muted">Total sales bills</div>
         </div>
 
         <div class="jd-kpi-card">
@@ -85,7 +85,7 @@
                 <div class="jd-kpi-icon text-gold"><i class="bi bi-gem"></i></div>
             </div>
             <div class="jd-kpi-val text-gold font-monospace">{{ items_sold }}</div>
-            <div class="mt-2 small text-muted">Units disbursed from stock</div>
+            <div class="mt-2 small text-muted">Items sold</div>
         </div>
 
         <div class="jd-kpi-card">
@@ -94,7 +94,7 @@
                 <div class="jd-kpi-icon"><i class="bi bi-graph-up"></i></div>
             </div>
             <div class="jd-kpi-val text-info font-monospace">₹{{ average_sale_value }}</div>
-            <div class="mt-2 small text-muted">AOV per patron transaction</div>
+            <div class="mt-2 small text-muted">Average bill amount per customer</div>
         </div>
     </div>
 
@@ -102,10 +102,10 @@
     <div class="jd-card p-4 mb-4 jd-atelier-banner">
         <div class="d-flex align-items-center justify-content-between mb-4 border-bottom pb-3" style="border-color: rgba(236,200,106,0.15) !important;">
             <h6 class="mb-0 fw-bold font-serif" style="font-family: 'Cinzel', serif;">
-                <i class="bi bi-coin text-gold me-2"></i> Old Gold &amp; Bullion Intake ({{ report_start|date:"M d, Y" }} &mdash; {{ report_end|date:"M d, Y" }})
+                <i class="bi bi-coin text-gold me-2"></i> Old Gold Received ({{ report_start|date:"M d, Y" }} &mdash; {{ report_end|date:"M d, Y" }})
             </h6>
             <a href="{% url 'old_gold_list' %}" class="jd-btn-ghost btn-sm">
-                View Old Gold Ledger &rarr;
+                View Old Gold History &rarr;
             </a>
         </div>
         <div class="row g-4 text-center">
@@ -120,14 +120,14 @@
                 <small class="text-muted">{{ buyback_count }} cash buyback{{ buyback_count|pluralize }}</small>
             </div>
             <div class="col-md-3 border-end" style="border-color: rgba(236,200,106,0.15) !important;">
-                <div class="text-gold small fw-bold text-uppercase mb-1">Scrap Acquired</div>
+                <div class="text-gold small fw-bold text-uppercase mb-1">Old Gold Received</div>
                 <div class="fs-4 fw-bold font-monospace text-gold">{{ total_old_gold_weight|floatformat:3 }} g</div>
-                <small class="text-muted">Net pure &amp; alloy intake in vault</small>
+                <small class="text-muted">Net scrap metal received</small>
             </div>
             <div class="col-md-3">
-                <div class="text-gold small fw-bold text-uppercase mb-1">Net Retail Inflow</div>
+                <div class="text-gold small fw-bold text-uppercase mb-1">Total Sales Revenue</div>
                 <div class="fs-4 fw-bold font-monospace">₹{{ total_amount }}</div>
-                <small class="text-success"><i class="bi bi-shield-check me-1"></i> Kept strictly segregated</small>
+                <small class="text-success"><i class="bi bi-check-circle me-1"></i> Net sales amount</small>
             </div>
         </div>
     </div>

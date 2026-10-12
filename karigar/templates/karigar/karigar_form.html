@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ page_title }} — JewelDesk Atelier{% endblock %}
+{% block title %}{{ page_title }} — JewelDesk{% endblock %}
 
 {% block page_title %}{{ page_title }}{% endblock %}
 
@@ -9,9 +9,9 @@
     <!-- Header -->
     <div class="jd-header">
         <div>
-            <div class="jd-badge"><i class="bi bi-hammer me-1"></i> Artisan Profile Setup</div>
+            <div class="jd-badge"><i class="bi bi-hammer me-1"></i> Karigar Details</div>
             <h1 class="jd-title">{{ page_title }}</h1>
-            <p class="jd-subtitle">Maintain artisan master files, specializations, contact channels, and banking compliance.</p>
+            <p class="jd-subtitle">Save karigar contact information, skills, and bank account details.</p>
         </div>
         <div>
             <a href="{% if is_edit %}{% url 'karigar:karigar_detail' karigar.id %}{% else %}{% url 'karigar:karigar_list' %}{% endif %}" class="jd-btn-ghost">
@@ -36,7 +36,7 @@
             <div class="col-lg-8">
                 <div class="jd-card p-4 mb-4">
                     <div class="d-flex align-items-center gap-2 mb-4 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
-                        <span class="text-gold fw-bold"><i class="bi bi-person-badge me-1"></i> Artisan / Workshop Profile</span>
+                        <span class="text-gold fw-bold"><i class="bi bi-person-badge me-1"></i> Karigar Profile</span>
                     </div>
                     <div class="row g-3">
                         <div class="col-md-4">
@@ -48,7 +48,7 @@
                             <small class="text-muted d-block mt-1">Leave blank to auto-generate (e.g. KRG-0001)</small>
                         </div>
                         <div class="col-md-8">
-                            <label class="form-label text-gold small fw-bold">Artisan / Workshop Name <span class="text-danger">*</span></label>
+                            <label class="form-label text-gold small fw-bold">Karigar / Workshop Name <span class="text-danger">*</span></label>
                             {{ form.name }}
                             {% if form.name.errors %}
                             <div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>
@@ -56,7 +56,7 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label text-gold small fw-bold">Primary Mobile <span class="text-danger">*</span></label>
+                            <label class="form-label text-gold small fw-bold">Mobile Number <span class="text-danger">*</span></label>
                             {{ form.mobile }}
                             {% if form.mobile.errors %}
                             <div class="text-danger small mt-1">{{ form.mobile.errors.0 }}</div>
@@ -78,7 +78,7 @@
                             {% endif %}
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label text-gold small fw-bold">Craft Specialization</label>
+                            <label class="form-label text-gold small fw-bold">Specialization / Work Type</label>
                             {{ form.specialization }}
                             {% if form.specialization.errors %}
                             <div class="text-danger small mt-1">{{ form.specialization.errors.0 }}</div>
@@ -86,7 +86,7 @@
                         </div>
 
                         <div class="col-12">
-                            <label class="form-label text-gold small fw-bold">Workshop / Residence Address</label>
+                            <label class="form-label text-gold small fw-bold">Address</label>
                             {{ form.address }}
                             {% if form.address.errors %}
                             <div class="text-danger small mt-1">{{ form.address.errors.0 }}</div>
@@ -98,11 +98,11 @@
                 <!-- Banking & Compliance -->
                 <div class="jd-card p-4">
                     <div class="d-flex align-items-center gap-2 mb-4 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
-                        <span class="text-gold fw-bold"><i class="bi bi-bank me-1"></i> Banking &amp; Tax / Compliance</span>
+                        <span class="text-gold fw-bold"><i class="bi bi-bank me-1"></i> Bank &amp; ID Details</span>
                     </div>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label text-gold small fw-bold">PAN / Aadhaar / Reg. No.</label>
+                            <label class="form-label text-gold small fw-bold">PAN / Aadhaar Number</label>
                             {{ form.pan_or_id }}
                             {% if form.pan_or_id.errors %}
                             <div class="text-danger small mt-1">{{ form.pan_or_id.errors.0 }}</div>
@@ -116,12 +116,12 @@
                             {% endif %}
                         </div>
                         <div class="col-12">
-                            <label class="form-label text-gold small fw-bold">Bank &amp; Settlement Account Details</label>
+                            <label class="form-label text-gold small fw-bold">Bank Account Details</label>
                             {{ form.bank_details }}
                             {% if form.bank_details.errors %}
                             <div class="text-danger small mt-1">{{ form.bank_details.errors.0 }}</div>
                             {% endif %}
-                            <small class="text-muted d-block mt-1">Bank Name, Account Number, IFSC Code, or UPI VPA for direct labour disbursement.</small>
+                            <small class="text-muted d-block mt-1">Bank name, account number, IFSC code, or UPI ID for making labour payments.</small>
                         </div>
                     </div>
                 </div>
@@ -131,20 +131,20 @@
             <div class="col-lg-4">
                 <div class="jd-card p-4 mb-4">
                     <div class="d-flex align-items-center gap-2 mb-4 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
-                        <span class="text-gold fw-bold"><i class="bi bi-gear me-1"></i> Status &amp; State</span>
+                        <span class="text-gold fw-bold"><i class="bi bi-gear me-1"></i> Status &amp; Notes</span>
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label text-gold small fw-bold">Account Status</label>
+                        <label class="form-label text-gold small fw-bold">Status</label>
                         {{ form.status }}
                         {% if form.status.errors %}
                         <div class="text-danger small mt-1">{{ form.status.errors.0 }}</div>
                         {% endif %}
-                        <small class="text-muted d-block mt-1">Inactive artisans cannot be issued new job cards.</small>
+                        <small class="text-muted d-block mt-1">Inactive karigars cannot be given new work.</small>
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label text-gold small fw-bold">Internal Workshop Notes</label>
+                        <label class="form-label text-gold small fw-bold">Notes</label>
                         {{ form.notes }}
                         {% if form.notes.errors %}
                         <div class="text-danger small mt-1">{{ form.notes.errors.0 }}</div>
@@ -153,7 +153,7 @@
 
                     <div class="d-flex flex-column gap-2 pt-2">
                         <button type="submit" class="jd-btn-gold justify-content-center">
-                            <i class="bi bi-check-lg me-1"></i> {% if is_edit %}Save Changes{% else %}Create Karigar{% endif %}
+                            <i class="bi bi-check-lg me-1"></i> {% if is_edit %}Save Changes{% else %}Save Karigar{% endif %}
                         </button>
                         <a href="{% if is_edit %}{% url 'karigar:karigar_detail' karigar.id %}{% else %}{% url 'karigar:karigar_list' %}{% endif %}" class="jd-btn-ghost text-center">
                             Cancel

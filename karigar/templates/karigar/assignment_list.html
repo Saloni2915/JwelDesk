@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Work Assignments — JewelDesk Atelier{% endblock %}
+{% block title %}Karigar Work Assignments — JewelDesk{% endblock %}
 
 {% block page_title %}Karigar Work Assignments{% endblock %}
 
@@ -9,21 +9,21 @@
     <!-- Header -->
     <div class="jd-header">
         <div>
-            <div class="jd-badge"><i class="bi bi-hammer me-1"></i> Workshop Job Cards</div>
-            <h1 class="jd-title">Artisan Work Assignments</h1>
-            <p class="jd-subtitle">Issued job work, metal allocations, expected deadlines, and completion statuses.</p>
+            <div class="jd-badge"><i class="bi bi-hammer me-1"></i> Karigar Jobs</div>
+            <h1 class="jd-title">Karigar Work Assignments</h1>
+            <p class="jd-subtitle">Work given to karigars, metal issued, due dates, and completion status.</p>
         </div>
         <div class="d-flex align-items-center gap-2 flex-wrap">
             {% if user_perms.karigar.can_add %}
             <a href="{% url 'karigar:assignment_create' %}" class="jd-btn-gold">
-                <i class="bi bi-plus-lg me-1"></i> Issue Work Assignment
+                <i class="bi bi-plus-lg me-1"></i> Give Work to Karigar
             </a>
             {% endif %}
             <a href="{% url 'karigar:pending_assignments' %}" class="jd-btn-danger-ghost">
                 <i class="bi bi-hourglass-split me-1"></i> Pending &amp; Overdue
             </a>
             <a href="{% url 'karigar:dashboard' %}" class="jd-btn-ghost">
-                <i class="bi bi-speedometer2 me-1"></i> Workshop Cockpit
+                <i class="bi bi-speedometer2 me-1"></i> Workshop Dashboard
             </a>
         </div>
     </div>
@@ -35,7 +35,7 @@
                 <div class="input-group">
                     <span class="input-group-text bg-transparent border-end-0 text-gold" style="border-color: rgba(236,200,106,0.2);"><i class="bi bi-search"></i></span>
                     <input type="text" name="q" value="{{ q }}" class="jd-input border-start-0"
-                           placeholder="Assignment #, artisan, customer...">
+                           placeholder="Job #, karigar, customer...">
                 </div>
             </div>
             <div class="col-lg-2 col-md-3">
@@ -89,15 +89,15 @@
             <table class="jd-table">
                 <thead>
                     <tr>
-                        <th>Job Ref</th>
-                        <th>Artisan</th>
+                        <th>Job #</th>
+                        <th>Karigar</th>
                         <th>Customer / Item</th>
                         <th>Work Type</th>
                         <th>Metal / Purity</th>
-                        <th>Issued Net</th>
+                        <th>Metal Given</th>
                         <th>Due Date</th>
                         <th>Status</th>
-                        <th>Total Charge</th>
+                        <th>Labour Charges</th>
                         <th class="text-end pe-3">Actions</th>
                     </tr>
                 </thead>
@@ -200,7 +200,7 @@
                             <p class="text-muted small mb-3">No jobs match the active filters or search terms.</p>
                             {% if user_perms.karigar.can_add %}
                             <a href="{% url 'karigar:assignment_create' %}" class="jd-btn-gold">
-                                <i class="bi bi-plus-lg me-1"></i> Issue Work Assignment
+                                <i class="bi bi-plus-lg me-1"></i> Give Work to Karigar
                             </a>
                             {% endif %}
                         </td>

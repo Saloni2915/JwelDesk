@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Patron CRM & Client Directory — JewelDesk Atelier{% endblock %}
+{% block title %}Customers — JewelDesk{% endblock %}
 
 {% block content %}
 <div class="jd-canvas">
@@ -9,15 +9,15 @@
     <!-- 1. Header & Actions -->
     <div class="jd-header">
         <div class="jd-title-wrap">
-            <h1><i class="bi bi-people-fill text-warning me-2"></i>Patron CRM &amp; Client Directory</h1>
-            <p class="jd-subtitle">Showroom client directory, loyalty profiles, purchase ledgers &amp; VIP WhatsApp outreach</p>
+            <h1><i class="bi bi-people-fill text-warning me-2"></i>Customers Directory</h1>
+            <p class="jd-subtitle">Manage customers, view purchase history, and contact via WhatsApp</p>
         </div>
         <div class="jd-header-actions">
             <a href="{% url 'sale_add' %}" class="jd-btn-ghost">
-                <i class="bi bi-cart-plus"></i> Sales POS
+                <i class="bi bi-cart-plus"></i> New Sale
             </a>
             <a href="{% url 'customer_add' %}" class="jd-btn-gold">
-                <i class="bi bi-person-plus-fill"></i> + Register New Customer
+                <i class="bi bi-person-plus-fill"></i> + Add Customer
             </a>
         </div>
     </div>
@@ -27,11 +27,11 @@
         <form method="get" class="row g-2 align-items-center">
             <div class="col-md-6 col-lg-8">
                 <input type="text" name="q" value="{{ selected_q }}" class="jd-input"
-                       placeholder="Search patron by name, mobile number, or city...">
+                       placeholder="Search customer by name, mobile, or city...">
             </div>
             <div class="col-md-6 col-lg-4 d-flex gap-2">
                 <button type="submit" class="jd-btn-gold flex-grow-1" title="Search">
-                    <i class="bi bi-search"></i> Search Patrons
+                    <i class="bi bi-search"></i> Search Customers
                 </button>
                 {% if selected_q %}
                 <a href="{% url 'customer_list' %}" class="jd-btn-ghost px-3" title="Clear Search">
@@ -47,20 +47,20 @@
         <div class="jd-table-header">
             <h2>
                 <i class="bi bi-person-lines-fill text-warning"></i>
-                Client Directory
+                All Customers
             </h2>
             <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 font-monospace">
-                {{ page_obj.paginator.count }} Registered Clients
+                {{ page_obj.paginator.count }} Customers
             </span>
         </div>
         <div class="jd-table-scroll">
             <table class="jd-table">
                 <thead>
                     <tr>
-                        <th>Patron Name</th>
+                        <th>Customer Name</th>
                         <th>Mobile &amp; WhatsApp</th>
                         <th>Email Address</th>
-                        <th>Showroom Purchases</th>
+                        <th>Purchases</th>
                         <th>Member Since</th>
                         <th class="text-end pe-3">Actions</th>
                     </tr>
@@ -98,7 +98,7 @@
                         <!-- Purchases -->
                         <td>
                             <a href="{% url 'customer_detail' customer.id %}" class="jd-tag-pill">
-                                {{ customer.purchases_count }} transaction(s)
+                                {{ customer.purchases_count }} order(s)
                             </a>
                         </td>
 
@@ -110,13 +110,13 @@
                         <!-- Actions -->
                         <td class="text-end pe-3">
                             <div class="d-inline-flex gap-1">
-                                <a href="{% url 'customer_detail' customer.id %}" class="jd-tbl-btn" title="View Patron Profile">
+                                <a href="{% url 'customer_detail' customer.id %}" class="jd-tbl-btn" title="View Customer">
                                     <i class="bi bi-eye"></i>
                                 </a>
-                                <a href="{% url 'customer_edit' customer.id %}" class="jd-tbl-btn" title="Edit Profile">
+                                <a href="{% url 'customer_edit' customer.id %}" class="jd-tbl-btn" title="Edit Customer">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <a href="{% url 'customer_delete' customer.id %}" class="jd-tbl-btn jd-tbl-btn-danger" title="Delete Profile">
+                                <a href="{% url 'customer_delete' customer.id %}" class="jd-tbl-btn jd-tbl-btn-danger" title="Delete Customer">
                                     <i class="bi bi-trash"></i>
                                 </a>
                             </div>
@@ -126,7 +126,7 @@
                     <tr>
                         <td colspan="6" class="text-center py-5 text-muted">
                             <i class="bi bi-people fs-2 d-block mb-2 opacity-50"></i>
-                            No patrons found matching your search.
+                            No customers found matching your search.
                         </td>
                     </tr>
                     {% endfor %}
@@ -136,7 +136,7 @@
 
         <div class="p-3 border-top border-secondary border-opacity-25 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div class="text-muted small">
-                Showing {{ page_obj.start_index|default:0 }} to {{ page_obj.end_index|default:0 }} of {{ page_obj.paginator.count }} patrons
+                Showing {{ page_obj.start_index|default:0 }} to {{ page_obj.end_index|default:0 }} of {{ page_obj.paginator.count }} customers
             </div>
             {% include 'includes/pagination.html' with page_obj=page_obj %}
         </div>

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Jewellery Vault & Stock Register — JewelDesk Atelier{% endblock %}
+{% block title %}Jewellery Stock — JewelDesk{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/inventory_atelier.css' %}?v={% now "U" %}" rel="stylesheet">
@@ -10,18 +10,18 @@
 {% block content %}
 <div class="jd-inv-canvas">
 
-    <!-- 1. Atelier Header & Action CTAs -->
+    <!-- 1. Stock Header & Action CTAs -->
     <div class="jd-inv-header">
         <div class="jd-inv-title-wrap">
-            <h1><i class="bi bi-gem text-warning me-2"></i>Atelier Vault &amp; Inventory Register</h1>
-            <p class="jd-inv-subtitle">Certified jewellery stock, live gold weights, BIS hallmark tracking &amp; showroom showcases</p>
+            <h1><i class="bi bi-gem text-warning me-2"></i>Jewellery Stock</h1>
+            <p class="jd-inv-subtitle">All jewellery stock items, weights, hallmark status, and availability</p>
         </div>
         <div class="jd-inv-header-actions">
             <a href="{% url 'pricing_calculator' %}" class="jd-btn-ghost">
-                <i class="bi bi-calculator"></i> Pricing Engine
+                <i class="bi bi-calculator"></i> Price Calculator
             </a>
             <a href="{% url 'stock_movement_list' %}" class="jd-btn-ghost">
-                <i class="bi bi-arrow-left-right"></i> Stock Audit
+                <i class="bi bi-arrow-left-right"></i> Stock History
             </a>
             <a href="{% url 'category_list' %}" class="jd-btn-ghost">
                 <i class="bi bi-tags"></i> Categories
@@ -30,7 +30,7 @@
                 <i class="bi bi-upload"></i> Import CSV
             </a>
             <a href="{% url 'inventory_add' %}" class="jd-btn-gold">
-                <i class="bi bi-plus-circle-fill"></i> + Add Jewellery
+                <i class="bi bi-plus-circle-fill"></i> + Add Stock Item
             </a>
         </div>
     </div>
@@ -45,7 +45,7 @@
                 </div>
                 <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 fw-bold">{{ summary.total_designs }} Designs</span>
             </div>
-            <div class="jd-inv-kpi-label">Total Catalog Pieces</div>
+            <div class="jd-inv-kpi-label">Total Stock Items</div>
             <div class="jd-inv-kpi-val">{{ summary.total_items }}</div>
             <div class="jd-inv-kpi-sub">{{ summary.total_designs }} unique design code(s)</div>
         </div>
@@ -58,7 +58,7 @@
                 </div>
                 <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25">Ready</span>
             </div>
-            <div class="jd-inv-kpi-label">Showroom Available</div>
+            <div class="jd-inv-kpi-label">Available in Stock</div>
             <div class="jd-inv-kpi-val text-success">{{ summary.available_stock }}</div>
             <div class="jd-inv-kpi-sub">
                 piece(s){% if summary.reserved_stock %} &middot; <span class="text-warning">{{ summary.reserved_stock }} reserved</span>{% endif %}
@@ -73,7 +73,7 @@
                 </div>
                 <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">Selling Val</span>
             </div>
-            <div class="jd-inv-kpi-label">Vault Stock Valuation</div>
+            <div class="jd-inv-kpi-label">Total Stock Value</div>
             <div class="jd-inv-kpi-val text-warning">₹{{ summary.inventory_value|floatformat:2 }}</div>
             <div class="jd-inv-kpi-sub">Estimated retail selling price</div>
         </div>
@@ -86,7 +86,7 @@
                 </div>
                 <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">Gold Stock</span>
             </div>
-            <div class="jd-inv-kpi-label">Gold Inventory</div>
+            <div class="jd-inv-kpi-label">Gold Stock</div>
             <div class="jd-inv-kpi-val text-warning">{{ summary.gold_stock }} <span class="fs-6 fw-normal text-muted">pcs</span></div>
             <div class="jd-inv-kpi-sub font-monospace">{{ summary.gold_weight|floatformat:3 }} g net precious wt</div>
         </div>
@@ -99,7 +99,7 @@
                 </div>
                 <span class="badge bg-secondary bg-opacity-15 text-secondary border border-secondary border-opacity-25 fw-bold">Silver Stock</span>
             </div>
-            <div class="jd-inv-kpi-label">Silver Inventory</div>
+            <div class="jd-inv-kpi-label">Silver Stock</div>
             <div class="jd-inv-kpi-val">{{ summary.silver_stock }} <span class="fs-6 fw-bold">pcs</span></div>
             <div class="jd-inv-kpi-sub font-monospace">{{ summary.silver_weight|floatformat:3 }} g net weight</div>
         </div>
@@ -124,7 +124,7 @@
                     {{ summary.low_stock_items }} item(s) running low &rarr;
                 </a>
                 {% else %}
-                Healthy inventory levels
+                Stock levels healthy
                 {% endif %}
             </div>
         </div>
@@ -227,7 +227,7 @@
                 </div>
                 <div>
                     <select name="sort" class="jd-inv-select">
-                        <option value="-created_at" {% if selected_sort == '-created_at' %}selected{% endif %}>Newest Inward First</option>
+                        <option value="-created_at" {% if selected_sort == '-created_at' %}selected{% endif %}>Newest Added First</option>
                         <option value="created_at" {% if selected_sort == 'created_at' %}selected{% endif %}>Oldest First</option>
                         <option value="selling_price" {% if selected_sort == 'selling_price' %}selected{% endif %}>Price: Low to High</option>
                         <option value="-selling_price" {% if selected_sort == '-selling_price' %}selected{% endif %}>Price: High to Low</option>
@@ -253,12 +253,12 @@
         </form>
     </div>
 
-    <!-- 4. Atelier Inventory Stock Ledger Table -->
+    <!-- 4. Jewellery Stock List Table -->
     <div class="jd-inv-table-card">
         <div class="jd-inv-table-header">
             <h2>
                 <i class="bi bi-card-checklist text-warning"></i>
-                <span>Inventory Ledger &amp; Stock Registry</span>
+                <span>Jewellery Stock List</span>
             </h2>
             <div class="d-flex align-items-center gap-3">
                 <span class="jd-page-indicator">
@@ -275,14 +275,14 @@
                 <thead>
                     <tr>
                         <th>Tag No.</th>
-                        <th>Piece ID / Design</th>
-                        <th>Ornament Name</th>
+                        <th>Item Code / Design</th>
+                        <th>Item Name</th>
                         <th>Metal / Purity</th>
                         <th>HUID &amp; Hallmark</th>
                         <th>Weights (g)</th>
                         <th>Stock Qty</th>
                         <th>Selling Price</th>
-                        <th>Vault Status</th>
+                        <th>Stock Status</th>
                         <th class="text-end pe-3">Actions</th>
                     </tr>
                 </thead>
@@ -304,7 +304,7 @@
                             </span>
                         </td>
 
-                        <!-- Ornament Name & Category -->
+                        <!-- Item Name & Category -->
                         <td>
                             <div class="jd-item-name">
                                 <a href="{% url 'inventory_detail' item.id %}">
@@ -374,7 +374,7 @@
                             {% elif item.is_low_stock %}
                             <span class="jd-status-pill jd-status-low">Low Stock</span>
                             {% else %}
-                            <span class="jd-status-pill jd-status-available">In Vault</span>
+                            <span class="jd-status-pill jd-status-available">In Stock</span>
                             {% endif %}
                         </td>
 
@@ -386,7 +386,7 @@
                             {% endif %}
                         </td>
 
-                        <!-- Vault Status -->
+                        <!-- Stock Status -->
                         <td>
                             {% if item.status == 'Available' %}
                             <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-25" style="font-size: 0.82rem; font-weight: 700;">Available</span>
@@ -400,16 +400,16 @@
                         <!-- Actions -->
                         <td class="text-end pe-3">
                             <div class="d-inline-flex gap-1">
-                                <a href="{% url 'inventory_detail' item.id %}" class="jd-tbl-btn" title="View Specifications &amp; Tag">
+                                <a href="{% url 'inventory_detail' item.id %}" class="jd-tbl-btn" title="View Item Details">
                                     <i class="bi bi-eye"></i>
                                 </a>
-                                <a href="{% url 'inventory_edit' item.id %}" class="jd-tbl-btn" title="Edit Piece">
+                                <a href="{% url 'inventory_edit' item.id %}" class="jd-tbl-btn" title="Edit Item">
                                     <i class="bi bi-pencil"></i>
                                 </a>
                                 <a href="{% url 'stock_adjust' item.id %}" class="jd-tbl-btn" title="Adjust Stock">
                                     <i class="bi bi-arrow-left-right"></i>
                                 </a>
-                                <a href="{% url 'inventory_delete' item.id %}" class="jd-tbl-btn jd-tbl-btn-danger" title="Delete Piece">
+                                <a href="{% url 'inventory_delete' item.id %}" class="jd-tbl-btn jd-tbl-btn-danger" title="Delete Item">
                                     <i class="bi bi-trash"></i>
                                 </a>
                             </div>
@@ -419,10 +419,10 @@
                     <tr>
                         <td colspan="10" class="text-center py-5">
                             <div class="mb-3"><i class="bi bi-inbox fs-1 d-block opacity-50"></i></div>
-                            <h4 class="fw-bold mb-2">No Jewellery Pieces Found</h4>
-                            <p class="mb-3 fw-semibold">No inventory items matched your active search and filter criteria.</p>
+                            <h4 class="fw-bold mb-2">No Jewellery Items Found</h4>
+                            <p class="mb-3 fw-semibold">No stock items match your search and filter criteria.</p>
                             <a href="{% url 'inventory_add' %}" class="jd-btn-gold">
-                                <i class="bi bi-plus-circle me-1"></i> Add New Piece to Vault
+                                <i class="bi bi-plus-circle me-1"></i> Add New Stock Item
                             </a>
                         </td>
                     </tr>

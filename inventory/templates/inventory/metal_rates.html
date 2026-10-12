@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Shop Daily Bullion Rates Board — JewelDesk Atelier{% endblock %}
+{% block title %}Today's Metal Rates — JewelDesk{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/inventory_atelier.css' %}?v={% now "U" %}" rel="stylesheet">
@@ -13,18 +13,18 @@
     <!-- 1. Header & Quick Actions -->
     <div class="jd-inv-header">
         <div class="jd-inv-title-wrap">
-            <h1><i class="bi bi-coin text-warning me-2"></i>Daily Bullion Rates Board</h1>
-            <p class="jd-inv-subtitle">Live benchmark rates for 24K, 22K (916), 18K gold and fine silver applied across billing, valuation &amp; buybacks</p>
+            <h1><i class="bi bi-coin text-warning me-2"></i>Today's Metal Rates</h1>
+            <p class="jd-inv-subtitle">Current market rates for gold, silver, and platinum used for billing and price calculations</p>
         </div>
         <div class="jd-inv-header-actions">
             <a href="{% url 'pricing_calculator' %}" class="jd-btn-gold">
-                <i class="bi bi-calculator"></i> Open Pricing Engine
+                <i class="bi bi-calculator"></i> Open Price Calculator
             </a>
             <form method="post" class="d-inline m-0">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="sync_api">
                 <button type="submit" class="jd-btn-ghost" {% if not can_edit %}disabled{% endif %}>
-                    <i class="bi bi-cloud-arrow-down"></i> Sync Live Market API
+                    <i class="bi bi-cloud-arrow-down"></i> Update Market Rates
                 </button>
             </form>
         </div>
@@ -41,7 +41,7 @@
                 <div class="jd-inv-table-header">
                     <h2>
                         <i class="bi bi-gem text-warning"></i>
-                        Gold Daily Karat Rates (INR)
+                        Gold Rates by Purity
                     </h2>
                     <span class="badge bg-warning text-dark font-monospace">Base: 24K 999 Pure Gold</span>
                 </div>
@@ -133,7 +133,7 @@
                 <div class="jd-inv-table-header">
                     <h2>
                         <i class="bi bi-shield-shaded text-light"></i>
-                        Silver &amp; Platinum Board Rates (INR)
+                        Silver &amp; Platinum Rates
                     </h2>
                     <span class="badge bg-secondary font-monospace">Precious Metals</span>
                 </div>
@@ -206,7 +206,7 @@
                 <div class="jd-form-card-header">
                     <h2>
                         <i class="bi bi-pencil-square text-warning"></i>
-                        Update Shop Board Rates
+                        Update Today's Rates
                     </h2>
                 </div>
                 <div class="jd-form-card-body">
@@ -249,7 +249,7 @@
                         </div>
 
                         <button type="submit" class="jd-btn-gold w-100 py-2 fs-6">
-                            <i class="bi bi-check2-circle"></i> Save &amp; Apply Today's Rates
+                            <i class="bi bi-check2-circle"></i> Save Today's Rates
                         </button>
                     </form>
                     {% else %}

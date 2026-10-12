@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Delete Customer — {{ customer.name }} | JewelDesk Atelier{% endblock %}
+{% block title %}Delete Customer — {{ customer.name }} | JewelDesk{% endblock %}
 
 {% block page_title %}Delete Customer{% endblock %}
 
@@ -17,11 +17,11 @@
 
                 <div class="jd-badge mb-2" style="background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3);">Permanent Action</div>
                 <h3 class="font-serif fw-bold text-white mb-2" style="font-family: 'Cinzel', serif;">Delete Customer Record?</h3>
-                <p class="text-muted small mb-4">You are about to remove this patron from your atelier database. Please review the details below before proceeding.</p>
+                <p class="text-muted small mb-4">You are about to remove this customer from the shop database. Please review the details below before proceeding.</p>
 
                 <div class="p-3 rounded-3 text-start mb-4" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(236, 200, 106, 0.12);">
                     <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
-                        <span class="text-muted small">Patron Name:</span>
+                        <span class="text-muted small">Customer Name:</span>
                         <span class="text-white fw-semibold">{{ customer.name }}</span>
                     </div>
                     <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
@@ -33,7 +33,7 @@
                         <span class="text-white">{{ customer.email|default:"—" }}</span>
                     </div>
                     <div class="pt-2 text-danger small">
-                        <i class="bi bi-info-circle me-1"></i> Warning: Deleting this patron will also delete their related enquiries and link history.
+                        <i class="bi bi-info-circle me-1"></i> Warning: Deleting this customer will also delete their related enquiries and history.
                     </div>
                 </div>
 
@@ -41,7 +41,7 @@
                     {% csrf_token %}
                     <div class="d-flex justify-content-center gap-3">
                         <a href="{% url 'customer_detail' customer.id %}" class="jd-btn-ghost">
-                            <i class="bi bi-arrow-left me-1"></i> Cancel & Keep Record
+                            <i class="bi bi-arrow-left me-1"></i> Cancel & Keep Customer
                         </a>
                         <button type="submit" class="jd-btn-danger-ghost" style="background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #fee2e2;">
                             <i class="bi bi-trash me-1"></i> Confirm Delete

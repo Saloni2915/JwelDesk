@@ -7,15 +7,15 @@
 {% block content %}
 <div class="jd-canvas">
 
-    <!-- Atelier Header -->
+    <!-- Header -->
     <header class="jd-header">
         <div class="jd-header-left">
             <span class="jd-badge-pill">
-                <i class="bi bi-gear-wide-connected" aria-hidden="true"></i> System Settings
+                <i class="bi bi-gear-wide-connected" aria-hidden="true"></i> Shop Settings
             </span>
             <h1 class="jd-title">Business Profile & Invoice Settings</h1>
             <p class="jd-subtitle">
-                Configure your showroom profile, legal GSTIN identity, phone, address, and logo printed on customer invoice PDFs.
+                Configure your shop name, GSTIN, phone, address, and invoice logo.
             </p>
         </div>
         <div class="jd-header-actions">
@@ -34,8 +34,8 @@
                             <i class="bi bi-building"></i>
                         </div>
                         <div>
-                            <h2 class="jd-card-title mb-0">Showroom Identity & Billing Profile</h2>
-                            <small class="text-muted">Information displayed on official GST tax invoices, vouchers, and client receipts</small>
+                            <h2 class="jd-card-title mb-0">Shop Details & Invoice Settings</h2>
+                            <small class="text-muted">Information shown on GST sales invoices and receipts</small>
                         </div>
                     </div>
                 </div>
@@ -55,7 +55,7 @@
                             <!-- Company / Shop Name -->
                             <div class="col-md-6">
                                 <label class="jd-label required" for="{{ form.company_name.id_for_label }}">
-                                    Company / Showroom Name
+                                    Shop / Business Name
                                 </label>
                                 {{ form.company_name }}
                                 {% for e in form.company_name.errors %}
@@ -91,7 +91,7 @@
                             <!-- Email -->
                             <div class="col-md-6">
                                 <label class="jd-label" for="{{ form.email.id_for_label }}">
-                                    Official Business Email
+                                    Business Email
                                 </label>
                                 {{ form.email }}
                                 {% for e in form.email.errors %}
@@ -102,11 +102,11 @@
                             <!-- Address -->
                             <div class="col-12">
                                 <label class="jd-label" for="{{ form.address.id_for_label }}">
-                                    Showroom Physical Address
+                                    Shop Address
                                 </label>
                                 {{ form.address }}
                                 <div class="form-text" style="color: #9E9171; font-size: 0.78rem;">
-                                    Full retail store or workshop address printed in invoice header.
+                                    Full shop or workshop address printed on bills and invoices.
                                 </div>
                                 {% for e in form.address.errors %}
                                     <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>
@@ -116,7 +116,7 @@
                             <!-- Logo -->
                             <div class="col-12">
                                 <label class="jd-label" for="{{ form.logo.id_for_label }}">
-                                    Showroom Brand Logo
+                                    Shop Logo
                                 </label>
                                 
                                 <div id="currentLogoBox" class="mb-3 d-flex align-items-center flex-wrap gap-3 p-3 rounded {% if not settings_obj.logo_url %}d-none{% endif %}"
@@ -125,7 +125,7 @@
                                          class="rounded p-2 bg-white shadow-sm" onerror="this.onerror=null; this.src='{% static 'images/branding/company_logo.png' %}';">
                                     <div>
                                         <span class="d-block fw-semibold text-break" id="logoFileName" style="color: var(--jd-gold);">{{ settings_obj.logo.name|default:"Selected Logo" }}</span>
-                                        <small class="text-muted" id="logoStatusText">Currently active brand insignia for PDF invoices and headers</small>
+                                        <small class="text-muted" id="logoStatusText">Current logo printed on PDF invoices</small>
                                     </div>
                                 </div>
 
@@ -144,7 +144,7 @@
                                         <button type="submit" class="jd-btn-gold btn-sm d-inline-flex align-items-center gap-1" id="btn-quick-save-logo">
                                             <i class="bi bi-cloud-arrow-up-fill me-1"></i> Save &amp; Apply New Logo
                                         </button>
-                                        <button type="submit" name="reset_default_logo" value="1" class="btn btn-outline-warning btn-sm d-inline-flex align-items-center gap-1" id="btn-reset-default-logo" onclick="return confirm('Restore JewelDesk official luxury brand insignia?');" style="border-color: rgba(236, 200, 106, 0.5); color: var(--jd-gold);">
+                                        <button type="submit" name="reset_default_logo" value="1" class="btn btn-outline-warning btn-sm d-inline-flex align-items-center gap-1" id="btn-reset-default-logo" onclick="return confirm('Restore default JewelDesk logo?');" style="border-color: rgba(236, 200, 106, 0.5); color: var(--jd-gold);">
                                             <i class="bi bi-arrow-counterclockwise me-1"></i> Restore JewelDesk Logo
                                         </button>
                                         <span class="text-muted small" style="font-size: 0.78rem;">Updates logo across top navigation, sidebar, and GST tax invoice PDFs.</span>
@@ -166,7 +166,7 @@
                                 </label>
                                 {{ form.invoice_footer_note }}
                                 <div class="form-text" style="color: #9E9171; font-size: 0.78rem;">
-                                    Optional disclaimer or greeting printed at the bottom of every customer invoice PDF (e.g. "Goods once sold are subject to our buyback terms. Thank you for your patronage!").
+                                    Optional disclaimer or greeting printed at the bottom of every customer invoice PDF (e.g. "Goods once sold are subject to shop return terms. Thank you for shopping with us!").
                                 </div>
                                 {% for e in form.invoice_footer_note.errors %}
                                     <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>
@@ -259,7 +259,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (statusText) statusText.textContent = 'Logo marked for removal upon saving';
                 } else {
                     if (previewImg) previewImg.style.opacity = '1';
-                    if (statusText) statusText.textContent = 'Currently active brand insignia';
+                    if (statusText) statusText.textContent = 'Current shop logo';
                 }
             });
         }

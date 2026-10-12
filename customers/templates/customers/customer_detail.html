@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{{ customer.name }} — Patron Profile | JewelDesk Atelier{% endblock %}
+{% block title %}{{ customer.name }} — Customer Details | JewelDesk{% endblock %}
 
 {% block content %}
 <div class="jd-canvas">
@@ -11,7 +11,7 @@
         <div class="jd-title-wrap">
             <h1>
                 <i class="bi bi-person-badge text-warning me-2"></i>{{ customer.name }}
-                <span class="badge bg-secondary bg-opacity-25 text-warning font-monospace fs-6 ms-2">VIP Patron #{{ customer.id }}</span>
+                <span class="badge bg-secondary bg-opacity-25 text-warning font-monospace fs-6 ms-2">Customer #{{ customer.id }}</span>
             </h1>
             <p class="jd-subtitle">
                 Mobile: <strong class="text-light">{{ customer.mobile }}</strong> &middot; Member since: <strong class="text-light">{{ customer.created_at|date:"d M Y" }}</strong>
@@ -20,20 +20,20 @@
         <div class="jd-header-actions">
             {% if customer.mobile %}
             <a href="https://wa.me/91{{ customer.mobile|cut:' ' }}" target="_blank" rel="noopener" class="jd-btn-gold" style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); border-color: #25D366; color: #FFF !important;">
-                <i class="bi bi-whatsapp"></i> WhatsApp Concierge
+                <i class="bi bi-whatsapp"></i> WhatsApp
             </a>
             {% endif %}
             <a href="{% url 'sale_add' %}?customer={{ customer.id }}" class="jd-btn-gold">
-                <i class="bi bi-cart-plus-fill"></i> + Bill at POS
+                <i class="bi bi-cart-plus-fill"></i> + New Sale
             </a>
             <a href="{% url 'customer_edit' customer.id %}" class="jd-btn-ghost">
-                <i class="bi bi-pencil"></i> Edit Profile
+                <i class="bi bi-pencil"></i> Edit Customer
             </a>
             <a href="{% url 'customer_delete' customer.id %}" class="jd-btn-danger-ghost">
                 <i class="bi bi-trash"></i> Delete
             </a>
             <a href="{% url 'customer_list' %}" class="jd-btn-ghost">
-                <i class="bi bi-arrow-left"></i> Client Directory
+                <i class="bi bi-arrow-left"></i> Customer List
             </a>
         </div>
     </div>
@@ -48,7 +48,7 @@
                 </div>
                 <div class="jd-kpi-label">Lifetime Purchases</div>
                 <div class="jd-kpi-val text-light">₹{{ total_purchase|floatformat:2 }}</div>
-                <div class="jd-kpi-sub">{{ sales.count }} completed showroom transactions</div>
+                <div class="jd-kpi-sub">{{ sales.count }} purchases</div>
             </div>
         </div>
 
@@ -58,9 +58,9 @@
                     <div class="jd-kpi-icon icon-green"><i class="bi bi-cash-stack"></i></div>
                     <span class="badge bg-success bg-opacity-25 text-success">Settled</span>
                 </div>
-                <div class="jd-kpi-label">Total Cleared Payments</div>
+                <div class="jd-kpi-label">Total Paid</div>
                 <div class="jd-kpi-val text-success">₹{{ total_paid|floatformat:2 }}</div>
-                <div class="jd-kpi-sub">Total cash, UPI &amp; bank receipts</div>
+                <div class="jd-kpi-sub">Total payments received</div>
             </div>
         </div>
 
@@ -74,11 +74,11 @@
                         {% if outstanding > 0 %}Balance Due{% else %}Cleared{% endif %}
                     </span>
                 </div>
-                <div class="jd-kpi-label">Ledger Outstanding</div>
+                <div class="jd-kpi-label">Balance Due</div>
                 <div class="jd-kpi-val {% if outstanding > 0 %}text-danger{% else %}text-light{% endif %}">
                     ₹{{ outstanding|floatformat:2 }}
                 </div>
-                <div class="jd-kpi-sub">Pending settlement across sales</div>
+                <div class="jd-kpi-sub">Unpaid balance amount</div>
             </div>
         </div>
     </div>
@@ -93,16 +93,16 @@
                 <div class="jd-card-header">
                     <h2>
                         <i class="bi bi-person-lines-fill text-warning"></i>
-                        Client Profile
+                        Customer Details
                     </h2>
                 </div>
                 <div class="jd-card-body">
                     <div class="mb-3">
-                        <div class="text-muted small text-uppercase">Full Legal Name</div>
+                        <div class="text-muted small text-uppercase">Customer Name</div>
                         <div class="fs-5 fw-bold text-light">{{ customer.name }}</div>
                     </div>
                     <div class="mb-3">
-                        <div class="text-muted small text-uppercase">Primary Mobile</div>
+                        <div class="text-muted small text-uppercase">Mobile Number</div>
                         <div class="fs-6 font-monospace text-light">
                             <a href="tel:{{ customer.mobile }}" class="text-decoration-none text-light">
                                 <i class="bi bi-telephone text-warning me-1"></i> {{ customer.mobile }}
@@ -114,11 +114,11 @@
                         <div class="fs-6 text-light">{{ customer.email|default:"—" }}</div>
                     </div>
                     <div class="mb-3">
-                        <div class="text-muted small text-uppercase">Address &amp; Location</div>
+                        <div class="text-muted small text-uppercase">Address</div>
                         <div class="fs-6 text-light">{{ customer.address|default:"—"|linebreaksbr }}</div>
                     </div>
                     <div>
-                        <div class="text-muted small text-uppercase">Patron Since</div>
+                        <div class="text-muted small text-uppercase">Customer Since</div>
                         <div class="fs-6 font-monospace text-muted">{{ customer.created_at|date:"d F Y" }}</div>
                     </div>
                 </div>
@@ -129,18 +129,18 @@
                 <div class="jd-card-header">
                     <h2>
                         <i class="bi bi-lightning-charge text-warning"></i>
-                        New Engagement
+                        Quick Actions
                     </h2>
                 </div>
                 <div class="jd-card-body d-flex flex-column gap-2">
                     <a href="{% url 'sale_add' %}?customer={{ customer.id }}" class="jd-btn-gold">
-                        <i class="bi bi-cart-plus-fill"></i> New Showroom Sale POS
+                        <i class="bi bi-cart-plus-fill"></i> New Sale
                     </a>
                     <a href="{% url 'custom_orders:custom_order_add' %}?customer={{ customer.id }}" class="jd-btn-ghost">
-                        <i class="bi bi-hammer"></i> New Custom Jewellery Order
+                        <i class="bi bi-hammer"></i> New Custom Order
                     </a>
                     <a href="{% url 'enquiry_add' %}?customer={{ customer.id }}" class="jd-btn-ghost">
-                        <i class="bi bi-chat-left-text"></i> Record Bridal Enquiry
+                        <i class="bi bi-chat-left-text"></i> New Customer Enquiry
                     </a>
                     <a href="{% url 'old_gold_exchange_create' %}?customer={{ customer.id }}" class="jd-btn-ghost">
                         <i class="bi bi-arrow-repeat"></i> Old Gold Exchange
@@ -152,15 +152,15 @@
         <!-- RIGHT COLUMN: Purchase History, Custom Orders, Enquiries -->
         <div class="col-lg-8">
 
-            <!-- Purchase History Ledger Table -->
+            <!-- Purchase History Table -->
             <div class="jd-table-card mb-4">
                 <div class="jd-table-header">
                     <h2>
                         <i class="bi bi-receipt text-warning"></i>
-                        Purchase Ledger ({{ sales.count }})
+                        Purchase History ({{ sales.count }})
                     </h2>
                     <a href="{% url 'sale_add' %}?customer={{ customer.id }}" class="jd-btn-ghost py-1 px-2" style="font-size: 0.78rem;">
-                        + Bill Sale
+                        + New Sale
                     </a>
                 </div>
                 <div class="jd-table-scroll">
@@ -168,7 +168,7 @@
                         <thead>
                             <tr>
                                 <th>Invoice #</th>
-                                <th>Jewellery Piece</th>
+                                <th>Item Name</th>
                                 <th>Sale Price</th>
                                 <th>Payment Method</th>
                                 <th>Date</th>
@@ -191,7 +191,7 @@
                                 <td><span class="badge bg-secondary font-monospace">{{ sale.payment_method }}</span></td>
                                 <td class="small text-muted font-monospace">{{ sale.sale_date|date:"d M Y" }}</td>
                                 <td class="text-end pe-3">
-                                    <a href="{% url 'sale_detail' sale.id %}" class="jd-tbl-btn" title="View Sale Memo">
+                                    <a href="{% url 'sale_detail' sale.id %}" class="jd-tbl-btn" title="View Bill">
                                         <i class="bi bi-eye"></i>
                                     </a>
                                 </td>
@@ -213,7 +213,7 @@
                 <div class="jd-table-header">
                     <h2>
                         <i class="bi bi-hammer text-warning"></i>
-                        Bespoke Custom Orders ({{ customer.custom_orders.count }})
+                        Custom Jewellery Orders ({{ customer.custom_orders.count }})
                     </h2>
                     <a href="{% url 'custom_orders:custom_order_add' %}?customer={{ customer.id }}" class="jd-btn-ghost py-1 px-2" style="font-size: 0.78rem;">
                         + New Order
@@ -226,7 +226,7 @@
                                 <th>Order #</th>
                                 <th>Jewellery Item</th>
                                 <th>Estimated Value</th>
-                                <th>Workshop Stage</th>
+                                <th>Order Status</th>
                                 <th>Expected Delivery</th>
                                 <th class="text-end pe-3">Action</th>
                             </tr>
@@ -246,7 +246,7 @@
                                 </td>
                                 <td class="small text-muted font-monospace">{{ order.expected_delivery_date|date:"d M Y" }}</td>
                                 <td class="text-end pe-3">
-                                    <a href="{% url 'custom_orders:custom_order_detail' order.id %}" class="jd-tbl-btn" title="View Order Specifications">
+                                    <a href="{% url 'custom_orders:custom_order_detail' order.id %}" class="jd-tbl-btn" title="View Order">
                                         <i class="bi bi-eye"></i>
                                     </a>
                                 </td>
@@ -254,7 +254,7 @@
                             {% empty %}
                             <tr>
                                 <td colspan="6" class="text-center py-4 text-muted small">
-                                    No custom manufacturing orders recorded for this customer yet.
+                                    No custom orders for this customer yet.
                                 </td>
                             </tr>
                             {% endfor %}
@@ -268,7 +268,7 @@
                 <div class="jd-table-header">
                     <h2>
                         <i class="bi bi-chat-left-text text-warning"></i>
-                        Bridal &amp; Showroom Enquiries ({{ enquiries.count }})
+                        Customer Enquiries ({{ enquiries.count }})
                     </h2>
                     <a href="{% url 'enquiry_add' %}?customer={{ customer.id }}" class="jd-btn-ghost py-1 px-2" style="font-size: 0.78rem;">
                         + New Enquiry
@@ -278,7 +278,7 @@
                     <table class="jd-table">
                         <thead>
                             <tr>
-                                <th>Interested Piece</th>
+                                <th>Interested Item</th>
                                 <th>Budget</th>
                                 <th>Status</th>
                                 <th>Follow-up Date</th>
@@ -300,7 +300,7 @@
                                 </td>
                                 <td class="small text-muted font-monospace">{{ enq.next_followup_date|date:"d M Y"|default:"—" }}</td>
                                 <td class="text-end pe-3">
-                                    <a href="{% url 'enquiry_detail' enq.id %}" class="jd-tbl-btn" title="View Enquiry Details">
+                                    <a href="{% url 'enquiry_detail' enq.id %}" class="jd-tbl-btn" title="View Enquiry">
                                         <i class="bi bi-eye"></i>
                                     </a>
                                 </td>
@@ -308,7 +308,7 @@
                             {% empty %}
                             <tr>
                                 <td colspan="5" class="text-center py-4 text-muted small">
-                                    No showroom enquiries recorded for this patron yet.
+                                    No enquiries recorded for this customer yet.
                                 </td>
                             </tr>
                             {% endfor %}

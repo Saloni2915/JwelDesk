@@ -1,26 +1,26 @@
 {% extends 'base.html' %}
 
-{% block title %}Artisans & Karigars Directory — JewelDesk Atelier{% endblock %}
+{% block title %}Karigar List — JewelDesk{% endblock %}
 
-{% block page_title %}Artisans &amp; Karigars Directory{% endblock %}
+{% block page_title %}Karigar List{% endblock %}
 
 {% block content %}
 <div class="jd-canvas">
     <!-- Header -->
     <div class="jd-header">
         <div>
-            <div class="jd-badge"><i class="bi bi-person-badge me-1"></i> Master Craftsmen & Workshops</div>
-            <h1 class="jd-title">Karigars & Artisans Directory</h1>
-            <p class="jd-subtitle">Manage goldsmiths, diamond setters, polishers, stone artisans, and workshop partners.</p>
+            <div class="jd-badge"><i class="bi bi-person-badge me-1"></i> Karigars &amp; Goldsmiths</div>
+            <h1 class="jd-title">Karigar List</h1>
+            <p class="jd-subtitle">Manage goldsmiths, stone setters, polishers, and workshop karigars.</p>
         </div>
         <div class="d-flex align-items-center gap-2 flex-wrap">
             {% if user_perms.karigar.can_add %}
             <a href="{% url 'karigar:karigar_create' %}" class="jd-btn-gold">
-                <i class="bi bi-person-plus me-1"></i> Add New Karigar
+                <i class="bi bi-person-plus me-1"></i> + Add Karigar
             </a>
             {% endif %}
             <a href="{% url 'karigar:dashboard' %}" class="jd-btn-ghost">
-                <i class="bi bi-speedometer2 me-1"></i> Workshop Cockpit
+                <i class="bi bi-speedometer2 me-1"></i> Workshop Dashboard
             </a>
         </div>
     </div>
@@ -70,8 +70,8 @@
             <table class="jd-table">
                 <thead>
                     <tr>
-                        <th>Artisan Code</th>
-                        <th>Name &amp; Workshop</th>
+                        <th>Karigar Code</th>
+                        <th>Name &amp; Address</th>
                         <th>Contact</th>
                         <th>Specialization</th>
                         <th>Active Work</th>
@@ -101,7 +101,7 @@
                         <td>
                             <div class="d-flex align-items-center gap-2">
                                 <span class="text-light font-monospace">{{ k.mobile }}</span>
-                                <a href="https://wa.me/91{{ k.mobile|cut:' ' }}" target="_blank" class="text-success small" title="WhatsApp Artisan">
+                                <a href="https://wa.me/91{{ k.mobile|cut:' ' }}" target="_blank" class="text-success small" title="WhatsApp Karigar">
                                     <i class="bi bi-whatsapp"></i>
                                 </a>
                             </div>
@@ -135,7 +135,7 @@
                         <td class="text-muted small">{{ k.joining_date|date:"d M Y" }}</td>
                         <td class="text-end pe-3">
                             <div class="d-flex align-items-center justify-content-end gap-1">
-                                <a href="{% url 'karigar:karigar_detail' k.id %}" class="jd-btn-ghost btn-sm py-1 px-2" title="View Profile">
+                                <a href="{% url 'karigar:karigar_detail' k.id %}" class="jd-btn-ghost btn-sm py-1 px-2" title="View Karigar">
                                     <i class="bi bi-eye"></i>
                                 </a>
                                 {% if user_perms.karigar.can_edit %}
@@ -157,11 +157,11 @@
                             <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(236, 200, 106, 0.08); display: inline-flex; align-items: center; justify-content: center; color: var(--gold-primary); font-size: 1.75rem; margin-bottom: 1rem;">
                                 <i class="bi bi-person-workspace"></i>
                             </div>
-                            <h5 class="text-white fw-bold mb-1">No Artisans Found</h5>
-                            <p class="text-muted small mb-3">Add karigars to assign precious metal job cards.</p>
+                            <h5 class="text-white fw-bold mb-1">No Karigars Found</h5>
+                            <p class="text-muted small mb-3">Add karigars to assign workshop jobs.</p>
                             {% if user_perms.karigar.can_add %}
                             <a href="{% url 'karigar:karigar_create' %}" class="jd-btn-gold">
-                                <i class="bi bi-person-plus me-1"></i> Add New Karigar
+                                <i class="bi bi-person-plus me-1"></i> + Add Karigar
                             </a>
                             {% endif %}
                         </td>
