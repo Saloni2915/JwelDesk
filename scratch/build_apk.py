@@ -5,25 +5,67 @@ import hashlib
 import struct
 import base64
 import datetime
+import zlib
+from PIL import Image
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import pkcs7
 from cryptography.x509.oid import NameOID
 import apksigcopier
-from androguard.core.apk import APK
 
-os.makedirs(r'c:\Users\Admin\JwelDesk\static\downloads', exist_ok=True)
-src_apk = r'C:\Users\Admin\Downloads\byajbatta.apk'
-dest_apk = r'c:\Users\Admin\JwelDesk\static\downloads\JewelDesk.apk'
+src_apk = r'c:\Users\Admin\JwelDesk\static\downloads\JewelDesk.apk'
+output_apk = r'c:\Users\Admin\JwelDesk\static\downloads\JewelDesk.apk'
+temp_output = r'c:\Users\Admin\JwelDesk\scratch\jeweldesk_rebuilt.apk'
 
-print(f"Reading base APK from: {src_apk}")
-icon_192 = None
-icon_path = r'c:\Users\Admin\JwelDesk\static\icons\icon-192x192.png'
-if os.path.exists(icon_path):
-    with open(icon_path, 'rb') as f:
-        icon_192 = f.read()
+icon_512_path = r'c:\Users\Admin\JwelDesk\static\icons\icon-512x512.png'
+base_icon = Image.open(icon_512_path).convert('RGBA')
+
+# Prepare icon mappings
+icon_sizes = {
+    'res/9w.png': (48, 48),
+    'res/yn.png': (72, 72),
+    'res/FS.png': (96, 96),
+    'res/RJ.png': (144, 144),
+    'res/o-.png': (192, 192),
+    'res/zR.png': (48, 48),
+    'res/8c.png': (72, 72),
+    'res/wb.png': (96, 96),
+    'res/fO.png': (144, 144),
+    'res/Gc.png': (192, 192),
+}
+
+# Adaptive foreground icons (have transparent margin)
+foreground_sizes = {
+    'res/QZ.png': (108, 108),
+    'res/zr.png': (162, 162),
+    'res/Em.png': (216, 216),
+    'res/Lf.png': (324, 324),
+    'res/as.png': (432, 432),
+}
+
+icon_bytes_map = {}
+for name, sz in icon_sizes.items():
+    resized = base_icon.resize(sz, Image.Resampling.LANCZOS)
+    buf = io.BytesIO()
+    resized.save(buf, format='PNG')
+    icon_bytes_map[name] = buf.getvalue()
+
+for name, sz in foreground_sizes.items():
+    # Adaptive icon foreground is typically 72/108 of canvas, center it
+    w, h = sz
+    inner_w, inner_h = int(w * 0.72), int(h * 0.72)
+    inner = base_icon.resize((inner_w, inner_h), Image.Resampling.LANCZOS)
+    canvas = Image.new('RGBA', sz, (0, 0, 0, 0))
+    offset_x = (w - inner_w) // 2
+    offset_y = (h - inner_h) // 2
+    canvas.paste(inner, (offset_x, offset_y), inner)
+    buf = io.BytesIO()
+    canvas.save(buf, format='PNG')
+    icon_bytes_map[name] = buf.getvalue()
+
+print(f"Generated {len(icon_bytes_map)} replacement launcher icons.")
 
 zin = zipfile.ZipFile(src_apk, 'r')
 buf = io.BytesIO()
@@ -35,20 +77,59 @@ for item in zin.infolist():
     if item.filename.startswith('META-INF/'):
         continue
     data = zin.read(item.filename)
-    if item.filename == 'assets/capacitor.config.json':
+
+    # 1. Update AndroidManifest.xml
+    if item.filename == 'AndroidManifest.xml':
+        old_pkg_utf16 = 'in.byajbatta.app'.encode('utf-16le')
+        new_pkg_utf16 = 'in.jeweldesk.app'.encode('utf-16le')
+        assert len(old_pkg_utf16) == len(new_pkg_utf16), "Package name length mismatch!"
+        count = data.count(old_pkg_utf16)
+        print(f"Replacing {count} occurrences of package in AndroidManifest.xml")
+        data = data.replace(old_pkg_utf16, new_pkg_utf16)
+
+    # 2. Update resources.arsc (App name in strings.xml table)
+    elif item.filename == 'resources.arsc':
+        old_name = b'Byaj Batta'
+        new_name = b'Jewel Desk'
+        assert len(old_name) == len(new_name), "App name length mismatch!"
+        count = data.count(old_name)
+        print(f"Replacing {count} occurrences of app name in resources.arsc")
+        data = data.replace(old_name, new_name)
+
+    # 3. Update classes.dex
+    elif item.filename == 'classes.dex':
+        old_dex = b'byajbatta'
+        new_dex = b'jeweldesk'
+        assert len(old_dex) == len(new_dex), "DEX string length mismatch!"
+        count = data.count(old_dex)
+        print(f"Replacing {count} occurrences of {old_dex} in classes.dex")
+        data = data.replace(old_dex, new_dex)
+        # Recalculate DEX SHA-1 signature (bytes 12-32)
+        sha1 = hashlib.sha1(data[32:]).digest()
+        data = data[:12] + sha1 + data[32:]
+        # Recalculate DEX Adler32 checksum (bytes 8-12)
+        adler = zlib.adler32(data[12:]) & 0xffffffff
+        data = data[:8] + struct.pack('<I', adler) + data[12:]
+
+    # 4. Update capacitor config
+    elif item.filename == 'assets/capacitor.config.json':
         cfg = data.decode('utf-8')
         cfg = cfg.replace('https://byajbatta.in/start', 'https://jwel-desk.vercel.app')
-        cfg = cfg.replace('Byaj Batta', 'JewelDesk').replace('in.byajbatta.app', 'com.jeweldesk.app')
+        cfg = cfg.replace('in.byajbatta.app', 'in.jeweldesk.app')
+        cfg = cfg.replace('com.jeweldesk.app', 'in.jeweldesk.app')
+        cfg = cfg.replace('Byaj Batta', 'JewelDesk')
         data = cfg.encode('utf-8')
-    elif icon_192 and item.filename in ('assets/public/icons/icon-192x192.png', 'assets/public/favicon.png', 'assets/public/apple-touch-icon.png'):
-        data = icon_192
-    
+
+    # 5. Replace launcher icon drawables
+    elif item.filename in icon_bytes_map:
+        data = icon_bytes_map[item.filename]
+
     zout.writestr(item, data)
     digest = hashlib.sha256(data).digest()
     digest_b64 = base64.b64encode(digest).decode('ascii')
     manifest_lines.append(f'Name: {item.filename}\r\nSHA-256-Digest: {digest_b64}\r\n\r\n')
 
-# 3. Add v1 signature
+# Add v1 signature (META-INF)
 manifest_data = ''.join(manifest_lines).encode('utf-8')
 zout.writestr('META-INF/MANIFEST.MF', manifest_data)
 
@@ -63,20 +144,21 @@ for line in manifest_lines[1:]:
 sf_data = (sf_header + ''.join(sf_entries)).encode('utf-8')
 zout.writestr('META-INF/CERT.SF', sf_data)
 
-# Generate key & cert
+# Generate consistent self-signed key & cert
 key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 subject = issuer = x509.Name([
     x509.NameAttribute(NameOID.COMMON_NAME, 'JewelDesk'),
     x509.NameAttribute(NameOID.ORGANIZATION_NAME, 'JewelDesk Software Technologies'),
+    x509.NameAttribute(NameOID.COUNTRY_NAME, 'IN'),
 ])
 cert = (
     x509.CertificateBuilder()
     .subject_name(subject)
     .issuer_name(issuer)
     .public_key(key.public_key())
-    .serial_number(x509.random_serial_number())
-    .not_valid_before(datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1))
-    .not_valid_after(datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=10000))
+    .serial_number(12345678901234567890)
+    .not_valid_before(datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc))
+    .not_valid_after(datetime.datetime(2044, 1, 1, tzinfo=datetime.timezone.utc))
     .sign(key, hashes.SHA256())
 )
 builder = pkcs7.PKCS7SignatureBuilder().set_data(sf_data)
@@ -87,95 +169,82 @@ zout.writestr('META-INF/CERT.RSA', rsa_data)
 zout.close()
 zin.close()
 
-# 4. Save v1 apk bytes
+# Save v1 APK
 v1_bytes = buf.getvalue()
-temp_v1 = r'c:\Users\Admin\JwelDesk\scratch\jeweldesk_v1.apk'
+temp_v1 = r'c:\Users\Admin\JwelDesk\scratch\jeweldesk_v1_temp.apk'
 with open(temp_v1, 'wb') as f:
     f.write(v1_bytes)
 
-# 5. Add v2 signature
+# Add v2 signature
 cd_offset, eocd_offset, _ = apksigcopier.zip_data(temp_v1)
 sb_offset = cd_offset
-
 CHUNK_SIZE = 1048576
-digests = []
 
-with open(temp_v1, 'rb') as fh:
-    rem = sb_offset
-    while rem > 0:
-        chunk = fh.read(min(rem, CHUNK_SIZE))
-        if not chunk: break
-        rem -= len(chunk)
-        digests.append(hashlib.sha256(b'\xa5' + len(chunk).to_bytes(4, 'little') + chunk).digest())
+def compute_v2_digest():
+    with open(temp_v1, 'rb') as f:
+        chunk_digests = []
+        for start, end in [(0, sb_offset), (cd_offset, eocd_offset), (eocd_offset, os.path.getsize(temp_v1))]:
+            f.seek(start)
+            rem = end - start
+            while rem > 0:
+                n = min(rem, CHUNK_SIZE)
+                cdata = f.read(n)
+                if not cdata:
+                    break
+                rem -= len(cdata)
+                chunk_digests.append(hashlib.sha256(b'\xa5' + struct.pack('<I', len(cdata)) + cdata).digest())
+        return hashlib.sha256(b'\x5a' + struct.pack('<I', len(chunk_digests)) + b''.join(chunk_digests)).digest()
 
-    fh.seek(cd_offset)
-    rem = eocd_offset - cd_offset
-    while rem > 0:
-        chunk = fh.read(min(rem, CHUNK_SIZE))
-        if not chunk: break
-        rem -= len(chunk)
-        digests.append(hashlib.sha256(b'\xa5' + len(chunk).to_bytes(4, 'little') + chunk).digest())
-
-    fh.seek(eocd_offset)
-    eocd = fh.read()
-    eocd_patched = eocd[:16] + int.to_bytes(sb_offset, 4, 'little') + eocd[20:]
-    for i in range(0, len(eocd_patched), CHUNK_SIZE):
-        chunk = eocd_patched[i:i+CHUNK_SIZE]
-        digests.append(hashlib.sha256(b'\xa5' + len(chunk).to_bytes(4, 'little') + chunk).digest())
-
-root_digest = hashlib.sha256(b'\x5a' + len(digests).to_bytes(4, 'little') + b''.join(digests)).digest()
-
-algo_id = 0x0103 # RSASSA-PKCS1-v1_5 SHA256
-digest_entry = struct.pack('<LL', algo_id, len(root_digest)) + root_digest
-digests_block = len(digest_entry).to_bytes(4, 'little') + digest_entry
-digests_field = len(digests_block).to_bytes(4, 'little') + digests_block
-
+v2_digest = compute_v2_digest()
+from cryptography.hazmat.primitives.asymmetric import padding
+sig = key.sign(v2_digest, padding.PKCS1v15(), hashes.SHA256())
 cert_der = cert.public_bytes(serialization.Encoding.DER)
-cert_entry = len(cert_der).to_bytes(4, 'little') + cert_der
-certs_field = len(cert_entry).to_bytes(4, 'little') + cert_entry
-attrs_field = (0).to_bytes(4, 'little')
 
-signed_data = digests_field + certs_field + attrs_field
-signed_data_field = len(signed_data).to_bytes(4, 'little') + signed_data
+sig_entry = struct.pack('<I', 0x0103) + struct.pack('<I', len(sig)) + sig
+signatures = struct.pack('<I', len(sig_entry)) + sig_entry
 
-signature = key.sign(signed_data, padding.PKCS1v15(), hashes.SHA256())
-sig_entry = struct.pack('<L', algo_id) + len(signature).to_bytes(4, 'little') + signature
-sig_block = len(sig_entry).to_bytes(4, 'little') + sig_entry
-sigs_field = len(sig_block).to_bytes(4, 'little') + sig_block
+digest_entry = struct.pack('<I', 0x0103) + struct.pack('<I', len(v2_digest)) + v2_digest
+digests = struct.pack('<I', len(digest_entry)) + digest_entry
 
-pubkey_der = key.public_key().public_bytes(serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)
-pubkey_field = len(pubkey_der).to_bytes(4, 'little') + pubkey_der
+certs = struct.pack('<I', len(cert_der)) + cert_der
+certs_seq = struct.pack('<I', len(certs)) + certs
 
-signer = signed_data_field + sigs_field + pubkey_field
-signer_field = len(signer).to_bytes(4, 'little') + signer
-v2_scheme_data = len(signer_field).to_bytes(4, 'little') + signer_field
+signed_data = (
+    struct.pack('<I', len(digests)) + digests +
+    struct.pack('<I', len(certs_seq)) + certs_seq +
+    struct.pack('<I', 0)
+)
 
-pair_id = 0x7109871a
-pair_data = struct.pack('<L', pair_id) + v2_scheme_data
-pair_len = len(pair_data)
-pair = struct.pack('<Q', pair_len) + pair_data
+signer = (
+    struct.pack('<I', len(signed_data)) + signed_data +
+    struct.pack('<I', len(signatures)) + signatures +
+    struct.pack('<I', len(key.public_key().public_bytes(serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo))) +
+    key.public_key().public_bytes(serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)
+)
 
-block_size = len(pair) + 24
+signers = struct.pack('<I', len(signer)) + signer
+v2_block_value = struct.pack('<I', len(signers)) + signers
+v2_pair = struct.pack('<I', 0x7109871a) + v2_block_value
+id_value_pairs = struct.pack('<Q', len(v2_pair)) + v2_pair
+
+sb_size = len(id_value_pairs) + 16 + 8
 signing_block = (
-    struct.pack('<Q', block_size) +
-    pair +
-    struct.pack('<Q', block_size) +
+    struct.pack('<Q', sb_size) +
+    id_value_pairs +
+    struct.pack('<Q', sb_size) +
     b'APK Sig Block 42'
 )
 
-part1 = v1_bytes[:cd_offset]
-cd = v1_bytes[cd_offset:eocd_offset]
+with open(temp_v1, 'rb') as f:
+    p1 = f.read(sb_offset)
+    p2 = f.read()
+
+# Update Central Directory offset in EOCD
+eocd_pos = eocd_offset - sb_offset
 new_cd_offset = cd_offset + len(signing_block)
-new_eocd = eocd[:16] + int.to_bytes(new_cd_offset, 4, 'little') + eocd[20:]
+p2_mod = p2[:eocd_pos + 16] + struct.pack('<I', new_cd_offset) + p2[eocd_pos + 20:]
 
-with open(dest_apk, 'wb') as f:
-    f.write(part1 + signing_block + cd + new_eocd)
+with open(temp_output, 'wb') as f:
+    f.write(p1 + signing_block + p2_mod)
 
-print(f"JewelDesk APK written successfully to: {dest_apk}")
-print(f"File size: {os.path.getsize(dest_apk):,} bytes")
-
-apk_obj = APK(dest_apk)
-print(f"APK validation:")
-print(f"  is_signed:    {apk_obj.is_signed()}")
-print(f"  is_signed_v1: {apk_obj.is_signed_v1()}")
-print(f"  is_signed_v2: {apk_obj.is_signed_v2()}")
+print("V2 signed APK built successfully at:", temp_output)
