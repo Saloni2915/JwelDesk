@@ -427,7 +427,7 @@ class BulkImportViewTests(TestCase):
         response = self.client.get(reverse('inventory_import'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'inventory/import.html')
-        self.assertContains(response, 'Upload Jewellery Stock File')
+        self.assertContains(response, 'Upload Stock File')
         self.assertContains(response, reverse('inventory_import_sample'))
 
     # ---------------------------------------------------------
@@ -769,11 +769,11 @@ class BulkImportViewTests(TestCase):
         original_create = import_utils.create_jewellery_item_from_row
         calls = {'count': 0}
 
-        def flaky_create(row, category):
+        def flaky_create(row, category, **kwargs):
             calls['count'] += 1
             if calls['count'] == 2:
                 raise IntegrityError('simulated database failure')
-            return original_create(row, category)
+            return original_create(row, category, **kwargs)
 
         with patch.object(import_utils, 'create_jewellery_item_from_row', side_effect=flaky_create):
             response = self.post_confirm()
@@ -1006,8 +1006,8 @@ class MetalPriceDashboardTests(TestCase):
         mock_urlopen.assert_not_called()
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.context['metal_prices']['available'])
-        self.assertContains(response, 'Price unavailable')
-        self.assertContains(response, 'Refresh')
+        self.assertContains(response, 'Live Market Feed')
+        self.assertContains(response, 'Refresh Metal Rates')
 
     def test_dashboard_shows_cached_prices(self):
         payload = {'rates': {'XAU': 343000.0, 'XAG': 4000.0}}
@@ -1017,10 +1017,10 @@ class MetalPriceDashboardTests(TestCase):
             response = self.client.get(reverse('dashboard'))
         mock_urlopen.assert_not_called()
         self.assertTrue(response.context['metal_prices']['available'])
-        self.assertContains(response, 'Gold (XAU)')
-        self.assertContains(response, 'Silver (XAG)')
+        self.assertContains(response, '24K Gold:')
+        self.assertContains(response, 'Silver 999:')
         self.assertContains(response, 'Last updated')
-        self.assertContains(response, '/ gram')
+        self.assertContains(response, '/g')
 
     def test_refresh_view_requires_login_and_post(self):
         url = reverse('metal_price_refresh')
@@ -1044,7 +1044,7 @@ class MetalPriceDashboardTests(TestCase):
             response = self.client.post(reverse('metal_price_refresh'),
                                         follow=True)
         self.assertContains(response, 'Metal prices updated.')
-        self.assertContains(response, 'Gold (XAU)')
+        self.assertContains(response, '24K Gold:')
 
     def test_refresh_view_failure_message_with_stale_fallback(self):
         payload = {'rates': {'XAU': 343000.0, 'XAG': 4000.0}}
@@ -1287,7 +1287,7 @@ class StockAdjustmentViewTests(TestCase):
         response = self.client.get(reverse('stock_adjust', kwargs={'pk': self.item.pk}))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'inventory/stock_adjust.html')
-        self.assertContains(response, 'Stock Adjustment')
+        self.assertContains(response, 'Update Stock Count')
         self.assertContains(response, self.item.item_code)
 
     def test_stock_increase_via_view(self):
@@ -1468,7 +1468,7 @@ class InventoryStockPageTests(TestCase):
         self.assertContains(response, 'Available Stock')
         self.assertContains(response, 'Stock Value')
         self.assertContains(response, 'Low Stock')
-        self.assertContains(response, 'Stock Movements')
+        self.assertContains(response, 'Stock History')
 
     def test_list_low_stock_filter_and_badge(self):
         # Set the threshold so PG-001 (quantity=4) is treated as low-stock
@@ -1515,7 +1515,7 @@ class InventoryStockPageTests(TestCase):
         self.assertEqual(response.context['movement_count'], 1)
         self.assertEqual(len(response.context['movements']), 1)
         self.assertContains(response, 'Valuation')
-        self.assertContains(response, 'Recent Stock Movements')
+        self.assertContains(response, 'Stock History')
         self.assertContains(response, 'New Stock Received')
         self.assertContains(response, 'Adjust Stock')
 
@@ -2044,7 +2044,7 @@ class JewelleryTagAndHallmarkTests(TestCase):
             'huid': 'UN5555',
         })
         self.assertEqual(resp.status_code, 200)
-        self.assertFormError(resp.context['form'], 'huid', 'This HUID is already assigned to another item.')
+        self.assertFormError(resp.context['form'], 'huid', 'This HUID is already assigned to another item in your showroom.')
 
     def test_form_rejects_invalid_huid(self):
         resp = self.client.post(reverse('inventory_add'), {

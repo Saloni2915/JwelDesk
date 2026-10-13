@@ -146,13 +146,15 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 default_sqlite_path = BASE_DIR / 'db.sqlite3'
 
-# Production database URL (e.g. Neon, Supabase, Vercel Postgres, Railway)
-# Supports DATABASE_URL, POSTGRES_URL, or POSTGRES_PRISMA_URL
+# Supports DATABASE_URL, POSTGRES_URL, POSTGRES_URL_NON_POOLING, or POSTGRES_PRISMA_URL
 _database_url = (
     os.environ.get('DATABASE_URL')
     or os.environ.get('POSTGRES_URL')
+    or os.environ.get('POSTGRES_URL_NON_POOLING')
     or os.environ.get('POSTGRES_PRISMA_URL')
 )
+
+MIGRATION_SECRET_KEY = os.environ.get('MIGRATION_SECRET_KEY', 'jweldesk_migrate_2026')
 
 if _database_url:
     # When deployed on Vercel or using Supabase Transaction Pooler (port 6543 / PgBouncer):

@@ -9,7 +9,8 @@ from django.core.paginator import Paginator
 import logging
 import time
 from django.db import connection, transaction
-from django.db.models import Avg, Count, Q, Sum
+from django.db.models import Avg, Count, F, Q, Sum
+from django.db.models.functions import Coalesce, Greatest
 from django.http import JsonResponse
 from django.utils import timezone
 from .models import Sale, Payment, Enquiry, OldGoldTransaction, generate_old_gold_number
@@ -613,6 +614,7 @@ def payment_list(request):
     payments = (
         Payment.objects.filter(tenant=request.tenant)
         .select_related('sale', 'sale__customer', 'sale__jewellery_item')
+        .prefetch_related('sale__payments')
         .order_by('-payment_date', '-id')
     )
 
@@ -646,21 +648,42 @@ def payment_list(request):
     if method:
         payments = payments.filter(payment_method=method)
 
-    # Filter by date preset (today, week, month)
+    # Filter by date preset (today, week, month) using timezone-aware bounds for index scan
     date_preset = request.GET.get('date_preset', '').strip()
     today = timezone.localdate()
+    tz = timezone.get_current_timezone()
+    start_of_today = timezone.make_aware(datetime.datetime.combine(today, datetime.time.min), tz)
+    end_of_today = timezone.make_aware(datetime.datetime.combine(today, datetime.time.max), tz)
+
     if date_preset == 'today':
-        payments = payments.filter(payment_date__date=today)
+        payments = payments.filter(payment_date__range=(start_of_today, end_of_today))
     elif date_preset == 'week':
         week_ago = today - datetime.timedelta(days=7)
-        payments = payments.filter(payment_date__date__gte=week_ago)
+        start_of_week = timezone.make_aware(datetime.datetime.combine(week_ago, datetime.time.min), tz)
+        payments = payments.filter(payment_date__gte=start_of_week)
     elif date_preset == 'month':
         month_ago = today - datetime.timedelta(days=30)
-        payments = payments.filter(payment_date__date__gte=month_ago)
+        start_of_month = timezone.make_aware(datetime.datetime.combine(month_ago, datetime.time.min), tz)
+        payments = payments.filter(payment_date__gte=start_of_month)
+
+    # Reusable annotated sales queryset: computes due at database level without per-item N+1 queries
+    annotated_sales = (
+        Sale.objects.filter(tenant=request.tenant)
+        .annotate(
+            total_paid=Coalesce(Sum('payments__amount'), Decimal('0.00')),
+        )
+        .annotate(
+            computed_due=Greatest(F('sale_price') - F('total_paid'), Decimal('0.00'))
+        )
+    )
 
     # Handle Recording Payment directly from this page (POST)
     if request.method == 'POST':
-        form = StandalonePaymentForm(request.POST, tenant=request.tenant)
+        form = StandalonePaymentForm(
+            request.POST,
+            tenant=request.tenant,
+            sale_queryset=annotated_sales.select_related('customer', 'jewellery_item').order_by('-sale_date')
+        )
         if form.is_valid():
             payment = form.save(commit=False)
             payment.tenant = request.tenant
@@ -680,28 +703,40 @@ def payment_list(request):
         initial_data = {}
         if initial_sale_id and initial_sale_id.isdigit():
             initial_data['sale'] = int(initial_sale_id)
-        form = StandalonePaymentForm(initial=initial_data, tenant=request.tenant)
+        form = StandalonePaymentForm(
+            initial=initial_data,
+            tenant=request.tenant,
+            sale_queryset=annotated_sales.select_related('customer', 'jewellery_item').order_by('-sale_date')
+        )
 
     # KPI Metrics
     all_payments = Payment.objects.filter(tenant=request.tenant)
     total_collected = all_payments.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-    today_collected = all_payments.filter(payment_date__date=today).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    today_collected = all_payments.filter(payment_date__range=(start_of_today, end_of_today)).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
 
-    # Total outstanding dues across all sales
-    all_sales = Sale.objects.filter(tenant=request.tenant).select_related('customer', 'jewellery_item').prefetch_related('payments').all()
-    total_outstanding_due = sum(s.due_amount for s in all_sales)
-    pending_sales_count = sum(1 for s in all_sales if s.due_amount > 0)
+    # Total outstanding dues and pending count computed directly in the database
+    pending_sales_qs = annotated_sales.filter(computed_due__gt=0)
+    dues_agg = pending_sales_qs.aggregate(
+        total_due=Sum('computed_due'),
+        count=Count('id')
+    )
+    total_outstanding_due = dues_agg['total_due'] or Decimal('0.00')
+    pending_sales_count = dues_agg['count'] or 0
 
-    # Sales with dues mapping for dynamic client-side modal auto-fill
+    # Sales with dues mapping for dynamic client-side modal auto-fill (lightweight values dictionary)
     sales_with_dues_map = {
-        s.id: {
-            'due': float(s.due_amount),
-            'total': float(s.sale_price),
-            'customer': s.customer.name,
-            'item': s.jewellery_item.name,
-            'tag': s.jewellery_item.tag_number or s.jewellery_item.item_code,
+        row['id']: {
+            'due': float(row['computed_due']),
+            'total': float(row['sale_price']),
+            'customer': row['customer__name'],
+            'item': row['jewellery_item__name'],
+            'tag': row['jewellery_item__tag_number'] or row['jewellery_item__item_code'],
         }
-        for s in all_sales if s.due_amount > 0
+        for row in pending_sales_qs.select_related('customer', 'jewellery_item').values(
+            'id', 'computed_due', 'sale_price',
+            'customer__name', 'jewellery_item__name',
+            'jewellery_item__tag_number', 'jewellery_item__item_code'
+        )
     }
 
     # Pagination

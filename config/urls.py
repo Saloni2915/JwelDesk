@@ -38,10 +38,12 @@ from .pwa_views import (
     view_brochure_view,
     digital_brochure_view,
     download_apk_view,
+    system_migrate_view,
 )
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/system/migrate/', system_migrate_view, name='system_migrate'),
     path('download-apk/', download_apk_view, name='download_apk'),
     path('download-app/', download_apk_view, name='download_app'),
     path('download-brochure/', download_brochure_view, name='download_brochure'),
@@ -97,6 +99,9 @@ urlpatterns += [
 
 def custom_500_handler(request):
     """Custom 500 handler that safely renders branded 500.html without throwing."""
+    import logging
+    import sys
+    logging.getLogger('django.request').error("Unhandled 500 server error at %s", request.path, exc_info=sys.exc_info())
     from django.shortcuts import render
     from django.http import HttpResponseServerError
     try:

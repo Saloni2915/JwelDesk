@@ -28,17 +28,22 @@ class TenantMiddleware:
         request.tenant = None
 
         if user and user.is_authenticated:
-            # 1. Active employee profile with tenant
-            emp = getattr(user, 'employee_profile', None)
-            if emp and emp.tenant_id and emp.status == 'Active' and emp.tenant.is_active:
-                request.tenant = emp.tenant
-            else:
-                # 2. Owned tenant
-                owned = user.owned_tenants.filter(is_active=True).first()
-                if owned:
-                    request.tenant = owned
-                elif user.is_superuser:
-                    # Superuser fallback: default to first active tenant if available
-                    request.tenant = Tenant.objects.filter(is_active=True).first()
+            try:
+                # 1. Active employee profile with tenant
+                emp = getattr(user, 'employee_profile', None)
+                if emp and getattr(emp, 'tenant_id', None) and emp.status == 'Active' and getattr(emp.tenant, 'is_active', False):
+                    request.tenant = emp.tenant
+                else:
+                    # 2. Owned tenant
+                    owned = user.owned_tenants.filter(is_active=True).first()
+                    if owned:
+                        request.tenant = owned
+                    elif user.is_superuser:
+                        # Superuser fallback: default to first active tenant if available
+                        request.tenant = Tenant.objects.filter(is_active=True).first()
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning("TenantMiddleware resolution notice: %s", e)
+                request.tenant = None
 
         return self.get_response(request)

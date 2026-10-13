@@ -38,9 +38,16 @@ def landing_page(request):
     has_pdf = report_pdf_path.exists()
     has_brochure = brochure_pdf_path.exists()
 
+    # Don't prompt APK download if already downloaded or dismissed
+    apk_downloaded = (
+        request.COOKIES.get('jd_apk_downloaded') == 'true' or
+        request.COOKIES.get('jd_pwa_banner_dismissed') == 'true'
+    )
+
     context = {
         'has_pdf': has_pdf,
         'has_brochure': has_brochure,
+        'apk_downloaded': apk_downloaded,
     }
     return render(request, 'landing.html', context)
 

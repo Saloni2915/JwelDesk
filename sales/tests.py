@@ -871,6 +871,38 @@ class PaymentTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Payment.objects.filter(sale=self.sale).count(), 1)
 
+    def test_payment_list_filters_by_method_and_query(self):
+        self._pay('12000', method='Cash', reference='CASH-001')
+        self._pay('18000', method='UPI', reference='UPI-999')
+
+        # Filter by method
+        resp_cash = self.client.get(reverse('payment_list') + '?method=Cash')
+        self.assertEqual(resp_cash.status_code, 200)
+        self.assertContains(resp_cash, 'CASH-001')
+        self.assertNotContains(resp_cash, 'UPI-999')
+
+        # Filter by query
+        resp_query = self.client.get(reverse('payment_list') + '?q=UPI-999')
+        self.assertEqual(resp_query.status_code, 200)
+        self.assertContains(resp_query, 'UPI-999')
+        self.assertNotContains(resp_query, 'CASH-001')
+
+    def test_payment_list_query_count_is_bounded(self):
+        # Create multiple sales and payments
+        for i in range(5):
+            s = Sale.objects.create(
+                customer=self.customer,
+                jewellery_item=self.item,
+                sale_price=Decimal('20000.00')
+            )
+            Payment.objects.create(sale=s, amount=Decimal('5000.00'), payment_method='Cash')
+            Payment.objects.create(sale=s, amount=Decimal('5000.00'), payment_method='UPI')
+
+        # Verify query count is bounded and does not explode with N+1 queries per sale or payment
+        with self.assertNumQueries(15):
+            resp = self.client.get(reverse('payment_list'))
+            self.assertEqual(resp.status_code, 200)
+
 
 class OldGoldTransactionTests(TestCase):
     def setUp(self):

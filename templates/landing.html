@@ -37,6 +37,25 @@
     <!-- ======================================================================
          0. TOP NOTIFICATION BANNER: APP / APK DOWNLOAD & INSTALL
          ====================================================================== -->
+    <script>
+        (function() {
+            try {
+                var isApp = window.matchMedia('(display-mode: standalone)').matches ||
+                            window.navigator.standalone === true ||
+                            document.referrer.indexOf('android-app://') !== -1 ||
+                            /wv|WebView|Capacitor/i.test(navigator.userAgent) ||
+                            window.Capacitor !== undefined;
+                var isDownloaded = localStorage.getItem('jd_apk_downloaded') === 'true' ||
+                                   document.cookie.indexOf('jd_apk_downloaded=true') !== -1;
+                var isDismissed = localStorage.getItem('jd_pwa_banner_dismissed') === 'true' ||
+                                  document.cookie.indexOf('jd_pwa_banner_dismissed=true') !== -1;
+                if (isApp || isDownloaded || isDismissed) {
+                    document.write('<style>#pwaTopBanner { display: none !important; }</style>');
+                }
+            } catch (e) {}
+        })();
+    </script>
+    {% if not apk_downloaded %}
     <aside class="jd-top-banner" id="pwaTopBanner" role="region" aria-label="App Download Notification">
         <div class="jd-top-banner__inner">
             <div class="jd-top-banner__content">
@@ -57,6 +76,7 @@
             </div>
         </div>
     </aside>
+    {% endif %}
 
     <!-- ======================================================================
          1. TOP NAVIGATION
@@ -1319,12 +1339,47 @@
             }
         });
 
-        // 6. Top App Download Banner Dismissal
+        // 6. Top App Download Banner Dismissal & Download State Management
         var closeBannerBtn = document.getElementById('pwaBannerCloseBtn');
+        var bannerInstallBtn = document.getElementById('pwaBannerInstallBtn');
         var topBanner = document.getElementById('pwaTopBanner');
+
+        // Check if banner should be hidden (standalone app, already downloaded, or dismissed)
+        try {
+            var isApp = window.matchMedia('(display-mode: standalone)').matches ||
+                        window.navigator.standalone === true ||
+                        document.referrer.indexOf('android-app://') !== -1 ||
+                        /wv|WebView|Capacitor/i.test(navigator.userAgent) ||
+                        window.Capacitor !== undefined;
+            var isDownloaded = localStorage.getItem('jd_apk_downloaded') === 'true' ||
+                               document.cookie.indexOf('jd_apk_downloaded=true') !== -1;
+            var isDismissed = localStorage.getItem('jd_pwa_banner_dismissed') === 'true' ||
+                              document.cookie.indexOf('jd_pwa_banner_dismissed=true') !== -1;
+            if ((isApp || isDownloaded || isDismissed) && topBanner) {
+                topBanner.classList.add('is-hidden');
+                topBanner.style.display = 'none';
+            }
+        } catch (e) {}
+
         if (closeBannerBtn && topBanner) {
             closeBannerBtn.addEventListener('click', function() {
                 topBanner.classList.add('is-hidden');
+                topBanner.style.display = 'none';
+                try {
+                    localStorage.setItem('jd_pwa_banner_dismissed', 'true');
+                    document.cookie = "jd_pwa_banner_dismissed=true; path=/; max-age=2592000; SameSite=Lax";
+                } catch (e) {}
+            });
+        }
+
+        if (bannerInstallBtn && topBanner) {
+            bannerInstallBtn.addEventListener('click', function() {
+                try {
+                    localStorage.setItem('jd_apk_downloaded', 'true');
+                    document.cookie = "jd_apk_downloaded=true; path=/; max-age=31536000; SameSite=Lax";
+                } catch (e) {}
+                topBanner.classList.add('is-hidden');
+                topBanner.style.display = 'none';
             });
         }
     </script>

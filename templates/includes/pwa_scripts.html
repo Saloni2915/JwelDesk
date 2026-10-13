@@ -849,10 +849,28 @@ body:not([data-theme="dark"]):not([data-theme="gold"]) .pwa-update-mini-pill,
                     e.preventDefault();
                     promptObj.prompt();
                     promptObj.userChoice.then(function(choiceResult) {
+                        if (choiceResult && choiceResult.outcome === 'accepted') {
+                            try {
+                                localStorage.setItem('jd_pwa_installed', 'true');
+                                localStorage.setItem('jd_apk_downloaded', 'true');
+                                document.cookie = "jd_apk_downloaded=true; path=/; max-age=31536000; SameSite=Lax";
+                            } catch (err) {}
+                        }
                         deferredPrompt = null;
                         window.deferredPrompt = null;
                     });
                 } else {
+                    // Record download so landing page won't prompt again
+                    try {
+                        localStorage.setItem('jd_apk_downloaded', 'true');
+                        document.cookie = "jd_apk_downloaded=true; path=/; max-age=31536000; SameSite=Lax";
+                        var topBanner = document.getElementById('pwaTopBanner');
+                        if (topBanner) {
+                            topBanner.classList.add('is-hidden');
+                            topBanner.style.display = 'none';
+                        }
+                    } catch (err) {}
+
                     // Trigger download of JewelDesk.apk directly
                     window.location.href = '/download-apk/';
 
@@ -866,6 +884,22 @@ body:not([data-theme="dark"]):not([data-theme="gold"]) .pwa-update-mini-pill,
             });
         });
 
+        // Wire modal APK download button
+        var modalDownloadApkBtn = document.getElementById('modalDownloadApkBtn');
+        if (modalDownloadApkBtn) {
+            modalDownloadApkBtn.addEventListener('click', function() {
+                try {
+                    localStorage.setItem('jd_apk_downloaded', 'true');
+                    document.cookie = "jd_apk_downloaded=true; path=/; max-age=31536000; SameSite=Lax";
+                    var topBanner = document.getElementById('pwaTopBanner');
+                    if (topBanner) {
+                        topBanner.classList.add('is-hidden');
+                        topBanner.style.display = 'none';
+                    }
+                } catch (err) {}
+            });
+        }
+
         // Wire modal native install button
         var modalNativeBtn = document.getElementById('modalNativeInstallBtn');
         if (modalNativeBtn) {
@@ -874,6 +908,10 @@ body:not([data-theme="dark"]):not([data-theme="gold"]) .pwa-update-mini-pill,
                 if (promptObj) {
                     promptObj.prompt();
                 } else {
+                    try {
+                        localStorage.setItem('jd_apk_downloaded', 'true');
+                        document.cookie = "jd_apk_downloaded=true; path=/; max-age=31536000; SameSite=Lax";
+                    } catch (err) {}
                     window.location.href = '/download-apk/';
                 }
             });
@@ -881,6 +919,16 @@ body:not([data-theme="dark"]):not([data-theme="gold"]) .pwa-update-mini-pill,
 
         window.addEventListener('appinstalled', function() {
             deferredPrompt = null;
+            try {
+                localStorage.setItem('jd_pwa_installed', 'true');
+                localStorage.setItem('jd_apk_downloaded', 'true');
+                document.cookie = "jd_apk_downloaded=true; path=/; max-age=31536000; SameSite=Lax";
+                var topBanner = document.getElementById('pwaTopBanner');
+                if (topBanner) {
+                    topBanner.classList.add('is-hidden');
+                    topBanner.style.display = 'none';
+                }
+            } catch (err) {}
             console.log('[PWA] JewelDesk installed successfully.');
         });
 

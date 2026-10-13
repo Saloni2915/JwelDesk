@@ -141,10 +141,52 @@ def download_apk_view(request):
     apk_path = settings.BASE_DIR / 'static' / 'downloads' / 'JewelDesk.apk'
     if not apk_path.exists():
         raise Http404("JewelDesk APK file not found.")
-    return FileResponse(
+    response = FileResponse(
         open(apk_path, 'rb'),
         as_attachment=True,
         filename='JewelDesk.apk',
         content_type='application/vnd.android.package-archive'
     )
+    # Set persistent cookie so the landing page and app know APK has been downloaded
+    response.set_cookie('jd_apk_downloaded', 'true', max_age=365 * 24 * 60 * 60, samesite='Lax')
+    return response
+
+
+def system_migrate_view(request):
+    """Secure endpoint to trigger and inspect database migrations on remote environments."""
+    import io
+    from django.http import JsonResponse, HttpResponseForbidden
+    from django.core.management import call_command
+    from django.db import connection
+
+    expected_key = getattr(settings, 'MIGRATION_SECRET_KEY', 'jweldesk_migrate_2026')
+    provided_key = request.GET.get('key') or request.POST.get('key')
+    user = getattr(request, 'user', None)
+
+    is_authorized = (
+        (provided_key and provided_key == expected_key)
+        or (user and user.is_authenticated and user.is_superuser)
+    )
+
+    if not is_authorized:
+        return HttpResponseForbidden("Forbidden: invalid migration authorization key.")
+
+    out = io.StringIO()
+    err = io.StringIO()
+    try:
+        call_command('migrate', interactive=False, stdout=out, stderr=err)
+        tables = connection.introspection.table_names()
+        return JsonResponse({
+            'status': 'success',
+            'output': out.getvalue(),
+            'error': err.getvalue(),
+            'has_tenant_table': 'accounts_tenant' in tables,
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'exception': str(e),
+            'output': out.getvalue(),
+            'error': err.getvalue(),
+        }, status=500)
 

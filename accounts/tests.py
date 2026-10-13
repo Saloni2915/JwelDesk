@@ -1366,5 +1366,46 @@ class SignUpFlowInspectionTests(TestCase):
         self.assertNotIn('_auth_user_id', self.client.session)
 
 
+class SystemMigrateViewTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+    def test_unauthorized_access_forbidden(self):
+        response = self.client.get(reverse('system_migrate'))
+        self.assertEqual(response.status_code, 403)
+
+        response_bad_key = self.client.get(reverse('system_migrate') + '?key=wrong_key')
+        self.assertEqual(response_bad_key.status_code, 403)
+
+    def test_authorized_access_with_valid_key(self):
+        from django.conf import settings
+        valid_key = getattr(settings, 'MIGRATION_SECRET_KEY', 'jweldesk_migrate_2026')
+        response = self.client.get(reverse('system_migrate') + f'?key={valid_key}')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data.get('status'), 'success')
+        self.assertTrue(data.get('has_tenant_table'))
+
+
+class TenantMiddlewareSafetyTests(TestCase):
+    def test_tenant_middleware_does_not_crash_on_broken_query(self):
+        from unittest.mock import Mock, patch
+        from accounts.middleware import TenantMiddleware
+
+        user = Mock()
+        user.is_authenticated = True
+        user.employee_profile = None
+        user.owned_tenants.filter.side_effect = Exception("DB table not found simulation")
+
+        request = Mock()
+        request.user = user
+        request.tenant = None
+
+        middleware = TenantMiddleware(lambda req: "response_ok")
+        response = middleware(request)
+        self.assertEqual(response, "response_ok")
+        self.assertIsNone(request.tenant)
+
+
 
 

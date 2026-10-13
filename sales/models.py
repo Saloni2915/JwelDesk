@@ -43,6 +43,8 @@ class Sale(models.Model):
     @property
     def paid_amount(self):
         """Total received against this sale (never stored)."""
+        if hasattr(self, 'total_paid'):
+            return self.total_paid
         # If payments have been prefetched, sum in-memory without extra SQL query
         if hasattr(self, '_prefetched_objects_cache') and 'payments' in self._prefetched_objects_cache:
             return sum((p.amount for p in self.payments.all()), Decimal('0'))
@@ -54,6 +56,8 @@ class Sale(models.Model):
     @property
     def due_amount(self):
         """Remaining due, floored at zero."""
+        if hasattr(self, 'computed_due'):
+            return self.computed_due
         due = self.sale_price - self.paid_amount
         return due if due > 0 else Decimal('0')
 

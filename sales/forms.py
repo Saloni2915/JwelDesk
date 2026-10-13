@@ -1,6 +1,7 @@
 from decimal import Decimal
 from django import forms
-from django.db.models import Q
+from django.db.models import Q, F, Sum
+from django.db.models.functions import Coalesce, Greatest
 from .models import Enquiry, Payment, Sale, OldGoldTransaction
 from inventory.models import JewelleryItem, Category
 from customers.models import Customer
@@ -146,20 +147,28 @@ class StandalonePaymentForm(forms.ModelForm):
                 'id': 'id_standalone_notes'}),
         }
 
-    def __init__(self, *args, tenant=None, **kwargs):
+    def __init__(self, *args, tenant=None, sale_queryset=None, **kwargs):
         self.tenant = tenant or (kwargs.get('instance').tenant if kwargs.get('instance') else None)
         super().__init__(*args, **kwargs)
-        # Order sales by newest, prioritizing sales with pending dues
-        sale_qs = Sale.objects.all()
-        if self.tenant:
-            sale_qs = sale_qs.filter(tenant=self.tenant)
-        self.fields['sale'].queryset = (
-            sale_qs.select_related('customer', 'jewellery_item')
-            .order_by('-sale_date')
-        )
+        if sale_queryset is not None:
+            self.fields['sale'].queryset = sale_queryset
+        else:
+            sale_qs = Sale.objects.all()
+            if self.tenant:
+                sale_qs = sale_qs.filter(tenant=self.tenant)
+            self.fields['sale'].queryset = (
+                sale_qs.annotate(
+                    total_paid=Coalesce(Sum('payments__amount'), Decimal('0.00')),
+                )
+                .annotate(
+                    computed_due=Greatest(F('sale_price') - F('total_paid'), Decimal('0.00'))
+                )
+                .select_related('customer', 'jewellery_item')
+                .order_by('-sale_date')
+            )
         self.fields['sale'].label_from_instance = (
-            lambda s: f"INV-{s.id:05d} \u2014 {s.customer.name} | {s.jewellery_item.name} | Due: \u20b9{s.due_amount:,.2f}"
-            + (" (Paid)" if s.due_amount <= 0 else "")
+            lambda s: f"INV-{s.id:05d} \u2014 {s.customer.name} | {s.jewellery_item.name} | Due: \u20b9{getattr(s, 'computed_due', s.due_amount):,.2f}"
+            + (" (Paid)" if getattr(s, 'computed_due', s.due_amount) <= 0 else "")
         )
 
     def clean(self):

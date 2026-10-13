@@ -237,6 +237,11 @@ class JewelleryItem(models.Model):
             self.stone_weight = Decimal('0.000')
         if self.tag_number:
             self.tag_number = self.tag_number.strip()
+            tag_qs = type(self).objects.filter(tenant=self.tenant, tag_number=self.tag_number)
+            if self.pk:
+                tag_qs = tag_qs.exclude(pk=self.pk)
+            if tag_qs.exists():
+                raise ValidationError({'tag_number': 'This tag number is already assigned to another item in your showroom.'})
 
         # Normalise HUID to uppercase if present
         if self.huid:

@@ -59,8 +59,11 @@ def has_module_perm(user, module, action='view', tenant=None):
         return False
 
     # No tenant provided in context: check if user is an active tenant owner
-    if user.owned_tenants.filter(is_active=True).exists():
-        return True
+    try:
+        if user.owned_tenants.filter(is_active=True).exists():
+            return True
+    except Exception:
+        pass
 
     emp = getattr(user, '_cached_employee_profile', None)
     if emp is None and not getattr(user, '_checked_employee_profile', False):
@@ -110,8 +113,11 @@ def is_admin_user(user, tenant=None):
             )
         return False
 
-    if user.owned_tenants.filter(is_active=True).exists():
-        return True
+    try:
+        if user.owned_tenants.filter(is_active=True).exists():
+            return True
+    except Exception:
+        pass
 
     emp = getattr(user, '_cached_employee_profile', None)
     if emp is None and not getattr(user, '_checked_employee_profile', False):
