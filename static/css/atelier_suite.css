@@ -218,6 +218,58 @@ label,
     border: 1px solid var(--jd-btn-ghost-border) !important;
 }
 
+/* Universal Button Visibility Guards Across Atelier Themes */
+.btn-outline-dark {
+    color: var(--jd-btn-ghost-color, var(--jd-ivory)) !important;
+    border-color: var(--jd-border-strong, var(--jd-border)) !important;
+    background-color: var(--jd-btn-ghost-bg, transparent) !important;
+}
+.btn-outline-dark:hover,
+.btn-outline-dark:focus,
+.btn-outline-dark:active {
+    color: var(--jd-on-gold, #100E09) !important;
+    background-color: var(--jd-gold) !important;
+    border-color: var(--jd-gold) !important;
+    box-shadow: 0 4px 14px var(--jd-gold-glow) !important;
+}
+
+.btn-dark {
+    background-color: var(--jd-card-high, #2C2A24) !important;
+    border: 1px solid var(--jd-border-strong, var(--jd-border)) !important;
+    color: var(--jd-ivory, #FAF4EA) !important;
+}
+.btn-dark:hover,
+.btn-dark:focus,
+.btn-dark:active {
+    background-color: var(--jd-card-highest, #37352E) !important;
+    border-color: var(--jd-gold) !important;
+    color: var(--jd-gold) !important;
+}
+
+.btn-outline-secondary {
+    color: var(--jd-ivory-dim, #D4C5B0) !important;
+    border-color: var(--jd-border) !important;
+    background-color: var(--jd-btn-ghost-bg, transparent) !important;
+}
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus,
+.btn-outline-secondary:active {
+    color: var(--jd-gold) !important;
+    border-color: var(--jd-gold) !important;
+    background-color: var(--jd-gold-glow, rgba(212, 175, 55, 0.12)) !important;
+}
+
+.btn-sm.jd-btn-gold,
+.btn-sm.jd-btn-ghost,
+.jd-btn-gold.btn-sm,
+.jd-btn-ghost.btn-sm {
+    padding: 0.38rem 0.85rem !important;
+    font-size: 0.84rem !important;
+    border-radius: 6px !important;
+    line-height: 1.35 !important;
+}
+
+
 /* Universal Forms & Inputs */
 .form-control,
 .form-select,

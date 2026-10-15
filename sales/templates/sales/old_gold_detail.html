@@ -20,15 +20,15 @@
 
 {% block page_actions %}
 <div class="d-flex gap-2">
-    <button onclick="window.print()" class="btn btn-outline-dark btn-sm">
-        <i class="bi bi-printer me-1"></i> Print Receipt
+    <button onclick="window.print()" class="btn jd-btn-gold btn-sm d-inline-flex align-items-center fw-bold shadow-sm" title="Print this receipt (Ctrl+P)">
+        <i class="bi bi-printer-fill me-1"></i> Print Receipt
     </button>
     {% if tx.status == 'Completed' %}
-    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#cancelModal">
+    <button type="button" class="btn btn-outline-danger btn-sm d-inline-flex align-items-center" data-bs-toggle="modal" data-bs-target="#cancelModal">
         <i class="bi bi-x-circle me-1"></i> Cancel Transaction
     </button>
     {% endif %}
-    <a href="{% url 'old_gold_list' %}" class="btn btn-dark btn-sm">
+    <a href="{% url 'old_gold_list' %}" class="btn jd-btn-ghost btn-sm d-inline-flex align-items-center">
         <i class="bi bi-arrow-left me-1"></i> Back to Old Gold List
     </a>
 </div>
@@ -170,7 +170,7 @@
                         <a href="{% url 'sale_detail' tx.new_sale.id %}" class="btn btn-outline-primary btn-sm">
                             <i class="bi bi-receipt me-1"></i> View Linked Sale #{{ tx.new_sale.id }}
                         </a>
-                        <a href="{% url 'sale_invoice_pdf' tx.new_sale.id %}" class="btn btn-outline-dark btn-sm ms-1">
+                        <a href="{% url 'sale_invoice_pdf' tx.new_sale.id %}" class="btn jd-btn-ghost btn-sm ms-1 d-inline-flex align-items-center">
                             <i class="bi bi-file-earmark-pdf me-1"></i> Download Invoice PDF
                         </a>
                     </div>

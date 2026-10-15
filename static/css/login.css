@@ -985,38 +985,411 @@ img {
 }
 
 /* --------------------------------------------------------------------------
-   9. Legacy Auth Classes (Retained for signup.html & password_reset_*.html)
+   9. Auth Architecture & Responsiveness (signup.html & password_reset_*.html)
    -------------------------------------------------------------------------- */
-.jd-auth__shell { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); min-height: 100vh; }
-.jd-auth__visual { position: relative; display: flex; align-items: flex-end; padding: clamp(1.75rem, 3vw, 3.25rem); color: #fdf6e4; background-color: #150f0a; background-image: url("../images/branding/login_background.jpg"); background-size: cover; background-position: center center; }
-.jd-auth__scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(18, 12, 7, 0.58) 0%, rgba(18, 12, 7, 0.16) 36%, rgba(14, 9, 5, 0.86) 100%); }
-.jd-auth__visual-inner { position: relative; z-index: 1; max-width: 30rem; }
-.jd-auth__brand { display: flex; align-items: center; gap: 0.7rem; }
-.jd-auth__brand-mark { display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border-radius: 0.8rem; font-size: 1.2rem; color: #241a06; background-color: #e8c777; }
-.jd-auth__brand-name { font-size: 1.55rem; font-weight: 700; color: #ffffff; }
-.jd-auth__tagline { margin: 0.5rem 0 0; font-size: 0.82rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #e9c877; }
-.jd-auth__support { margin: 0.9rem 0 0; max-width: 26rem; font-size: 0.95rem; line-height: 1.6; color: rgba(255, 248, 232, 0.84); }
-.jd-auth__points { display: grid; gap: 0.45rem; margin: 1.4rem 0 0; padding: 0; list-style: none; }
-.jd-auth__points li { display: flex; align-items: center; gap: 0.55rem; font-size: 0.86rem; color: rgba(255, 247, 230, 0.86); }
-.jd-auth__points i { color: #dcb761; }
-.jd-auth__panel { display: flex; align-items: center; justify-content: center; padding: clamp(1.5rem, 4vw, 3rem); background-color: var(--bg-primary); overflow-y: auto; }
-.jd-auth__card { width: 100%; max-width: 28rem; }
-.jd-auth__title { font-size: 1.7rem; font-weight: 700; color: var(--text-primary); margin: 0 0 0.45rem; }
-.jd-auth__subtitle { font-size: 0.92rem; color: var(--text-secondary); margin: 0 0 1.5rem; }
-.jd-auth__field { margin-bottom: 1.1rem; }
-.jd-auth__label { display: block; margin-bottom: 0.4rem; font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
-.jd-auth__input { position: relative; }
-.jd-auth__icon { position: absolute; top: 50%; left: 0.95rem; transform: translateY(-50%); font-size: 0.95rem; color: var(--text-muted); pointer-events: none; }
-.jd-auth__control { width: 100%; min-height: 44px; padding: 0.72rem 0.95rem 0.72rem 2.6rem; border: 1px solid var(--input-border); border-radius: 0.7rem; background-color: var(--input-bg); color: var(--text-primary); font-size: 1rem; box-sizing: border-box; }
-.jd-auth__control:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 0.2rem var(--bs-focus-ring-color); }
-.jd-auth__control--password { padding-right: 3rem; }
-.jd-auth__toggle { position: absolute; top: 50%; right: 0.3rem; transform: translateY(-50%); border: 0; background: transparent; color: var(--text-muted); width: 2.25rem; height: 2.25rem; border-radius: 0.55rem; cursor: pointer; }
-.jd-auth__submit { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%; min-height: 46px; border: 1px solid var(--accent); border-radius: 0.7rem; background-color: var(--accent); color: var(--on-accent); font-size: 0.98rem; font-weight: 600; cursor: pointer; text-decoration: none; }
-.jd-auth__submit:hover { background-color: var(--accent-hover); color: var(--on-accent); }
-.jd-auth__link { color: var(--accent); text-decoration: none; font-size: 0.85rem; font-weight: 500; }
-.jd-auth__link:hover { text-decoration: underline; color: var(--accent-hover); }
-.jd-auth__alert { display: flex; align-items: flex-start; gap: 0.6rem; margin-bottom: 1.15rem; padding: 0.75rem 0.9rem; border: 1px solid var(--danger); border-radius: 0.7rem; background-color: rgba(231, 76, 60, 0.10); color: var(--danger); font-size: 0.875rem; }
-.jd-auth__foot { display: flex; align-items: center; gap: 0.5rem; margin: 1.35rem 0 0; padding-top: 1.1rem; border-top: 1px solid var(--border); font-size: 0.78rem; color: var(--text-muted); }
-.jd-auth__status-icon { display: grid; place-items: center; width: 3.8rem; height: 3.8rem; margin: 0 auto 1.25rem; border-radius: 50%; font-size: 1.85rem; }
-.jd-auth__status-icon--success { background-color: rgba(46, 204, 113, 0.14); color: #2ecc71; }
-.jd-auth__status-icon--info { background-color: rgba(52, 152, 219, 0.14); color: #3498db; }
+body.jd-auth {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    background-color: var(--bg-primary, #141009);
+    color: var(--text-primary, #fef9ed);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+    line-height: 1.5;
+}
+
+.jd-auth__shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    min-height: 100vh;
+    min-height: 100dvh;
+    width: 100%;
+}
+
+.jd-auth__visual {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    padding: clamp(1.75rem, 3vw, 3.25rem);
+    color: #fdf6e4;
+    background-color: #150f0a;
+    background-image: url("../images/branding/login_background.jpg");
+    background-size: cover;
+    background-position: center center;
+}
+
+.jd-auth__scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(18, 12, 7, 0.58) 0%, rgba(18, 12, 7, 0.16) 36%, rgba(14, 9, 5, 0.86) 100%);
+}
+
+.jd-auth__visual-inner {
+    position: relative;
+    z-index: 1;
+    max-width: 30rem;
+}
+
+.jd-auth__brand {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+}
+
+.jd-auth__brand-mark {
+    display: grid;
+    place-items: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 0.8rem;
+    font-size: 1.2rem;
+    color: #241a06;
+    background-color: #e8c777;
+}
+
+.jd-auth__brand-name {
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.jd-auth__tagline {
+    margin: 0.5rem 0 0;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #e9c877;
+}
+
+.jd-auth__support {
+    margin: 0.9rem 0 0;
+    max-width: 26rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: rgba(255, 248, 232, 0.84);
+}
+
+.jd-auth__points {
+    display: grid;
+    gap: 0.45rem;
+    margin: 1.4rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.jd-auth__points li {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: 0.86rem;
+    color: rgba(255, 247, 230, 0.86);
+}
+
+.jd-auth__points i {
+    color: #dcb761;
+}
+
+.jd-auth__panel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(1.5rem, 4vw, 3rem);
+    background-color: var(--bg-primary, #141009);
+    overflow-y: auto;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.jd-auth__card {
+    width: 100%;
+    max-width: 28rem;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+.jd-auth__logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 1.15rem;
+    text-decoration: none;
+}
+
+.jd-auth__logo-mark {
+    display: inline-grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.65rem;
+    background: linear-gradient(135deg, #F5D77F 0%, #D4AF37 40%, #B8860B 100%);
+    color: #140D07;
+    font-size: 1rem;
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.25);
+}
+
+.jd-auth__title {
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.45rem;
+    line-height: 1.25;
+}
+
+.jd-auth__subtitle {
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+    margin: 0 0 1.5rem;
+    line-height: 1.45;
+}
+
+.jd-auth__field {
+    margin-bottom: 1.1rem;
+    width: 100%;
+}
+
+.jd-auth__label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.jd-auth__input {
+    position: relative;
+    width: 100%;
+}
+
+.jd-auth__icon {
+    position: absolute;
+    top: 50%;
+    left: 0.95rem;
+    transform: translateY(-50%);
+    font-size: 1rem;
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.jd-auth__control {
+    width: 100%;
+    min-height: 48px;
+    padding: 0.75rem 1rem 0.75rem 2.65rem;
+    border: 1px solid var(--input-border);
+    border-radius: 0.75rem;
+    background-color: var(--input-bg);
+    color: var(--text-primary);
+    font-size: 1rem;
+    box-sizing: border-box;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.jd-auth__control:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 0.2rem rgba(229, 179, 56, 0.25);
+}
+
+.jd-auth__control--password {
+    padding-right: 3rem;
+}
+
+.jd-auth__toggle {
+    position: absolute;
+    top: 50%;
+    right: 0.35rem;
+    transform: translateY(-50%);
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.55rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+}
+
+.jd-auth__toggle:hover {
+    color: var(--text-primary);
+}
+
+.jd-auth__help-text {
+    font-size: 0.76rem;
+    color: var(--text-muted);
+    margin-top: 0.35rem;
+    line-height: 1.35;
+}
+
+.jd-auth__submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    min-height: 48px;
+    border: 1px solid var(--accent);
+    border-radius: 0.75rem;
+    background-color: var(--accent);
+    color: var(--on-accent);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 4px 14px rgba(229, 179, 56, 0.25);
+    transition: background-color 0.18s ease, transform 0.15s ease;
+    box-sizing: border-box;
+}
+
+.jd-auth__submit:hover {
+    background-color: var(--accent-hover);
+    color: var(--on-accent);
+}
+
+.jd-auth__submit:active {
+    transform: scale(0.99);
+}
+
+.jd-auth__link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.jd-auth__link:hover {
+    text-decoration: underline;
+    color: var(--accent-hover);
+}
+
+.jd-auth__alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin-bottom: 1.15rem;
+    padding: 0.75rem 0.95rem;
+    border: 1px solid var(--danger);
+    border-radius: 0.75rem;
+    background-color: rgba(231, 76, 60, 0.12);
+    color: var(--danger);
+    font-size: 0.875rem;
+}
+
+.jd-auth__notice {
+    border-radius: 0.75rem;
+}
+
+.jd-auth__foot {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 1.35rem 0 0;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.jd-auth__status-icon {
+    display: grid;
+    place-items: center;
+    width: 3.8rem;
+    height: 3.8rem;
+    margin: 0 auto 1.25rem;
+    border-radius: 50%;
+    font-size: 1.85rem;
+}
+
+.jd-auth__status-icon--success {
+    background-color: rgba(46, 204, 113, 0.14);
+    color: #2ecc71;
+}
+
+.jd-auth__status-icon--info {
+    background-color: rgba(52, 152, 219, 0.14);
+    color: #3498db;
+}
+
+/* ==========================================================================
+   Mobile & Tablet Responsive System for Auth / Sign Up Screens
+   ========================================================================== */
+@media (max-width: 991.98px) {
+    .jd-auth__shell {
+        display: flex !important;
+        flex-direction: column !important;
+        min-height: 100vh !important;
+        min-height: 100dvh !important;
+        width: 100% !important;
+    }
+
+    /* Hide the 50% split decorative visual on mobile/tablet screens */
+    .jd-auth__visual {
+        display: none !important;
+    }
+
+    .jd-auth__panel {
+        width: 100% !important;
+        min-height: 100vh !important;
+        min-height: 100dvh !important;
+        flex: 1 1 auto !important;
+        padding: clamp(1.25rem, 5vw, 2.5rem) clamp(1rem, 4vw, 2rem) !important;
+        padding-top: max(1.5rem, env(safe-area-inset-top, 1.5rem)) !important;
+        padding-bottom: max(1.75rem, env(safe-area-inset-bottom, 1.75rem)) !important;
+        box-sizing: border-box !important;
+    }
+
+    .jd-auth__card {
+        width: 100% !important;
+        max-width: 460px !important;
+        margin: 0 auto !important;
+        box-sizing: border-box !important;
+    }
+}
+
+/* Small Mobile Phones (PWA Devices <= 576px) */
+@media (max-width: 575.98px) {
+    .jd-auth__panel {
+        padding: 1.25rem 1rem 2rem !important;
+        padding-top: max(1.25rem, env(safe-area-inset-top, 1.25rem)) !important;
+        padding-bottom: max(2rem, env(safe-area-inset-bottom, 2rem)) !important;
+    }
+
+    .jd-auth__card {
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+
+    .jd-auth__title {
+        font-size: 1.5rem !important;
+    }
+
+    .jd-auth__subtitle {
+        font-size: 0.88rem !important;
+        margin-bottom: 1.2rem !important;
+    }
+
+    .jd-auth__field {
+        margin-bottom: 0.95rem !important;
+    }
+
+    .jd-auth__control {
+        min-height: 48px !important;
+        padding: 0.7rem 0.85rem 0.7rem 2.6rem !important;
+        font-size: 1rem !important;
+        border-radius: 0.75rem !important;
+    }
+
+    .jd-auth__submit {
+        min-height: 48px !important;
+        font-size: 1rem !important;
+        border-radius: 0.75rem !important;
+    }
+}

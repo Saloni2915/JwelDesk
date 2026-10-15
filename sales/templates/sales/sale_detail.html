@@ -7,7 +7,7 @@
 {% block page_actions %}
 <div class="d-flex flex-wrap align-items-center gap-2">
     <!-- Interactive GST Mode Toggle -->
-    <div class="jd-gst-toggle-card p-1 px-3 rounded border bg-light d-flex align-items-center gap-2 me-1"
+    <div class="jd-gst-toggle-card p-1 px-3 rounded border d-flex align-items-center gap-2 me-1"
          title="Switch between Standard Jewellery Tax Invoice (3% GST) and Retail Cash Memo (Without GST)">
         <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
             <input class="form-check-input ms-0" type="checkbox" role="switch" id="gstToggleSwitch"
@@ -27,29 +27,29 @@
     </div>
 
     {% if whatsapp_url %}
-    <a href="{{ whatsapp_url }}" target="_blank" rel="noopener" class="btn btn-success btn-sm"
+    <a href="{{ whatsapp_url }}" target="_blank" rel="noopener" class="btn btn-success btn-sm d-inline-flex align-items-center shadow-sm"
        title="Open WhatsApp with a pre-filled thank-you message for {{ whatsapp_customer_name }}">
         <i class="bi bi-whatsapp me-1"></i> Send WhatsApp Thank You
     </a>
     {% elif whatsapp_unavailable %}
-    <span class="btn btn-secondary btn-sm disabled" tabindex="-1" aria-disabled="true"
+    <span class="btn jd-btn-ghost btn-sm disabled opacity-50 d-inline-flex align-items-center" tabindex="-1" aria-disabled="true"
           title="Customer WhatsApp number is not available.">
         <i class="bi bi-whatsapp me-1"></i> Send WhatsApp Thank You
     </span>
     {% endif %}
 
-    <button type="button" onclick="window.print()" class="btn btn-outline-dark btn-sm">
-        <i class="bi bi-printer me-1"></i> Print Receipt
+    <button type="button" onclick="window.print()" class="btn jd-btn-gold btn-sm d-inline-flex align-items-center fw-bold shadow-sm" id="btnPrintReceipt" title="Print this receipt (Ctrl+P)">
+        <i class="bi bi-printer-fill me-1"></i> Print Receipt
     </button>
     <a id="downloadPdfBtn" href="{% url 'sale_invoice_pdf' sale.pk %}{% if not include_gst %}?gst=0{% else %}?gst=1{% endif %}"
-       class="btn btn-dark btn-sm" title="Download this invoice as a PDF file">
+       class="btn jd-btn-ghost btn-sm d-inline-flex align-items-center" title="Download this invoice as a PDF file">
         <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
     </a>
-    <a href="{% url 'sale_list' %}" class="btn btn-outline-secondary btn-sm">
+    <a href="{% url 'sale_list' %}" class="btn jd-btn-ghost btn-sm d-inline-flex align-items-center" title="Return to sales ledger">
         <i class="bi bi-arrow-left me-1"></i> Back to Sales
     </a>
     {% if sale.due_amount > 0 %}
-    <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addPaymentModal"
+    <button type="button" class="btn btn-success btn-sm d-inline-flex align-items-center fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#addPaymentModal"
             title="Record a payment against this sale">
         <i class="bi bi-cash-coin me-1"></i> Add Payment
     </button>
@@ -515,8 +515,8 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-success btn-sm">
+                <button type="button" class="btn jd-btn-ghost btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-success btn-sm fw-semibold">
                     <i class="bi bi-check-lg me-1"></i> Save Payment
                 </button>
             </div>
@@ -560,10 +560,42 @@
 }
 
 .jd-gst-toggle-card {
+    background-color: var(--surface, #ffffff) !important;
+    border: 1px solid var(--border, #cbd5e1) !important;
     transition: all 0.2s ease;
 }
 .jd-gst-toggle-card:hover {
-    background-color: #e2e8f0 !important;
+    border-color: var(--accent, #d4af37) !important;
+    background-color: var(--surface-hover, #f8fafc) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="gold"] .jd-gst-toggle-card {
+    background-color: #20160e !important;
+    border-color: rgba(212, 175, 55, 0.35) !important;
+}
+[data-theme="gold"] .jd-gst-toggle-card:hover {
+    background-color: #261b11 !important;
+    border-color: #ECC86A !important;
+}
+
+[data-theme="dark"] .jd-gst-toggle-card {
+    background-color: #121620 !important;
+    border-color: rgba(148, 163, 184, 0.3) !important;
+}
+[data-theme="dark"] .jd-gst-toggle-card:hover {
+    background-color: #171d2a !important;
+    border-color: #38BDF8 !important;
+}
+
+/* Toggle Switch Theme Accent */
+[data-theme="gold"] .form-check-input:checked {
+    background-color: #ECC86A !important;
+    border-color: #ECC86A !important;
+}
+[data-theme="dark"] .form-check-input:checked {
+    background-color: #38BDF8 !important;
+    border-color: #38BDF8 !important;
 }
 
 /* =========================================================================
