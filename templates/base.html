@@ -50,7 +50,7 @@
                     {% else %}
                     <img src="{% static 'icons/favicon-32x32.png' %}" alt="JewelDesk" class="me-1 me-sm-2 rounded flex-shrink-0 navbar-brand-icon" style="width: 26px; height: 26px; object-fit: cover;">
                     {% endif %}
-                    <span class="fw-semibold company-name text-truncate">{{ company.name|default:"JewelDesk" }}</span>
+                    <span class="fw-semibold company-name">{{ company.name|default:"JewelDesk" }}</span>
                 </a>
             </div>
 
@@ -58,33 +58,37 @@
             <div class="ms-auto d-flex align-items-center gap-2 flex-shrink-0">
                 {% if user.is_authenticated %}
                 <!-- User Profile Pill in Right Top Corner -->
-                <div class="navbar-user-pill d-inline-flex align-items-center" title="Logged in as {{ user.username }}">
+                <div class="navbar-user-pill d-inline-flex align-items-center" title="Logged in as {{ user.first_name|default:user.username }}">
                     <div class="navbar-user-avatar rounded-circle d-flex align-items-center justify-content-center flex-shrink-0">
                         <i class="bi bi-person-fill"></i>
                     </div>
                     <div class="d-none d-sm-inline-flex flex-column min-w-0 justify-content-center ms-2" style="line-height: 1.15;">
                         <div class="d-flex align-items-center gap-1">
-                            <span class="fw-semibold navbar-username text-truncate">{{ user.username }}</span>
-                            {% if user.is_superuser %}
+                            <span class="fw-semibold navbar-username text-truncate">{{ user.first_name|default:user.username }}</span>
+                            {% if user.is_superuser or request.tenant and request.tenant.owner_id == user.id %}
                             <span class="badge navbar-user-badge navbar-user-badge-admin">Admin</span>
+                            {% elif request.tenant and user.employee_profile and user.employee_profile.role.name in 'Tenant Administrator,Admin' %}
+                            <span class="badge navbar-user-badge navbar-user-badge-admin">Admin</span>
+                            {% elif request.tenant and user.employee_profile %}
+                            <span class="badge navbar-user-badge navbar-user-badge-staff">{{ user.employee_profile.role.name }}</span>
                             {% else %}
                             <span class="badge navbar-user-badge navbar-user-badge-staff">Staff</span>
                             {% endif %}
                         </div>
                         <span class="navbar-user-role">
-                            {% if user.is_superuser %}Administrator{% else %}Store Staff{% endif %}
+                            {% if user.is_superuser %}Super Admin{% elif request.tenant and request.tenant.owner_id == user.id %}Tenant Administrator{% elif request.tenant and user.employee_profile %}{{ user.employee_profile.role.name }}{% else %}Store Staff{% endif %}
                         </span>
                     </div>
                     <!-- On mobile / PWA screens, show compact truncated username -->
                     <span class="d-inline-block d-sm-none fw-semibold navbar-username-mobile text-truncate ms-1">
-                        {{ user.username }}
+                        {{ user.first_name|default:user.username }}
                     </span>
                 </div>
 
                 <!-- Logout Button -->
                 <form method="post" action="{% url 'accounts:logout' %}" class="d-inline-flex m-0 p-0 align-items-center">
                     {% csrf_token %}
-                    <button type="submit" class="btn navbar-logout-btn" title="Logout ({{ user.username }})" aria-label="Logout">
+                    <button type="submit" class="btn navbar-logout-btn" title="Logout ({{ user.first_name|default:user.username }})" aria-label="Logout">
                         <i class="bi bi-box-arrow-right"></i>
                         <span class="d-none d-md-inline ms-1">Logout</span>
                     </button>
@@ -104,8 +108,8 @@
                     <i class="bi bi-person-fill"></i>
                 </div>
                 <div class="d-flex flex-column min-w-0" style="line-height: 1.2;">
-                    <span class="sidebar-username fw-semibold text-truncate small" title="{{ user.username }}">{{ user.username }}</span>
-                    <span class="text-muted text-truncate" style="font-size: 0.7rem;">{% if user.is_superuser %}Administrator{% else %}Store Staff{% endif %}</span>
+                    <span class="sidebar-username fw-semibold text-truncate small" title="{{ user.first_name|default:user.username }}">{{ user.first_name|default:user.username }}</span>
+                    <span class="text-muted text-truncate" style="font-size: 0.7rem;">{% if user.is_superuser %}Super Admin{% elif request.tenant and request.tenant.owner_id == user.id %}Tenant Administrator{% elif request.tenant and user.employee_profile %}{{ user.employee_profile.role.name }}{% else %}Store Staff{% endif %}</span>
                 </div>
             </div>
             {% endif %}

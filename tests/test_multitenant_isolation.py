@@ -281,7 +281,7 @@ class PublicSignupSecurityTests(TestCase):
         emp = getattr(new_user, 'employee_profile', None)
         self.assertIsNotNone(emp)
         self.assertEqual(emp.tenant, tenant)
-        self.assertEqual(emp.role.name, Role.ROLE_ADMIN)
+        self.assertIn(emp.role.name, (Role.ROLE_TENANT_ADMIN, Role.ROLE_ADMIN))
         self.assertEqual(emp.status, Employee.STATUS_ACTIVE)
 
         # 5. Verify request.tenant resolves to new tenant upon login

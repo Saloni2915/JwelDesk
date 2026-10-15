@@ -40,6 +40,7 @@ from .models import (
 from .permissions import has_module_perm, is_admin_user, require_permission
 
 User = get_user_model()
+ADMIN_ROLE_NAMES = ('Admin', 'Tenant Administrator')
 
 
 def _can_view_employee(request, employee):
@@ -60,6 +61,11 @@ def _can_view_employee(request, employee):
 def employee_list(request):
     """Show all employees with search and multi-facet filtering."""
     from django.db.models import Q
+
+    # Auto-ensure tenant owner employee record if missing
+    if getattr(request, 'tenant', None) and request.tenant.owner_id == request.user.id:
+        Employee.ensure_tenant_admin(request.tenant, request.user)
+
     qs = Employee.objects.filter(tenant=request.tenant).select_related('user', 'role').prefetch_related('branches')
 
     q = request.GET.get('q', '').strip()
@@ -119,9 +125,9 @@ def employee_create(request):
     if request.method == 'POST':
         form = EmployeeCreateForm(request.POST, request.FILES, tenant=request.tenant)
         if form.is_valid():
-            # Privilege escalation guard: Only admins can assign the Admin role
+            # Privilege escalation guard: Only admins can assign an Admin role
             chosen_role = form.cleaned_data.get('role')
-            if chosen_role and chosen_role.name == Role.ROLE_ADMIN and not is_admin_user(request.user, tenant=request.tenant):
+            if chosen_role and chosen_role.name in ADMIN_ROLE_NAMES and not is_admin_user(request.user, tenant=request.tenant):
                 form.add_error('role', 'Only administrators can assign the Admin role.')
             else:
                 employee = form.save(created_by=request.user)
@@ -165,7 +171,7 @@ def employee_detail(request, pk):
     )
     can_edit = has_module_perm(request.user, 'team', 'edit', tenant=request.tenant)
     can_manage_perms = can_edit and not is_self and (
-        is_admin_user(request.user, tenant=request.tenant) or employee.role.name != Role.ROLE_ADMIN
+        is_admin_user(request.user, tenant=request.tenant) or employee.role.name not in ADMIN_ROLE_NAMES
     )
 
     doc_form = EmployeeDocumentForm()
@@ -205,7 +211,7 @@ def employee_edit(request, pk):
             new_role = form.cleaned_data.get('role')
             if is_self and new_role != employee.role and not is_admin_user(request.user, tenant=request.tenant):
                 form.add_error('role', 'You cannot change your own role.')
-            elif new_role and new_role.name == Role.ROLE_ADMIN and not is_admin_user(request.user, tenant=request.tenant):
+            elif new_role and new_role.name in ADMIN_ROLE_NAMES and not is_admin_user(request.user, tenant=request.tenant):
                 form.add_error('role', 'Only administrators can assign the Admin role.')
             else:
                 emp = form.save()
@@ -272,7 +278,7 @@ def employee_password_reset(request, pk):
         return redirect('team:employee_detail', pk=pk)
 
     # Protect Admin accounts: only admins can reset another admin's password
-    if employee.role.name == Role.ROLE_ADMIN and not is_admin_user(request.user, tenant=request.tenant):
+    if employee.role.name in ADMIN_ROLE_NAMES and not is_admin_user(request.user, tenant=request.tenant):
         raise PermissionDenied("Only administrators can reset an administrator's password.")
 
     if request.method == 'POST':
@@ -340,7 +346,7 @@ def employee_permissions(request, pk):
         raise PermissionDenied("You cannot modify your own permissions.")
 
     # Only admins can edit permissions of an Admin
-    if employee.role.name == Role.ROLE_ADMIN and not is_admin_user(request.user, tenant=request.tenant):
+    if employee.role.name in ADMIN_ROLE_NAMES and not is_admin_user(request.user, tenant=request.tenant):
         raise PermissionDenied("Only administrators can modify permissions for an Admin.")
 
     if request.method == 'POST':

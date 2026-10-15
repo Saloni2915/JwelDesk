@@ -38,6 +38,11 @@ class TenantMiddleware:
                     owned = user.owned_tenants.filter(is_active=True).first()
                     if owned:
                         request.tenant = owned
+                        try:
+                            from team.models import Employee
+                            Employee.ensure_tenant_admin(owned, user)
+                        except Exception:
+                            pass
                     elif user.is_superuser:
                         # Superuser fallback: default to first active tenant if available
                         request.tenant = Tenant.objects.filter(is_active=True).first()

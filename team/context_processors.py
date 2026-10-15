@@ -52,7 +52,9 @@ class UserPermsChecker:
 
     @property
     def is_admin(self):
-        return is_admin_user(self.user, tenant=self.tenant)
+        if not hasattr(self, '_is_admin_cached'):
+            self._is_admin_cached = is_admin_user(self.user, tenant=self.tenant)
+        return self._is_admin_cached
 
     def __getattr__(self, module):
         return ModulePermChecker(self, module)

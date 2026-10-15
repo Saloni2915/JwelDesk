@@ -31,7 +31,11 @@ class EmailOrUsernameModelBackend(ModelBackend):
         try:
             user = (
                 UserModel.objects
-                .filter(Q(username__iexact=identifier) | Q(email__iexact=identifier))
+                .filter(
+                    Q(username__iexact=identifier) |
+                    Q(email__iexact=identifier) |
+                    Q(first_name__iexact=identifier)
+                )
                 .order_by('id')
                 .first()
             )

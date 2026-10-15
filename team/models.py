@@ -84,6 +84,7 @@ class Role(models.Model):
     Admins can add custom roles later through the Team → Roles UI (future).
     """
 
+    ROLE_TENANT_ADMIN      = 'Tenant Administrator'
     ROLE_ADMIN             = 'Admin'
     ROLE_HR                = 'HR'
     ROLE_MANAGER           = 'Manager'
@@ -95,7 +96,10 @@ class Role(models.Model):
     ROLE_SUPPORT           = 'Support'
     ROLE_CASHIER           = 'Cashier'
 
+    ADMIN_ROLES = (ROLE_ADMIN, ROLE_TENANT_ADMIN)
+
     DEFAULT_ROLES = [
+        ROLE_TENANT_ADMIN,
         ROLE_ADMIN,
         ROLE_HR,
         ROLE_MANAGER,
@@ -145,6 +149,7 @@ class Role(models.Model):
     def ensure_builtin_roles(cls):
         """Seed or ensure all standard built-in roles exist in the database."""
         roles_data = [
+            (cls.ROLE_TENANT_ADMIN, 'Full administrative access across all modules as Tenant Administrator.'),
             (cls.ROLE_ADMIN, 'Full administrative access across all modules.'),
             (cls.ROLE_MANAGER, 'Store manager with inventory and sales management access.'),
             (cls.ROLE_SALES, 'Handle sales counters and customer interactions.'),
@@ -254,7 +259,7 @@ class EmployeePermission(models.Model):
 
         perms = {}  # module → flags dict
 
-        if role_name == Role.ROLE_ADMIN:
+        if role_name in (Role.ROLE_ADMIN, getattr(Role, 'ROLE_TENANT_ADMIN', 'Tenant Administrator'), 'Tenant Administrator', 'Admin'):
             for m in cls.MODULES:
                 perms[m] = full
 
@@ -510,7 +515,7 @@ class Employee(models.Model):
             return False
         if self.user and self.user.is_superuser:
             return True
-        if self.role and self.role.name == Role.ROLE_ADMIN:
+        if self.role and self.role.name in (Role.ROLE_ADMIN, getattr(Role, 'ROLE_TENANT_ADMIN', 'Tenant Administrator'), 'Tenant Administrator', 'Admin'):
             return True
         try:
             perm = self.permissions.get(module=module)
@@ -536,6 +541,73 @@ class Employee(models.Model):
                 module=module,
                 defaults=flags,
             )
+
+    @classmethod
+    def ensure_tenant_admin(cls, tenant, user=None):
+        """Ensure the tenant owner has an active Employee profile with the Tenant Administrator role and full permissions."""
+        if not tenant:
+            return None
+        owner = user or getattr(tenant, 'owner', None)
+        if not owner:
+            return None
+
+        Role.ensure_builtin_roles()
+        admin_role = (
+            Role.objects.filter(name=Role.ROLE_TENANT_ADMIN).first()
+            or Role.objects.filter(name=Role.ROLE_ADMIN).first()
+        )
+        if not admin_role:
+            admin_role, _ = Role.objects.get_or_create(
+                name=Role.ROLE_TENANT_ADMIN,
+                defaults={
+                    'description': 'Full administrative access across all modules as Tenant Administrator.',
+                    'is_builtin': True,
+                }
+            )
+
+        emp = cls.objects.filter(tenant=tenant, user=owner).first()
+        if not emp and owner.email:
+            emp = cls.objects.filter(tenant=tenant, email__iexact=owner.email).first()
+
+        if not emp:
+            full_name = ''
+            if hasattr(owner, 'get_full_name'):
+                full_name = owner.get_full_name().strip()
+            if not full_name:
+                full_name = (owner.first_name or '').strip()
+            if not full_name:
+                full_name = owner.username
+
+            owner_email = (owner.email or '').strip().lower()
+            if not owner_email:
+                owner_email = f"{owner.username}@jeweldesk.local"
+
+            emp = cls.objects.create(
+                user=owner,
+                tenant=tenant,
+                full_name=full_name,
+                email=owner_email,
+                role=admin_role,
+                designation='Tenant Administrator',
+                department='Administration',
+                status=cls.STATUS_ACTIVE,
+            )
+        else:
+            updates = []
+            if emp.user_id != owner.id:
+                emp.user = owner
+                updates.append('user')
+            if emp.status != cls.STATUS_ACTIVE:
+                emp.status = cls.STATUS_ACTIVE
+                updates.append('status')
+            if admin_role and emp.role_id != admin_role.id and emp.role.name not in (Role.ROLE_ADMIN, Role.ROLE_TENANT_ADMIN):
+                emp.role = admin_role
+                updates.append('role')
+            if updates:
+                emp.save(update_fields=updates)
+
+        emp.apply_default_permissions()
+        return emp
 
 
 # ---------------------------------------------------------------------------

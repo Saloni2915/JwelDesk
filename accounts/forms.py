@@ -36,6 +36,34 @@ class JewelDeskSetPasswordForm(SetPasswordForm):
                 })
 
 
+def generate_username_from_full_name(full_name, email=None):
+    """Generate a clean, valid, and unique Django username from full name."""
+    import re
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+
+    name = (full_name or '').strip()
+    if not name and email:
+        name = email.split('@')[0]
+    if not name:
+        name = 'user'
+
+    # Convert spaces to dots and keep only valid characters (letters, digits, @/./+/-/_)
+    cleaned = re.sub(r'\s+', '.', name)
+    cleaned = re.sub(r'[^\w.@+-]', '', cleaned)
+    if not cleaned:
+        cleaned = re.sub(r'[^\w.@+-]', '', (email or '').split('@')[0]) or 'user'
+
+    cleaned = cleaned[:140]
+    candidate = cleaned
+    suffix = 1
+    while User.objects.filter(username__iexact=candidate).exists():
+        candidate = f"{cleaned}{suffix}"
+        suffix += 1
+
+    return candidate
+
+
 class JewelDeskSignUpForm(UserCreationForm):
     """User registration form styled for JewelDesk auth panels."""
 
@@ -73,23 +101,10 @@ class JewelDeskSignUpForm(UserCreationForm):
 
     class Meta(UserCreationForm.Meta):
         model = get_user_model()
-        fields = ('first_name', 'shop_name', 'username', 'email')
+        fields = ('first_name', 'shop_name', 'email')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if 'username' in self.fields:
-            self.fields['username'].label = 'Username'
-            self.fields['username'].widget.attrs.update({
-                'class': 'jd-auth__control',
-                'placeholder': 'Choose a username',
-                'autocomplete': 'username',
-                'autocapitalize': 'none',
-                'autocorrect': 'off',
-                'spellcheck': 'false',
-            })
-            self.fields['username'].help_text = (
-                'Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.'
-            )
         if 'password1' in self.fields:
             self.fields['password1'].label = 'Password'
             self.fields['password1'].widget.attrs.update({
@@ -111,17 +126,6 @@ class JewelDeskSignUpForm(UserCreationForm):
             raise forms.ValidationError('Full name is required.')
         return name
 
-    def clean_username(self):
-        username = (self.cleaned_data.get('username') or '').strip()
-        if not username:
-            raise forms.ValidationError('Username is required.')
-        User = get_user_model()
-        if User.objects.filter(username__iexact=username).exists():
-            raise forms.ValidationError('A user with that username already exists.')
-        if User.objects.filter(email__iexact=username).exists():
-            raise forms.ValidationError('An account with this email already exists.')
-        return username
-
     def clean_email(self):
         email = (self.cleaned_data.get('email') or '').strip().lower()
         if not email:
@@ -129,25 +133,30 @@ class JewelDeskSignUpForm(UserCreationForm):
         User = get_user_model()
         if User.objects.filter(email__iexact=email).exists():
             raise forms.ValidationError('An account with this email already exists.')
-        if User.objects.filter(username__iexact=email).exists():
-            raise forms.ValidationError('An account with this email already exists.')
         return email
 
     def clean(self):
         cleaned_data = super().clean()
-        username = (cleaned_data.get('username') or '').strip()
         email = (cleaned_data.get('email') or '').strip().lower()
         User = get_user_model()
-        if email and User.objects.filter(Q(email__iexact=email) | Q(username__iexact=email)).exists():
+        if email and User.objects.filter(email__iexact=email).exists():
             self.add_error('email', 'An account with this email already exists.')
-        if username and User.objects.filter(Q(username__iexact=username) | Q(email__iexact=username)).exists():
-            self.add_error('username', 'A user with that username already exists.')
         return cleaned_data
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.first_name = (self.cleaned_data.get('first_name') or '').strip()
+        full_name = (self.cleaned_data.get('first_name') or '').strip()
+        user.first_name = full_name
         user.email = (self.cleaned_data.get('email') or '').strip().lower()
+
+        # Set username as full name (or explicit username if submitted by legacy tests/API)
+        explicit_username = (self.data.get('username') or '').strip()
+        User = get_user_model()
+        if explicit_username and not User.objects.filter(username__iexact=explicit_username).exists():
+            user.username = explicit_username
+        else:
+            user.username = generate_username_from_full_name(full_name, user.email)
+
         user.is_active = True
         user.is_staff = False
         user.is_superuser = False
@@ -158,20 +167,9 @@ class JewelDeskSignUpForm(UserCreationForm):
             tenant = Tenant.objects.create(name=shop_name, owner=user)
             CompanySettings.objects.create(tenant=tenant, company_name=shop_name)
 
-            # Create default Admin Employee profile for this store owner in their own shop
-            from team.models import Role, Employee
-            Role.ensure_builtin_roles()
-            admin_role = Role.objects.filter(name=Role.ROLE_ADMIN).first()
-            if admin_role:
-                emp = Employee.objects.create(
-                    user=user,
-                    tenant=tenant,
-                    full_name=user.first_name or user.username,
-                    email=user.email,
-                    role=admin_role,
-                    designation='Store Owner / Admin',
-                )
-                emp.apply_default_permissions()
+            # Create default Tenant Administrator Employee profile for this store owner in their own shop
+            from team.models import Employee
+            Employee.ensure_tenant_admin(tenant, user)
         return user
 
 

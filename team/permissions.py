@@ -10,6 +10,9 @@ from django.contrib.auth.views import redirect_to_login
 from .models import Employee, EmployeePermission, Role
 
 
+ADMIN_ROLE_NAMES = ('Admin', 'Tenant Administrator')
+
+
 def has_module_perm(user, module, action='view', tenant=None):
     """Check if the given User has permission for an action on a module within a tenant.
 
@@ -19,13 +22,13 @@ def has_module_perm(user, module, action='view', tenant=None):
       3. If tenant is specified:
          - Tenant owner (active tenant) -> True.
          - Active employee belonging to that tenant:
-           * Admin role -> True.
+           * Admin / Tenant Administrator role -> True.
            * Otherwise -> checks granular EmployeePermission row.
          - User does not belong to this tenant -> False.
       4. If tenant is not specified:
          - User owns at least one active tenant -> True.
          - User is an active employee:
-           * Admin role -> True.
+           * Admin / Tenant Administrator role -> True.
            * Otherwise -> checks EmployeePermission row.
       5. Any other case (including non-tenant staff or unassigned users) -> False.
     """
@@ -52,7 +55,7 @@ def has_module_perm(user, module, action='view', tenant=None):
         if emp and emp.tenant_id == tenant.id:
             if emp.status != Employee.STATUS_ACTIVE:
                 return False
-            if emp.role and emp.role.name == Role.ROLE_ADMIN:
+            if emp.role and emp.role.name in (Role.ROLE_ADMIN, getattr(Role, 'ROLE_TENANT_ADMIN', 'Tenant Administrator'), *ADMIN_ROLE_NAMES):
                 return True
             return emp.has_module_permission(module, action)
 
@@ -79,7 +82,7 @@ def has_module_perm(user, module, action='view', tenant=None):
             return False
         if emp.tenant and not emp.tenant.is_active:
             return False
-        if emp.role and emp.role.name == Role.ROLE_ADMIN:
+        if emp.role and emp.role.name in (Role.ROLE_ADMIN, getattr(Role, 'ROLE_TENANT_ADMIN', 'Tenant Administrator'), *ADMIN_ROLE_NAMES):
             return True
         return emp.has_module_permission(module, action)
 
@@ -109,7 +112,7 @@ def is_admin_user(user, tenant=None):
             return (
                 emp.status == Employee.STATUS_ACTIVE
                 and emp.role is not None
-                and emp.role.name == Role.ROLE_ADMIN
+                and emp.role.name in (Role.ROLE_ADMIN, getattr(Role, 'ROLE_TENANT_ADMIN', 'Tenant Administrator'), *ADMIN_ROLE_NAMES)
             )
         return False
 
@@ -133,7 +136,7 @@ def is_admin_user(user, tenant=None):
             emp.status == Employee.STATUS_ACTIVE
             and (emp.tenant is None or emp.tenant.is_active)
             and emp.role is not None
-            and emp.role.name == Role.ROLE_ADMIN
+            and emp.role.name in (Role.ROLE_ADMIN, getattr(Role, 'ROLE_TENANT_ADMIN', 'Tenant Administrator'), *ADMIN_ROLE_NAMES)
         )
     return False
 

@@ -19,6 +19,7 @@ from team.models import Role
 
 
 BUILTIN_ROLES = [
+    (Role.ROLE_TENANT_ADMIN,      'Full administrative access across all modules as Tenant Administrator.'),
     (Role.ROLE_ADMIN,             'Full access to all JewelDesk modules.'),
     (Role.ROLE_HR,                'Human resources, team management, and employee records.'),
     (Role.ROLE_MANAGER,           'Manage day-to-day operations across modules.'),

@@ -668,7 +668,7 @@ class SignUpTests(TestCase):
         self.assertTemplateUsed(response, 'accounts/signup.html')
         self.assertContains(response, 'Create Account')
         self.assertContains(response, 'id_first_name')
-        self.assertContains(response, 'id_username')
+        self.assertNotContains(response, 'id_username')
         self.assertContains(response, 'id_email')
         self.assertContains(response, 'id_password1')
         self.assertContains(response, 'id_password2')
@@ -738,24 +738,19 @@ class SignUpTests(TestCase):
         self.assertTrue(login_response.context['user'].is_authenticated)
         self.assertEqual(login_response.context['user'].username, 'aditirao')
 
-    def test_duplicate_username_is_rejected(self):
-        """Attempting to register with an already existing username is rejected."""
-        User.objects.create_user(
-            username='existinguser',
-            email='existing@jeweldesk.test',
-            password='InitialPassword123!',
-        )
+    def test_signup_auto_generates_username_from_full_name(self):
+        """User registration auto-generates username from full name."""
         data = {
-            'first_name': 'Another User',
-            'username': 'existinguser',
-            'email': 'newunique@jeweldesk.test',
+            'first_name': 'Kavita Verma',
+            'email': 'kavita@jeweldesk.test',
             'password1': 'AnotherPassword123!',
             'password2': 'AnotherPassword123!',
         }
         response = self.client.post(self.signup_url, data)
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'accounts/signup.html')
-        self.assertIn('username', response.context['form'].errors)
+        self.assertRedirects(response, self.login_url)
+        user = User.objects.get(email='kavita@jeweldesk.test')
+        self.assertEqual(user.first_name, 'Kavita Verma')
+        self.assertEqual(user.username, 'Kavita.Verma')
 
     def test_duplicate_email_is_rejected(self):
         """Attempting to register with an already existing email is rejected."""
@@ -837,7 +832,6 @@ class SignUpTests(TestCase):
         """Invalid or missing fields return errors without creating records."""
         data = {
             'first_name': '',
-            'username': '',
             'email': 'not-an-email',
             'password1': '',
             'password2': '',
@@ -846,7 +840,7 @@ class SignUpTests(TestCase):
         self.assertEqual(response.status_code, 200)
         form = response.context['form']
         self.assertFalse(form.is_valid())
-        self.assertIn('username', form.errors)
+        self.assertNotIn('username', form.fields)
         self.assertIn('email', form.errors)
         self.assertIn('first_name', form.errors)
 
@@ -1066,7 +1060,6 @@ class AuthCSRFTests(TestCase):
         """Submitting an empty signup form must return 200 with form errors."""
         response = self.client.post(self.signup_url, {
             'first_name': '',
-            'username': '',
             'email': 'not-an-email',
             'password1': '',
             'password2': '',
@@ -1074,8 +1067,9 @@ class AuthCSRFTests(TestCase):
         self.assertEqual(response.status_code, 200)
         form = response.context['form']
         self.assertFalse(form.is_valid())
-        self.assertIn('username', form.errors)
+        self.assertNotIn('username', form.fields)
         self.assertIn('first_name', form.errors)
+        self.assertIn('email', form.errors)
         self.assertFalse(User.objects.filter(email='not-an-email').exists())
 
     def test_existing_users_continue_to_work_after_changes(self):
@@ -1106,6 +1100,28 @@ class AuthCSRFTests(TestCase):
         response = self.client.post(self.login_url, {
             'username': 'jeweller@shop.test',
             'password': 'JewellerPass@123',
+        }, follow=True)
+        self.assertTrue(response.context['user'].is_authenticated)
+        self.assertEqual(response.context['user'].pk, user.pk)
+
+    def test_login_with_full_name_succeeds(self):
+        """Users can log in using their full name as the identifier."""
+        from django.contrib.auth import authenticate
+        user = User.objects.create_user(
+            username='Ankit.Soni',
+            first_name='Ankit Soni',
+            email='ankit@shop.test',
+            password='AnkitPass@123'
+        )
+        # authenticate() directly with full name
+        auth_user = authenticate(username='Ankit Soni', password='AnkitPass@123')
+        self.assertIsNotNone(auth_user)
+        self.assertEqual(auth_user.pk, user.pk)
+
+        # Login view POST with full name
+        response = self.client.post(self.login_url, {
+            'username': 'Ankit Soni',
+            'password': 'AnkitPass@123',
         }, follow=True)
         self.assertTrue(response.context['user'].is_authenticated)
         self.assertEqual(response.context['user'].pk, user.pk)
@@ -1235,23 +1251,21 @@ class SignUpFlowInspectionTests(TestCase):
         }, follow=True)
         self.assertTrue(login_resp.context['user'].is_authenticated)
 
-    def test_duplicate_username_is_rejected_appropriately(self):
-        """Duplicate username (case-insensitive) is rejected and does not create duplicate user."""
-        User.objects.create_user(username='existinguser', email='existing1@test.com', password='Password123!')
+    def test_duplicate_full_name_generates_unique_username_appropriately(self):
+        """Users with same full name get unique auto-generated usernames."""
+        User.objects.create_user(username='Dup.User', first_name='Dup User', email='existing1@test.com', password='Password123!')
         count_before = User.objects.count()
 
         response = self.client.post(self.signup_url, {
             'first_name': 'Dup User',
-            'username': 'EXISTINGUSER',
             'email': 'different@test.com',
             'password1': 'NewPass@12345!',
             'password2': 'NewPass@12345!',
         })
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(User.objects.count(), count_before)
-        form = response.context['form']
-        self.assertFalse(form.is_valid())
-        self.assertIn('username', form.errors)
+        self.assertRedirects(response, self.login_url)
+        self.assertEqual(User.objects.count(), count_before + 1)
+        new_user = User.objects.get(email='different@test.com')
+        self.assertEqual(new_user.username, 'Dup.User1')
 
     def test_duplicate_email_is_rejected_appropriately(self):
         """Duplicate email (case-insensitive) is rejected and does not create duplicate user."""

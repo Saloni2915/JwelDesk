@@ -105,13 +105,10 @@ def signup_view(request):
                 # Handle database-level unique constraint violations (e.g. auth_user_username_key
                 # or concurrent double-submit race conditions) safely without raising HTTP 500.
                 email = (form.cleaned_data.get('email') or '').strip().lower()
-                username = (form.cleaned_data.get('username') or '').strip()
                 User = get_user_model()
 
                 if email and User.objects.filter(Q(email__iexact=email) | Q(username__iexact=email)).exists():
                     form.add_error('email', 'An account with this email already exists.')
-                elif username and User.objects.filter(Q(username__iexact=username) | Q(email__iexact=username)).exists():
-                    form.add_error('username', 'A user with that username already exists.')
                 else:
                     form.add_error('email', 'An account with this email already exists.')
 
