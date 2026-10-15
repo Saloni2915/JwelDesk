@@ -579,6 +579,27 @@ body.has-inventory-suite .sidebar {
     border: 1px solid #f59e0b;
 }
 
+[data-theme="light"] .jd-status-available {
+    background: #DCFCE7 !important;
+    color: #166534 !important;
+    border-color: #86EFAC !important;
+}
+[data-theme="light"] .jd-status-sold {
+    background: #FEE2E2 !important;
+    color: #991B1B !important;
+    border-color: #FCA5A5 !important;
+}
+[data-theme="light"] .jd-status-reserved {
+    background: #FEF3C7 !important;
+    color: #92400E !important;
+    border-color: #FCD34D !important;
+}
+[data-theme="light"] .jd-status-low {
+    background: #FEF3C7 !important;
+    color: #B45309 !important;
+    border-color: #F59E0B !important;
+}
+
 /* Action button icons in table */
 .jd-tbl-btn {
     display: inline-flex;

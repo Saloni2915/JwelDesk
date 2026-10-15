@@ -442,7 +442,24 @@ def inventory_edit(request, pk):
     if request.method == 'POST':
         form = JewelleryItemForm(request.POST, instance=item, tenant=request.tenant)
         if form.is_valid():
+            old_qty = item.quantity or 0
+            new_qty = form.cleaned_data.get('quantity')
+            if new_qty is None:
+                new_qty = old_qty
             item = form.save()
+            if old_qty != new_qty:
+                change = new_qty - old_qty
+                m_type = StockMovement.ADDITION if change > 0 else StockMovement.REDUCTION
+                StockMovement.objects.create(
+                    item=item,
+                    movement_type=m_type,
+                    quantity_change=change,
+                    stock_before=old_qty,
+                    stock_after=new_qty,
+                    reason='Manual Adjustment',
+                    notes=f"Stock quantity updated from {old_qty} to {new_qty} via item edit form",
+                    created_by=request.user if request.user.is_authenticated else None,
+                )
             messages.success(request, f"Jewellery item '{item.name}' ({item.item_code}) updated successfully.")
             return redirect('inventory_detail', pk=item.pk)
         else:

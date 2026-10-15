@@ -192,8 +192,8 @@
                 <i class="bi bi-check2-square text-success"></i>
                 Valid Rows Ready for Commit ({{ summary.valid_count }})
             </h2>
-            <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-25 font-monospace">
-                100% Schema Passed
+            <span class="jd-status-pill jd-status-available font-monospace">
+                <i class="bi bi-shield-check"></i> 100% Schema Passed
             </span>
         </div>
         <div class="jd-inv-table-scroll">
@@ -236,11 +236,17 @@
                         <td class="font-monospace text-warning fw-bold fs-6">₹{{ row.selling_price }}</td>
                         <td>
                             {% if row.status == 'Available' %}
-                            <span class="badge bg-success bg-opacity-20 text-success">Available</span>
+                            <span class="jd-status-pill jd-status-available">
+                                <i class="bi bi-check-circle-fill"></i> Available
+                            </span>
                             {% elif row.status == 'Sold' %}
-                            <span class="badge bg-danger bg-opacity-20 text-danger">Sold</span>
+                            <span class="jd-status-pill jd-status-sold">
+                                <i class="bi bi-x-circle-fill"></i> Sold
+                            </span>
                             {% else %}
-                            <span class="badge bg-warning bg-opacity-20 text-warning">Reserved</span>
+                            <span class="jd-status-pill jd-status-reserved">
+                                <i class="bi bi-clock-fill"></i> Reserved
+                            </span>
                             {% endif %}
                         </td>
                     </tr>

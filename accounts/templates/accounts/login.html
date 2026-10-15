@@ -284,6 +284,8 @@
         }
         .jd-card-title { font-size: 1.65rem; font-weight: 700; color: var(--text-primary); margin: 0 0 0.35rem; }
         .jd-card-subtitle { font-size: 0.9rem; color: var(--text-secondary); margin: 0; }
+        /* Unified Multi-Status Auth Alerts */
+        .jd-auth-alert,
         .jd-error-alert {
             display: flex;
             align-items: flex-start;
@@ -291,13 +293,66 @@
             padding: 0.85rem 1rem;
             margin-bottom: 1.35rem;
             border-radius: 0.75rem;
-            background: rgba(239, 68, 68, 0.12);
-            border: 1px solid rgba(239, 68, 68, 0.4);
-            color: #ef4444;
-            font-size: 0.86rem;
+            font-size: 0.88rem;
             line-height: 1.45;
         }
-        .jd-error-alert i { font-size: 1.15rem; margin-top: 0.1rem; flex-shrink: 0; }
+        .jd-auth-alert i,
+        .jd-error-alert i {
+            font-size: 1.2rem;
+            margin-top: 0.12rem;
+            flex-shrink: 0;
+        }
+
+        /* Success Alert (Account created successfully) */
+        .jd-auth-alert--success,
+        .alert-success.jd-auth-alert {
+            background: rgba(34, 197, 94, 0.14) !important;
+            border: 1px solid rgba(34, 197, 94, 0.45) !important;
+            color: #4ade80 !important;
+        }
+        .jd-auth-alert--success i,
+        .alert-success.jd-auth-alert i {
+            color: #4ade80 !important;
+        }
+
+        /* Error / Danger Alert */
+        .jd-auth-alert--error,
+        .jd-error-alert,
+        .alert-danger.jd-auth-alert,
+        .alert-error.jd-auth-alert {
+            background: rgba(239, 68, 68, 0.12) !important;
+            border: 1px solid rgba(239, 68, 68, 0.4) !important;
+            color: #f87171 !important;
+        }
+        .jd-auth-alert--error i,
+        .jd-error-alert i,
+        .alert-danger.jd-auth-alert i {
+            color: #f87171 !important;
+        }
+
+        /* Info Alert */
+        .jd-auth-alert--info,
+        .alert-info.jd-auth-alert {
+            background: rgba(56, 189, 248, 0.14) !important;
+            border: 1px solid rgba(56, 189, 248, 0.45) !important;
+            color: #38bdf8 !important;
+        }
+        .jd-auth-alert--info i,
+        .alert-info.jd-auth-alert i {
+            color: #38bdf8 !important;
+        }
+
+        /* Warning Alert */
+        .jd-auth-alert--warning,
+        .alert-warning.jd-auth-alert {
+            background: rgba(245, 158, 11, 0.14) !important;
+            border: 1px solid rgba(245, 158, 11, 0.45) !important;
+            color: #fbbf24 !important;
+        }
+        .jd-auth-alert--warning i,
+        .alert-warning.jd-auth-alert i {
+            color: #fbbf24 !important;
+        }
         .jd-input-group { margin-bottom: 1.25rem; }
         .jd-input-label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.4rem; }
         .jd-input-wrapper { position: relative; display: flex; align-items: center; }
@@ -510,18 +565,47 @@
                                 {% if messages %}
                                 <div class="mb-3">
                                     {% for message in messages %}
-                                    <div class="alert alert-{{ message.tags }} jd-error-alert" role="status">
-                                        <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
-                                        <span>{{ message }}</span>
+                                    {% if 'success' in message.tags %}
+                                    <div class="jd-auth-alert jd-auth-alert--success" role="status">
+                                        <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                                        <div>
+                                            <strong class="d-block mb-1" style="color: #4ade80;">Success!</strong>
+                                            <span>{{ message }}</span>
+                                        </div>
                                     </div>
+                                    {% elif 'warning' in message.tags %}
+                                    <div class="jd-auth-alert jd-auth-alert--warning" role="status">
+                                        <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i>
+                                        <div>
+                                            <span>{{ message }}</span>
+                                        </div>
+                                    </div>
+                                    {% elif 'info' in message.tags %}
+                                    <div class="jd-auth-alert jd-auth-alert--info" role="status">
+                                        <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
+                                        <div>
+                                            <span>{{ message }}</span>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <div class="jd-auth-alert jd-auth-alert--error" role="status">
+                                        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                                        <div>
+                                            <span>{{ message }}</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
                                     {% endfor %}
                                 </div>
                                 {% endif %}
 
                                 {% if form.errors %}
-                                <div class="jd-error-alert" role="alert" id="jd-login-error">
+                                <div class="jd-auth-alert jd-auth-alert--error" role="alert" id="jd-login-error">
                                     <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
-                                    <span>Invalid username or password. Please try again.</span>
+                                    <div>
+                                        <strong class="d-block mb-1">Sign In Failed</strong>
+                                        <span>Invalid username or password. Please try again.</span>
+                                    </div>
                                 </div>
                                 {% endif %}
 

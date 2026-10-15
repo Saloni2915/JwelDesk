@@ -389,11 +389,21 @@
                         <!-- Stock Status -->
                         <td>
                             {% if item.status == 'Available' %}
-                            <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-25" style="font-size: 0.82rem; font-weight: 700;">Available</span>
+                            <span class="jd-status-pill jd-status-available">
+                                <i class="bi bi-check-circle-fill"></i> Available
+                            </span>
                             {% elif item.status == 'Sold' %}
-                            <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-25" style="font-size: 0.82rem; font-weight: 700;">Sold</span>
+                            <span class="jd-status-pill jd-status-sold">
+                                <i class="bi bi-x-circle-fill"></i> Sold
+                            </span>
                             {% elif item.status == 'Reserved' %}
-                            <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-25" style="font-size: 0.82rem; font-weight: 700;">Reserved</span>
+                            <span class="jd-status-pill jd-status-reserved">
+                                <i class="bi bi-clock-fill"></i> Reserved
+                            </span>
+                            {% else %}
+                            <span class="jd-status-pill jd-status-sold">
+                                {{ item.status }}
+                            </span>
                             {% endif %}
                         </td>
 

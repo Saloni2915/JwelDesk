@@ -51,6 +51,10 @@ class JewelleryItemForm(forms.ModelForm):
     net_weight = SanitizedDecimalField(
         max_digits=10, decimal_places=3, required=False,
         widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001', 'placeholder': 'Auto = Gross - Stone'}))
+    quantity = forms.IntegerField(
+        min_value=0,
+        required=False,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '1', 'placeholder': '1'}))
 
     class Meta:
         model = JewelleryItem
@@ -59,7 +63,7 @@ class JewelleryItemForm(forms.ModelForm):
             'huid', 'huid_status', 'hallmark_status', 'hallmark_details',
             'gross_weight', 'stone_weight', 'net_weight',
             'making_charge_type', 'making_charge', 'wastage_percent', 'stone_charges', 'other_charges',
-            'selling_price', 'status'
+            'selling_price', 'quantity', 'status'
         ]
         widgets = {
             'tag_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Auto-assigned if left blank (e.g. JWL-000001)'}),
@@ -74,6 +78,7 @@ class JewelleryItemForm(forms.ModelForm):
             'hallmark_status': forms.Select(attrs={'class': 'form-select'}),
             'hallmark_details': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Center name, assay notes, or certification ID'}),
             'making_charge_type': forms.Select(attrs={'class': 'form-select'}),
+            'quantity': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '1', 'placeholder': '1'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
         }
 
@@ -82,6 +87,11 @@ class JewelleryItemForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.tenant:
             self.fields['category'].queryset = Category.objects.filter(tenant=self.tenant)
+        if self.instance and self.instance.pk:
+            if self.instance.quantity is not None:
+                self.fields['quantity'].initial = self.instance.quantity
+        else:
+            self.fields['quantity'].initial = self.initial.get('quantity', 1)
         self.fields['tag_number'].required = False
         self.fields['design_code'].required = False
         self.fields['stone_weight'].required = False
@@ -187,6 +197,14 @@ class JewelleryItemForm(forms.ModelForm):
         if val is None:
             return Decimal('0.000')
         return val
+
+    def clean_quantity(self):
+        qty = self.cleaned_data.get('quantity')
+        if qty is None:
+            if self.instance and self.instance.pk and self.instance.quantity is not None:
+                return self.instance.quantity
+            return 1
+        return max(0, qty)
 
     def clean(self):
         cleaned_data = super().clean()
