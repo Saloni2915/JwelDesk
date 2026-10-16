@@ -213,6 +213,12 @@
                                         <i class="bi bi-upload"></i> Import Stock
                                     </a>
                                 </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'photo_studio' %}active{% endif %}"
+                                       href="{% url 'photo_studio' %}">
+                                        <i class="bi bi-camera-fill text-warning"></i> AI Photo Studio
+                                    </a>
+                                </li>
                             </ul>
                         </div>
                     </li>

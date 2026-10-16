@@ -27,6 +27,9 @@
                 <i class="bi bi-cart-plus-fill"></i> + Create Sale Bill
             </a>
             {% endif %}
+            <a href="{% url 'photo_studio' %}?item_id={{ item.id }}" class="btn btn-warning btn-sm fw-semibold d-inline-flex align-items-center gap-1 shadow-sm">
+                <i class="bi bi-camera-fill"></i> AI Photo Studio
+            </a>
             <a href="{% url 'stock_adjust' item.id %}" class="jd-btn-ghost">
                 <i class="bi bi-arrow-left-right"></i> Adjust Stock
             </a>
@@ -245,7 +248,53 @@
             {% endif %}
             {% endwith %}
 
-            <!-- Card 4: Stock Position & History -->
+            <!-- Card 4: Catalogue Photography & AI Studio Gallery -->
+            <div class="jd-detail-card">
+                <div class="jd-detail-card-header">
+                    <h2>
+                        <i class="bi bi-camera-fill text-warning"></i>
+                        Catalogue Photos &amp; AI Studio
+                    </h2>
+                    <a href="{% url 'photo_studio' %}?item_id={{ item.id }}" class="btn btn-warning btn-sm py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
+                        <i class="bi bi-stars"></i> Open in Studio
+                    </a>
+                </div>
+                <div class="jd-detail-card-body p-3">
+                    {% if item.images.all %}
+                    <div class="row g-2">
+                        {% for img in item.images.all %}
+                        <div class="col-4 col-sm-3">
+                            <div class="position-relative rounded overflow-hidden border" style="background: #000; aspect-ratio: 1; border-color: var(--border) !important;">
+                                <img src="{{ img.image.url }}" alt="{{ img.caption|default:item.name }}" class="w-100 h-100 object-fit-cover">
+                                {% if img.is_primary %}
+                                <span class="position-absolute top-0 start-0 m-1 badge bg-warning text-dark font-monospace" style="font-size: 0.62rem;">Primary</span>
+                                {% endif %}
+                                {% if img.source_type == 'AI_STUDIO' %}
+                                <span class="position-absolute bottom-0 end-0 m-1 badge bg-dark bg-opacity-75 text-warning border border-warning border-opacity-50" style="font-size: 0.58rem;"><i class="bi bi-stars"></i> AI</span>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                <span class="text-truncate small text-muted" style="font-size: 0.68rem;">{{ img.caption|default:"Photo" }}</span>
+                                <a href="{% url 'photo_studio_download' img.id %}" class="text-warning text-decoration-none" title="Download High-Res" style="font-size: 0.75rem;">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3 text-muted">
+                        <i class="bi bi-image text-muted fs-3 mb-1"></i>
+                        <p class="small mb-2">No showroom photos attached to this piece yet.</p>
+                        <a href="{% url 'photo_studio' %}?item_id={{ item.id }}" class="btn btn-outline-warning btn-sm py-1 px-3">
+                            <i class="bi bi-camera me-1"></i> Generate AI Photo
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Card 5: Stock Position & History -->
             <div class="jd-detail-card">
                 <div class="jd-detail-card-header">
                     <h2>

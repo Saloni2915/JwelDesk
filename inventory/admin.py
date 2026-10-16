@@ -1,5 +1,12 @@
 from django.contrib import admin
-from .models import Category, JewelleryItem, StockMovement, ItemSequence, MetalRate
+from .models import (
+    Category,
+    JewelleryItem,
+    JewelleryItemImage,
+    StockMovement,
+    ItemSequence,
+    MetalRate,
+)
 
 
 @admin.register(MetalRate)
@@ -19,8 +26,24 @@ class CategoryAdmin(admin.ModelAdmin):
     search_fields = ['name']
 
 
+class JewelleryItemImageInline(admin.TabularInline):
+    model = JewelleryItemImage
+    extra = 1
+    fields = ['image', 'is_primary', 'caption', 'source_type', 'created_at']
+    readonly_fields = ['created_at']
+
+
+@admin.register(JewelleryItemImage)
+class JewelleryItemImageAdmin(admin.ModelAdmin):
+    list_display = ['id', 'item', 'is_primary', 'caption', 'source_type', 'tenant', 'created_at']
+    list_filter = ['is_primary', 'source_type', 'created_at']
+    search_fields = ['item__tag_number', 'item__item_code', 'item__name', 'caption']
+    readonly_fields = ['created_at']
+
+
 @admin.register(JewelleryItem)
 class JewelleryItemAdmin(admin.ModelAdmin):
+    inlines = [JewelleryItemImageInline]
     list_display = [
         'tag_number', 'item_code', 'design_code', 'name', 'category',
         'metal_type', 'purity', 'gross_weight', 'stone_weight', 'net_weight',

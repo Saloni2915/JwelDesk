@@ -1,8 +1,11 @@
+import os
+import re
+import uuid
 from decimal import Decimal
 
 from django.conf import settings
-from django.db import models
 from django.core.exceptions import ValidationError
+from django.db import models, transaction
 from django.utils import timezone
 
 
@@ -411,6 +414,16 @@ class JewelleryItem(models.Model):
         except Exception:
             return None
 
+    @property
+    def primary_image(self):
+        """Return the primary catalogue image for this piece if available."""
+        if hasattr(self, '_prefetched_objects_cache') and 'images' in self._prefetched_objects_cache:
+            for img in self._prefetched_objects_cache['images']:
+                if img.is_primary:
+                    return img
+            return self._prefetched_objects_cache['images'][0] if self._prefetched_objects_cache['images'] else None
+        return self.images.filter(is_primary=True).first() or self.images.first()
+
     def __str__(self):
         display_tag = self.tag_number or self.item_code
         if self.design_code and self.design_code != self.item_code:
@@ -600,5 +613,137 @@ class MetalRate(models.Model):
                 return rate_obj.rate_per_gram
         rate_obj = qs.first()
         return rate_obj.rate_per_gram if rate_obj else None
+
+
+# =============================================================================
+# Jewellery Item Images & Media
+# =============================================================================
+
+ALLOWED_JEWELLERY_IMAGE_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.webp')
+
+
+def validate_jewellery_image_extension(value):
+    """Ensure uploaded jewellery image is in an allowed web image format."""
+    if not value:
+        return
+    ext = os.path.splitext(getattr(value, 'name', '') or '')[1].lower()
+    if ext not in ALLOWED_JEWELLERY_IMAGE_EXTENSIONS:
+        raise ValidationError(
+            f"Unsupported image format '{ext}'. Allowed: "
+            + ', '.join(ALLOWED_JEWELLERY_IMAGE_EXTENSIONS)
+        )
+
+
+def item_image_upload_path(instance, filename):
+    """Generate a clean, tenant-isolated upload path for jewellery item photographs.
+
+    Path pattern: inventory/items/tenant_<id>/<year>/<month>/<uuid>_<clean_filename>
+    """
+    now = timezone.now()
+    tenant_part = f"tenant_{instance.tenant_id}" if getattr(instance, 'tenant_id', None) else "shared"
+    name, ext = os.path.splitext(filename or '')
+    safe_name = re.sub(r'[^a-zA-Z0-9_\-]', '', name)[:30] or "photo"
+    unique_prefix = uuid.uuid4().hex[:12]
+    clean_filename = f"{unique_prefix}_{safe_name}{ext.lower()}"
+    return f"inventory/items/{tenant_part}/{now.year:04d}/{now.month:02d}/{clean_filename}"
+
+
+class JewelleryItemImage(models.Model):
+    """High-resolution photograph or AI studio render linked to a JewelleryItem.
+
+    Enforces strict tenant isolation, primary image tracking, and supports
+    multi-angle photography (front, model wear, hallmark macro) for catalogue.
+    """
+
+    SOURCE_UPLOAD = 'UPLOAD'
+    SOURCE_AI_STUDIO = 'AI_STUDIO'
+    SOURCE_CAMERA = 'CAMERA'
+    SOURCE_CHOICES = [
+        (SOURCE_UPLOAD, 'Direct Upload'),
+        (SOURCE_AI_STUDIO, 'AI Photo Studio'),
+        (SOURCE_CAMERA, 'Live Camera Capture'),
+    ]
+
+    tenant = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.CASCADE,
+        related_name='jewellery_images',
+        null=True,
+        blank=True,
+        help_text="Tenant shop owning this jewellery photograph",
+    )
+    item = models.ForeignKey(
+        JewelleryItem,
+        on_delete=models.CASCADE,
+        related_name='images',
+        help_text="Jewellery piece this image showcases",
+    )
+    image = models.FileField(
+        upload_to=item_image_upload_path,
+        validators=[validate_jewellery_image_extension],
+        help_text="Jewellery piece photograph or render (JPEG, PNG, WEBP).",
+    )
+    is_primary = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="Primary showcase photo for this jewellery piece in listings and catalogue.",
+    )
+    caption = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Optional view angle or caption (e.g. Front View, Model Wearing, Macro Hallmark).",
+    )
+    source_type = models.CharField(
+        max_length=20,
+        choices=SOURCE_CHOICES,
+        default=SOURCE_UPLOAD,
+        help_text="How this image was acquired (Direct Upload, AI Photo Studio, Camera).",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='uploaded_jewellery_images',
+    )
+
+    class Meta:
+        ordering = ['-is_primary', '-created_at']
+        verbose_name = 'Jewellery Item Image'
+        verbose_name_plural = 'Jewellery Item Images'
+
+    def clean(self):
+        super().clean()
+        # Tenant integrity validation: prohibit cross-tenant item attachment
+        if self.item_id and getattr(self.item, 'tenant_id', None):
+            if self.tenant_id and self.tenant_id != self.item.tenant_id:
+                raise ValidationError({
+                    'item': 'Cross-tenant violation: The chosen jewellery item belongs to a different showroom.'
+                })
+            if not self.tenant_id:
+                self.tenant = self.item.tenant
+
+    def save(self, *args, **kwargs):
+        # Auto-inherit tenant from item if not explicitly supplied
+        if not self.tenant_id and self.item_id and getattr(self.item, 'tenant_id', None):
+            self.tenant = self.item.tenant
+        self.full_clean()
+
+        # If designated as the primary image, ensure all other images for this item are demoted
+        if self.is_primary and self.item_id:
+            with transaction.atomic():
+                type(self).objects.filter(
+                    item_id=self.item_id, is_primary=True
+                ).exclude(pk=self.pk).update(is_primary=False)
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
+
+    def __str__(self):
+        item_tag = getattr(self.item, 'tag_number', '') or getattr(self.item, 'item_code', '') or f"Item #{self.item_id}"
+        primary_badge = " [Primary]" if self.is_primary else ""
+        caption_part = f" ({self.caption})" if self.caption else ""
+        return f"Image for {item_tag}{caption_part}{primary_badge}"
 
 

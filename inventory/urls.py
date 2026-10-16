@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .studio import views as studio_views
 
 urlpatterns = [
     path('', views.landing_page, name='home'),
@@ -10,6 +11,12 @@ urlpatterns = [
     path('inventory/<int:pk>/', views.inventory_detail, name='inventory_detail'),
     path('inventory/<int:pk>/edit/', views.inventory_edit, name='inventory_edit'),
     path('inventory/<int:pk>/delete/', views.inventory_delete, name='inventory_delete'),
+
+    # AI Photo Studio routes
+    path('inventory/photo-studio/', studio_views.photo_studio_view, name='photo_studio'),
+    path('inventory/photo-studio/generate/', studio_views.photo_studio_generate, name='photo_studio_generate'),
+    path('inventory/photo-studio/save/', studio_views.photo_studio_save, name='photo_studio_save'),
+    path('inventory/photo-studio/download/<int:image_id>/', studio_views.photo_studio_download, name='photo_studio_download'),
 
     # Stock tracking routes
     path('inventory/<int:pk>/adjust-stock/', views.stock_adjust, name='stock_adjust'),

@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 import os
+import sys
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -97,6 +98,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     # Project apps
+    'storages',
     'accounts',
     'inventory',
     'customers',
@@ -274,14 +276,95 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
 
-STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
-    },
-}
+# Media Storage Configuration ------------------------------------------------
+#
+# JewelDesk supports dual-mode media storage:
+# 1. Production Persistent Storage: Supabase S3-compatible object storage via django-storages.
+#    Active only when ALL essential SUPABASE_S3_* credentials are provided in the environment.
+# 2. Local & Test Storage: Django FileSystemStorage (writes to BASE_DIR/media, or /tmp/media on Vercel
+#    as ephemeral fallback if S3 is not yet configured). Tests always use local FileSystemStorage.
+
+_supabase_s3_endpoint = (os.environ.get('SUPABASE_S3_ENDPOINT_URL') or '').strip()
+_supabase_s3_access_key = (os.environ.get('SUPABASE_S3_ACCESS_KEY_ID') or '').strip()
+_supabase_s3_secret_key = (os.environ.get('SUPABASE_S3_SECRET_ACCESS_KEY') or '').strip()
+_supabase_s3_bucket = (os.environ.get('SUPABASE_S3_BUCKET_NAME') or '').strip()
+_supabase_s3_region = (os.environ.get('SUPABASE_S3_REGION_NAME') or 'us-east-1').strip()
+
+# Verification: Only activate S3 backend when ALL essential credentials are present,
+# and never during automated test runs ('test' in sys.argv) so test suites execute hermetically.
+_is_testing = 'test' in sys.argv
+_use_supabase_s3 = bool(
+    _supabase_s3_endpoint and
+    _supabase_s3_access_key and
+    _supabase_s3_secret_key and
+    _supabase_s3_bucket and
+    not _is_testing
+)
+
+# Guard against partial credentials: never silently fall back if credentials were half-configured
+_has_any_s3_cred = bool(
+    _supabase_s3_endpoint or
+    _supabase_s3_access_key or
+    _supabase_s3_secret_key or
+    _supabase_s3_bucket
+)
+if _has_any_s3_cred and not _use_supabase_s3 and not _is_testing:
+    from django.core.exceptions import ImproperlyConfigured
+    _missing = []
+    if not _supabase_s3_endpoint: _missing.append('SUPABASE_S3_ENDPOINT_URL')
+    if not _supabase_s3_access_key: _missing.append('SUPABASE_S3_ACCESS_KEY_ID')
+    if not _supabase_s3_secret_key: _missing.append('SUPABASE_S3_SECRET_ACCESS_KEY')
+    if not _supabase_s3_bucket: _missing.append('SUPABASE_S3_BUCKET_NAME')
+    raise ImproperlyConfigured(
+        f"Incomplete Supabase S3 media storage configuration. Missing: {', '.join(_missing)}. "
+        "All 4 credentials must be provided to avoid silent data loss."
+    )
+
+# Guard against silent fallback on serverless/ephemeral production deployments (e.g. Vercel)
+_require_persistent = (
+    os.environ.get('REQUIRE_PERSISTENT_STORAGE', '').lower() in ('1', 'true', 'yes')
+    or (os.environ.get('VERCEL') and not DEBUG and os.environ.get('ALLOW_EPHEMERAL_STORAGE') != '1')
+)
+if _require_persistent and not _use_supabase_s3 and not _is_testing:
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(
+        "Production environment requires persistent Supabase S3 storage for media uploads. "
+        "Missing required SUPABASE_S3_* credentials. Ephemeral local storage is disabled to prevent data loss."
+    )
+
+USE_SUPABASE_S3 = _use_supabase_s3
+
+if _use_supabase_s3:
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "access_key": _supabase_s3_access_key,
+                "secret_key": _supabase_s3_secret_key,
+                "bucket_name": _supabase_s3_bucket,
+                "endpoint_url": _supabase_s3_endpoint,
+                "region_name": _supabase_s3_region,
+                "addressing_style": "path",  # Mandatory for Supabase Storage S3 API
+                "signature_version": "s3v4",  # Required by Supabase S3 API
+                "querystring_auth": True,   # Secure private assets with signed URLs (15-min default TTL)
+                "querystring_expire": int(os.environ.get('SUPABASE_S3_URL_EXPIRY', '900')),
+                "file_overwrite": False,    # Prevent accidental overwriting of inventory photographs
+                "max_memory_size": 10 * 1024 * 1024,  # 10 MB in-memory threshold before spooling
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        },
+    }
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        },
+    }
 
 # Cache headers for static assets: 1 day on production/Vercel CDN, 0 in local development
 WHITENOISE_MAX_AGE = int(os.environ.get('WHITENOISE_MAX_AGE', '86400' if not DEBUG else '0'))
