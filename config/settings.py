@@ -284,11 +284,31 @@ STATICFILES_DIRS = [
 # 2. Local & Test Storage: Django FileSystemStorage (writes to BASE_DIR/media, or /tmp/media on Vercel
 #    as ephemeral fallback if S3 is not yet configured). Tests always use local FileSystemStorage.
 
-_supabase_s3_endpoint = (os.environ.get('SUPABASE_S3_ENDPOINT_URL') or '').strip()
-_supabase_s3_access_key = (os.environ.get('SUPABASE_S3_ACCESS_KEY_ID') or '').strip()
-_supabase_s3_secret_key = (os.environ.get('SUPABASE_S3_SECRET_ACCESS_KEY') or '').strip()
-_supabase_s3_bucket = (os.environ.get('SUPABASE_S3_BUCKET_NAME') or '').strip()
-_supabase_s3_region = (os.environ.get('SUPABASE_S3_REGION_NAME') or 'us-east-1').strip()
+_supabase_s3_endpoint = (
+    os.environ.get('SUPABASE_S3_ENDPOINT_URL')
+    or os.environ.get('AWS_S3_ENDPOINT_URL')
+    or ''
+).strip()
+_supabase_s3_access_key = (
+    os.environ.get('SUPABASE_S3_ACCESS_KEY_ID')
+    or os.environ.get('AWS_ACCESS_KEY_ID')
+    or ''
+).strip()
+_supabase_s3_secret_key = (
+    os.environ.get('SUPABASE_S3_SECRET_ACCESS_KEY')
+    or os.environ.get('AWS_SECRET_ACCESS_KEY')
+    or ''
+).strip()
+_supabase_s3_bucket = (
+    os.environ.get('SUPABASE_S3_BUCKET_NAME')
+    or os.environ.get('AWS_STORAGE_BUCKET_NAME')
+    or ''
+).strip()
+_supabase_s3_region = (
+    os.environ.get('SUPABASE_S3_REGION_NAME')
+    or os.environ.get('AWS_S3_REGION_NAME')
+    or 'us-east-1'
+).strip()
 
 # Verification: Only activate S3 backend when ALL essential credentials are present,
 # and never during automated test runs ('test' in sys.argv) so test suites execute hermetically.

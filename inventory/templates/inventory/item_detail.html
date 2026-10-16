@@ -260,9 +260,9 @@
                     </a>
                 </div>
                 <div class="jd-detail-card-body p-3">
-                    {% if item.images.all %}
+                    {% if item.safe_images %}
                     <div class="row g-2">
-                        {% for img in item.images.all %}
+                        {% for img in item.safe_images %}
                         <div class="col-4 col-sm-3">
                             <div class="position-relative rounded overflow-hidden border" style="background: #000; aspect-ratio: 1; border-color: var(--border) !important;">
                                 <img src="{{ img.image.url }}" alt="{{ img.caption|default:item.name }}" class="w-100 h-100 object-fit-cover">

@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import uuid
@@ -5,8 +6,10 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import models, transaction
+from django.db import DatabaseError, OperationalError, ProgrammingError, models, transaction
 from django.utils import timezone
+
+logger = logging.getLogger('inventory.models')
 
 
 class Category(models.Model):
@@ -417,12 +420,38 @@ class JewelleryItem(models.Model):
     @property
     def primary_image(self):
         """Return the primary catalogue image for this piece if available."""
-        if hasattr(self, '_prefetched_objects_cache') and 'images' in self._prefetched_objects_cache:
-            for img in self._prefetched_objects_cache['images']:
-                if img.is_primary:
-                    return img
-            return self._prefetched_objects_cache['images'][0] if self._prefetched_objects_cache['images'] else None
-        return self.images.filter(is_primary=True).first() or self.images.first()
+        try:
+            if hasattr(self, '_prefetched_objects_cache') and 'images' in self._prefetched_objects_cache:
+                for img in self._prefetched_objects_cache['images']:
+                    if img.is_primary:
+                        return img
+                return self._prefetched_objects_cache['images'][0] if self._prefetched_objects_cache['images'] else None
+            return self.images.filter(is_primary=True).first() or self.images.first()
+        except (OperationalError, ProgrammingError, DatabaseError):
+            return None
+
+    @property
+    def primary_image_url(self):
+        """Safely return the URL of the primary image, or None if unavailable."""
+        try:
+            img = self.primary_image
+            if not img or not getattr(img, 'image', None):
+                return None
+            return img.image.url
+        except (ValueError, DatabaseError, OperationalError, ProgrammingError):
+            return None
+        except Exception as storage_err:
+            # Safe warning logging: log exception type without exposing signed URLs or credentials
+            logger.warning("Failed resolving primary image URL for item ID %s: %s", self.pk, storage_err)
+            return None
+
+    @property
+    def safe_images(self):
+        """Safely return all attached images for this piece, or an empty list if query fails."""
+        try:
+            return list(self.images.all())
+        except (OperationalError, ProgrammingError, DatabaseError):
+            return []
 
     def __str__(self):
         display_tag = self.tag_number or self.item_code

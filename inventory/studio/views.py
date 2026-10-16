@@ -7,6 +7,8 @@ and integration with the JewelleryItemImage schema.
 """
 
 import base64
+import logging
+import os
 import time
 from typing import Optional
 
@@ -15,6 +17,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
+from django.db import DatabaseError, OperationalError, ProgrammingError
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -30,46 +33,71 @@ from .service import (
     validate_uploaded_image,
 )
 
+logger = logging.getLogger('inventory.studio')
+
 
 @login_required
 def photo_studio_view(request):
     """Main atelier view for the AI Jewellery Photo Studio."""
-    tenant = getattr(request, 'tenant', None)
-    if not tenant:
-        messages.error(request, 'No active showroom was found for your account.')
-        return redirect('dashboard')
+    try:
+        tenant = getattr(request, 'tenant', None)
+        if not tenant:
+            messages.error(request, 'No active showroom was found for your account.')
+            return redirect('dashboard')
 
-    # Fetch showroom items for quick selection
-    items = (
-        JewelleryItem.objects.filter(tenant=tenant)
-        .select_related('category')
-        .prefetch_related('images')
-        .order_by('-created_at')[:150]
-    )
-
-    selected_item = None
-    item_id_param = request.GET.get('item_id')
-    if item_id_param:
+        # Fetch showroom items with resilient fallback if images table is not yet migrated
+        has_image_table = True
         try:
-            selected_item = JewelleryItem.objects.filter(tenant=tenant, pk=item_id_param).first()
-        except (ValueError, TypeError):
-            selected_item = None
+            items = list(
+                JewelleryItem.objects.filter(tenant=tenant)
+                .select_related('category')
+                .prefetch_related('images')
+                .order_by('-created_at')[:150]
+            )
+        except (OperationalError, ProgrammingError, DatabaseError) as db_err:
+            has_image_table = False
+            logger.warning(
+                "Photo Studio: unable to prefetch images (schema may be pending migration): %s",
+                db_err,
+                exc_info=True,
+            )
+            try:
+                items = list(
+                    JewelleryItem.objects.filter(tenant=tenant)
+                    .select_related('category')
+                    .order_by('-created_at')[:150]
+                )
+            except Exception as fallback_err:
+                logger.error("Photo Studio: failed loading inventory items: %s", fallback_err, exc_info=True)
+                items = []
 
-    import os
-    has_api_key = bool(
-        os.environ.get('GEMINI_API_KEY')
-        or getattr(settings, 'AI_STUDIO_MOCK', False)
-        or os.environ.get('AI_STUDIO_MOCK')
-    )
+        selected_item = None
+        item_id_param = request.GET.get('item_id')
+        if item_id_param:
+            try:
+                selected_item = JewelleryItem.objects.filter(tenant=tenant, pk=item_id_param).first()
+            except (ValueError, TypeError, OperationalError, ProgrammingError):
+                selected_item = None
 
-    context = {
-        'items': items,
-        'selected_item': selected_item,
-        'catalogue_presets': CATALOGUE_PRESETS,
-        'model_presets': MODEL_PRESETS,
-        'has_api_key': has_api_key,
-    }
-    return render(request, 'inventory/photo_studio.html', context)
+        has_api_key = bool(
+            os.environ.get('GEMINI_API_KEY')
+            or getattr(settings, 'AI_STUDIO_MOCK', False)
+            or os.environ.get('AI_STUDIO_MOCK')
+        )
+
+        context = {
+            'items': items,
+            'selected_item': selected_item,
+            'catalogue_presets': CATALOGUE_PRESETS,
+            'model_presets': MODEL_PRESETS,
+            'has_api_key': has_api_key,
+            'has_image_table': has_image_table,
+        }
+        return render(request, 'inventory/photo_studio.html', context)
+    except Exception as exc:
+        logger.error("Unhandled error in photo_studio_view: %s", exc, exc_info=True)
+        messages.error(request, "The Photo Studio encountered an unexpected error. Please try again or contact support.")
+        return redirect('dashboard')
 
 
 @login_required
@@ -231,15 +259,25 @@ def photo_studio_save(request):
     filename = f"ai_studio_{item.id}_{int(time.time())}{ext}"
 
     # Create JewelleryItemImage record with SOURCE_AI_STUDIO
-    item_image = JewelleryItemImage(
-        tenant=tenant,
-        item=item,
-        is_primary=is_primary,
-        caption=caption,
-        source_type=JewelleryItemImage.SOURCE_AI_STUDIO,
-        created_by=request.user,
-    )
-    item_image.image.save(filename, ContentFile(clean_bytes), save=True)
+    try:
+        item_image = JewelleryItemImage(
+            tenant=tenant,
+            item=item,
+            is_primary=is_primary,
+            caption=caption,
+            source_type=JewelleryItemImage.SOURCE_AI_STUDIO,
+            created_by=request.user,
+        )
+        item_image.image.save(filename, ContentFile(clean_bytes), save=True)
+    except (OperationalError, ProgrammingError, DatabaseError) as db_err:
+        logger.error("Photo Studio save database error: %s", db_err, exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': 'Database storage table is initializing. Please try again shortly or configure VERCEL_AUTO_MIGRATE=1.',
+        }, status=503)
+    except Exception as exc:
+        logger.error("Photo Studio save error: %s", exc, exc_info=True)
+        return JsonResponse({'success': False, 'error': f'Failed saving photo: {exc}'}, status=500)
 
     return JsonResponse({
         'success': True,
@@ -257,7 +295,11 @@ def photo_studio_download(request, image_id):
     if not tenant:
         raise Http404('Showroom tenant not found.')
 
-    image_obj = get_object_or_404(JewelleryItemImage, pk=image_id, tenant=tenant)
+    try:
+        image_obj = get_object_or_404(JewelleryItemImage, pk=image_id, tenant=tenant)
+    except (OperationalError, ProgrammingError, DatabaseError) as db_err:
+        logger.error("Photo Studio download database error: %s", db_err, exc_info=True)
+        raise Http404('Image storage table is not available.')
 
     try:
         file_handle = image_obj.image.open('rb')
@@ -266,4 +308,5 @@ def photo_studio_download(request, image_id):
         download_filename = f"{item_code}_studio.{ext}"
         return FileResponse(file_handle, as_attachment=True, filename=download_filename)
     except Exception as exc:
+        logger.error("Photo Studio download file access error: %s", exc, exc_info=True)
         raise Http404(f"Unable to access image file: {exc}")

@@ -495,3 +495,68 @@ class PhotoStudioPromptAndServiceTests(TestCase):
         raw = b'test-bytes'
         url = image_to_data_url(raw, 'image/jpeg')
         self.assertTrue(url.startswith('data:image/jpeg;base64,'))
+
+
+class PhotoStudioProductionResilienceTests(PhotoStudioBaseTestCase):
+    """Regression tests verifying zero 500 errors under production schema initialization."""
+
+    def setUp(self):
+        super().setUp()
+        self.client_a = Client()
+        self.client_a.login(username='aura_owner', password='Password123!')
+
+    def test_photo_studio_view_survives_missing_image_table(self):
+        """When inventory_jewelleryitemimage table is not yet migrated, GET /photo-studio/ must return 200."""
+        from django.db import OperationalError
+
+        # Simulate missing table when prefetching images on JewelleryItem queryset
+        with mock.patch('django.db.models.QuerySet.prefetch_related', side_effect=OperationalError("no such table: inventory_jewelleryitemimage")):
+            resp = self.client_a.get(reverse('photo_studio'))
+            self.assertEqual(resp.status_code, 200)
+            self.assertContains(resp, 'AI Jewellery Photo Studio')
+            self.assertContains(resp, 'Showroom image storage schema is completing initialization')
+            self.assertFalse(resp.context['has_image_table'])
+
+    def test_photo_studio_view_catches_unhandled_render_exception_safely(self):
+        """Unexpected internal exceptions during photo_studio_view must log safely and redirect without 500."""
+        with mock.patch('inventory.studio.views.render', side_effect=RuntimeError("Simulated internal render failure")):
+            resp = self.client_a.get(reverse('photo_studio'))
+            self.assertEqual(resp.status_code, 302)
+            self.assertIn(reverse('dashboard'), resp.url)
+
+    def test_primary_image_url_safe_property(self):
+        """primary_image_url returns valid URL or None on error, never raising an unhandled exception."""
+        from django.db import OperationalError
+
+        # Normal condition: returns image URL
+        self.assertIsNotNone(self.item_a.primary_image_url)
+
+        # Failure condition: simulating database error when accessing images
+        with mock.patch.object(JewelleryItem, 'primary_image', new_callable=mock.PropertyMock) as mock_pi:
+            mock_pi.side_effect = OperationalError("relation does not exist")
+            self.assertIsNone(self.item_a.primary_image_url)
+
+        # Storage failure condition: unexpected storage backend failure logs warning safely and returns None
+        from django.db.models.fields.files import FieldFile
+        with mock.patch.object(FieldFile, 'url', new_callable=mock.PropertyMock) as mock_url:
+            mock_url.side_effect = RuntimeError("S3 storage connection timed out")
+            with self.assertLogs('inventory.models', level='WARNING') as cm:
+                self.assertIsNone(self.item_a.primary_image_url)
+                self.assertTrue(any("Failed resolving primary image URL" in output for output in cm.output))
+
+    def test_safe_images_property_returns_empty_list_on_db_error(self):
+        """safe_images property gracefully catches database errors and returns empty list."""
+        from django.db import ProgrammingError
+
+        with mock.patch.object(JewelleryItem, 'images', new_callable=mock.PropertyMock) as mock_images:
+            mock_images.side_effect = ProgrammingError("relation 'inventory_jewelleryitemimage' does not exist")
+            self.assertEqual(self.item_a.safe_images, [])
+
+    def test_item_detail_view_survives_missing_image_table(self):
+        """Item detail page must render successfully without 500 even if images table fails."""
+        with mock.patch.object(JewelleryItem, 'safe_images', new_callable=mock.PropertyMock) as mock_si:
+            mock_si.return_value = []
+            resp = self.client_a.get(reverse('inventory_detail', args=[self.item_a.pk]))
+            self.assertEqual(resp.status_code, 200)
+            self.assertContains(resp, 'Catalogue Photos &amp; AI Studio')
+

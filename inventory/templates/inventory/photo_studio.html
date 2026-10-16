@@ -49,6 +49,16 @@
     </div>
     {% endif %}
 
+    {% if not has_image_table %}
+    <div class="alert alert-info d-flex align-items-start gap-2 mb-3 border-info border-opacity-50" role="alert" style="background: rgba(13, 202, 240, 0.12);">
+        <i class="bi bi-info-circle-fill text-info fs-5 flex-shrink-0 mt-1"></i>
+        <div class="small">
+            <strong class="text-info">Database Notice:</strong>
+            Showroom image storage schema is completing initialization. Direct photo uploads work normally.
+        </div>
+    </div>
+    {% endif %}
+
     <!-- 3. Studio Atelier Grid -->
     <div class="row g-3">
 
@@ -72,7 +82,7 @@
                                     data-tag="{{ itm.tag_number|default:itm.item_code }}"
                                     data-name="{{ itm.name }}"
                                     data-metal="{{ itm.metal_type }}"
-                                    {% if itm.primary_image %}data-img="{{ itm.primary_image.image.url }}"{% endif %}
+                                    {% if itm.primary_image_url %}data-img="{{ itm.primary_image_url }}"{% endif %}
                                     {% if selected_item and selected_item.id == itm.id %}selected{% endif %}>
                                 [{{ itm.tag_number|default:itm.item_code }}] {{ itm.name }} ({{ itm.metal_type }})
                             </option>
