@@ -100,26 +100,26 @@
                 <i class="bi bi-building-gear"></i> Showroom Profile & Settings
             </h6>
             <div class="row g-2 small">
-                <div class="col-4 text-muted">Business Slug:</div>
+                <div class="col-4 sa-label">Business Slug:</div>
                 <div class="col-8"><code>/{{ tenant.slug }}</code></div>
 
-                <div class="col-4 text-muted">Registered On:</div>
-                <div class="col-8">{{ tenant.created_at|date:"d M Y, H:i:s" }}</div>
+                <div class="col-4 sa-label">Registered On:</div>
+                <div class="col-8" style="color: var(--sa-text);">{{ tenant.created_at|date:"d M Y, H:i:s" }}</div>
 
-                <div class="col-4 text-muted">Company Name:</div>
-                <div class="col-8">{{ tenant.company_settings.company_name|default:tenant.name }}</div>
+                <div class="col-4 sa-label">Company Name:</div>
+                <div class="col-8" style="color: var(--sa-text);">{{ tenant.company_settings.company_name|default:tenant.name }}</div>
 
-                <div class="col-4 text-muted">GSTIN:</div>
-                <div class="col-8 font-monospace">{{ tenant.company_settings.gstin|default:"Not configured" }}</div>
+                <div class="col-4 sa-label">GSTIN:</div>
+                <div class="col-8 font-monospace" style="color: var(--sa-text);">{{ tenant.company_settings.gstin|default:"Not configured" }}</div>
 
-                <div class="col-4 text-muted">Store Phone:</div>
-                <div class="col-8">{{ tenant.company_settings.phone|default:"Not configured" }}</div>
+                <div class="col-4 sa-label">Store Phone:</div>
+                <div class="col-8" style="color: var(--sa-text);">{{ tenant.company_settings.phone|default:"Not configured" }}</div>
 
-                <div class="col-4 text-muted">Store Email:</div>
-                <div class="col-8">{{ tenant.company_settings.email|default:"Not configured" }}</div>
+                <div class="col-4 sa-label">Store Email:</div>
+                <div class="col-8" style="color: var(--sa-text);">{{ tenant.company_settings.email|default:"Not configured" }}</div>
 
-                <div class="col-4 text-muted">Address:</div>
-                <div class="col-8">{{ tenant.company_settings.address|default:"Not configured" }}</div>
+                <div class="col-4 sa-label">Address:</div>
+                <div class="col-8" style="color: var(--sa-text);">{{ tenant.company_settings.address|default:"Not configured" }}</div>
             </div>
         </div>
     </div>
@@ -131,28 +131,28 @@
                 <i class="bi bi-person-check-fill"></i> Account Owner & Plan
             </h6>
             <div class="row g-2 small mb-3">
-                <div class="col-4 text-muted">Owner Name:</div>
-                <div class="col-8 fw-semibold text-light">{{ tenant.owner.get_full_name|default:tenant.owner.username }}</div>
+                <div class="col-4 sa-label">Owner Name:</div>
+                <div class="col-8 fw-semibold" style="color: var(--sa-text);">{{ tenant.owner.get_full_name|default:tenant.owner.username }}</div>
 
-                <div class="col-4 text-muted">Username:</div>
+                <div class="col-4 sa-label">Username:</div>
                 <div class="col-8"><code>{{ tenant.owner.username }}</code></div>
 
-                <div class="col-4 text-muted">Login Email:</div>
-                <div class="col-8">{{ tenant.owner.email|default:"No email registered" }}</div>
+                <div class="col-4 sa-label">Login Email:</div>
+                <div class="col-8" style="color: var(--sa-text);">{{ tenant.owner.email|default:"No email registered" }}</div>
 
-                <div class="col-4 text-muted">User Joined:</div>
-                <div class="col-8">{{ tenant.owner.date_joined|date:"d M Y" }}</div>
+                <div class="col-4 sa-label">User Joined:</div>
+                <div class="col-8" style="color: var(--sa-text);">{{ tenant.owner.date_joined|date:"d M Y" }}</div>
 
-                <div class="col-4 text-muted">Last Active:</div>
-                <div class="col-8">{{ tenant.owner.last_login|date:"d M Y, H:i"|default:"Never" }}</div>
+                <div class="col-4 sa-label">Last Active:</div>
+                <div class="col-8" style="color: var(--sa-text);">{{ tenant.owner.last_login|date:"d M Y, H:i"|default:"Never" }}</div>
             </div>
 
             <hr class="border-secondary border-opacity-25 my-3">
 
-            <div class="d-flex align-items-center justify-content-between p-2 rounded" style="background: rgba(0,0,0,0.25);">
+            <div class="d-flex align-items-center justify-content-between p-2 rounded" style="background: rgba(0,0,0,0.15); border: 1px solid var(--sa-border);">
                 <div>
-                    <div class="small fw-semibold text-light">Subscription Status</div>
-                    <div class="text-muted" style="font-size: 0.75rem;">{{ subscription_status_label|default:"Core Plan (Standard Tier)" }}</div>
+                    <div class="small fw-semibold" style="color: var(--sa-text);">Subscription Status</div>
+                    <div style="font-size: 0.78rem; color: var(--sa-text-secondary);">{{ subscription_status_label|default:"Core Plan (Standard Tier)" }}</div>
                 </div>
                 <span class="sa-badge-unavailable">No Billing Attached</span>
             </div>
@@ -184,21 +184,21 @@
                 <tr>
                     <td><code>{{ emp.employee_id }}</code></td>
                     <td>
-                        <div class="fw-semibold text-light">{{ emp.full_name }}</div>
+                        <div class="fw-semibold" style="color: var(--sa-text);">{{ emp.full_name }}</div>
                         {% if emp.user %}
-                        <span class="text-muted small">Login: {{ emp.user.username }}</span>
+                        <span class="small" style="color: var(--sa-text-secondary);">Login: {{ emp.user.username }}</span>
                         {% endif %}
                     </td>
                     <td>
-                        <div>{{ emp.email }}</div>
-                        <span class="text-muted small">{{ emp.mobile|default:"—" }}</span>
+                        <div style="color: var(--sa-text);">{{ emp.email }}</div>
+                        <span class="small" style="color: var(--sa-text-secondary);">{{ emp.mobile|default:"—" }}</span>
                     </td>
                     <td>
-                        <div>{{ emp.designation|default:"Staff" }}</div>
-                        <span class="text-muted small">{{ emp.department }}</span>
+                        <div style="color: var(--sa-text);">{{ emp.designation|default:"Staff" }}</div>
+                        <span class="small" style="color: var(--sa-text-secondary);">{{ emp.department }}</span>
                     </td>
                     <td>
-                        <span class="badge bg-secondary bg-opacity-25 text-light">{{ emp.role.name }}</span>
+                        <span class="badge bg-secondary bg-opacity-25 px-2 py-1" style="color: var(--sa-text); border: 1px solid var(--sa-border);">{{ emp.role.name }}</span>
                     </td>
                     <td>
                         {% if emp.status == 'Active' %}
@@ -210,7 +210,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="text-center py-4 text-muted">
+                    <td colspan="6" class="text-center py-4" style="color: var(--sa-text-secondary);">
                         No separate employee records created for this showroom yet.
                     </td>
                 </tr>

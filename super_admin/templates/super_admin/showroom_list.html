@@ -51,7 +51,7 @@
 <!-- Table Container -->
 <div class="sa-card">
     <div class="d-flex align-items-center justify-content-between mb-3">
-        <div class="text-muted small">
+        <div class="small" style="color: var(--sa-text-secondary);">
             Showing {{ page_obj.start_index|default:0 }}–{{ page_obj.end_index|default:0 }} of {{ total_filtered }} showrooms
         </div>
     </div>
@@ -74,25 +74,25 @@
                 {% for t in page_obj %}
                 <tr>
                     <td>
-                        <div class="fw-semibold text-light">{{ t.name }}</div>
+                        <div class="fw-semibold" style="color: var(--sa-text);">{{ t.name }}</div>
                         {% if t.company_settings.company_name and t.company_settings.company_name != t.name %}
-                        <span class="text-muted small d-block">{{ t.company_settings.company_name }}</span>
+                        <span class="small d-block" style="color: var(--sa-text-secondary);">{{ t.company_settings.company_name }}</span>
                         {% endif %}
                     </td>
                     <td>
-                        <code class="small" style="color: var(--sa-gold);">{{ t.slug }}</code>
+                        <code>/{{ t.slug }}</code>
                     </td>
                     <td>
-                        <div>{{ t.owner.get_full_name|default:t.owner.username }}</div>
-                        <div class="text-muted small">{{ t.owner.email|default:"No email" }}</div>
+                        <div style="color: var(--sa-text);">{{ t.owner.get_full_name|default:t.owner.username }}</div>
+                        <div class="small" style="color: var(--sa-text-secondary);">{{ t.owner.email|default:"No email" }}</div>
                     </td>
                     <td>
-                        <span class="badge bg-secondary bg-opacity-25 text-light px-2 py-1">
+                        <span class="badge bg-secondary bg-opacity-25 px-2 py-1" style="color: var(--sa-text); border: 1px solid var(--sa-border);">
                             <i class="bi bi-people me-1"></i>{{ t.employee_count }}
                         </span>
                     </td>
                     <td>
-                        <span class="small text-muted">{{ t.created_at|date:"d M Y, H:i" }}</span>
+                        <span class="small" style="color: var(--sa-text-secondary);">{{ t.created_at|date:"d M Y, H:i" }}</span>
                     </td>
                     <td>
                         <span class="sa-badge-unavailable">Core (Included)</span>

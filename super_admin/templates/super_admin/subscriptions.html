@@ -5,15 +5,15 @@
 
 {% block content %}
 <!-- Architectural Notice Banner -->
-<div class="alert alert-info d-flex align-items-start gap-3 mb-4 border-info border-opacity-50" style="background: rgba(13, 202, 240, 0.08); color: var(--sa-text);" role="alert">
+<div class="alert alert-info d-flex align-items-start gap-3 mb-4" style="background: rgba(13, 202, 240, 0.12); border: 1px solid rgba(13, 202, 240, 0.35); color: var(--sa-text);" role="alert">
     <i class="bi bi-info-circle-fill text-info fs-4 flex-shrink-0 mt-1"></i>
     <div>
         <h6 class="alert-heading fw-bold text-info mb-1">Billing & Subscription Module Architecture</h6>
-        <p class="small mb-1">
+        <p class="small mb-2" style="color: var(--sa-text); line-height: 1.6;">
             The JewelDesk database schema currently operates on a direct multi-tenant foundation without an external recurring billing gateway (such as Stripe, Razorpay Subscriptions, or LemonSqueezy).
         </p>
-        <p class="small mb-0 text-muted">
-            In accordance with platform safety policies, billing metrics are marked as <strong>Not Configured</strong> rather than presenting inaccurate zero values. All registered showrooms currently operate under the <strong>Core Showroom Standard Tier (Included)</strong>.
+        <p class="small mb-0" style="color: var(--sa-text-secondary); line-height: 1.6;">
+            In accordance with platform safety policies, billing metrics are marked as <span class="sa-badge-unavailable">Not Configured</span> rather than presenting inaccurate zero values. All registered showrooms currently operate under the <strong style="color: var(--sa-gold);">Core Showroom Standard Tier (Included)</strong>.
         </p>
     </div>
 </div>
@@ -24,67 +24,67 @@
     <div class="col-12 col-md-6 col-xl-4">
         <div class="sa-card h-100" style="border-top: 3px solid var(--sa-gold);">
             <div class="d-flex align-items-center justify-content-between mb-3">
-                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50">Active Tier</span>
+                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50 px-2 py-1">Active Tier</span>
                 <span class="sa-badge-active"><i class="bi bi-check2 me-1"></i>Installed</span>
             </div>
-            <h4 class="fw-bold mb-1" style="color: var(--sa-gold);">Core Showroom Tier</h4>
-            <p class="text-muted small mb-3">Default full-featured jewellery atelier management suite.</p>
+            <h4 class="fw-bold mb-2" style="color: var(--sa-gold);">Core Showroom Tier</h4>
+            <p class="small mb-3" style="color: var(--sa-text-secondary); line-height: 1.5;">Default full-featured jewellery atelier management suite.</p>
             <hr class="border-secondary border-opacity-25 my-3">
             <div class="row g-2 small">
-                <div class="col-8 text-muted">Active Showrooms on this tier:</div>
-                <div class="col-4 text-end fw-bold">{{ active_tenants }} of {{ total_tenants }}</div>
+                <div class="col-8 sa-label">Active Showrooms on this tier:</div>
+                <div class="col-4 text-end fw-bold" style="color: var(--sa-text);">{{ active_tenants }} of {{ total_tenants }}</div>
 
-                <div class="col-8 text-muted">Multi-Branch Support:</div>
-                <div class="col-4 text-end text-success fw-semibold">Enabled</div>
+                <div class="col-8 sa-label">Multi-Branch Support:</div>
+                <div class="col-4 text-end text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Enabled</div>
 
-                <div class="col-8 text-muted">AI Jewellery Studio:</div>
-                <div class="col-4 text-end text-success fw-semibold">Enabled</div>
+                <div class="col-8 sa-label">AI Jewellery Studio:</div>
+                <div class="col-4 text-end text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Enabled</div>
 
-                <div class="col-8 text-muted">Karigar Manufacturing:</div>
-                <div class="col-4 text-end text-success fw-semibold">Enabled</div>
+                <div class="col-8 sa-label">Karigar Manufacturing:</div>
+                <div class="col-4 text-end text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Enabled</div>
 
-                <div class="col-8 text-muted">Automated GST Invoicing:</div>
-                <div class="col-4 text-end text-success fw-semibold">Enabled</div>
+                <div class="col-8 sa-label">Automated GST Invoicing:</div>
+                <div class="col-4 text-end text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Enabled</div>
             </div>
         </div>
     </div>
 
     <!-- Paid Tier Status -->
     <div class="col-12 col-md-6 col-xl-4">
-        <div class="sa-card h-100" style="border-top: 3px solid #6c757d; opacity: 0.85;">
+        <div class="sa-card h-100" style="border-top: 3px solid var(--sa-border);">
             <div class="d-flex align-items-center justify-content-between mb-3">
                 <span class="sa-badge-unavailable">Custom / Enterprise Tier</span>
                 <span class="sa-badge-unavailable">Unattached</span>
             </div>
-            <h4 class="fw-bold mb-1 text-muted">Enterprise Tier</h4>
-            <p class="text-muted small mb-3">Dedicated multi-chain showroom instances and custom SLAs.</p>
+            <h4 class="fw-bold mb-2" style="color: var(--sa-text);">Enterprise Tier</h4>
+            <p class="small mb-3" style="color: var(--sa-text-secondary); line-height: 1.5;">Dedicated multi-chain showroom instances and custom SLAs.</p>
             <hr class="border-secondary border-opacity-25 my-3">
             <div class="row g-2 small">
-                <div class="col-8 text-muted">Active Tenants:</div>
-                <div class="col-4 text-end text-muted font-monospace">—</div>
+                <div class="col-8 sa-label">Active Tenants:</div>
+                <div class="col-4 text-end font-monospace" style="color: var(--sa-muted);">—</div>
 
-                <div class="col-8 text-muted">Monthly Recurring Revenue:</div>
-                <div class="col-4 text-end text-muted font-monospace">—</div>
+                <div class="col-8 sa-label">Monthly Recurring Revenue:</div>
+                <div class="col-4 text-end font-monospace" style="color: var(--sa-muted);">—</div>
 
-                <div class="col-8 text-muted">Payment Gateway Status:</div>
-                <div class="col-4 text-end text-muted">Not Configured</div>
+                <div class="col-8 sa-label">Payment Gateway Status:</div>
+                <div class="col-4 text-end"><span class="sa-badge-unavailable">Not Configured</span></div>
             </div>
         </div>
     </div>
 
     <!-- Subscription Roadmap Card -->
     <div class="col-12 col-md-12 col-xl-4">
-        <div class="sa-card h-100">
+        <div class="sa-card h-100" style="border-top: 3px solid var(--sa-gold);">
             <h6 class="fw-bold mb-3 d-flex align-items-center gap-2" style="color: var(--sa-gold);">
                 <i class="bi bi-gear-wide-connected"></i> Billing Integration Roadmap
             </h6>
-            <p class="small text-muted mb-3">
+            <p class="small mb-3" style="color: var(--sa-text-secondary); line-height: 1.6;">
                 To activate automated recurring subscription billing for JewelDesk in the future:
             </p>
-            <ol class="small text-muted ps-3 mb-0" style="line-height: 1.7;">
-                <li>Define a <code>Subscription</code> model linked to <code>accounts.Tenant</code>.</li>
-                <li>Connect a verified payment webhook provider (e.g. Razorpay Subscriptions / Stripe).</li>
-                <li>Implement subscription grace periods, automated suspension on payment failure, and invoice receipts.</li>
+            <ol class="small ps-3 mb-0" style="color: var(--sa-text); line-height: 1.9;">
+                <li class="mb-2">Define a <code>Subscription</code> model linked to <code>accounts.Tenant</code>.</li>
+                <li class="mb-2">Connect a verified payment webhook provider (e.g. Razorpay Subscriptions / Stripe).</li>
+                <li class="mb-1">Implement subscription grace periods, automated suspension on payment failure, and invoice receipts.</li>
             </ol>
         </div>
     </div>

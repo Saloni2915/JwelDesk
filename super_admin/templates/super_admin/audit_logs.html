@@ -41,7 +41,7 @@
 <!-- Logs Table -->
 <div class="sa-card">
     <div class="d-flex align-items-center justify-content-between mb-3">
-        <div class="text-muted small">
+        <div class="small" style="color: var(--sa-text-secondary);">
             Showing {{ page_obj.start_index|default:0 }}–{{ page_obj.end_index|default:0 }} of {{ total_logs }} recorded security events
         </div>
     </div>
@@ -62,13 +62,13 @@
             <tbody>
                 {% for log in page_obj %}
                 <tr>
-                    <td class="text-nowrap small text-muted font-monospace">
+                    <td class="text-nowrap small font-monospace" style="color: var(--sa-text-secondary);">
                         {{ log.created_at|date:"d M Y, H:i:s" }}
                     </td>
                     <td>
-                        <strong class="text-light">{{ log.actor.username|default:"System" }}</strong>
+                        <strong style="color: var(--sa-text);">{{ log.actor.username|default:"System" }}</strong>
                         {% if log.actor.email %}
-                        <div class="text-muted small">{{ log.actor.email }}</div>
+                        <div class="small" style="color: var(--sa-text-secondary);">{{ log.actor.email }}</div>
                         {% endif %}
                     </td>
                     <td>
@@ -89,25 +89,25 @@
                             <i class="bi bi-play-fill me-1"></i>Showroom Activated
                         </span>
                         {% else %}
-                        <span class="badge bg-secondary">{{ log.get_action_display }}</span>
+                        <span class="badge bg-secondary" style="color: var(--sa-text);">{{ log.get_action_display }}</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if log.target_tenant %}
-                        <a href="{% url 'super_admin:showroom_detail' log.target_tenant.id %}" class="text-decoration-none text-light fw-semibold">
+                        <a href="{% url 'super_admin:showroom_detail' log.target_tenant.id %}" class="text-decoration-none fw-semibold" style="color: var(--sa-text);">
                             {{ log.target_tenant.name }}
                         </a>
-                        <div class="text-muted small">/{{ log.target_tenant.slug }}</div>
+                        <div><code>/{{ log.target_tenant.slug }}</code></div>
                         {% else %}
-                        <span class="text-muted">—</span>
+                        <span style="color: var(--sa-muted);">—</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if log.target_user %}
-                        <div>{{ log.target_user.username }}</div>
-                        <div class="text-muted small">{{ log.target_user.email|default:"No email" }}</div>
+                        <div style="color: var(--sa-text);">{{ log.target_user.username }}</div>
+                        <div class="small" style="color: var(--sa-text-secondary);">{{ log.target_user.email|default:"No email" }}</div>
                         {% else %}
-                        <span class="text-muted">—</span>
+                        <span style="color: var(--sa-muted);">—</span>
                         {% endif %}
                     </td>
                     <td class="small" style="max-width: 280px;">

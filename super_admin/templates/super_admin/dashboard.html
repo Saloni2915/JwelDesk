@@ -52,7 +52,7 @@
                 <i class="bi bi-graph-up-arrow"></i>
             </div>
             <div>
-                <div class="sa-metric-val">{{ new_tenants_30d }} <span class="fs-6 text-muted fw-normal">({{ new_tenants_7d }} this week)</span></div>
+                <div class="sa-metric-val">{{ new_tenants_30d }} <span class="fs-6 fw-normal" style="color: var(--sa-text-secondary);">({{ new_tenants_7d }} this week)</span></div>
                 <div class="sa-metric-lbl">New Showrooms (30d)</div>
             </div>
         </div>
@@ -135,18 +135,18 @@
                         {% for t in recent_tenants %}
                         <tr>
                             <td>
-                                <div class="fw-semibold">{{ t.name }}</div>
-                                <span class="text-muted small">/{{ t.slug }}</span>
+                                <div class="fw-semibold" style="color: var(--sa-text);">{{ t.name }}</div>
+                                <code>/{{ t.slug }}</code>
                             </td>
                             <td>
-                                <div>{{ t.owner.get_full_name|default:t.owner.username }}</div>
-                                <span class="text-muted small">{{ t.owner.email|default:"No email" }}</span>
+                                <div style="color: var(--sa-text);">{{ t.owner.get_full_name|default:t.owner.username }}</div>
+                                <span class="small" style="color: var(--sa-text-secondary);">{{ t.owner.email|default:"No email" }}</span>
                             </td>
                             <td>
-                                <span class="badge bg-secondary bg-opacity-25 text-light">{{ t.employee_count }} staff</span>
+                                <span class="badge bg-secondary bg-opacity-25 px-2 py-1" style="color: var(--sa-text); border: 1px solid var(--sa-border);">{{ t.employee_count }} staff</span>
                             </td>
                             <td>
-                                <span class="small text-muted">{{ t.created_at|date:"d M Y" }}</span>
+                                <span class="small" style="color: var(--sa-text-secondary);">{{ t.created_at|date:"d M Y" }}</span>
                             </td>
                             <td>
                                 {% if t.is_active %}
@@ -156,14 +156,14 @@
                                 {% endif %}
                             </td>
                             <td class="text-end">
-                                <a href="{% url 'super_admin:showroom_detail' t.id %}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.8rem;">
+                                <a href="{% url 'super_admin:showroom_detail' t.id %}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.8rem; color: var(--sa-text); border-color: var(--sa-border);">
                                     Manage <i class="bi bi-arrow-right ms-1"></i>
                                 </a>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="6" class="text-center py-4 text-muted">
+                            <td colspan="6" class="text-center py-4" style="color: var(--sa-text-secondary);">
                                 No registered showrooms found.
                             </td>
                         </tr>
@@ -181,7 +181,7 @@
                 <h6 class="mb-0 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold);">
                     <i class="bi bi-clock-history"></i> Recent Platform Activity
                 </h6>
-                <a href="{% url 'super_admin:audit_logs' %}" class="btn btn-sm btn-outline-secondary">
+                <a href="{% url 'super_admin:audit_logs' %}" class="btn btn-sm btn-outline-secondary" style="color: var(--sa-text); border-color: var(--sa-border);">
                     All Logs
                 </a>
             </div>
@@ -201,27 +201,27 @@
                                 {% elif log.action == 'TENANT_ACTIVATE' %}
                                 <span class="text-success"><i class="bi bi-play-fill me-1"></i>Showroom Activated</span>
                                 {% else %}
-                                <span>{{ log.get_action_display }}</span>
+                                <span style="color: var(--sa-text);">{{ log.get_action_display }}</span>
                                 {% endif %}
                             </div>
-                            <div class="text-muted small mt-1">
-                                By <strong class="text-light">{{ log.actor.username|default:"System" }}</strong>
-                                {% if log.target_tenant %}on <em>{{ log.target_tenant.name }}</em>{% endif %}
+                            <div class="small mt-1" style="color: var(--sa-text-secondary);">
+                                By <strong style="color: var(--sa-text);">{{ log.actor.username|default:"System" }}</strong>
+                                {% if log.target_tenant %}on <em style="color: var(--sa-gold);">{{ log.target_tenant.name }}</em>{% endif %}
                             </div>
                             {% if log.reason %}
-                            <div class="text-muted small mt-1 font-monospace" style="font-size: 0.75rem;">
+                            <div class="small mt-1 font-monospace" style="font-size: 0.78rem; color: var(--sa-muted);">
                                 "{{ log.reason|truncatechars:70 }}"
                             </div>
                             {% endif %}
                         </div>
-                        <div class="text-muted text-nowrap" style="font-size: 0.7rem;">
+                        <div class="text-nowrap" style="font-size: 0.72rem; color: var(--sa-muted);">
                             {{ log.created_at|timesince }} ago
                         </div>
                     </div>
                 </div>
                 {% empty %}
-                <div class="text-center py-4 text-muted small">
-                    <i class="bi bi-shield-check fs-3 d-block mb-2 text-muted"></i>
+                <div class="text-center py-4 small" style="color: var(--sa-text-secondary);">
+                    <i class="bi bi-shield-check fs-3 d-block mb-2" style="color: var(--sa-gold);"></i>
                     No platform audit events recorded yet.
                 </div>
                 {% endfor %}
