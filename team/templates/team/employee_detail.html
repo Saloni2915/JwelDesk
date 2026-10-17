@@ -135,9 +135,9 @@
           <a href="{% url 'team:employee_branches' employee.pk %}" class="text-gold text-decoration-none small">Manage &rarr;</a>
           {% endif %}
         </div>
-        {% if employee.role.name == 'Admin' %}
+        {% if employee.role.name in 'Admin,Tenant Administrator,Tenant Admin' %}
           <div class="p-2 rounded-3 small" style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd;">
-            <i class="bi bi-info-circle me-1"></i> Role <strong>Admin</strong> has access to all shop branches.
+            <i class="bi bi-info-circle me-1"></i> Role <strong>Tenant Administrator</strong> has access to all shop branches.
           </div>
         {% else %}
           {% if employee.branches.all %}
@@ -168,8 +168,8 @@
           <div class="col-md-4">
             <span class="text-muted small d-block">Access Level</span>
             <div class="mt-1">
-              {% if employee.role.name == 'Admin' %}
-                <span class="jd-badge" style="background: rgba(239,68,68,0.2); color: #fca5a5; border-color: rgba(239,68,68,0.4);"><i class="bi bi-shield-fill-check me-1"></i>Full Administrator</span>
+              {% if employee.role.name in 'Admin,Tenant Administrator,Tenant Admin' %}
+                <span class="jd-badge" style="background: rgba(239,68,68,0.2); color: #fca5a5; border-color: rgba(239,68,68,0.4);"><i class="bi bi-shield-fill-check me-1"></i>Tenant Administrator</span>
               {% else %}
                 <span class="jd-badge">Staff Member</span>
               {% endif %}

@@ -69,7 +69,7 @@
             </div>
             <div>
                 <div class="sa-metric-val">{{ total_owners }}</div>
-                <div class="sa-metric-lbl">Showroom Owners ({{ total_users }} total users)</div>
+                <div class="sa-metric-lbl">Tenant Admins ({{ total_users }} total users)</div>
             </div>
         </div>
     </div>
@@ -124,7 +124,7 @@
                     <thead>
                         <tr>
                             <th>Showroom</th>
-                            <th>Owner</th>
+                            <th>Tenant Admin</th>
                             <th>Staff</th>
                             <th>Registered</th>
                             <th>Status</th>
@@ -139,7 +139,10 @@
                                 <code>/{{ t.slug }}</code>
                             </td>
                             <td>
-                                <div style="color: var(--sa-text);">{{ t.owner.get_full_name|default:t.owner.username }}</div>
+                                <div class="d-flex align-items-center gap-1">
+                                    <span style="color: var(--sa-text); font-weight: 600;">{{ t.owner.get_full_name|default:t.owner.username }}</span>
+                                    <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50 px-1 py-0 small" style="font-size: 0.68rem;">Tenant Admin</span>
+                                </div>
                                 <span class="small" style="color: var(--sa-text-secondary);">{{ t.owner.email|default:"No email" }}</span>
                             </td>
                             <td>

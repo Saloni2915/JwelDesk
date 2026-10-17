@@ -600,9 +600,12 @@ class Employee(models.Model):
             if emp.status != cls.STATUS_ACTIVE:
                 emp.status = cls.STATUS_ACTIVE
                 updates.append('status')
-            if admin_role and emp.role_id != admin_role.id and emp.role.name not in (Role.ROLE_ADMIN, Role.ROLE_TENANT_ADMIN):
+            if admin_role and emp.role_id != admin_role.id:
                 emp.role = admin_role
                 updates.append('role')
+            if not emp.designation or emp.designation in ('Admin', 'Full Administrator', 'Staff'):
+                emp.designation = 'Tenant Administrator'
+                updates.append('designation')
             if updates:
                 emp.save(update_fields=updates)
 

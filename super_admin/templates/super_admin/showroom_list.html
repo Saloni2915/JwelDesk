@@ -62,7 +62,7 @@
                 <tr>
                     <th>Showroom Name</th>
                     <th>Slug</th>
-                    <th>Owner / Primary Admin</th>
+                    <th>Tenant Admin</th>
                     <th>Staff Count</th>
                     <th>Registration Date</th>
                     <th>Subscription Plan</th>
@@ -83,7 +83,10 @@
                         <code>/{{ t.slug }}</code>
                     </td>
                     <td>
-                        <div style="color: var(--sa-text);">{{ t.owner.get_full_name|default:t.owner.username }}</div>
+                        <div class="d-flex align-items-center gap-1">
+                            <span style="color: var(--sa-text); font-weight: 600;">{{ t.owner.get_full_name|default:t.owner.username }}</span>
+                            <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50 px-1 py-0 small" style="font-size: 0.68rem;">Tenant Admin</span>
+                        </div>
                         <div class="small" style="color: var(--sa-text-secondary);">{{ t.owner.email|default:"No email" }}</div>
                     </td>
                     <td>

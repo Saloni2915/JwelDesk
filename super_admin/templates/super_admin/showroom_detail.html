@@ -128,11 +128,14 @@
     <div class="col-12 col-lg-6">
         <div class="sa-card h-100">
             <h6 class="fw-bold mb-3 d-flex align-items-center gap-2" style="color: var(--sa-gold);">
-                <i class="bi bi-person-check-fill"></i> Account Owner & Plan
+                <i class="bi bi-person-check-fill"></i> Tenant Admin & Plan
             </h6>
             <div class="row g-2 small mb-3">
-                <div class="col-4 sa-label">Owner Name:</div>
-                <div class="col-8 fw-semibold" style="color: var(--sa-text);">{{ tenant.owner.get_full_name|default:tenant.owner.username }}</div>
+                <div class="col-4 sa-label">Tenant Admin:</div>
+                <div class="col-8 fw-semibold" style="color: var(--sa-text);">
+                    {{ tenant.owner.get_full_name|default:tenant.owner.username }}
+                    <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50 px-2 py-0 ms-1 small">Tenant Admin</span>
+                </div>
 
                 <div class="col-4 sa-label">Username:</div>
                 <div class="col-8"><code>{{ tenant.owner.username }}</code></div>
