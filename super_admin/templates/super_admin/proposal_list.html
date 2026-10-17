@@ -1,0 +1,225 @@
+{% extends 'super_admin/base_super_admin.html' %}
+
+{% block title %}Client Proposals & Quotes | Super Admin Portal{% endblock %}
+{% block page_title %}SaaS Proposals & Customer Quotations{% endblock %}
+
+{% block content %}
+<!-- 1. Pipeline & Won Revenue Summary Cards -->
+<div class="row g-3 mb-4">
+    <!-- Active Pipeline Value -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="sa-metric-card" style="border-left: 3px solid #38bdf8;">
+            <div class="sa-metric-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">
+                <i class="bi bi-send-check"></i>
+            </div>
+            <div>
+                <div class="sa-metric-val">₹{{ pipeline_value|floatformat:0 }}</div>
+                <div class="sa-metric-lbl">Active Pipeline ({{ pipeline_count }} Quotes)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Won / Accepted Value -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="sa-metric-card" style="border-left: 3px solid #22c55e;">
+            <div class="sa-metric-icon" style="background: rgba(34, 197, 94, 0.15); color: #22c55e;">
+                <i class="bi bi-trophy-fill"></i>
+            </div>
+            <div>
+                <div class="sa-metric-val">₹{{ accepted_value|floatformat:0 }}</div>
+                <div class="sa-metric-lbl">Won / Closed Deals ({{ accepted_count }})</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Proposals Generated -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="sa-metric-card" style="border-left: 3px solid var(--sa-gold);">
+            <div class="sa-metric-icon" style="background: var(--sa-gold-subtle); color: var(--sa-gold);">
+                <i class="bi bi-file-earmark-text-fill"></i>
+            </div>
+            <div>
+                <div class="sa-metric-val">{{ total_proposals }}</div>
+                <div class="sa-metric-lbl">Total Proposals Issued</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create New Proposal CTA -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="sa-metric-card d-flex align-items-center justify-content-center p-3 h-100" style="background: var(--sa-gold-subtle); border: 1px dashed var(--sa-gold);">
+            <a href="{% url 'super_admin:proposal_create' %}" class="btn btn-gold w-100 py-2 fw-bold text-center">
+                <i class="bi bi-plus-circle-fill me-1"></i> New Proposal
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 2. Filter & Search Bar -->
+<div class="sa-card mb-4">
+    <form method="get" action="{% url 'super_admin:proposal_list' %}" class="row g-2 align-items-center">
+        <div class="col-12 col-md-6">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text border-secondary bg-transparent text-muted">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm border-secondary" placeholder="Search proposal #, client name, showroom, city, phone..." style="background: var(--sa-surface); color: var(--sa-text);">
+            </div>
+        </div>
+
+        <div class="col-8 col-md-4">
+            <select name="status" class="form-select form-select-sm border-secondary" style="background: var(--sa-surface); color: var(--sa-text);" onchange="this.form.submit()">
+                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Proposal Statuses</option>
+                {% for code, label in status_choices %}
+                    <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-4 col-md-2 d-flex gap-1">
+            <button type="submit" class="btn btn-sm btn-gold w-100">Filter</button>
+            {% if q or status_filter != 'all' %}
+                <a href="{% url 'super_admin:proposal_list' %}" class="btn btn-sm btn-outline-secondary" title="Reset Filters"><i class="bi bi-x"></i></a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- 3. Proposals Table -->
+<div class="sa-card">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="mb-0 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold);">
+            <i class="bi bi-file-earmark-ruled"></i> Customer Proposals & Pipeline ({{ page_obj.paginator.count }})
+        </h6>
+        <a href="{% url 'super_admin:proposal_create' %}" class="btn btn-sm btn-gold">
+            <i class="bi bi-plus-lg me-1"></i>Create Proposal
+        </a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table sa-table align-middle">
+            <thead>
+                <tr>
+                    <th>Proposal #</th>
+                    <th>Customer & Showroom</th>
+                    <th>City / Phone</th>
+                    <th>Plan & Cycle</th>
+                    <th>Quoted Amount</th>
+                    <th>Status</th>
+                    <th>Valid Until</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in page_obj %}
+                    <tr>
+                        <!-- Proposal Number -->
+                        <td>
+                            <a href="{% url 'super_admin:proposal_detail' p.id %}" class="fw-bold text-decoration-none" style="color: var(--sa-gold);">
+                                {{ p.proposal_number }}
+                            </a>
+                            <div class="small text-muted">{{ p.created_at|date:"d M Y" }}</div>
+                        </td>
+
+                        <!-- Customer & Showroom -->
+                        <td>
+                            <div class="fw-bold" style="color: var(--sa-text);">{{ p.client_showroom_name }}</div>
+                            <div class="small" style="color: var(--sa-text-secondary);">Attn: {{ p.client_name }}</div>
+                        </td>
+
+                        <!-- City / Phone -->
+                        <td>
+                            <div>{{ p.client_city|default:"—" }}</div>
+                            <div class="small text-muted">
+                                {% if p.client_phone %}
+                                    <i class="bi bi-telephone me-1"></i>{{ p.client_phone }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <!-- Plan & Cycle -->
+                        <td>
+                            <span class="badge border" style="background: var(--sa-gold-subtle); color: var(--sa-gold); border-color: rgba(236, 200, 106, 0.4) !important;">
+                                {{ p.get_target_plan_display }}
+                            </span>
+                            <div class="small text-muted mt-1">{{ p.get_billing_cycle_display }}</div>
+                        </td>
+
+                        <!-- Final Amount -->
+                        <td>
+                            <div class="fw-bold" style="color: #22c55e;">₹{{ p.final_amount|floatformat:0 }}</div>
+                            {% if p.discount_amount > 0 %}
+                                <div class="small text-muted text-decoration-line-through">₹{{ p.quoted_amount|floatformat:0 }}</div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Status -->
+                        <td>
+                            {% if p.status == 'accepted' %}
+                                <span class="sa-badge-active"><i class="bi bi-check2-all me-1"></i>Accepted</span>
+                            {% elif p.status == 'viewed' %}
+                                <span class="badge bg-info bg-opacity-25 text-info border border-info border-opacity-50"><i class="bi bi-eye me-1"></i>Viewed</span>
+                            {% elif p.status == 'sent' %}
+                                <span class="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-50"><i class="bi bi-send me-1"></i>Sent</span>
+                            {% elif p.status == 'draft' %}
+                                <span class="badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-50">Draft</span>
+                            {% elif p.status == 'declined' %}
+                                <span class="sa-badge-inactive"><i class="bi bi-x-circle me-1"></i>Declined</span>
+                            {% else %}
+                                <span class="badge bg-dark text-muted">{{ p.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Valid Until -->
+                        <td>
+                            {% if p.valid_until %}
+                                <div style="color: var(--sa-text);">{{ p.valid_until|date:"d M Y" }}</div>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'super_admin:proposal_detail' p.id %}" class="btn btn-sm btn-outline-gold" title="View Proposal & WhatsApp Share">
+                                    <i class="bi bi-eye me-1"></i>Open
+                                </a>
+                                <a href="{% url 'super_admin:proposal_client_view' p.share_token %}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Preview Client Landing Page">
+                                    <i class="bi bi-box-arrow-up-right"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">
+                            No sales proposals created yet. Click <strong>"Create Proposal"</strong> above to generate a client proposal.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-secondary border-opacity-25">
+            <span class="small text-muted">
+                Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} proposals
+            </span>
+            <ul class="pagination pagination-sm m-0">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&status={{ status_filter }}">Previous</a></li>
+                {% endif %}
+                <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&status={{ status_filter }}">Next</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

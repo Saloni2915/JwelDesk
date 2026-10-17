@@ -1,0 +1,145 @@
+{% extends 'super_admin/base_super_admin.html' %}
+
+{% block title %}Create New Proposal | Super Admin Portal{% endblock %}
+{% block page_title %}Generate Client Proposal / Quotation{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-xl-10">
+        <!-- Back Link -->
+        <div class="mb-3">
+            <a href="{% url 'super_admin:proposal_list' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Back to Proposals Pipeline
+            </a>
+        </div>
+
+        <div class="sa-card">
+            <div class="border-bottom border-secondary border-opacity-25 pb-3 mb-4">
+                <h5 class="fw-bold mb-1" style="color: var(--sa-gold);">
+                    <i class="bi bi-file-earmark-plus me-2"></i>New SaaS Commercial Proposal
+                </h5>
+                <p class="small mb-0" style="color: var(--sa-text-secondary);">
+                    Generate a formal branded proposal with pricing, features, and an instant WhatsApp share link for prospective jewellery showrooms.
+                </p>
+            </div>
+
+            <form method="post" action="{% url 'super_admin:proposal_create' %}">
+                {% csrf_token %}
+
+                <!-- Section 1: Prospective Client & Showroom Details -->
+                <h6 class="fw-bold text-uppercase small mb-3" style="color: var(--sa-gold); letter-spacing: 0.05em;">
+                    <i class="bi bi-person-lines-fill me-1"></i>1. Customer & Showroom Information
+                </h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small fw-bold sa-label">Customer / Owner Name *</label>
+                        <input type="text" name="client_name" class="form-control" placeholder="e.g. Shri Rajesh Soni" required style="background: var(--sa-surface); color: var(--sa-text); border-color: var(--sa-border);">
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small fw-bold sa-label">Jewellery Showroom Name *</label>
+                        <input type="text" name="client_showroom_name" class="form-control" placeholder="e.g. Soni & Sons Jewellers" required style="background: var(--sa-surface); color: var(--sa-text); border-color: var(--sa-border);">
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small fw-bold sa-label">WhatsApp / Mobile Number *</label>
+                        <div class="input-group">
+                            <span class="input-group-text border-secondary" style="background: var(--sa-card); color: var(--sa-text);"><i class="bi bi-whatsapp text-success"></i></span>
+                            <input type="text" name="client_phone" class="form-control" placeholder="e.g. 9876543210" required style="background: var(--sa-surface); color: var(--sa-text); border-color: var(--sa-border);">
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small fw-bold sa-label">Email Address</label>
+                        <input type="email" name="client_email" class="form-control" placeholder="e.g. rajesh@example.com" style="background: var(--sa-surface); color: var(--sa-text); border-color: var(--sa-border);">
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small fw-bold sa-label">City / Region</label>
+                        <input type="text" name="client_city" class="form-control" placeholder="e.g. Jaipur, Rajasthan" style="background: var(--sa-surface); color: var(--sa-text); border-color: var(--sa-border);">
+                    </div>
+                </div>
+
+                <!-- Section 2: Plan, Cycle & Commercial Pricing -->
+                <h6 class="fw-bold text-uppercase small mb-3" style="color: var(--sa-gold); letter-spacing: 0.05em;">
+                    <i class="bi bi-cash-coin me-1"></i>2. Plan Selection & Commercials
+                </h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small fw-bold sa-label">Proposed Plan Tier *</label>
+                        <select name="target_plan" id="planSelect" class="form-select" style="background: var(--sa-surface); color: var(--sa-text); border-color: var(--sa-border);">
+                            {% for code, label in plan_choices %}
+                                <option value="{{ code }}" {% if code == 'core' %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small fw-bold sa-label">Billing Cycle *</label>
+                        <select name="billing_cycle" class="form-select" style="background: var(--sa-surface); color: var(--sa-text); border-color: var(--sa-border);">
+                            {% for code, label in cycle_choices %}
+                                <option value="{{ code }}" {% if code == 'yearly' %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small fw-bold sa-label">Quoted Fee (₹) *</label>
+                        <input type="number" step="0.01" name="quoted_amount" id="quotedAmount" value="29999.00" class="form-control" required style="background: var(--sa-surface); color: var(--sa-text); border-color: var(--sa-border);">
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small fw-bold sa-label">Inaugural Discount (₹)</label>
+                        <input type="number" step="0.01" name="discount_amount" id="discountAmount" value="5000.00" class="form-control" style="background: var(--sa-surface); color: var(--sa-text); border-color: var(--sa-border);">
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small fw-bold sa-label">Proposal Valid Until *</label>
+                        <input type="date" name="valid_until" value="{{ default_valid_until }}" class="form-control" required style="background: var(--sa-surface); color: var(--sa-text); border-color: var(--sa-border);">
+                    </div>
+                    <div class="col-12">
+                        <div class="p-3 rounded d-flex align-items-center justify-content-between" style="background: var(--sa-card); border: 1px solid var(--sa-border);">
+                            <div>
+                                <span class="sa-label small">Net Investment Quoted to Client:</span>
+                                <div class="fs-4 fw-bold" style="color: #22c55e;" id="netAmountDisplay">₹24,999</div>
+                            </div>
+                            <span class="badge border" style="background: var(--sa-gold-subtle); color: var(--sa-gold); border-color: var(--sa-gold);">
+                                All Cloud Infrastructure Included
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Feature Inclusions & Terms -->
+                <h6 class="fw-bold text-uppercase small mb-3" style="color: var(--sa-gold); letter-spacing: 0.05em;">
+                    <i class="bi bi-card-checklist me-1"></i>3. Feature Inclusions & Commercial Terms
+                </h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small fw-bold sa-label">Features Included in Proposal</label>
+                        <textarea name="features_summary" rows="8" class="form-control font-monospace small" style="background: var(--sa-surface); color: var(--sa-text); border-color: var(--sa-border);">{{ default_features }}</textarea>
+                        <div class="form-text small" style="color: var(--sa-muted);">One feature per line with bullet or number.</div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small fw-bold sa-label">Commercial Terms, SLAs & Warranty</label>
+                        <textarea name="terms_notes" rows="8" class="form-control font-monospace small" style="background: var(--sa-surface); color: var(--sa-text); border-color: var(--sa-border);">{{ default_terms }}</textarea>
+                        <div class="form-text small" style="color: var(--sa-muted);">Visible to prospective client on the proposal summary page.</div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center justify-content-end gap-2 border-top border-secondary border-opacity-25 pt-3">
+                    <a href="{% url 'super_admin:proposal_list' %}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-gold px-4 py-2 fw-bold">
+                        <i class="bi bi-file-earmark-check-fill me-1"></i>Generate Proposal & Preview
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Dynamic Net Amount Calculation
+    function updateNetAmount() {
+        var quoted = parseFloat(document.getElementById('quotedAmount').value) || 0;
+        var discount = parseFloat(document.getElementById('discountAmount').value) || 0;
+        var net = Math.max(0, quoted - discount);
+        document.getElementById('netAmountDisplay').textContent = '₹' + net.toLocaleString('en-IN');
+    }
+    document.getElementById('quotedAmount').addEventListener('input', updateNetAmount);
+    document.getElementById('discountAmount').addEventListener('input', updateNetAmount);
+    updateNetAmount();
+</script>
+{% endblock %}

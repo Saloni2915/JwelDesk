@@ -1,0 +1,207 @@
+{% extends 'super_admin/base_super_admin.html' %}
+
+{% block title %}Proposal {{ proposal.proposal_number }} | Super Admin Portal{% endblock %}
+{% block page_title %}Proposal {{ proposal.proposal_number }}{% endblock %}
+
+{% block content %}
+<!-- Top Navigation & Action Row -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <a href="{% url 'super_admin:proposal_list' %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Back to Proposals Pipeline
+    </a>
+
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <!-- Direct WhatsApp Share Button -->
+        <a href="{{ wa_link }}" target="_blank" class="btn btn-sm btn-success fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
+            <i class="bi bi-whatsapp fs-6"></i> Send via WhatsApp
+        </a>
+
+        <!-- Copy Client Link -->
+        <button type="button" class="btn btn-sm btn-outline-gold" id="copyShareBtn" onclick="copyClientUrl()">
+            <i class="bi bi-link-45deg me-1"></i><span id="copyBtnText">Copy Client Link</span>
+        </button>
+
+        <!-- Preview Public Page -->
+        <a href="{% url 'super_admin:proposal_client_view' proposal.share_token %}" target="_blank" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-box-arrow-up-right me-1"></i>Client View
+        </a>
+
+        <!-- Print Proposal -->
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+            <i class="bi bi-printer me-1"></i>Print Quote
+        </button>
+    </div>
+</div>
+
+<!-- Main Proposal Overview Card -->
+<div class="sa-card mb-4" style="border-top: 4px solid var(--sa-gold);">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 border-bottom border-secondary border-opacity-25 pb-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="fs-4 fw-bold" style="color: var(--sa-gold);">{{ proposal.proposal_number }}</span>
+                {% if proposal.status == 'accepted' %}
+                    <span class="sa-badge-active"><i class="bi bi-check-circle-fill me-1"></i>Accepted / Won</span>
+                {% elif proposal.status == 'viewed' %}
+                    <span class="badge bg-info bg-opacity-25 text-info border border-info border-opacity-50"><i class="bi bi-eye me-1"></i>Viewed by Client</span>
+                {% elif proposal.status == 'sent' %}
+                    <span class="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-50"><i class="bi bi-send me-1"></i>Sent</span>
+                {% elif proposal.status == 'draft' %}
+                    <span class="badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-50">Draft</span>
+                {% elif proposal.status == 'declined' %}
+                    <span class="sa-badge-inactive"><i class="bi bi-x-circle me-1"></i>Declined</span>
+                {% else %}
+                    <span class="badge bg-dark text-muted">{{ proposal.get_status_display }}</span>
+                {% endif %}
+            </div>
+            <div class="small text-muted mt-1">
+                Issued for <strong>{{ proposal.client_showroom_name }}</strong> • Created {{ proposal.created_at|date:"d M Y, h:i A" }}
+            </div>
+        </div>
+
+        <!-- Update Status Form -->
+        <form method="post" action="{% url 'super_admin:proposal_status_update' proposal.id %}" class="d-flex align-items-center gap-2">
+            {% csrf_token %}
+            <span class="small sa-label">Status:</span>
+            <select name="status" class="form-select form-select-sm border-secondary" style="background: var(--sa-surface); color: var(--sa-text); width: auto;" onchange="this.form.submit()">
+                {% for code, label in status_choices %}
+                    <option value="{{ code }}" {% if proposal.status == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <!-- Client Share URL Bar -->
+    <div class="p-3 rounded mb-4" style="background: var(--sa-surface); border: 1px dashed var(--sa-border);">
+        <label class="form-label small fw-bold sa-label mb-1">
+            <i class="bi bi-globe me-1 text-info"></i>Client Shareable Proposal Link (No login required for customer):
+        </label>
+        <div class="input-group input-group-sm">
+            <input type="text" id="clientUrlInput" value="{{ client_share_url }}" class="form-control font-monospace" readonly style="background: var(--sa-card); color: var(--sa-gold); border-color: var(--sa-border);">
+            <button class="btn btn-gold" type="button" onclick="copyClientUrl()"><i class="bi bi-clipboard me-1"></i>Copy Link</button>
+        </div>
+    </div>
+
+    <!-- 2 Column Details Grid -->
+    <div class="row g-4">
+        <!-- Left: Prospect Info & Pricing -->
+        <div class="col-12 col-md-5">
+            <!-- Prospect Info -->
+            <div class="p-3 rounded mb-3" style="background: var(--sa-surface); border: 1px solid var(--sa-border);">
+                <h6 class="fw-bold small text-uppercase mb-3" style="color: var(--sa-gold); letter-spacing: 0.05em;">
+                    <i class="bi bi-building me-1"></i>Client Information
+                </h6>
+                <div class="mb-2">
+                    <span class="sa-label small">Showroom:</span>
+                    <div class="fw-bold" style="color: var(--sa-text);">{{ proposal.client_showroom_name }}</div>
+                </div>
+                <div class="mb-2">
+                    <span class="sa-label small">Owner / Contact:</span>
+                    <div style="color: var(--sa-text);">{{ proposal.client_name }}</div>
+                </div>
+                <div class="mb-2">
+                    <span class="sa-label small">WhatsApp / Mobile:</span>
+                    <div style="color: var(--sa-text);">
+                        {% if proposal.client_phone %}
+                            <a href="tel:{{ proposal.client_phone }}" class="text-decoration-none" style="color: var(--sa-gold);">{{ proposal.client_phone }}</a>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <span class="sa-label small">Email Address:</span>
+                    <div style="color: var(--sa-text);">{{ proposal.client_email|default:"—" }}</div>
+                </div>
+                <div>
+                    <span class="sa-label small">City / Location:</span>
+                    <div style="color: var(--sa-text);">{{ proposal.client_city|default:"—" }}</div>
+                </div>
+            </div>
+
+            <!-- Commercial Breakdown -->
+            <div class="p-3 rounded" style="background: var(--sa-surface); border: 1px solid var(--sa-border);">
+                <h6 class="fw-bold small text-uppercase mb-3" style="color: var(--sa-gold); letter-spacing: 0.05em;">
+                    <i class="bi bi-receipt me-1"></i>Commercial Quotation
+                </h6>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="sa-label small">Target Plan:</span>
+                    <span class="badge border" style="background: var(--sa-gold-subtle); color: var(--sa-gold); border-color: rgba(236, 200, 106, 0.4) !important;">
+                        {{ proposal.get_target_plan_display }}
+                    </span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="sa-label small">Billing Frequency:</span>
+                    <strong style="color: var(--sa-text);">{{ proposal.get_billing_cycle_display }}</strong>
+                </div>
+                <hr class="border-secondary border-opacity-25 my-2">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="sa-label small">Standard SaaS Fee:</span>
+                    <span style="color: var(--sa-text);">₹{{ proposal.quoted_amount|floatformat:2 }}</span>
+                </div>
+                {% if proposal.discount_amount > 0 %}
+                    <div class="d-flex justify-content-between mb-1 text-danger">
+                        <span class="small">Inaugural Discount:</span>
+                        <span>- ₹{{ proposal.discount_amount|floatformat:2 }}</span>
+                    </div>
+                {% endif %}
+                <hr class="border-secondary border-opacity-25 my-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-bold sa-label">Net Investment (₹):</span>
+                    <span class="fs-4 fw-bold" style="color: #22c55e;">₹{{ proposal.final_amount|floatformat:2 }}</span>
+                </div>
+                <div class="small text-muted mt-2">
+                    <i class="bi bi-calendar-check me-1"></i>Valid until: <strong>{{ proposal.valid_until|date:"d M Y" }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Inclusions & Terms -->
+        <div class="col-12 col-md-7">
+            <!-- Features Included -->
+            <div class="p-3 rounded mb-3" style="background: var(--sa-surface); border: 1px solid var(--sa-border);">
+                <h6 class="fw-bold small text-uppercase mb-3" style="color: var(--sa-gold); letter-spacing: 0.05em;">
+                    <i class="bi bi-stars me-1"></i>Included Features & Modules
+                </h6>
+                <ul class="list-unstyled mb-0">
+                    {% for feat in features_list %}
+                        <li class="d-flex align-items-start gap-2 py-1" style="color: var(--sa-text);">
+                            <i class="bi bi-check-circle-fill text-success flex-shrink-0 mt-1"></i>
+                            <div>{{ feat }}</div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Commercial Terms -->
+            <div class="p-3 rounded" style="background: var(--sa-surface); border: 1px solid var(--sa-border);">
+                <h6 class="fw-bold small text-uppercase mb-3" style="color: var(--sa-gold); letter-spacing: 0.05em;">
+                    <i class="bi bi-shield-check me-1"></i>Terms, SLAs & Onboarding Guarantees
+                </h6>
+                <ul class="list-unstyled mb-0">
+                    {% for term in terms_list %}
+                        <li class="d-flex align-items-start gap-2 py-1 small" style="color: var(--sa-text-secondary);">
+                            <i class="bi bi-dot fs-5 text-warning flex-shrink-0 mt-n1"></i>
+                            <div>{{ term }}</div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function copyClientUrl() {
+        var copyText = document.getElementById("clientUrlInput");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value).then(function() {
+            var btnText = document.getElementById("copyBtnText");
+            btnText.textContent = "Copied to Clipboard!";
+            setTimeout(function() {
+                btnText.textContent = "Copy Client Link";
+            }, 2500);
+        });
+    }
+</script>
+{% endblock %}

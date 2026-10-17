@@ -87,21 +87,21 @@
         </div>
     </div>
 
-    <!-- Subscription Module Status -->
+    <!-- Subscription & Revenue Status -->
     <div class="col-12 col-md-4">
-        <div class="sa-metric-card" style="border-left: 3px solid #6c757d;">
-            <div class="sa-metric-icon" style="background: rgba(108, 117, 125, 0.15); color: #adb5bd;">
-                <i class="bi bi-credit-card-2-front"></i>
-            </div>
-            <div>
-                <div class="d-flex align-items-center gap-2">
-                    <span class="sa-badge-unavailable">Not Configured</span>
+        <a href="{% url 'super_admin:subscriptions' %}" class="text-decoration-none">
+            <div class="sa-metric-card" style="border-left: 3px solid var(--sa-gold);">
+                <div class="sa-metric-icon" style="background: var(--sa-gold-subtle); color: var(--sa-gold);">
+                    <i class="bi bi-currency-rupee"></i>
                 </div>
-                <div class="sa-metric-lbl" title="No billing gateway or subscription tier model exists in current schema">
-                    Subscriptions / Billing
+                <div>
+                    <div class="sa-metric-val">₹{{ total_revenue|floatformat:0 }}</div>
+                    <div class="sa-metric-lbl">
+                        Total Revenue ({{ active_subscribers }} Active / {{ total_subscribers }} Subscribed)
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
 </div>
 

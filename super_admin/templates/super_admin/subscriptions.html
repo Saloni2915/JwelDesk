@@ -1,92 +1,437 @@
 {% extends 'super_admin/base_super_admin.html' %}
 
-{% block title %}Subscriptions & Billing | Super Admin Portal{% endblock %}
-{% block page_title %}Subscriptions & Billing Status{% endblock %}
+{% block title %}Subscriptions & Revenue | Super Admin Portal{% endblock %}
+{% block page_title %}SaaS Subscriptions & Revenue Operations{% endblock %}
 
 {% block content %}
-<!-- Architectural Notice Banner -->
-<div class="alert alert-info d-flex align-items-start gap-3 mb-4" style="background: rgba(13, 202, 240, 0.12); border: 1px solid rgba(13, 202, 240, 0.35); color: var(--sa-text);" role="alert">
-    <i class="bi bi-info-circle-fill text-info fs-4 flex-shrink-0 mt-1"></i>
-    <div>
-        <h6 class="alert-heading fw-bold text-info mb-1">Billing & Subscription Module Architecture</h6>
-        <p class="small mb-2" style="color: var(--sa-text); line-height: 1.6;">
-            The JewelDesk database schema currently operates on a direct multi-tenant foundation without an external recurring billing gateway (such as Stripe, Razorpay Subscriptions, or LemonSqueezy).
-        </p>
-        <p class="small mb-0" style="color: var(--sa-text-secondary); line-height: 1.6;">
-            In accordance with platform safety policies, billing metrics are marked as <span class="sa-badge-unavailable">Not Configured</span> rather than presenting inaccurate zero values. All registered showrooms currently operate under the <strong style="color: var(--sa-gold);">Core Showroom Standard Tier (Included)</strong>.
-        </p>
+<!-- 1. Top Revenue & Subscription Metrics -->
+<div class="row g-3 mb-4">
+    <!-- Total Revenue Collected -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="sa-metric-card" style="border-left: 3px solid #22c55e;">
+            <div class="sa-metric-icon" style="background: rgba(34, 197, 94, 0.15); color: #22c55e;">
+                <i class="bi bi-cash-stack"></i>
+            </div>
+            <div>
+                <div class="sa-metric-val">₹{{ total_revenue_collected|floatformat:0 }}</div>
+                <div class="sa-metric-lbl">Total Revenue Collected</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Paid Subscribers -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="sa-metric-card" style="border-left: 3px solid var(--sa-gold);">
+            <div class="sa-metric-icon" style="background: var(--sa-gold-subtle); color: var(--sa-gold);">
+                <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <div>
+                <div class="sa-metric-val">{{ active_count }} <span class="fs-6 fw-normal" style="color: var(--sa-text-secondary);">/ {{ total_tenants }}</span></div>
+                <div class="sa-metric-lbl">Active Paid Subscriptions</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Free Trials -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="sa-metric-card" style="border-left: 3px solid #38bdf8;">
+            <div class="sa-metric-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">
+                <i class="bi bi-clock-history"></i>
+            </div>
+            <div>
+                <div class="sa-metric-val">{{ trial_count }}</div>
+                <div class="sa-metric-lbl">Showrooms in Free Trial</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overdue / Pending Attention -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="sa-metric-card" style="border-left: 3px solid #f87171;">
+            <div class="sa-metric-icon" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+            </div>
+            <div>
+                <div class="sa-metric-val">{{ overdue_count }}</div>
+                <div class="sa-metric-lbl">Payment Overdue / Grace</div>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Plan Status Grid -->
-<div class="row g-4 mb-4">
-    <!-- Active Plan Tier Card -->
-    <div class="col-12 col-md-6 col-xl-4">
-        <div class="sa-card h-100" style="border-top: 3px solid var(--sa-gold);">
-            <div class="d-flex align-items-center justify-content-between mb-3">
-                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50 px-2 py-1">Active Tier</span>
-                <span class="sa-badge-active"><i class="bi bi-check2 me-1"></i>Installed</span>
+<!-- 2. Showroom Subscriptions Filter Bar -->
+<div class="sa-card mb-4">
+    <form method="get" action="{% url 'super_admin:subscriptions' %}" class="row g-2 align-items-center">
+        <!-- Search -->
+        <div class="col-12 col-md-5">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text border-secondary bg-transparent text-muted">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm border-secondary" placeholder="Search showroom name, slug, owner email..." style="background: var(--sa-surface); color: var(--sa-text);">
             </div>
-            <h4 class="fw-bold mb-2" style="color: var(--sa-gold);">Core Showroom Tier</h4>
-            <p class="small mb-3" style="color: var(--sa-text-secondary); line-height: 1.5;">Default full-featured jewellery atelier management suite.</p>
-            <hr class="border-secondary border-opacity-25 my-3">
-            <div class="row g-2 small">
-                <div class="col-8 sa-label">Active Showrooms on this tier:</div>
-                <div class="col-4 text-end fw-bold" style="color: var(--sa-text);">{{ active_tenants }} of {{ total_tenants }}</div>
+        </div>
 
-                <div class="col-8 sa-label">Multi-Branch Support:</div>
-                <div class="col-4 text-end text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Enabled</div>
+        <!-- Plan Filter -->
+        <div class="col-6 col-md-3">
+            <select name="plan" class="form-select form-select-sm border-secondary" style="background: var(--sa-surface); color: var(--sa-text);" onchange="this.form.submit()">
+                <option value="all" {% if plan_filter == 'all' %}selected{% endif %}>All Plans / Tiers</option>
+                {% for code, label in plan_choices %}
+                    <option value="{{ code }}" {% if plan_filter == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
-                <div class="col-8 sa-label">AI Jewellery Studio:</div>
-                <div class="col-4 text-end text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Enabled</div>
+        <!-- Status Filter -->
+        <div class="col-6 col-md-3">
+            <select name="status" class="form-select form-select-sm border-secondary" style="background: var(--sa-surface); color: var(--sa-text);" onchange="this.form.submit()">
+                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Statuses</option>
+                {% for code, label in status_choices %}
+                    <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
-                <div class="col-8 sa-label">Karigar Manufacturing:</div>
-                <div class="col-4 text-end text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Enabled</div>
+        <div class="col-12 col-md-1 d-flex gap-1">
+            <button type="submit" class="btn btn-sm btn-gold w-100">Filter</button>
+            {% if q or status_filter != 'all' or plan_filter != 'all' %}
+                <a href="{% url 'super_admin:subscriptions' %}" class="btn btn-sm btn-outline-secondary" title="Reset Filters"><i class="bi bi-x"></i></a>
+            {% endif %}
+        </div>
+    </form>
+</div>
 
-                <div class="col-8 sa-label">Automated GST Invoicing:</div>
-                <div class="col-4 text-end text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Enabled</div>
-            </div>
+<!-- 3. Showroom Subscriptions Table -->
+<div class="sa-card mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="mb-0 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold);">
+            <i class="bi bi-card-checklist"></i> Showroom Subscription Accounts ({{ page_obj.paginator.count }})
+        </h6>
+        <div class="small" style="color: var(--sa-text-secondary);">
+            Contracted Run-Rate: <strong style="color: var(--sa-text);">₹{{ acv_total|floatformat:0 }}</strong>/yr
         </div>
     </div>
 
-    <!-- Paid Tier Status -->
-    <div class="col-12 col-md-6 col-xl-4">
-        <div class="sa-card h-100" style="border-top: 3px solid var(--sa-border);">
-            <div class="d-flex align-items-center justify-content-between mb-3">
-                <span class="sa-badge-unavailable">Custom / Enterprise Tier</span>
-                <span class="sa-badge-unavailable">Unattached</span>
-            </div>
-            <h4 class="fw-bold mb-2" style="color: var(--sa-text);">Enterprise Tier</h4>
-            <p class="small mb-3" style="color: var(--sa-text-secondary); line-height: 1.5;">Dedicated multi-chain showroom instances and custom SLAs.</p>
-            <hr class="border-secondary border-opacity-25 my-3">
-            <div class="row g-2 small">
-                <div class="col-8 sa-label">Active Tenants:</div>
-                <div class="col-4 text-end font-monospace" style="color: var(--sa-muted);">—</div>
+    <div class="table-responsive">
+        <table class="table sa-table align-middle">
+            <thead>
+                <tr>
+                    <th>Showroom</th>
+                    <th>Plan Tier</th>
+                    <th>Status</th>
+                    <th>Pricing / Cycle</th>
+                    <th>Payment Status</th>
+                    <th>Total Paid</th>
+                    <th>Expires / Renewal</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sub in page_obj %}
+                    <tr>
+                        <!-- Showroom -->
+                        <td>
+                            <div class="fw-bold" style="color: var(--sa-text);">{{ sub.tenant.name }}</div>
+                            <div class="small text-muted">
+                                <code>/{{ sub.tenant.slug }}</code> • {{ sub.tenant.owner.email|default:sub.tenant.owner.username }}
+                            </div>
+                        </td>
 
-                <div class="col-8 sa-label">Monthly Recurring Revenue:</div>
-                <div class="col-4 text-end font-monospace" style="color: var(--sa-muted);">—</div>
+                        <!-- Plan Tier -->
+                        <td>
+                            <span class="badge border" style="background: var(--sa-gold-subtle); color: var(--sa-gold); border-color: rgba(236, 200, 106, 0.4) !important;">
+                                {{ sub.get_plan_name_display }}
+                            </span>
+                        </td>
 
-                <div class="col-8 sa-label">Payment Gateway Status:</div>
-                <div class="col-4 text-end"><span class="sa-badge-unavailable">Not Configured</span></div>
-            </div>
-        </div>
+                        <!-- Status -->
+                        <td>
+                            {% if sub.status == 'active' %}
+                                <span class="sa-badge-active"><i class="bi bi-check-circle me-1"></i>Active</span>
+                            {% elif sub.status == 'trial' %}
+                                <span class="badge bg-info bg-opacity-25 text-info border border-info border-opacity-50"><i class="bi bi-clock me-1"></i>Free Trial</span>
+                            {% elif sub.status == 'overdue' %}
+                                <span class="sa-badge-inactive"><i class="bi bi-exclamation-octagon me-1"></i>Overdue</span>
+                            {% elif sub.status == 'grace_period' %}
+                                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50">Grace Period</span>
+                            {% else %}
+                                <span class="sa-badge-inactive">{{ sub.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Pricing / Cycle -->
+                        <td>
+                            <div class="fw-bold" style="color: var(--sa-text);">₹{{ sub.price|floatformat:0 }}</div>
+                            <div class="small text-muted">{{ sub.get_billing_cycle_display }}</div>
+                        </td>
+
+                        <!-- Payment Status -->
+                        <td>
+                            {% if sub.payment_status == 'paid' %}
+                                <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-50">Paid</span>
+                            {% elif sub.payment_status == 'pending' %}
+                                <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-50">Pending</span>
+                            {% else %}
+                                <span class="badge bg-secondary bg-opacity-20 text-light border border-secondary border-opacity-50">{{ sub.get_payment_status_display }}</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Total Paid (from payments ledger) -->
+                        <td>
+                            <strong style="color: #22c55e;">₹{{ sub.total_revenue_collected|floatformat:0 }}</strong>
+                            <div class="small text-muted">{{ sub.payments.count }} transaction{{ sub.payments.count|pluralize }}</div>
+                        </td>
+
+                        <!-- Expires / Renewal -->
+                        <td>
+                            {% if sub.expires_at %}
+                                <div style="color: var(--sa-text);">{{ sub.expires_at|date:"d M Y" }}</div>
+                                <div class="small text-muted">{{ sub.expires_at|timeuntil }} left</div>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                <!-- Record Payment Button -->
+                                <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#payModal{{ sub.id }}" title="Record Received Payment">
+                                    <i class="bi bi-cash me-1"></i>+ Pay
+                                </button>
+                                <!-- Update Plan Button -->
+                                <button type="button" class="btn btn-sm btn-outline-gold" data-bs-toggle="modal" data-bs-target="#editModal{{ sub.id }}" title="Edit Plan & Status">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Modal: Record Payment -->
+                    <div class="modal fade" id="payModal{{ sub.id }}" tabindex="-1" aria-labelledby="payModalLabel{{ sub.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content" style="background: var(--sa-surface); border: 1px solid var(--sa-border); color: var(--sa-text);">
+                                <form method="post" action="{% url 'super_admin:subscription_record_payment' sub.tenant.id %}">
+                                    {% csrf_token %}
+                                    <div class="modal-header border-bottom border-secondary border-opacity-25">
+                                        <h6 class="modal-title fw-bold" id="payModalLabel{{ sub.id }}" style="color: var(--sa-gold);">
+                                            <i class="bi bi-wallet2 me-2"></i>Record Payment: {{ sub.tenant.name }}
+                                        </h6>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body p-4">
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold sa-label">Amount Received (₹) *</label>
+                                            <input type="number" step="0.01" name="amount" class="form-control" value="{{ sub.price }}" required style="background: var(--sa-card); color: var(--sa-text); border-color: var(--sa-border);">
+                                        </div>
+                                        <div class="row g-2 mb-3">
+                                            <div class="col-6">
+                                                <label class="form-label small fw-bold sa-label">Payment Date</label>
+                                                <input type="date" name="payment_date" class="form-control" value="{% now 'Y-m-d' %}" style="background: var(--sa-card); color: var(--sa-text); border-color: var(--sa-border);">
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label small fw-bold sa-label">Payment Method</label>
+                                                <select name="payment_method" class="form-select" style="background: var(--sa-card); color: var(--sa-text); border-color: var(--sa-border);">
+                                                    {% for code, label in payment_method_choices %}
+                                                        <option value="{{ code }}">{{ label }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="row g-2 mb-3">
+                                            <div class="col-6">
+                                                <label class="form-label small fw-bold sa-label">Reference / UTR ID</label>
+                                                <input type="text" name="reference_id" class="form-control" placeholder="e.g. UTR128491823" style="background: var(--sa-card); color: var(--sa-text); border-color: var(--sa-border);">
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label small fw-bold sa-label">Invoice / Receipt No.</label>
+                                                <input type="text" name="invoice_number" class="form-control" placeholder="e.g. INV-2026-001" style="background: var(--sa-card); color: var(--sa-text); border-color: var(--sa-border);">
+                                            </div>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small fw-bold sa-label">Notes</label>
+                                            <textarea name="notes" rows="2" class="form-control" placeholder="e.g. Annual renewal paid via GPay" style="background: var(--sa-card); color: var(--sa-text); border-color: var(--sa-border);"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer border-top border-secondary border-opacity-25">
+                                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-sm btn-success"><i class="bi bi-check2 me-1"></i>Save Payment</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal: Edit Subscription Plan -->
+                    <div class="modal fade" id="editModal{{ sub.id }}" tabindex="-1" aria-labelledby="editModalLabel{{ sub.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content" style="background: var(--sa-surface); border: 1px solid var(--sa-border); color: var(--sa-text);">
+                                <form method="post" action="{% url 'super_admin:subscription_update' sub.tenant.id %}">
+                                    {% csrf_token %}
+                                    <div class="modal-header border-bottom border-secondary border-opacity-25">
+                                        <h6 class="modal-title fw-bold" id="editModalLabel{{ sub.id }}" style="color: var(--sa-gold);">
+                                            <i class="bi bi-sliders me-2"></i>Configure Plan: {{ sub.tenant.name }}
+                                        </h6>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body p-4">
+                                        <div class="row g-2 mb-3">
+                                            <div class="col-6">
+                                                <label class="form-label small fw-bold sa-label">Plan Tier</label>
+                                                <select name="plan_name" class="form-select" style="background: var(--sa-card); color: var(--sa-text); border-color: var(--sa-border);">
+                                                    {% for code, label in plan_choices %}
+                                                        <option value="{{ code }}" {% if sub.plan_name == code %}selected{% endif %}>{{ label }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label small fw-bold sa-label">Account Status</label>
+                                                <select name="status" class="form-select" style="background: var(--sa-card); color: var(--sa-text); border-color: var(--sa-border);">
+                                                    {% for code, label in status_choices %}
+                                                        <option value="{{ code }}" {% if sub.status == code %}selected{% endif %}>{{ label }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="row g-2 mb-3">
+                                            <div class="col-6">
+                                                <label class="form-label small fw-bold sa-label">Billing Cycle</label>
+                                                <select name="billing_cycle" class="form-select" style="background: var(--sa-card); color: var(--sa-text); border-color: var(--sa-border);">
+                                                    {% for code, label in cycle_choices %}
+                                                        <option value="{{ code }}" {% if sub.billing_cycle == code %}selected{% endif %}>{{ label }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label small fw-bold sa-label">Payment Status</label>
+                                                <select name="payment_status" class="form-select" style="background: var(--sa-card); color: var(--sa-text); border-color: var(--sa-border);">
+                                                    {% for code, label in payment_status_choices %}
+                                                        <option value="{{ code }}" {% if sub.payment_status == code %}selected{% endif %}>{{ label }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="row g-2 mb-3">
+                                            <div class="col-6">
+                                                <label class="form-label small fw-bold sa-label">Price / Fee (₹)</label>
+                                                <input type="number" step="0.01" name="price" class="form-control" value="{{ sub.price }}" style="background: var(--sa-card); color: var(--sa-text); border-color: var(--sa-border);">
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label small fw-bold sa-label">Discount (₹)</label>
+                                                <input type="number" step="0.01" name="discount" class="form-control" value="{{ sub.discount }}" style="background: var(--sa-card); color: var(--sa-text); border-color: var(--sa-border);">
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold sa-label">Expires / Renewal Date</label>
+                                            <input type="date" name="expires_at" class="form-control" value="{{ sub.expires_at|date:'Y-m-d' }}" style="background: var(--sa-card); color: var(--sa-text); border-color: var(--sa-border);">
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small fw-bold sa-label">Internal Admin Notes</label>
+                                            <textarea name="notes" rows="2" class="form-control" style="background: var(--sa-card); color: var(--sa-text); border-color: var(--sa-border);">{{ sub.notes }}</textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer border-top border-secondary border-opacity-25">
+                                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-sm btn-gold"><i class="bi bi-save me-1"></i>Update Subscription</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">
+                            No showroom subscription records matched your filters.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 
-    <!-- Subscription Roadmap Card -->
-    <div class="col-12 col-md-12 col-xl-4">
-        <div class="sa-card h-100" style="border-top: 3px solid var(--sa-gold);">
-            <h6 class="fw-bold mb-3 d-flex align-items-center gap-2" style="color: var(--sa-gold);">
-                <i class="bi bi-gear-wide-connected"></i> Billing Integration Roadmap
-            </h6>
-            <p class="small mb-3" style="color: var(--sa-text-secondary); line-height: 1.6;">
-                To activate automated recurring subscription billing for JewelDesk in the future:
-            </p>
-            <ol class="small ps-3 mb-0" style="color: var(--sa-text); line-height: 1.9;">
-                <li class="mb-2">Define a <code>Subscription</code> model linked to <code>accounts.Tenant</code>.</li>
-                <li class="mb-2">Connect a verified payment webhook provider (e.g. Razorpay Subscriptions / Stripe).</li>
-                <li class="mb-1">Implement subscription grace periods, automated suspension on payment failure, and invoice receipts.</li>
-            </ol>
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-secondary border-opacity-25">
+            <span class="small text-muted">
+                Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} showrooms
+            </span>
+            <ul class="pagination pagination-sm m-0">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&plan={{ plan_filter }}&status={{ status_filter }}">Previous</a></li>
+                {% endif %}
+                <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&plan={{ plan_filter }}&status={{ status_filter }}">Next</a></li>
+                {% endif %}
+            </ul>
         </div>
+    {% endif %}
+</div>
+
+<!-- 4. Payment Transactions Ledger -->
+<div class="sa-card">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="mb-0 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold);">
+            <i class="bi bi-clock-history"></i> Recent Payment Transactions (Revenue Received)
+        </h6>
+        <span class="small" style="color: var(--sa-muted);">Last 20 transactions</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table sa-table align-middle">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Showroom</th>
+                    <th>Amount</th>
+                    <th>Method</th>
+                    <th>UTR / Reference</th>
+                    <th>Invoice No.</th>
+                    <th>Recorded By</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in recent_payments %}
+                    <tr>
+                        <td>{{ p.payment_date|date:"d M Y" }}</td>
+                        <td>
+                            <strong style="color: var(--sa-text);">{{ p.tenant.name }}</strong>
+                        </td>
+                        <td>
+                            <strong style="color: #22c55e;">₹{{ p.amount|floatformat:2 }}</strong>
+                        </td>
+                        <td>
+                            <span class="badge border" style="background: rgba(34, 197, 94, 0.1); color: #22c55e; border-color: rgba(34, 197, 94, 0.3) !important;">
+                                {{ p.get_payment_method_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if p.reference_id %}
+                                <code>{{ p.reference_id }}</code>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if p.invoice_number %}
+                                <code>{{ p.invoice_number }}</code>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="small text-muted">{{ p.recorded_by.username|default:"System" }}</td>
+                        <td class="small" style="color: var(--sa-text-secondary);">{{ p.notes|default:"—" }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">
+                            No payment transactions recorded yet. Click <strong>"+ Pay"</strong> on any showroom above to log an incoming payment.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}

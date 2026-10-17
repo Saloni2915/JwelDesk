@@ -360,3 +360,128 @@ class CustomerImpersonationSecurityTests(TestCase):
         response_nested = self.client.post(start_url, {'reason': 'Nested attempt'})
         # Should be blocked by middleware or view with 403
         self.assertEqual(response_nested.status_code, 403)
+
+
+class SubscriptionAndProposalFeatureTests(TestCase):
+    """Test SaaS Subscriptions and Customer Proposals workflows."""
+
+    def setUp(self):
+        from decimal import Decimal
+        self.super_admin = User.objects.create_superuser(
+            username='admin_sub',
+            email='adminsub@jeweldesk.test',
+            password='Password123!'
+        )
+        self.owner = User.objects.create_user(
+            username='owner_sub',
+            email='ownersub@jeweldesk.test',
+            password='Password123!'
+        )
+        self.tenant = Tenant.objects.create(
+            name='Kalyan Jewellers Demo',
+            slug='kalyan-demo',
+            owner=self.owner,
+            is_active=True
+        )
+        self.client = Client()
+
+    def test_subscriptions_view_and_payment_recording(self):
+        from decimal import Decimal
+        from super_admin.models import TenantSubscription, SubscriptionPayment
+        self.client.force_login(self.super_admin)
+
+        # 1. View subscriptions page - triggers auto provisioning
+        response = self.client.get(reverse('super_admin:subscriptions'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(TenantSubscription.objects.filter(tenant=self.tenant).exists())
+        sub = self.tenant.subscription
+
+        # 2. Update subscription plan
+        update_url = reverse('super_admin:subscription_update', kwargs={'tenant_id': self.tenant.id})
+        res_update = self.client.post(update_url, {
+            'plan_name': 'pro',
+            'status': 'active',
+            'billing_cycle': 'yearly',
+            'price': '39999.00',
+            'discount': '5000.00',
+            'payment_status': 'pending',
+            'notes': 'Special inaugural discount',
+        })
+        self.assertEqual(res_update.status_code, 302)
+        sub.refresh_from_db()
+        self.assertEqual(sub.plan_name, 'pro')
+        self.assertEqual(sub.price, Decimal('39999.00'))
+
+        # 3. Record a payment
+        pay_url = reverse('super_admin:subscription_record_payment', kwargs={'tenant_id': self.tenant.id})
+        res_pay = self.client.post(pay_url, {
+            'amount': '34999.00',
+            'payment_date': '2026-10-17',
+            'payment_method': 'upi',
+            'reference_id': 'UPI291839218',
+            'invoice_number': 'INV-2026-001',
+            'notes': 'Advance payment via GPay',
+        })
+        self.assertEqual(res_pay.status_code, 302)
+        self.assertEqual(SubscriptionPayment.objects.filter(tenant=self.tenant).count(), 1)
+        sub.refresh_from_db()
+        self.assertEqual(sub.payment_status, 'paid')
+        self.assertEqual(sub.total_revenue_collected, Decimal('34999.00'))
+
+    def test_proposal_lifecycle_and_client_public_view(self):
+        from decimal import Decimal
+        from super_admin.models import PlatformProposal
+        self.client.force_login(self.super_admin)
+
+        # 1. Create a proposal
+        create_url = reverse('super_admin:proposal_create')
+        res_create = self.client.post(create_url, {
+            'client_name': 'Shri Mohanlal Soni',
+            'client_showroom_name': 'Mohanlal Jewellers',
+            'client_email': 'mohan@jewel.test',
+            'client_phone': '9876543210',
+            'client_city': 'Ahmedabad',
+            'target_plan': 'core',
+            'billing_cycle': 'yearly',
+            'quoted_amount': '29999.00',
+            'discount_amount': '5000.00',
+            'features_summary': '• Feature 1\n• Feature 2',
+            'terms_notes': '1. Standard terms',
+        })
+        self.assertEqual(res_create.status_code, 302)
+        proposal = PlatformProposal.objects.filter(client_showroom_name='Mohanlal Jewellers').first()
+        self.assertIsNotNone(proposal)
+        self.assertEqual(proposal.final_amount, Decimal('24999.00'))
+        self.assertEqual(proposal.status, 'draft')
+
+        # 2. View proposal detail
+        detail_url = reverse('super_admin:proposal_detail', kwargs={'proposal_id': proposal.id})
+        res_detail = self.client.get(detail_url)
+        self.assertEqual(res_detail.status_code, 200)
+        self.assertContains(res_detail, 'Mohanlal Jewellers')
+        self.assertContains(res_detail, proposal.proposal_number)
+
+        # 3. Change status to sent
+        status_url = reverse('super_admin:proposal_status_update', kwargs={'proposal_id': proposal.id})
+        res_status = self.client.post(status_url, {'status': 'sent'})
+        self.assertEqual(res_status.status_code, 302)
+        proposal.refresh_from_db()
+        self.assertEqual(proposal.status, 'sent')
+
+        # 4. Public client view without any login
+        anon_client = Client()
+        share_url = reverse('super_admin:proposal_client_view', kwargs={'token': proposal.share_token})
+        res_client = anon_client.get(share_url)
+        self.assertEqual(res_client.status_code, 200)
+        self.assertContains(res_client, 'Mohanlal Jewellers')
+        self.assertContains(res_client, '24999')
+        # Check that viewing automatically updated status to viewed
+        proposal.refresh_from_db()
+        self.assertEqual(proposal.status, 'viewed')
+
+        # 5. Client accepts proposal
+        res_accept = anon_client.post(share_url, {'action': 'accept'})
+        self.assertEqual(res_accept.status_code, 302)
+        proposal.refresh_from_db()
+        self.assertEqual(proposal.status, 'accepted')
+

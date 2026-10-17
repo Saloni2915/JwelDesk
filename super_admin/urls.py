@@ -18,5 +18,12 @@ urlpatterns = [
     path('impersonate/exit/', views.impersonate_exit_view, name='impersonate_exit'),
     path('audit-logs/', views.audit_log_view, name='audit_logs'),
     path('subscriptions/', views.subscriptions_view, name='subscriptions'),
+    path('subscriptions/<int:tenant_id>/update/', views.subscription_update_view, name='subscription_update'),
+    path('subscriptions/<int:tenant_id>/record-payment/', views.subscription_record_payment_view, name='subscription_record_payment'),
+    path('proposals/', views.proposal_list_view, name='proposal_list'),
+    path('proposals/new/', views.proposal_create_view, name='proposal_create'),
+    path('proposals/<int:proposal_id>/', views.proposal_detail_view, name='proposal_detail'),
+    path('proposals/<int:proposal_id>/status/', views.proposal_status_update_view, name='proposal_status_update'),
+    path('proposals/share/<str:token>/', views.proposal_client_view, name='proposal_client_view'),
     path('settings/', views.settings_view, name='settings'),
 ]

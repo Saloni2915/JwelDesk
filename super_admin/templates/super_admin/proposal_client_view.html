@@ -1,0 +1,288 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proposal {{ proposal.proposal_number }} | JewelDesk Jewellery Management Suite</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts: Cinzel & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --jd-bg: #15130e;
+            --jd-surface: #1e1812;
+            --jd-card: #282018;
+            --jd-border: #4d3d2f;
+            --jd-gold: #ecc86a;
+            --jd-gold-hover: #f5d77f;
+            --jd-gold-subtle: rgba(236, 200, 106, 0.15);
+            --jd-text: #ffffff;
+            --jd-text-secondary: #e8dfd5;
+            --jd-muted: #c8b9ab;
+        }
+
+        body {
+            background-color: var(--jd-bg);
+            color: var(--jd-text);
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            padding-bottom: 4rem;
+        }
+
+        .jd-brand {
+            font-family: 'Cinzel', serif;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            color: var(--jd-gold);
+        }
+
+        .jd-card {
+            background: var(--jd-card);
+            border: 1px solid var(--jd-border);
+            border-radius: 14px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .jd-badge-gold {
+            background: var(--jd-gold-subtle);
+            color: var(--jd-gold);
+            border: 1px solid rgba(236, 200, 106, 0.4);
+            font-weight: 700;
+            padding: 0.35rem 0.85rem;
+            border-radius: 6px;
+        }
+
+        .btn-gold {
+            background: var(--jd-gold);
+            color: #1a1610;
+            font-weight: 700;
+            border: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-gold:hover {
+            background: var(--jd-gold-hover);
+            color: #000;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(236, 200, 106, 0.35);
+        }
+
+        .feature-item {
+            background: var(--jd-surface);
+            border: 1px solid var(--jd-border);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 0.75rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .feature-item:hover {
+            border-color: var(--jd-gold);
+        }
+
+        @media print {
+            body {
+                background: #fff !important;
+                color: #000 !important;
+            }
+            .jd-card, .feature-item {
+                border-color: #ccc !important;
+                background: #fff !important;
+                color: #000 !important;
+                box-shadow: none !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header / Brand Banner -->
+    <header class="py-4 border-bottom" style="border-color: var(--jd-border) !important; background: var(--jd-surface);">
+        <div class="container d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-shield-lock-fill fs-2 text-warning"></i>
+                <div>
+                    <div class="jd-brand fs-4">JewelDesk</div>
+                    <div class="small text-uppercase" style="color: var(--jd-muted); font-size: 0.7rem; letter-spacing: 0.1em;">
+                        Atelier & Showroom Management Cloud
+                    </div>
+                </div>
+            </div>
+            <div class="no-print d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-outline-light" onclick="window.print()">
+                    <i class="bi bi-printer me-1"></i>Print Quote
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-12 col-lg-10">
+
+                <!-- Alert Messages -->
+                {% if messages %}
+                    {% for msg in messages %}
+                        <div class="alert alert-success d-flex align-items-center gap-2 mb-4" role="alert">
+                            <i class="bi bi-check-circle-fill fs-5"></i>
+                            <div>{{ msg }}</div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <!-- Status Banner if Accepted -->
+                {% if proposal.status == 'accepted' %}
+                    <div class="alert alert-success d-flex align-items-center justify-content-between p-3 mb-4" style="background: rgba(34, 197, 94, 0.15); border: 1px solid #22c55e; color: #fff;">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-check2-circle fs-3 text-success"></i>
+                            <div>
+                                <h6 class="mb-0 fw-bold text-success">Proposal Confirmed & Accepted!</h6>
+                                <div class="small" style="color: var(--jd-text-secondary);">
+                                    Thank you! Our dedicated onboarding architect is preparing your dedicated showroom instance.
+                                </div>
+                            </div>
+                        </div>
+                        <span class="badge bg-success text-white px-3 py-2">Confirmed</span>
+                    </div>
+                {% endif %}
+
+                <!-- Proposal Header Card -->
+                <div class="jd-card mb-4" style="border-top: 5px solid var(--jd-gold);">
+                    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 border-bottom pb-4 mb-4" style="border-color: var(--jd-border) !important;">
+                        <div>
+                            <div class="small text-uppercase fw-bold mb-1" style="color: var(--jd-gold); letter-spacing: 0.08em;">
+                                Official Commercial Proposal
+                            </div>
+                            <h2 class="fw-bold mb-1" style="color: var(--jd-text);">{{ proposal.client_showroom_name }}</h2>
+                            <p class="mb-0" style="color: var(--jd-text-secondary);">
+                                Exclusively prepared for <strong>{{ proposal.client_name }}</strong> {% if proposal.client_city %}• {{ proposal.client_city }}{% endif %}
+                            </p>
+                        </div>
+                        <div class="text-md-end">
+                            <div class="font-monospace fw-bold fs-5" style="color: var(--jd-gold);">
+                                {{ proposal.proposal_number }}
+                            </div>
+                            <div class="small text-muted">Issue Date: {{ proposal.created_at|date:"d M Y" }}</div>
+                            <div class="small" style="color: #38bdf8;">
+                                <i class="bi bi-clock-history me-1"></i>Valid Until: <strong>{{ proposal.valid_until|date:"d M Y" }}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Commercial Summary Highlight -->
+                    <div class="row g-4 align-items-center">
+                        <div class="col-12 col-md-7">
+                            <span class="jd-badge-gold mb-2 d-inline-block">{{ proposal.get_target_plan_display }}</span>
+                            <h4 class="fw-bold mb-2">JewelDesk Jewellery Suite ({{ proposal.get_billing_cycle_display }})</h4>
+                            <p class="small mb-0" style="color: var(--jd-text-secondary); line-height: 1.6;">
+                                Complete end-to-end cloud platform for GST invoicing, hallmarking tags, karigar reconciliation, live metal board rates, and automated WhatsApp client receipts.
+                            </p>
+                        </div>
+                        <div class="col-12 col-md-5">
+                            <div class="p-3 rounded text-center text-md-end" style="background: var(--jd-surface); border: 1px solid var(--jd-border);">
+                                <div class="small sa-label mb-1">Total Commercial Investment</div>
+                                {% if proposal.discount_amount > 0 %}
+                                    <div class="text-decoration-line-through text-muted small">
+                                        ₹{{ proposal.quoted_amount|floatformat:0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="fs-1 fw-bold" style="color: #22c55e;">
+                                    ₹{{ proposal.final_amount|floatformat:0 }}
+                                </div>
+                                <div class="small text-muted">
+                                    {{ proposal.get_billing_cycle_display }} subscription • Zero server setup fee
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Features & Inclusions Grid -->
+                <div class="jd-card mb-4">
+                    <h5 class="fw-bold mb-3 d-flex align-items-center gap-2" style="color: var(--jd-gold);">
+                        <i class="bi bi-gem"></i> Modules & Features Included
+                    </h5>
+                    <div class="row g-2">
+                        {% for feat in features_list %}
+                            <div class="col-12 col-md-6">
+                                <div class="feature-item d-flex align-items-start gap-2 h-100">
+                                    <i class="bi bi-check-circle-fill text-success fs-5 flex-shrink-0 mt-n1"></i>
+                                    <div class="small fw-semibold" style="color: var(--jd-text);">{{ feat }}</div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Terms, Warranty & SLA -->
+                <div class="jd-card mb-4">
+                    <h5 class="fw-bold mb-3 d-flex align-items-center gap-2" style="color: var(--jd-gold);">
+                        <i class="bi bi-shield-check"></i> Commercial Terms & Onboarding Guarantee
+                    </h5>
+                    <div class="row g-2">
+                        {% for term in terms_list %}
+                            <div class="col-12">
+                                <div class="d-flex align-items-start gap-2 py-1 small" style="color: var(--jd-text-secondary);">
+                                    <i class="bi bi-chevron-right text-warning flex-shrink-0 mt-1"></i>
+                                    <div>{{ term }}</div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Call to Action Box -->
+                <div class="jd-card text-center p-4 no-print" style="background: radial-gradient(circle, rgba(236,200,106,0.1) 0%, rgba(30,24,18,1) 100%); border-color: var(--jd-gold);">
+                    {% if proposal.status == 'accepted' %}
+                        <h4 class="fw-bold mb-2 text-success">
+                            <i class="bi bi-check-circle-fill me-2"></i>Thank you for choosing JewelDesk!
+                        </h4>
+                        <p class="small text-muted mb-3">
+                            Our team is configuring your dedicated database. Contact us anytime for updates.
+                        </p>
+                        <a href="https://api.whatsapp.com/send?text=Namaste,%20I%20have%20accepted%20proposal%20{{ proposal.proposal_number }}%20for%20{{ proposal.client_showroom_name }}." target="_blank" class="btn btn-sm btn-success px-4 py-2 fw-bold">
+                            <i class="bi bi-whatsapp me-1"></i>Chat with Support on WhatsApp
+                        </a>
+                    {% else %}
+                        <h4 class="fw-bold mb-2" style="color: var(--jd-gold);">Ready to elevate {{ proposal.client_showroom_name }}?</h4>
+                        <p class="small mb-4" style="color: var(--jd-text-secondary); max-width: 600px; margin: 0 auto;">
+                            Click below to accept this commercial proposal. Our senior onboarding architect will initialize your showroom data within 24 hours.
+                        </p>
+                        <form method="post" action="{% url 'super_admin:proposal_client_view' proposal.share_token %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="accept">
+                            <button type="submit" class="btn btn-gold btn-lg px-5 py-3 fw-bold fs-6 mb-2">
+                                <i class="bi bi-check2-circle me-2"></i>Accept Proposal & Begin Onboarding
+                            </button>
+                        </form>
+                        <div class="small text-muted mt-2">
+                            Questions? Reach our team directly: <a href="tel:+919876543210" class="text-decoration-none" style="color: var(--jd-gold);"><i class="bi bi-telephone me-1"></i>Contact Onboarding Desk</a>
+                        </div>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center text-muted small py-4 border-top" style="border-color: var(--jd-border) !important;">
+        JewelDesk SaaS Platform • Enterprise Jewellery Management Suite • Confidential & Proprietary
+    </footer>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
