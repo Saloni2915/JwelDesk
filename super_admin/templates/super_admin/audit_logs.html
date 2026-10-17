@@ -1,0 +1,149 @@
+{% extends 'super_admin/base_super_admin.html' %}
+
+{% block title %}Audit & Activity Logs | Super Admin Portal{% endblock %}
+{% block page_title %}Platform Audit & Security Logs{% endblock %}
+
+{% block content %}
+<div class="sa-card mb-4">
+    <form method="get" class="row g-2 align-items-center">
+        <!-- Search bar -->
+        <div class="col-12 col-md-6">
+            <div class="input-group">
+                <span class="input-group-text bg-transparent border-secondary text-muted">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" name="q" value="{{ q }}" class="form-control sa-input" placeholder="Search actor, showroom, user, reason, IP address...">
+            </div>
+        </div>
+
+        <!-- Action filter -->
+        <div class="col-12 col-md-4">
+            <select name="action" class="form-select sa-input" onchange="this.form.submit()">
+                <option value="">All Action Types</option>
+                {% for code, label in action_choices %}
+                <option value="{{ code }}" {% if action_filter == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Filter button -->
+        <div class="col-12 col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-gold flex-grow-1">Filter</button>
+            {% if q or action_filter %}
+            <a href="{% url 'super_admin:audit_logs' %}" class="btn btn-outline-secondary" title="Clear filters">
+                <i class="bi bi-x-lg"></i>
+            </a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Logs Table -->
+<div class="sa-card">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="text-muted small">
+            Showing {{ page_obj.start_index|default:0 }}–{{ page_obj.end_index|default:0 }} of {{ total_logs }} recorded security events
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table sa-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Actor (Super Admin)</th>
+                    <th>Action</th>
+                    <th>Target Showroom</th>
+                    <th>Target User</th>
+                    <th>Justification / Reason</th>
+                    <th>Client IP</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in page_obj %}
+                <tr>
+                    <td class="text-nowrap small text-muted font-monospace">
+                        {{ log.created_at|date:"d M Y, H:i:s" }}
+                    </td>
+                    <td>
+                        <strong class="text-light">{{ log.actor.username|default:"System" }}</strong>
+                        {% if log.actor.email %}
+                        <div class="text-muted small">{{ log.actor.email }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if log.action == 'IMPERSONATION_START' %}
+                        <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50">
+                            <i class="bi bi-eye-fill me-1"></i>Impersonation Started
+                        </span>
+                        {% elif log.action == 'IMPERSONATION_END' %}
+                        <span class="badge bg-info bg-opacity-25 text-info border border-info border-opacity-50">
+                            <i class="bi bi-check-circle me-1"></i>Impersonation Ended
+                        </span>
+                        {% elif log.action == 'TENANT_DEACTIVATE' %}
+                        <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-50">
+                            <i class="bi bi-pause-fill me-1"></i>Showroom Suspended
+                        </span>
+                        {% elif log.action == 'TENANT_ACTIVATE' %}
+                        <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-50">
+                            <i class="bi bi-play-fill me-1"></i>Showroom Activated
+                        </span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ log.get_action_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if log.target_tenant %}
+                        <a href="{% url 'super_admin:showroom_detail' log.target_tenant.id %}" class="text-decoration-none text-light fw-semibold">
+                            {{ log.target_tenant.name }}
+                        </a>
+                        <div class="text-muted small">/{{ log.target_tenant.slug }}</div>
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if log.target_user %}
+                        <div>{{ log.target_user.username }}</div>
+                        <div class="text-muted small">{{ log.target_user.email|default:"No email" }}</div>
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="small" style="max-width: 280px;">
+                        <span class="text-light">{{ log.reason|default:"—" }}</span>
+                    </td>
+                    <td class="font-monospace small text-muted text-nowrap">
+                        {{ log.ip_address|default:"—" }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="bi bi-shield-check fs-1 d-block mb-2 text-muted"></i>
+                        No audit log records found matching the filter criteria.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    {% if page_obj.has_other_pages %}
+    <div class="d-flex justify-content-center align-items-center gap-2 mt-4">
+        {% if page_obj.has_previous %}
+        <a href="?page=1&q={{ q }}&action={{ action_filter }}" class="btn btn-sm btn-outline-secondary">« First</a>
+        <a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&action={{ action_filter }}" class="btn btn-sm btn-outline-secondary">‹ Prev</a>
+        {% endif %}
+
+        <span class="text-muted small px-2">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&q={{ q }}&action={{ action_filter }}" class="btn btn-sm btn-outline-secondary">Next ›</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}&q={{ q }}&action={{ action_filter }}" class="btn btn-sm btn-outline-secondary">Last »</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

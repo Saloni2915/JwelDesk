@@ -1,0 +1,353 @@
+{% extends 'super_admin/base_super_admin.html' %}
+
+{% block title %}{{ tenant.name }} | Showroom Details{% endblock %}
+{% block page_title %}Showroom Management: {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb & Header Action Bar -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small">
+                <li class="breadcrumb-item"><a href="{% url 'super_admin:showroom_list' %}" class="text-muted text-decoration-none">Showrooms</a></li>
+                <li class="breadcrumb-item active" style="color: var(--sa-gold);" aria-current="page">{{ tenant.name }}</li>
+            </ol>
+        </nav>
+        <div class="d-flex align-items-center gap-2">
+            <h3 class="mb-0 fw-bold">{{ tenant.name }}</h3>
+            {% if tenant.is_active %}
+            <span class="sa-badge-active"><i class="bi bi-check2-circle me-1"></i>Active</span>
+            {% else %}
+            <span class="sa-badge-inactive"><i class="bi bi-x-circle me-1"></i>Suspended</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Actions Toolbar -->
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        {% if tenant.is_active %}
+        <!-- Impersonate Button -->
+        <button type="button" class="btn btn-gold" data-bs-toggle="modal" data-bs-target="#impersonateModal">
+            <i class="bi bi-person-fill-lock me-1"></i> Impersonate Customer
+        </button>
+        <!-- Deactivate Button -->
+        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#statusModal">
+            <i class="bi bi-pause-circle me-1"></i> Suspend Showroom
+        </button>
+        {% else %}
+        <!-- Activate Button -->
+        <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#statusModal">
+            <i class="bi bi-play-circle me-1"></i> Activate Showroom
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Showroom Metrics Grid -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="sa-metric-card">
+            <div class="sa-metric-icon" style="background: rgba(197, 160, 89, 0.15); color: var(--sa-gold);">
+                <i class="bi bi-gem"></i>
+            </div>
+            <div>
+                <div class="sa-metric-val">{{ inventory_count }}</div>
+                <div class="sa-metric-lbl">Stock Items</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="sa-metric-card">
+            <div class="sa-metric-icon" style="background: rgba(25, 135, 84, 0.15); color: #75b798;">
+                <i class="bi bi-cash-stack"></i>
+            </div>
+            <div>
+                <div class="sa-metric-val">{{ sales_count }}</div>
+                <div class="sa-metric-lbl">Sales Records</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="sa-metric-card">
+            <div class="sa-metric-icon" style="background: rgba(13, 202, 240, 0.15); color: #6edff6;">
+                <i class="bi bi-people"></i>
+            </div>
+            <div>
+                <div class="sa-metric-val">{{ customers_count }}</div>
+                <div class="sa-metric-lbl">Customers</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="sa-metric-card">
+            <div class="sa-metric-icon" style="background: rgba(253, 126, 20, 0.15); color: #fd7e14;">
+                <i class="bi bi-hammer"></i>
+            </div>
+            <div>
+                <div class="sa-metric-val">{{ karigar_count }}</div>
+                <div class="sa-metric-lbl">Karigars</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Details Columns -->
+<div class="row g-4 mb-4">
+    <!-- Showroom Profile & Owner Info -->
+    <div class="col-12 col-lg-6">
+        <div class="sa-card h-100">
+            <h6 class="fw-bold mb-3 d-flex align-items-center gap-2" style="color: var(--sa-gold);">
+                <i class="bi bi-building-gear"></i> Showroom Profile & Settings
+            </h6>
+            <div class="row g-2 small">
+                <div class="col-4 text-muted">Business Slug:</div>
+                <div class="col-8"><code>/{{ tenant.slug }}</code></div>
+
+                <div class="col-4 text-muted">Registered On:</div>
+                <div class="col-8">{{ tenant.created_at|date:"d M Y, H:i:s" }}</div>
+
+                <div class="col-4 text-muted">Company Name:</div>
+                <div class="col-8">{{ tenant.company_settings.company_name|default:tenant.name }}</div>
+
+                <div class="col-4 text-muted">GSTIN:</div>
+                <div class="col-8 font-monospace">{{ tenant.company_settings.gstin|default:"Not configured" }}</div>
+
+                <div class="col-4 text-muted">Store Phone:</div>
+                <div class="col-8">{{ tenant.company_settings.phone|default:"Not configured" }}</div>
+
+                <div class="col-4 text-muted">Store Email:</div>
+                <div class="col-8">{{ tenant.company_settings.email|default:"Not configured" }}</div>
+
+                <div class="col-4 text-muted">Address:</div>
+                <div class="col-8">{{ tenant.company_settings.address|default:"Not configured" }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Owner Account & Subscription Status -->
+    <div class="col-12 col-lg-6">
+        <div class="sa-card h-100">
+            <h6 class="fw-bold mb-3 d-flex align-items-center gap-2" style="color: var(--sa-gold);">
+                <i class="bi bi-person-check-fill"></i> Account Owner & Plan
+            </h6>
+            <div class="row g-2 small mb-3">
+                <div class="col-4 text-muted">Owner Name:</div>
+                <div class="col-8 fw-semibold text-light">{{ tenant.owner.get_full_name|default:tenant.owner.username }}</div>
+
+                <div class="col-4 text-muted">Username:</div>
+                <div class="col-8"><code>{{ tenant.owner.username }}</code></div>
+
+                <div class="col-4 text-muted">Login Email:</div>
+                <div class="col-8">{{ tenant.owner.email|default:"No email registered" }}</div>
+
+                <div class="col-4 text-muted">User Joined:</div>
+                <div class="col-8">{{ tenant.owner.date_joined|date:"d M Y" }}</div>
+
+                <div class="col-4 text-muted">Last Active:</div>
+                <div class="col-8">{{ tenant.owner.last_login|date:"d M Y, H:i"|default:"Never" }}</div>
+            </div>
+
+            <hr class="border-secondary border-opacity-25 my-3">
+
+            <div class="d-flex align-items-center justify-content-between p-2 rounded" style="background: rgba(0,0,0,0.25);">
+                <div>
+                    <div class="small fw-semibold text-light">Subscription Status</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">{{ subscription_status_label|default:"Core Plan (Standard Tier)" }}</div>
+                </div>
+                <span class="sa-badge-unavailable">No Billing Attached</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Team Members Table -->
+<div class="sa-card mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-bold mb-0 d-flex align-items-center gap-2" style="color: var(--sa-gold);">
+            <i class="bi bi-people"></i> Showroom Team Members ({{ employees.count }})
+        </h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table sa-table">
+            <thead>
+                <tr>
+                    <th>Emp ID</th>
+                    <th>Full Name</th>
+                    <th>Email / Contact</th>
+                    <th>Designation & Dept</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for emp in employees %}
+                <tr>
+                    <td><code>{{ emp.employee_id }}</code></td>
+                    <td>
+                        <div class="fw-semibold text-light">{{ emp.full_name }}</div>
+                        {% if emp.user %}
+                        <span class="text-muted small">Login: {{ emp.user.username }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div>{{ emp.email }}</div>
+                        <span class="text-muted small">{{ emp.mobile|default:"—" }}</span>
+                    </td>
+                    <td>
+                        <div>{{ emp.designation|default:"Staff" }}</div>
+                        <span class="text-muted small">{{ emp.department }}</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary bg-opacity-25 text-light">{{ emp.role.name }}</span>
+                    </td>
+                    <td>
+                        {% if emp.status == 'Active' %}
+                        <span class="sa-badge-active">{{ emp.status }}</span>
+                        {% else %}
+                        <span class="sa-badge-inactive">{{ emp.status }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-muted">
+                        No separate employee records created for this showroom yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Showroom Audit Trail -->
+<div class="sa-card">
+    <h6 class="fw-bold mb-3 d-flex align-items-center gap-2" style="color: var(--sa-gold);">
+        <i class="bi bi-journal-text"></i> Administrative & Impersonation History
+    </h6>
+    <div class="table-responsive">
+        <table class="table sa-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Actor (Super Admin)</th>
+                    <th>Action</th>
+                    <th>Reason / Support Reference</th>
+                    <th>IP Address</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in audit_logs %}
+                <tr>
+                    <td class="text-nowrap small text-muted">{{ log.created_at|date:"d M Y, H:i:s" }}</td>
+                    <td><strong>{{ log.actor.username|default:"System" }}</strong></td>
+                    <td>
+                        {% if log.action == 'IMPERSONATION_START' %}
+                        <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50">Impersonation Start</span>
+                        {% elif log.action == 'IMPERSONATION_END' %}
+                        <span class="badge bg-info bg-opacity-25 text-info border border-info border-opacity-50">Impersonation End</span>
+                        {% elif log.action == 'TENANT_DEACTIVATE' %}
+                        <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-50">Suspended</span>
+                        {% elif log.action == 'TENANT_ACTIVATE' %}
+                        <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-50">Activated</span>
+                        {% else %}
+                        <span>{{ log.get_action_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="small">{{ log.reason|default:"—" }}</td>
+                    <td class="font-monospace small text-muted">{{ log.ip_address|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">
+                        No administrative operations recorded for this showroom yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ======================================================================= -->
+<!-- Modal: Impersonate Confirmation -->
+<!-- ======================================================================= -->
+<div class="modal fade" id="impersonateModal" tabindex="-1" aria-labelledby="impersonateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: var(--sa-card); border: 1px solid var(--sa-gold); color: var(--sa-text);">
+            <form method="post" action="{% url 'super_admin:impersonate_start' tenant.id %}">
+                {% csrf_token %}
+                <div class="modal-header border-secondary border-opacity-25">
+                    <h5 class="modal-title d-flex align-items-center gap-2" id="impersonateModalLabel" style="color: var(--sa-gold);">
+                        <i class="bi bi-shield-lock-fill"></i> Confirm Customer Impersonation
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning d-flex align-items-start gap-2 mb-3 bg-opacity-10 border-warning border-opacity-50 text-warning">
+                        <i class="bi bi-exclamation-triangle-fill fs-5 flex-shrink-0 mt-1"></i>
+                        <div class="small">
+                            <strong>Security Audit Notice:</strong> You are about to view the live showroom as owner <strong>{{ tenant.owner.username }}</strong>.
+                            All viewing and support operations will be logged to the immutable audit trail.
+                        </div>
+                    </div>
+
+                    <p class="small text-muted mb-3">
+                        Customer passwords are never exposed, altered, or required. You can return to the Super Admin portal at any time using the persistent top banner.
+                    </p>
+
+                    <div class="mb-3">
+                        <label for="impersonateReason" class="form-label small fw-semibold">Support Justification / Ticket Reference <span class="text-danger">*</span></label>
+                        <textarea name="reason" id="impersonateReason" rows="3" class="form-control sa-input" placeholder="e.g. Investigating GST invoice calculation issue on custom order #1042 for ticket SUP-892" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary border-opacity-25">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-gold">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Start Impersonation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================================================= -->
+<!-- Modal: Toggle Status (Activate / Suspend) -->
+<!-- ======================================================================= -->
+<div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: var(--sa-card); border: 1px solid var(--sa-border); color: var(--sa-text);">
+            <form method="post" action="{% url 'super_admin:toggle_tenant_status' tenant.id %}">
+                {% csrf_token %}
+                <div class="modal-header border-secondary border-opacity-25">
+                    <h5 class="modal-title" id="statusModalLabel">
+                        {% if tenant.is_active %}Suspend Showroom Account{% else %}Reactivate Showroom Account{% endif %}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">
+                        {% if tenant.is_active %}
+                        Deactivating this showroom will immediately suspend staff and customer login for <strong>{{ tenant.name }}</strong>. Existing inventory and sales records will remain preserved.
+                        {% else %}
+                        Reactivating this showroom will restore login access for <strong>{{ tenant.name }}</strong> and its employees.
+                        {% endif %}
+                    </p>
+
+                    <div class="mb-3">
+                        <label for="statusReason" class="form-label small fw-semibold">Reason for Status Change <span class="text-danger">*</span></label>
+                        <textarea name="reason" id="statusReason" rows="3" class="form-control sa-input" placeholder="Provide justification for suspending or reactivating this tenant..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary border-opacity-25">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn {% if tenant.is_active %}btn-danger{% else %}btn-success{% endif %}">
+                        {% if tenant.is_active %}Confirm Suspension{% else %}Confirm Activation{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

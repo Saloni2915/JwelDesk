@@ -43,6 +43,7 @@ from .pwa_views import (
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('super-admin/', include('super_admin.urls')),
     path('api/system/migrate/', system_migrate_view, name='system_migrate'),
     path('download-apk/', download_apk_view, name='download_apk'),
     path('download-app/', download_apk_view, name='download_app'),

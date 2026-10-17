@@ -106,6 +106,7 @@ INSTALLED_APPS = [
     'custom_orders',
     'team',
     'karigar',
+    'super_admin',
 ]
 
 MIDDLEWARE = [
@@ -116,6 +117,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'accounts.middleware.TenantMiddleware',
+    'super_admin.middleware.SuperAdminImpersonationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -135,6 +137,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'accounts.context_processors.company_settings_context',
                 'team.context_processors.team_permissions',
+                'super_admin.context_processors.super_admin_context',
             ],
         },
     },

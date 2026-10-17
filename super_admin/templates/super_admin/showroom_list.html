@@ -1,0 +1,142 @@
+{% extends 'super_admin/base_super_admin.html' %}
+
+{% block title %}Showrooms & Customers | Super Admin Portal{% endblock %}
+{% block page_title %}Showrooms & Customers (Tenants){% endblock %}
+
+{% block content %}
+<div class="sa-card mb-4">
+    <form method="get" class="row g-2 align-items-center">
+        <!-- Search bar -->
+        <div class="col-12 col-md-5">
+            <div class="input-group">
+                <span class="input-group-text bg-transparent border-secondary text-muted">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" name="q" value="{{ q }}" class="form-control sa-input" placeholder="Search showroom name, slug, owner, email...">
+            </div>
+        </div>
+
+        <!-- Status filter -->
+        <div class="col-6 col-md-3">
+            <select name="status" class="form-select sa-input" onchange="this.form.submit()">
+                <option value="all" {% if status == 'all' %}selected{% endif %}>All Statuses</option>
+                <option value="active" {% if status == 'active' %}selected{% endif %}>Active Only</option>
+                <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Suspended / Inactive</option>
+            </select>
+        </div>
+
+        <!-- Sort -->
+        <div class="col-6 col-md-2">
+            <select name="sort" class="form-select sa-input" onchange="this.form.submit()">
+                <option value="-created_at" {% if sort == '-created_at' %}selected{% endif %}>Newest First</option>
+                <option value="created_at" {% if sort == 'created_at' %}selected{% endif %}>Oldest First</option>
+                <option value="name" {% if sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
+                <option value="-name" {% if sort == '-name' %}selected{% endif %}>Name (Z-A)</option>
+                <option value="-employees" {% if sort == '-employees' %}selected{% endif %}>Most Staff</option>
+            </select>
+        </div>
+
+        <!-- Submit & Clear -->
+        <div class="col-12 col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-gold flex-grow-1">Filter</button>
+            {% if q or status != 'all' or sort != '-created_at' %}
+            <a href="{% url 'super_admin:showroom_list' %}" class="btn btn-outline-secondary" title="Reset filters">
+                <i class="bi bi-x-lg"></i>
+            </a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Table Container -->
+<div class="sa-card">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="text-muted small">
+            Showing {{ page_obj.start_index|default:0 }}–{{ page_obj.end_index|default:0 }} of {{ total_filtered }} showrooms
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table sa-table">
+            <thead>
+                <tr>
+                    <th>Showroom Name</th>
+                    <th>Slug</th>
+                    <th>Owner / Primary Admin</th>
+                    <th>Staff Count</th>
+                    <th>Registration Date</th>
+                    <th>Subscription Plan</th>
+                    <th>Status</th>
+                    <th class="text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in page_obj %}
+                <tr>
+                    <td>
+                        <div class="fw-semibold text-light">{{ t.name }}</div>
+                        {% if t.company_settings.company_name and t.company_settings.company_name != t.name %}
+                        <span class="text-muted small d-block">{{ t.company_settings.company_name }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <code class="small" style="color: var(--sa-gold);">{{ t.slug }}</code>
+                    </td>
+                    <td>
+                        <div>{{ t.owner.get_full_name|default:t.owner.username }}</div>
+                        <div class="text-muted small">{{ t.owner.email|default:"No email" }}</div>
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary bg-opacity-25 text-light px-2 py-1">
+                            <i class="bi bi-people me-1"></i>{{ t.employee_count }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="small text-muted">{{ t.created_at|date:"d M Y, H:i" }}</span>
+                    </td>
+                    <td>
+                        <span class="sa-badge-unavailable">Core (Included)</span>
+                    </td>
+                    <td>
+                        {% if t.is_active %}
+                        <span class="sa-badge-active"><i class="bi bi-check2-circle me-1"></i>Active</span>
+                        {% else %}
+                        <span class="sa-badge-inactive"><i class="bi bi-x-circle me-1"></i>Suspended</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a href="{% url 'super_admin:showroom_detail' t.id %}" class="btn btn-sm btn-outline-gold py-1 px-3">
+                            Manage
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-5 text-muted">
+                        <i class="bi bi-shop fs-1 d-block mb-2 text-muted"></i>
+                        No showrooms found matching the selected filter criteria.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    {% if page_obj.has_other_pages %}
+    <div class="d-flex justify-content-center align-items-center gap-2 mt-4">
+        {% if page_obj.has_previous %}
+        <a href="?page=1&q={{ q }}&status={{ status }}&sort={{ sort }}" class="btn btn-sm btn-outline-secondary">« First</a>
+        <a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&status={{ status }}&sort={{ sort }}" class="btn btn-sm btn-outline-secondary">‹ Prev</a>
+        {% endif %}
+
+        <span class="text-muted small px-2">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&q={{ q }}&status={{ status }}&sort={{ sort }}" class="btn btn-sm btn-outline-secondary">Next ›</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}&q={{ q }}&status={{ status }}&sort={{ sort }}" class="btn btn-sm btn-outline-secondary">Last »</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

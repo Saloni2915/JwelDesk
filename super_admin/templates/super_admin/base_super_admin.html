@@ -1,0 +1,457 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Super Admin | JewelDesk Platform{% endblock %}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --sa-bg: #0f0d0b;
+            --sa-surface: #181411;
+            --sa-card: #201a16;
+            --sa-border: #382d24;
+            --sa-gold: #c5a059;
+            --sa-gold-hover: #dfba71;
+            --sa-gold-subtle: rgba(197, 160, 89, 0.12);
+            --sa-text: #f3efe9;
+            --sa-muted: #9e9389;
+            --sa-sidebar-w: 260px;
+        }
+
+        body {
+            background-color: var(--sa-bg);
+            color: var(--sa-text);
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar */
+        .sa-sidebar {
+            width: var(--sa-sidebar-w);
+            background: var(--sa-surface);
+            border-right: 1px solid var(--sa-border);
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            display: flex;
+            flex-direction: column;
+            z-index: 1040;
+            transition: transform 0.25s ease;
+        }
+
+        .sa-brand {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--sa-border);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--sa-text);
+        }
+
+        .sa-brand-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            color: var(--sa-gold);
+            line-height: 1.1;
+        }
+
+        .sa-brand-badge {
+            font-size: 0.65rem;
+            background: rgba(220, 53, 69, 0.2);
+            color: #ff6b6b;
+            border: 1px solid rgba(220, 53, 69, 0.4);
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+        }
+
+        .sa-nav {
+            padding: 1rem 0.75rem;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .sa-nav-heading {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--sa-muted);
+            padding: 0.5rem 0.75rem;
+            font-weight: 700;
+        }
+
+        .sa-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.65rem 0.85rem;
+            color: var(--sa-muted);
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.15s ease;
+            margin-bottom: 0.2rem;
+        }
+
+        .sa-nav-item:hover {
+            color: var(--sa-text);
+            background: var(--sa-card);
+        }
+
+        .sa-nav-item.active {
+            color: var(--sa-gold);
+            background: var(--sa-gold-subtle);
+            font-weight: 600;
+            border-left: 3px solid var(--sa-gold);
+        }
+
+        .sa-nav-item i {
+            font-size: 1.1rem;
+        }
+
+        .sa-sidebar-footer {
+            padding: 1rem;
+            border-top: 1px solid var(--sa-border);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        /* Main Content */
+        .sa-main {
+            margin-left: var(--sa-sidebar-w);
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .sa-header {
+            height: 64px;
+            background: var(--sa-surface);
+            border-bottom: 1px solid var(--sa-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+        }
+
+        .sa-container {
+            padding: 1.75rem 1.75rem 3rem;
+            flex: 1;
+        }
+
+        /* Cards & Widgets */
+        .sa-card {
+            background: var(--sa-card);
+            border: 1px solid var(--sa-border);
+            border-radius: 10px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+        }
+
+        .sa-metric-card {
+            background: var(--sa-card);
+            border: 1px solid var(--sa-border);
+            border-radius: 10px;
+            padding: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: transform 0.15s ease, border-color 0.15s ease;
+        }
+
+        .sa-metric-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--sa-gold);
+        }
+
+        .sa-metric-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            background: var(--sa-gold-subtle);
+            color: var(--sa-gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+
+        .sa-metric-val {
+            font-size: 1.75rem;
+            font-weight: 700;
+            line-height: 1.1;
+            color: var(--sa-text);
+        }
+
+        .sa-metric-lbl {
+            font-size: 0.8rem;
+            color: var(--sa-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.2rem;
+        }
+
+        /* Tables */
+        .sa-table {
+            color: var(--sa-text);
+            margin-bottom: 0;
+        }
+
+        .sa-table th {
+            background: rgba(0, 0, 0, 0.25);
+            border-bottom: 1px solid var(--sa-border);
+            color: var(--sa-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 0.85rem 1rem;
+            font-weight: 600;
+        }
+
+        .sa-table td {
+            background: transparent;
+            border-bottom: 1px solid rgba(56, 45, 36, 0.4);
+            padding: 0.9rem 1rem;
+            vertical-align: middle;
+            font-size: 0.9rem;
+        }
+
+        .sa-table tbody tr:hover td {
+            background: rgba(197, 160, 89, 0.04);
+        }
+
+        /* Badges */
+        .sa-badge-active {
+            background: rgba(25, 135, 84, 0.15);
+            color: #75b798;
+            border: 1px solid rgba(25, 135, 84, 0.3);
+            font-weight: 600;
+            font-size: 0.75rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+        }
+
+        .sa-badge-inactive {
+            background: rgba(220, 53, 69, 0.15);
+            color: #ea868f;
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            font-weight: 600;
+            font-size: 0.75rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+        }
+
+        .sa-badge-unavailable {
+            background: rgba(108, 117, 125, 0.15);
+            color: #adb5bd;
+            border: 1px dashed rgba(108, 117, 125, 0.4);
+            font-weight: 500;
+            font-size: 0.75rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+        }
+
+        /* Buttons */
+        .btn-gold {
+            background: var(--sa-gold);
+            color: #0f0d0b;
+            font-weight: 600;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+        }
+
+        .btn-gold:hover {
+            background: var(--sa-gold-hover);
+            color: #000;
+        }
+
+        .btn-outline-gold {
+            border: 1px solid var(--sa-gold);
+            color: var(--sa-gold);
+            background: transparent;
+            font-weight: 600;
+            border-radius: 6px;
+            padding: 0.45rem 0.9rem;
+        }
+
+        .btn-outline-gold:hover {
+            background: var(--sa-gold);
+            color: #0f0d0b;
+        }
+
+        /* Form Controls in Dark Theme */
+        .sa-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--sa-border);
+            color: var(--sa-text);
+            border-radius: 6px;
+            padding: 0.55rem 0.85rem;
+        }
+
+        .sa-input:focus {
+            background: rgba(0, 0, 0, 0.4);
+            border-color: var(--sa-gold);
+            color: #fff;
+            box-shadow: 0 0 0 2px rgba(197, 160, 89, 0.25);
+            outline: none;
+        }
+
+        @media (max-width: 991.98px) {
+            .sa-sidebar {
+                transform: translateX(-100%);
+            }
+            .sa-sidebar.show {
+                transform: translateX(0);
+            }
+            .sa-main {
+                margin-left: 0;
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sa-sidebar" id="saSidebar">
+        <a href="{% url 'super_admin:dashboard' %}" class="sa-brand">
+            <i class="bi bi-shield-lock-fill fs-3 text-warning"></i>
+            <div>
+                <div class="sa-brand-title">JewelDesk</div>
+                <div class="d-flex align-items-center gap-1 mt-1">
+                    <span class="sa-brand-badge">Super Admin</span>
+                    <span class="text-muted" style="font-size: 0.65rem;">Platform</span>
+                </div>
+            </div>
+        </a>
+
+        <div class="sa-nav">
+            <div class="sa-nav-heading">Platform Administration</div>
+            <a href="{% url 'super_admin:dashboard' %}" class="sa-nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                <i class="bi bi-speedometer2"></i>
+                <span>Overview</span>
+            </a>
+            <a href="{% url 'super_admin:showroom_list' %}" class="sa-nav-item {% if 'showroom' in request.resolver_match.url_name %}active{% endif %}">
+                <i class="bi bi-shop"></i>
+                <span>Showrooms & Customers</span>
+            </a>
+            <a href="{% url 'super_admin:subscriptions' %}" class="sa-nav-item {% if request.resolver_match.url_name == 'subscriptions' %}active{% endif %}">
+                <i class="bi bi-credit-card"></i>
+                <span>Subscriptions</span>
+            </a>
+            <a href="{% url 'super_admin:audit_logs' %}" class="sa-nav-item {% if request.resolver_match.url_name == 'audit_logs' %}active{% endif %}">
+                <i class="bi bi-journal-text"></i>
+                <span>Audit & Activity Logs</span>
+            </a>
+            <a href="{% url 'super_admin:settings' %}" class="sa-nav-item {% if request.resolver_match.url_name == 'settings' %}active{% endif %}">
+                <i class="bi bi-sliders"></i>
+                <span>Platform Settings</span>
+            </a>
+
+            <div class="sa-nav-heading mt-3">Tenant Jump</div>
+            <a href="{% url 'dashboard' %}" class="sa-nav-item" title="Switch back to current showroom store">
+                <i class="bi bi-arrow-return-left"></i>
+                <span>Go to Storefront App</span>
+            </a>
+        </div>
+
+        <div class="sa-sidebar-footer">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2 min-w-0">
+                    <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; font-size: 0.85rem;">
+                        SA
+                    </div>
+                    <div class="min-w-0">
+                        <div class="fw-semibold text-truncate small" style="color: var(--sa-text);">{{ user.username }}</div>
+                        <div class="text-muted" style="font-size: 0.7rem;">Superuser</div>
+                    </div>
+                </div>
+                <form method="post" action="{% url 'accounts:logout' %}" class="m-0 p-0">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-link text-muted p-1" title="Log out">
+                        <i class="bi bi-box-arrow-right fs-5"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="sa-main">
+        <!-- Header -->
+        <header class="sa-header">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-link text-muted d-lg-none p-0" id="saSidebarToggle">
+                    <i class="bi bi-list fs-3"></i>
+                </button>
+                <h5 class="mb-0 fw-semibold text-truncate">{% block page_title %}Platform Control{% endblock %}</h5>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{% url 'admin:index' %}" class="btn btn-sm btn-outline-secondary text-muted" target="_blank" title="Open Django native administration">
+                    <i class="bi bi-database me-1"></i> Django Admin
+                </a>
+                <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-50 px-2 py-1 small">
+                    <i class="bi bi-lock-fill me-1"></i> Root Super Admin
+                </span>
+            </div>
+        </header>
+
+        <!-- Messages -->
+        <div class="px-4 pt-3">
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+        </div>
+
+        <!-- Container -->
+        <main class="sa-container">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const sidebar = document.getElementById('saSidebar');
+        const toggleBtn = document.getElementById('saSidebarToggle');
+        if (toggleBtn && sidebar) {
+            toggleBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('show');
+            });
+        }
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

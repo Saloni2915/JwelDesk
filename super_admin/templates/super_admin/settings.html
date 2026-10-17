@@ -1,0 +1,59 @@
+{% extends 'super_admin/base_super_admin.html' %}
+
+{% block title %}Platform Settings | Super Admin Portal{% endblock %}
+{% block page_title %}Platform Technical Settings{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-12 col-lg-6">
+        <div class="sa-card h-100">
+            <h6 class="fw-bold mb-3 d-flex align-items-center gap-2" style="color: var(--sa-gold);">
+                <i class="bi bi-cpu"></i> System Runtime & Environment
+            </h6>
+            <div class="row g-2 small">
+                <div class="col-5 text-muted">Python Version:</div>
+                <div class="col-7 font-monospace">{{ python_version }}</div>
+
+                <div class="col-5 text-muted">Django Version:</div>
+                <div class="col-7 font-monospace">{{ django_version }}</div>
+
+                <div class="col-5 text-muted">Debug Mode (DEBUG):</div>
+                <div class="col-7">
+                    {% if debug_mode %}
+                    <span class="badge bg-warning text-dark">True (Local Dev)</span>
+                    {% else %}
+                    <span class="badge bg-success">False (Production Enforced)</span>
+                    {% endif %}
+                </div>
+
+                <div class="col-5 text-muted">Platform Timezone:</div>
+                <div class="col-7 font-monospace">{{ time_zone }}</div>
+
+                <div class="col-5 text-muted">Media Storage Backend:</div>
+                <div class="col-7 font-monospace">{{ media_storage }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+        <div class="sa-card h-100">
+            <h6 class="fw-bold mb-3 d-flex align-items-center gap-2" style="color: var(--sa-gold);">
+                <i class="bi bi-database-check"></i> Database Connection Status
+            </h6>
+            <div class="row g-2 small">
+                <div class="col-5 text-muted">Database Engine:</div>
+                <div class="col-7 font-monospace">{{ db_engine }}</div>
+
+                <div class="col-5 text-muted">Host (Masked):</div>
+                <div class="col-7 font-monospace">{{ db_host_masked }}</div>
+
+                <div class="col-5 text-muted">Multi-Tenancy Mode:</div>
+                <div class="col-7"><span class="badge bg-info bg-opacity-25 text-info">Isolated Tenant Key</span></div>
+
+                <div class="col-5 text-muted">Audit Logging:</div>
+                <div class="col-7"><span class="badge bg-success bg-opacity-25 text-success">Append-Only Active</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
