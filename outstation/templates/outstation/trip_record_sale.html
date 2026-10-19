@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Record Sale — {{ item.tag_number }} | Trip {{ trip.trip_number }}{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/sales_bullion.css' %}?v={% now "U" %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="jd-sb-canvas" style="max-width: 950px; margin: 0 auto;">
+
+    <!-- Header -->
+    <div class="jd-sb-header mb-4">
+        <div class="jd-sb-title-wrap">
+            <h1><i class="bi bi-cart-check-fill text-warning me-2"></i>Record Outstation Sale</h1>
+            <p class="jd-sb-subtitle">
+                Selling jewellery piece during Trip <strong>{{ trip.trip_number }}</strong> ({{ trip.destination_city }})
+            </p>
+        </div>
+        <div class="jd-sb-header-actions">
+            <a href="{% url 'outstation:trip_detail' trip.pk %}?tab=stock" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Trip
+            </a>
+        </div>
+    </div>
+
+    <!-- Piece Summary Card -->
+    <div class="card bg-dark border-secondary border-opacity-25 rounded-3 p-3 mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-7">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-warning bg-opacity-25 text-warning font-monospace fs-6 px-2 py-1">
+                        {{ item.tag_number|default:item.item_code }}
+                    </span>
+                    <span class="text-white fw-bold fs-5">{{ item.name }}</span>
+                </div>
+                <div class="text-muted small">
+                    {{ item.category.name|default:"Uncategorized" }} &bull; {{ item.metal_type }} ({{ item.purity }})
+                    &bull; Gross: {{ trip_item.issue_gross_weight|floatformat:3 }}g &bull; Net: {{ trip_item.issue_net_weight|floatformat:3 }}g
+                    {% if item.huid %}&bull; HUID: <span class="font-monospace text-light">{{ item.huid }}</span>{% endif %}
+                </div>
+            </div>
+            <div class="col-md-5 text-md-end mt-2 mt-md-0">
+                <div class="text-muted small">Showroom Tag Price</div>
+                <div class="text-warning fw-bold fs-4">₹{{ item.selling_price|floatformat:2 }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sale Form Card -->
+    <div class="card bg-dark border-secondary border-opacity-25 rounded-3 shadow-lg p-4">
+        <form method="post" id="outstationSaleForm" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger mb-4">
+                {% for err in form.non_field_errors %}
+                    <div><i class="bi bi-exclamation-triangle-fill me-2"></i>{{ err }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Buyer Type & Information -->
+            <div class="border-bottom border-secondary border-opacity-25 pb-3 mb-4">
+                <h5 class="text-warning mb-3"><i class="bi bi-person-badge-fill me-2"></i>Buyer Classification &amp; Identity</h5>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label text-light small fw-bold">Buyer Type *</label>
+                        {{ form.buyer_type }}
+                        {% if form.buyer_type.errors %}
+                            <div class="text-danger small mt-1">{{ form.buyer_type.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-4" id="b2bNameField">
+                        <label class="form-label text-light small fw-bold">Business / Jeweller Firm Name</label>
+                        {{ form.business_name }}
+                        {% if form.business_name.errors %}
+                            <div class="text-danger small mt-1">{{ form.business_name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-4" id="b2bGstinField">
+                        <label class="form-label text-light small fw-bold">Business GSTIN (Optional)</label>
+                        {{ form.business_gstin }}
+                        {% if form.business_gstin.errors %}
+                            <div class="text-danger small mt-1">{{ form.business_gstin.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-light small fw-bold">Select Existing Showroom Customer</label>
+                        {{ form.customer }}
+                        {% if form.customer.errors %}
+                            <div class="text-danger small mt-1">{{ form.customer.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6 d-flex align-items-end">
+                        <span class="text-muted small">Or fill in quick new client details below if buyer is new</span>
+                    </div>
+
+                    <!-- New Customer Inline Fields -->
+                    <div class="col-md-4">
+                        <label class="form-label text-light small fw-bold">New Buyer Name</label>
+                        {{ form.new_customer_name }}
+                        {% if form.new_customer_name.errors %}
+                            <div class="text-danger small mt-1">{{ form.new_customer_name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label text-light small fw-bold">Buyer Mobile Number</label>
+                        {{ form.new_customer_mobile }}
+                        {% if form.new_customer_mobile.errors %}
+                            <div class="text-danger small mt-1">{{ form.new_customer_mobile.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label text-light small fw-bold">Buyer City</label>
+                        {{ form.new_customer_city }}
+                        {% if form.new_customer_city.errors %}
+                            <div class="text-danger small mt-1">{{ form.new_customer_city.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Financials & Payment Details -->
+            <div class="border-bottom border-secondary border-opacity-25 pb-3 mb-4">
+                <h5 class="text-warning mb-3"><i class="bi bi-cash-coin me-2"></i>Pricing &amp; Payment Collection</h5>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label text-light small fw-bold">Agreed Sale Price (₹) *</label>
+                        {{ form.sale_price }}
+                        {% if form.sale_price.errors %}
+                            <div class="text-danger small mt-1">{{ form.sale_price.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label text-light small fw-bold">Payment Method *</label>
+                        {{ form.payment_method }}
+                        {% if form.payment_method.errors %}
+                            <div class="text-danger small mt-1">{{ form.payment_method.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label text-light small fw-bold">Amount Collected Now (₹)</label>
+                        {{ form.paid_amount }}
+                        {% if form.paid_amount.errors %}
+                            <div class="text-danger small mt-1">{{ form.paid_amount.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text text-muted" style="font-size: 0.75rem;">Leave less than sale price for credit/partial</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-light small fw-bold">Payment Transaction / UTR / Cheque Ref</label>
+                        {{ form.payment_ref }}
+                        {% if form.payment_ref.errors %}
+                            <div class="text-danger small mt-1">{{ form.payment_ref.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-light small fw-bold">Sale &amp; Delivery Notes</label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                            <div class="text-danger small mt-1">{{ form.notes.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Action -->
+            <div class="d-flex justify-content-end gap-3">
+                <a href="{% url 'outstation:trip_detail' trip.pk %}?tab=stock" class="btn btn-outline-secondary px-4">Cancel</a>
+                <button type="submit" class="btn btn-warning text-dark fw-bold px-4">
+                    <i class="bi bi-check2-circle me-1"></i> Record Sale &amp; Generate Invoice
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const buyerTypeSelect = document.getElementById('id_buyer_type');
+    const b2bNameField = document.getElementById('b2bNameField');
+    const b2bGstinField = document.getElementById('b2bGstinField');
+
+    function toggleB2bFields() {
+        if (!buyerTypeSelect) return;
+        const isB2b = (buyerTypeSelect.value === 'B2B');
+        if (b2bNameField) b2bNameField.style.display = isB2b ? 'block' : 'none';
+        if (b2bGstinField) b2bGstinField.style.display = isB2b ? 'block' : 'none';
+    }
+
+    if (buyerTypeSelect) {
+        buyerTypeSelect.addEventListener('change', toggleB2bFields);
+        toggleB2bFields();
+    }
+});
+</script>
+{% endblock %}

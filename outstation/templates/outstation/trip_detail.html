@@ -1,0 +1,717 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Trip {{ trip.trip_number }} — {{ trip.destination_city }} | JewelDesk{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/sales_bullion.css' %}?v={% now "U" %}" rel="stylesheet">
+<style>
+.trip-tab-btn {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #a0aec0;
+    font-weight: 600;
+    padding: 0.75rem 1.25rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.trip-tab-btn:hover {
+    color: #e2e8f0;
+}
+.trip-tab-btn.active {
+    color: #ECC86A;
+    border-bottom: 2px solid #ECC86A;
+}
+.status-pill-issued { background: rgba(13, 202, 240, 0.15); color: #0dcaf0; border: 1px solid rgba(13, 202, 240, 0.3); }
+.status-pill-sold { background: rgba(25, 135, 84, 0.15); color: #198754; border: 1px solid rgba(25, 135, 84, 0.3); }
+.status-pill-returned { background: rgba(108, 117, 125, 0.2); color: #ced4da; border: 1px solid rgba(108, 117, 125, 0.4); }
+.status-pill-damaged { background: rgba(253, 126, 20, 0.15); color: #fd7e14; border: 1px solid rgba(253, 126, 20, 0.35); }
+.status-pill-missing { background: rgba(220, 53, 69, 0.2); color: #ea868f; border: 1px solid rgba(220, 53, 69, 0.4); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="jd-sb-canvas">
+
+    <!-- Header Section -->
+    <div class="jd-sb-header mb-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25 px-2 py-1">
+                    <i class="bi bi-airplane-engines me-1"></i> Outstation Trip
+                </span>
+                <span class="badge {% if trip.status == 'Closed' %}bg-success{% elif trip.status == 'In Progress' %}bg-warning text-dark{% else %}bg-secondary{% endif %} px-2 py-1">
+                    {{ trip.get_status_display }}
+                </span>
+                {% if trip.is_overdue %}
+                <span class="badge bg-danger text-white px-2 py-1"><i class="bi bi-clock-history me-1"></i>Overdue</span>
+                {% endif %}
+            </div>
+            <h1 class="text-white mb-0 font-monospace">
+                {{ trip.trip_number }} — <span class="text-warning">{{ trip.destination_city }}</span>
+                {% if trip.destination_location %}<span class="text-muted fs-5">({{ trip.destination_location }})</span>{% endif %}
+            </h1>
+            <p class="jd-sb-subtitle mb-0 mt-1">
+                Custodian: <strong class="text-light">{{ trip.responsible_employee.full_name }}</strong>
+                &bull; Schedule: {{ trip.departure_date|date:"d M Y" }} to {{ trip.expected_return_date|date:"d M Y" }}
+                {% if trip.actual_return_date %}&bull; Returned: {{ trip.actual_return_date|date:"d M Y" }}{% endif %}
+            </p>
+        </div>
+
+        <div class="jd-sb-header-actions d-flex flex-wrap gap-2">
+            {% if trip.status != 'Closed' and trip.status != 'Cancelled' %}
+            <a href="{% url 'outstation:trip_issue_stock' trip.pk %}" class="btn btn-warning text-dark fw-bold">
+                <i class="bi bi-plus-circle-fill me-1"></i> Issue Stock
+            </a>
+            {% endif %}
+
+            <a href="{% url 'outstation:trip_stock_sheet' trip.pk %}" class="btn btn-outline-warning" target="_blank" title="Printable Custody Dispatch Sheet">
+                <i class="bi bi-printer me-1"></i> Stock Sheet
+            </a>
+
+            <a href="{% url 'outstation:trip_export_csv' trip.pk %}" class="btn btn-outline-secondary" title="Export CSV Manifest">
+                <i class="bi bi-download me-1"></i> Export CSV
+            </a>
+
+            {% if trip.status != 'Closed' and trip.status != 'Cancelled' %}
+            <button type="button" class="btn btn-success fw-bold" data-bs-toggle="modal" data-bs-target="#closeTripModal">
+                <i class="bi bi-check2-circle me-1"></i> Close Trip
+            </button>
+            {% endif %}
+
+            <a href="{% url 'outstation:trip_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats Metric Bar -->
+    <div class="row g-3 mb-4">
+        <!-- Stock Balance Metric -->
+        <div class="col-md-3 col-6">
+            <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-25 h-100">
+                <div class="text-muted small">Total Issued Pieces</div>
+                <div class="fs-4 fw-bold text-white mt-1">{{ trip.total_items_count }}</div>
+                <div class="small text-muted mt-1">
+                    <span class="text-success">{{ trip.sold_items_count }} Sold</span> &bull;
+                    <span class="text-info">{{ trip.returned_items_count }} Ret</span> &bull;
+                    <span class="text-warning">{{ trip.in_transit_items_count }} In Hand</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Weight Metric -->
+        <div class="col-md-3 col-6">
+            <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-25 h-100">
+                <div class="text-muted small">Total Weight in Custody</div>
+                <div class="fs-4 fw-bold text-warning mt-1">{{ trip.total_issued_gross_weight|floatformat:3 }}g</div>
+                <div class="small text-muted mt-1">Net: {{ trip.total_issued_net_weight|floatformat:3 }}g</div>
+            </div>
+        </div>
+
+        <!-- Total Sales Revenue -->
+        <div class="col-md-3 col-6">
+            <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-25 h-100">
+                <div class="text-muted small">Trip Sales Revenue</div>
+                <div class="fs-4 fw-bold text-success mt-1">₹{{ trip.total_sales_amount|floatformat:2 }}</div>
+                <div class="small text-muted mt-1">Total Collections: ₹{{ trip.total_collected_amount|floatformat:2 }}</div>
+            </div>
+        </div>
+
+        <!-- Pending Buyer Payments -->
+        <div class="col-md-3 col-6">
+            <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-25 h-100">
+                <div class="text-muted small">Outstanding Receivables</div>
+                <div class="fs-4 fw-bold {% if trip.outstanding_balance > 0 %}text-danger{% else %}text-muted{% endif %} mt-1">
+                    ₹{{ trip.outstanding_balance|floatformat:2 }}
+                </div>
+                <div class="small text-muted mt-1">Buyer dues to be collected</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="border-bottom border-secondary border-opacity-25 mb-4 d-flex gap-2 overflow-auto">
+        <a href="?tab=overview" class="trip-tab-btn {% if active_tab == 'overview' %}active{% endif %}">
+            <i class="bi bi-info-circle me-1"></i> Overview &amp; Details
+        </a>
+        <a href="?tab=stock" class="trip-tab-btn {% if active_tab == 'stock' %}active{% endif %}">
+            <i class="bi bi-gem me-1"></i> Issued Stock ({{ issued_items.count }})
+        </a>
+        <a href="?tab=sales" class="trip-tab-btn {% if active_tab == 'sales' %}active{% endif %}">
+            <i class="bi bi-receipt me-1"></i> Sales &amp; Invoices ({{ trip_sales.count }})
+        </a>
+        <a href="?tab=payments" class="trip-tab-btn {% if active_tab == 'payments' %}active{% endif %}">
+            <i class="bi bi-cash-coin me-1"></i> Payments ({{ payments|length }})
+        </a>
+        <a href="?tab=reconciliation" class="trip-tab-btn {% if active_tab == 'reconciliation' %}active{% endif %}">
+            <i class="bi bi-check2-all me-1"></i> Reconciliation
+            {% if trip.damaged_missing_count > 0 %}
+                <span class="badge bg-danger ms-1">{{ trip.damaged_missing_count }}</span>
+            {% endif %}
+        </a>
+        <a href="?tab=audit" class="trip-tab-btn {% if active_tab == 'audit' %}active{% endif %}">
+            <i class="bi bi-clock-history me-1"></i> Audit Trail
+        </a>
+    </div>
+
+    <!-- Tab 1: Overview -->
+    {% if active_tab == 'overview' %}
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card bg-dark border-secondary border-opacity-25 rounded-3 p-4 mb-4">
+                <h5 class="text-warning mb-3"><i class="bi bi-geo-alt-fill me-2"></i>Trip Itinerary &amp; Logistics</h5>
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted">Destination</dt>
+                    <dd class="col-sm-8 text-white fw-bold">{{ trip.destination_city }} {% if trip.destination_location %}&bull; {{ trip.destination_location }}{% endif %}</dd>
+
+                    <dt class="col-sm-4 text-muted">Departure Date</dt>
+                    <dd class="col-sm-8 text-light">{{ trip.departure_date|date:"l, d F Y" }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Expected Return</dt>
+                    <dd class="col-sm-8 text-light">{{ trip.expected_return_date|date:"l, d F Y" }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Actual Return</dt>
+                    <dd class="col-sm-8 text-light">{{ trip.actual_return_date|date:"l, d F Y"|default:"Trip still active" }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Trip Purpose</dt>
+                    <dd class="col-sm-8 text-light">{{ trip.purpose|default:"—" }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Notes &amp; Instructions</dt>
+                    <dd class="col-sm-8 text-light">{{ trip.notes|linebreaksbr|default:"—" }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card bg-dark border-secondary border-opacity-25 rounded-3 p-4 mb-4">
+                <h5 class="text-warning mb-3"><i class="bi bi-people-fill me-2"></i>Custody Delegation</h5>
+                <div class="mb-3">
+                    <div class="text-muted small">Primary Custodian</div>
+                    <div class="fs-5 text-white fw-bold mt-1">{{ trip.responsible_employee.full_name }}</div>
+                    <div class="text-muted small">Role: {{ trip.responsible_employee.role.name|default:"Staff" }} &bull; Phone: {{ trip.responsible_employee.mobile|default:"—" }}</div>
+                </div>
+
+                {% if trip.accompanying_staff.exists %}
+                <div class="mt-3 pt-3 border-top border-secondary border-opacity-25">
+                    <div class="text-muted small mb-2">Accompanying Staff:</div>
+                    <ul class="list-unstyled mb-0">
+                        {% for st in trip.accompanying_staff.all %}
+                        <li class="text-light small py-1"><i class="bi bi-person me-2 text-warning"></i>{{ st.full_name }} ({{ st.mobile|default:"—" }})</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <div class="mt-4 pt-3 border-top border-secondary border-opacity-25">
+                    <div class="text-muted small">Created By</div>
+                    <div class="text-light small">{{ trip.created_by.get_full_name|default:trip.created_by.username }} on {{ trip.created_at|date:"d M Y, h:i A" }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tab 2: Issued Stock & Custody -->
+    {% if active_tab == 'stock' %}
+    <div class="card bg-dark border-secondary border-opacity-25 rounded-3 overflow-hidden">
+        <div class="p-3 border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="text-white mb-0"><i class="bi bi-gem text-warning me-2"></i>Issued Jewellery Items</h5>
+                <span class="text-muted small">All jewellery pieces issued under responsibility of {{ trip.responsible_employee.full_name }}</span>
+            </div>
+            {% if trip.status != 'Closed' and trip.status != 'Cancelled' %}
+            <a href="{% url 'outstation:trip_issue_stock' trip.pk %}" class="btn btn-sm btn-warning text-dark fw-bold">
+                <i class="bi bi-plus-circle me-1"></i> Issue More Items
+            </a>
+            {% endif %}
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0">
+                <thead class="text-secondary small text-uppercase" style="background-color: rgba(0,0,0,0.4);">
+                    <tr>
+                        <th class="ps-3 py-3">Tag &amp; Piece</th>
+                        <th>Category / Metal</th>
+                        <th>Weights (Gross / Net)</th>
+                        <th>HUID</th>
+                        <th>Tag Price</th>
+                        <th>Status</th>
+                        <th class="text-end pe-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trip_item in issued_items %}
+                    <tr>
+                        <td class="ps-3 py-3">
+                            <span class="fw-bold font-monospace text-warning">{{ trip_item.item.tag_number|default:trip_item.item.item_code }}</span>
+                            <div class="text-white fw-semibold small">{{ trip_item.item.name }}</div>
+                            <div class="text-muted" style="font-size: 0.7rem;">Code: {{ trip_item.item.item_code }}</div>
+                        </td>
+
+                        <td>
+                            <div class="text-white small">{{ trip_item.item.category.name|default:"—" }}</div>
+                            <div class="text-muted small">{{ trip_item.item.metal_type }} ({{ trip_item.item.purity }})</div>
+                        </td>
+
+                        <td>
+                            <div class="text-white small">Gross: {{ trip_item.issue_gross_weight|floatformat:3 }}g</div>
+                            <div class="text-muted small">Net: {{ trip_item.issue_net_weight|floatformat:3 }}g</div>
+                        </td>
+
+                        <td>
+                            <span class="font-monospace text-secondary small">{{ trip_item.item.huid|default:"—" }}</span>
+                        </td>
+
+                        <td>
+                            <div class="text-light fw-bold">₹{{ trip_item.issue_price|floatformat:2 }}</div>
+                        </td>
+
+                        <td>
+                            {% if trip_item.status == 'Issued' %}
+                                <span class="badge status-pill-issued rounded-pill">In Field Custody</span>
+                            {% elif trip_item.status == 'Sold' %}
+                                <span class="badge status-pill-sold rounded-pill">Sold</span>
+                            {% elif trip_item.status == 'Returned' %}
+                                <span class="badge status-pill-returned rounded-pill">Returned to Showroom</span>
+                            {% elif trip_item.status == 'Damaged' %}
+                                <span class="badge status-pill-damaged rounded-pill">Damaged</span>
+                            {% elif trip_item.status == 'Missing' %}
+                                <span class="badge status-pill-missing rounded-pill">Missing</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-end pe-3">
+                            {% if trip_item.status == 'Issued' and trip.status != 'Closed' %}
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'outstation:trip_record_sale' trip.pk trip_item.item_id %}" class="btn btn-success fw-bold" title="Sell this piece on the trip">
+                                    <i class="bi bi-cart-check-fill me-1"></i> Sell
+                                </a>
+                                <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#reconcileModal{{ trip_item.item_id }}" title="Reconcile Return / Damage">
+                                    <i class="bi bi-arrow-return-left"></i> Reconcile
+                                </button>
+                            </div>
+
+                            <!-- Reconcile Modal for this piece -->
+                            <div class="modal fade text-start" id="reconcileModal{{ trip_item.item_id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content bg-dark border-secondary border-opacity-25 text-light">
+                                        <form method="post" action="{% url 'outstation:trip_reconcile_item' trip.pk trip_item.item_id %}">
+                                            {% csrf_token %}
+                                            <div class="modal-header border-secondary border-opacity-25">
+                                                <h5 class="modal-title text-warning">
+                                                    <i class="bi bi-arrow-return-left me-2"></i>Reconcile Item: {{ trip_item.item.tag_number }}
+                                                </h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p class="text-white small mb-3">
+                                                    <strong>{{ trip_item.item.name }}</strong> ({{ trip_item.issue_gross_weight }}g {{ trip_item.item.metal_type }})
+                                                </p>
+                                                <div class="mb-3">
+                                                    <label class="form-label text-light small fw-bold">Outcome *</label>
+                                                    <select name="outcome" class="form-select bg-dark text-white border-secondary" required>
+                                                        <option value="Returned">Returned to Showroom (Stock will become Available)</option>
+                                                        <option value="Damaged">Damaged piece (Requires manager explanation)</option>
+                                                        <option value="Missing">Missing / Untraceable piece (Requires manager audit)</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label text-light small fw-bold">Discrepancy Reason (Mandatory if damaged or missing)</label>
+                                                    <input type="text" name="discrepancy_reason" class="form-control bg-dark text-white border-secondary" placeholder="e.g., Clasp broken in transit, display tray missing">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label text-light small">Return Notes</label>
+                                                    <textarea name="notes" class="form-control bg-dark text-white border-secondary" rows="2" placeholder="Condition checked by receiver..."></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer border-secondary border-opacity-25">
+                                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-warning text-dark fw-bold">Confirm Reconciliation</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% elif trip_item.status == 'Sold' %}
+                                <span class="text-success small fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Billed</span>
+                            {% elif trip_item.status == 'Returned' %}
+                                <span class="text-muted small"><i class="bi bi-box-seam me-1"></i>In Showroom</span>
+                            {% elif trip_item.status in 'Damaged,Missing' %}
+                                {% if trip_item.discrepancy_resolved %}
+                                    <span class="badge bg-success bg-opacity-25 text-success small">Resolved</span>
+                                {% else %}
+                                    <span class="badge bg-danger small">Unresolved</span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-gem text-secondary fs-1"></i>
+                            <h6 class="text-white mt-2">No Jewellery Issued Yet</h6>
+                            <p class="small text-secondary">Issue tagged jewellery items to this trip before departure.</p>
+                            <a href="{% url 'outstation:trip_issue_stock' trip.pk %}" class="btn btn-warning text-dark fw-bold btn-sm mt-1">
+                                <i class="bi bi-plus-circle me-1"></i> Issue Stock Now
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tab 3: Sales & Invoices -->
+    {% if active_tab == 'sales' %}
+    <div class="card bg-dark border-secondary border-opacity-25 rounded-3 overflow-hidden">
+        <div class="p-3 border-bottom border-secondary border-opacity-25">
+            <h5 class="text-white mb-0"><i class="bi bi-receipt text-warning me-2"></i>Outstation Sales &amp; Invoices</h5>
+            <span class="text-muted small">All B2B wholesale and B2C retail invoices generated during this trip</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0">
+                <thead class="text-secondary small text-uppercase" style="background-color: rgba(0,0,0,0.4);">
+                    <tr>
+                        <th class="ps-3 py-3">Sale # / Date</th>
+                        <th>Buyer Type</th>
+                        <th>Customer / Business Name</th>
+                        <th>Item Sold</th>
+                        <th>Sale Price</th>
+                        <th>Payment Status</th>
+                        <th class="text-end pe-3">Invoice</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ts in trip_sales %}
+                    <tr>
+                        <td class="ps-3 py-3">
+                            <span class="fw-bold font-monospace text-warning">#{{ ts.sale.id }}</span>
+                            <div class="text-muted small">{{ ts.sale.date|date:"d M Y" }}</div>
+                        </td>
+
+                        <td>
+                            {% if ts.buyer_type == 'B2B' %}
+                                <span class="badge bg-primary bg-opacity-25 text-info border border-info border-opacity-25">B2B Wholesale</span>
+                            {% else %}
+                                <span class="badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-25">B2C Retail</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <div class="text-white fw-semibold">
+                                {% if ts.business_name %}{{ ts.business_name }} ({{ ts.sale.customer.name }}){% else %}{{ ts.sale.customer.name }}{% endif %}
+                            </div>
+                            {% if ts.business_gstin %}
+                            <div class="text-muted small font-monospace">GSTIN: {{ ts.business_gstin }}</div>
+                            {% endif %}
+                            <div class="text-muted small">Ph: {{ ts.sale.customer.mobile|default:"—" }}</div>
+                        </td>
+
+                        <td>
+                            <div class="text-white small">{{ ts.sale.jewellery_item.name }}</div>
+                            <span class="font-monospace text-warning" style="font-size: 0.75rem;">{{ ts.sale.jewellery_item.tag_number|default:ts.sale.jewellery_item.item_code }}</span>
+                        </td>
+
+                        <td>
+                            <div class="text-success fw-bold fs-6">₹{{ ts.sale.sale_price|floatformat:2 }}</div>
+                            <div class="text-muted small">Paid: ₹{{ ts.sale.paid_amount|floatformat:2 }}</div>
+                        </td>
+
+                        <td>
+                            {% if ts.sale.payment_status == 'Paid' %}
+                                <span class="badge bg-success bg-opacity-25 text-success">Paid</span>
+                            {% elif ts.sale.payment_status == 'Partial' %}
+                                <span class="badge bg-warning bg-opacity-25 text-warning">Partial</span>
+                            {% else %}
+                                <span class="badge bg-danger bg-opacity-25 text-danger">Unpaid</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-end pe-3">
+                            <a href="{% url 'sale_detail' ts.sale.id %}" class="btn btn-sm btn-outline-warning" target="_blank" title="View Full Invoice & Print">
+                                <i class="bi bi-file-earmark-text me-1"></i> Invoice
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-cart-x text-secondary fs-1"></i>
+                            <h6 class="text-white mt-2">No Sales Recorded Yet</h6>
+                            <p class="small text-secondary">Record sales for issued jewellery items directly from the "Issued Stock" tab.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tab 4: Payments -->
+    {% if active_tab == 'payments' %}
+    <div class="card bg-dark border-secondary border-opacity-25 rounded-3 overflow-hidden">
+        <div class="p-3 border-bottom border-secondary border-opacity-25">
+            <h5 class="text-white mb-0"><i class="bi bi-cash-coin text-warning me-2"></i>Payments Received Against Trip Sales</h5>
+            <span class="text-muted small">Collections processed by the travelling delegate</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0">
+                <thead class="text-secondary small text-uppercase" style="background-color: rgba(0,0,0,0.4);">
+                    <tr>
+                        <th class="ps-3 py-3">Date</th>
+                        <th>Sale / Invoice #</th>
+                        <th>Customer / Buyer</th>
+                        <th>Payment Mode</th>
+                        <th>Reference / Txn #</th>
+                        <th class="text-end pe-3">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in payments %}
+                    <tr>
+                        <td class="ps-3 py-3 text-light">{{ p.payment_date|date:"d M Y" }}</td>
+                        <td>
+                            <a href="{% url 'sale_detail' p.sale_id %}" class="text-warning font-monospace text-decoration-none">#{{ p.sale_id }}</a>
+                        </td>
+                        <td class="text-white fw-semibold">{{ p.sale.customer.name }}</td>
+                        <td>
+                            <span class="badge bg-secondary bg-opacity-25 text-light">{{ p.payment_method }}</span>
+                        </td>
+                        <td class="font-monospace text-muted small">{{ p.reference_number|default:"—" }}</td>
+                        <td class="text-end pe-3 text-success fw-bold fs-6">₹{{ p.amount|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="bi bi-cash-stack text-secondary fs-1"></i>
+                            <h6 class="text-white mt-2">No Payments Recorded Yet</h6>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tab 5: Reconciliation & Discrepancies -->
+    {% if active_tab == 'reconciliation' %}
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="card bg-dark border-secondary border-opacity-25 rounded-3 p-4 mb-4">
+                <h5 class="text-warning mb-2"><i class="bi bi-shield-check me-2"></i>Trip Reconciliation Status</h5>
+                <p class="text-muted small mb-4">Every issued jewellery piece must be accounted for (either sold or returned) before closing the trip.</p>
+
+                <div class="row g-3">
+                    <div class="col-md-3 col-6">
+                        <div class="p-3 rounded-3 bg-secondary bg-opacity-10 border border-secondary border-opacity-25">
+                            <div class="text-muted small">Total Issued</div>
+                            <div class="fs-4 fw-bold text-white mt-1">{{ trip.total_items_count }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="p-3 rounded-3 bg-success bg-opacity-10 border border-success border-opacity-25">
+                            <div class="text-muted small">Sold During Trip</div>
+                            <div class="fs-4 fw-bold text-success mt-1">{{ trip.sold_items_count }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="p-3 rounded-3 bg-info bg-opacity-10 border border-info border-opacity-25">
+                            <div class="text-muted small">Returned to Showroom</div>
+                            <div class="fs-4 fw-bold text-info mt-1">{{ trip.returned_items_count }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="p-3 rounded-3 bg-warning bg-opacity-10 border border-warning border-opacity-25">
+                            <div class="text-muted small">Unreconciled / Out</div>
+                            <div class="fs-4 fw-bold text-warning mt-1">{{ trip.in_transit_items_count }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Discrepancy Manager Resolution Panel -->
+        <div class="col-12">
+            <div class="card bg-dark border-secondary border-opacity-25 rounded-3 overflow-hidden">
+                <div class="p-3 border-bottom border-secondary border-opacity-25">
+                    <h5 class="text-white mb-0"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Damaged or Missing Item Discrepancies</h5>
+                    <span class="text-muted small">Authorized resolution required by showroom manager to write off or recover lost stock</span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle mb-0">
+                        <thead class="text-secondary small text-uppercase" style="background-color: rgba(0,0,0,0.4);">
+                            <tr>
+                                <th class="ps-3 py-3">Item Tag</th>
+                                <th>Category / Metal</th>
+                                <th>Issue Status</th>
+                                <th>Reported Reason</th>
+                                <th>Resolution Status</th>
+                                <th class="text-end pe-3">Resolve</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ti in issued_items %}
+                            {% if ti.status in 'Damaged,Missing' %}
+                            <tr>
+                                <td class="ps-3 py-3 font-monospace text-warning fw-bold">{{ ti.item.tag_number }}</td>
+                                <td class="text-white small">{{ ti.item.name }}</td>
+                                <td>
+                                    <span class="badge {% if ti.status == 'Damaged' %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ ti.get_status_display }}</span>
+                                </td>
+                                <td class="text-light small">{{ ti.discrepancy_reason|default:"No explanation given" }}</td>
+                                <td>
+                                    {% if ti.discrepancy_resolved %}
+                                        <span class="badge bg-success bg-opacity-25 text-success">Resolved by {{ ti.discrepancy_resolved_by.username }}</span>
+                                        <div class="text-muted small mt-1">{{ ti.discrepancy_resolution_notes }}</div>
+                                    {% else %}
+                                        <span class="badge bg-danger">Pending Resolution</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end pe-3">
+                                    {% if not ti.discrepancy_resolved and trip.status != 'Closed' %}
+                                    <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#resolveModal{{ ti.item_id }}">
+                                        Resolve
+                                    </button>
+
+                                    <!-- Resolve Modal -->
+                                    <div class="modal fade text-start" id="resolveModal{{ ti.item_id }}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content bg-dark border-secondary border-opacity-25 text-light">
+                                                <form method="post" action="{% url 'outstation:trip_resolve_discrepancy' trip.pk ti.item_id %}">
+                                                    {% csrf_token %}
+                                                    <div class="modal-header border-secondary border-opacity-25">
+                                                        <h5 class="modal-title text-warning">
+                                                            Authorize Resolution: {{ ti.item.tag_number }}
+                                                        </h5>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="mb-3">
+                                                            <label class="form-label text-light small fw-bold">Resolution Notes *</label>
+                                                            <textarea name="resolution_notes" class="form-control bg-dark text-white border-secondary" rows="3" required placeholder="Explain authorized action taken (e.g. Sent for melting, insurance claimed, or custodian penalty)..."></textarea>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input type="checkbox" name="write_off_stock" value="1" class="form-check-input" id="writeOff{{ ti.item_id }}" checked>
+                                                            <label class="form-check-label text-light small" for="writeOff{{ ti.item_id }}">
+                                                                Write off stock quantity from active showroom inventory
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer border-secondary border-opacity-25">
+                                                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                        <button type="submit" class="btn btn-warning text-dark fw-bold">Sign-off &amp; Resolve</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    <i class="bi bi-shield-check text-success fs-2"></i>
+                                    <div class="mt-2 text-white">No discrepancies reported</div>
+                                    <div class="small text-muted">All pieces are accounted for.</div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tab 6: Audit Trail -->
+    {% if active_tab == 'audit' %}
+    <div class="card bg-dark border-secondary border-opacity-25 rounded-3 p-4">
+        <h5 class="text-warning mb-3"><i class="bi bi-clock-history me-2"></i>Trip Security &amp; Audit Log</h5>
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0">
+                <thead class="text-secondary small text-uppercase" style="background-color: rgba(0,0,0,0.4);">
+                    <tr>
+                        <th class="ps-3 py-2">Timestamp</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in audit_logs %}
+                    <tr>
+                        <td class="ps-3 py-2 text-muted small">{{ log.timestamp|date:"d M Y, h:i:s A" }}</td>
+                        <td class="text-white small fw-semibold">{{ log.user.username }}</td>
+                        <td>
+                            <span class="badge bg-secondary bg-opacity-25 text-warning small">{{ log.get_action_display }}</span>
+                        </td>
+                        <td class="text-light small">{{ log.details }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-muted">No audit events recorded yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Close Trip Modal -->
+<div class="modal fade" id="closeTripModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark border-secondary border-opacity-25 text-light">
+            <form method="post" action="{% url 'outstation:trip_close' trip.pk %}">
+                {% csrf_token %}
+                <div class="modal-header border-secondary border-opacity-25">
+                    <h5 class="modal-title text-warning"><i class="bi bi-check2-circle me-2"></i>Close &amp; Finalize Trip</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    {% if trip.in_transit_items_count > 0 %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>Warning:</strong> {{ trip.in_transit_items_count }} item(s) are still recorded as in transit! You must reconcile all items before closing the trip.
+                    </div>
+                    {% endif %}
+
+                    {% if trip.damaged_missing_count > 0 %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-circle-fill me-2"></i>
+                        There are {{ trip.damaged_missing_count }} damaged or missing item(s). Ensure all discrepancies are resolved by a manager.
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label class="form-label text-light small fw-bold">Actual Return Date *</label>
+                        <input type="date" name="actual_return_date" class="form-control bg-dark text-white border-secondary" value="{% now "Y-m-d" %}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-light small">Final Closure Notes</label>
+                        <textarea name="closure_notes" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="Summary of trip outcome and stock reconciliation..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary border-opacity-25">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success fw-bold">Confirm &amp; Close Trip</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

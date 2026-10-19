@@ -107,6 +107,7 @@ INSTALLED_APPS = [
     'team',
     'karigar',
     'super_admin',
+    'outstation',
 ]
 
 MIDDLEWARE = [

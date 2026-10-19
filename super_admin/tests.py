@@ -485,3 +485,20 @@ class SubscriptionAndProposalFeatureTests(TestCase):
         proposal.refresh_from_db()
         self.assertEqual(proposal.status, 'accepted')
 
+        # 6. Super Admin PDF Download
+        pdf_url = reverse('super_admin:proposal_download_pdf', kwargs={'proposal_id': proposal.id})
+        res_pdf = self.client.get(pdf_url)
+        self.assertEqual(res_pdf.status_code, 200)
+        self.assertEqual(res_pdf['Content-Type'], 'application/pdf')
+        self.assertIn(f'Proposal-{proposal.proposal_number}.pdf', res_pdf['Content-Disposition'])
+        self.assertTrue(res_pdf.content.startswith(b'%PDF-'))
+
+        # 7. Public Client PDF Download
+        client_pdf_url = reverse('super_admin:proposal_client_download_pdf', kwargs={'token': proposal.share_token})
+        res_client_pdf = anon_client.get(client_pdf_url)
+        self.assertEqual(res_client_pdf.status_code, 200)
+        self.assertEqual(res_client_pdf['Content-Type'], 'application/pdf')
+        self.assertIn(f'Proposal-{proposal.proposal_number}.pdf', res_client_pdf['Content-Disposition'])
+        self.assertTrue(res_client_pdf.content.startswith(b'%PDF-'))
+
+

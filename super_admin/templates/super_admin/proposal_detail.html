@@ -11,6 +11,11 @@
     </a>
 
     <div class="d-flex flex-wrap align-items-center gap-2">
+        <!-- Download Proposal PDF -->
+        <a href="{% url 'super_admin:proposal_download_pdf' proposal.id %}" class="btn btn-sm btn-gold fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
+            <i class="bi bi-file-earmark-pdf-fill"></i> Download Proposal PDF
+        </a>
+
         <!-- Direct WhatsApp Share Button -->
         <a href="{{ wa_link }}" target="_blank" class="btn btn-sm btn-success fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
             <i class="bi bi-whatsapp fs-6"></i> Send via WhatsApp

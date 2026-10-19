@@ -243,17 +243,27 @@
         }
 
         .sa-sidebar-footer {
-            padding: 0.85rem 1rem;
+            padding: 0.85rem 1rem 1rem;
             border-top: 1px solid var(--sa-border);
-            background: rgba(0, 0, 0, 0.1);
+            background: var(--sa-surface);
             width: 100%;
             overflow: hidden;
+            margin-top: auto;
+        }
+
+        [data-theme="light"] .sa-sidebar-footer {
+            background: #ffffff;
+            border-top: 1px solid #e2e8f0;
         }
 
         .sa-sidebar-user-text {
             min-width: 0;
             overflow: hidden;
             flex: 1;
+        }
+
+        .sa-sidebar-user-text .text-truncate {
+            max-width: 135px;
         }
 
         /* Main Content */
@@ -356,7 +366,7 @@
         }
 
         .sa-table th {
-            background: rgba(0, 0, 0, 0.15);
+            background: rgba(0, 0, 0, 0.2);
             border-bottom: 2px solid var(--sa-border);
             color: var(--sa-gold);
             font-size: 0.78rem;
@@ -364,6 +374,14 @@
             letter-spacing: 0.06em;
             padding: 0.9rem 1rem;
             font-weight: 700;
+        }
+
+        [data-theme="light"] .sa-table th {
+            background: #f8fafc;
+            color: #475569;
+            border-bottom: 2px solid #e2e8f0;
+            font-size: 0.76rem;
+            letter-spacing: 0.05em;
         }
 
         .sa-table td {
@@ -375,8 +393,17 @@
             color: var(--sa-text);
         }
 
+        [data-theme="light"] .sa-table td {
+            border-bottom: 1px solid #edf2f7;
+            color: #1e293b;
+        }
+
         .sa-table tbody tr:hover td {
             background: var(--sa-table-hover);
+        }
+
+        [data-theme="light"] .sa-table tbody tr:hover td {
+            background: #f8fafc;
         }
 
         /* Badges */
@@ -408,6 +435,190 @@
             font-size: 0.78rem;
             padding: 0.35rem 0.65rem;
             border-radius: 5px;
+        }
+
+        /* Modern Status Pills with Glowing Dot */
+        .sa-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.28rem 0.75rem;
+            font-size: 0.76rem;
+            font-weight: 700;
+            border-radius: 999px;
+            line-height: 1.2;
+            letter-spacing: 0.02em;
+            white-space: nowrap;
+        }
+
+        .sa-status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .sa-status-active {
+            background: rgba(16, 185, 129, 0.12);
+            color: #059669;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .sa-status-active .sa-status-dot {
+            background: #10b981;
+            box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+        }
+
+        .sa-status-inactive {
+            background: rgba(239, 68, 68, 0.12);
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .sa-status-inactive .sa-status-dot {
+            background: #ef4444;
+        }
+
+        [data-theme="gold"] .sa-status-active, [data-theme="dark"] .sa-status-active {
+            color: #34d399;
+            border-color: rgba(52, 211, 153, 0.35);
+        }
+
+        [data-theme="gold"] .sa-status-inactive, [data-theme="dark"] .sa-status-inactive {
+            color: #f87171;
+            border-color: rgba(248, 113, 113, 0.35);
+        }
+
+        /* Showroom Luxury Elements */
+        .sa-showroom-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: var(--sa-gold-subtle);
+            color: var(--sa-gold);
+            font-weight: 800;
+            font-size: 0.86rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1.5px solid var(--sa-border);
+            flex-shrink: 0;
+            letter-spacing: 0.03em;
+        }
+
+        .sa-slug-pill {
+            font-size: 0.74rem;
+            font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            background: var(--sa-border-subtle);
+            color: var(--sa-muted);
+            padding: 0.12rem 0.45rem;
+            border-radius: 4px;
+            display: inline-block;
+            font-weight: 600;
+            border: 1px solid var(--sa-border);
+        }
+
+        .sa-staff-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--sa-text-secondary);
+            background: var(--sa-surface);
+            border: 1px solid var(--sa-border);
+            padding: 0.25rem 0.65rem;
+            border-radius: 6px;
+            white-space: nowrap;
+        }
+
+        .sa-admin-pill {
+            font-size: 0.66rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 0.12rem 0.45rem;
+            border-radius: 4px;
+            background: rgba(245, 158, 11, 0.12);
+            color: #d97706;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            white-space: nowrap;
+        }
+
+        [data-theme="gold"] .sa-admin-pill, [data-theme="dark"] .sa-admin-pill {
+            color: #fbbf24;
+            border-color: rgba(251, 191, 36, 0.35);
+        }
+
+        /* Action Buttons */
+        .sa-btn-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.36rem 0.85rem;
+            font-size: 0.80rem;
+            font-weight: 600;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: all 0.18s ease;
+            border: 1px solid var(--sa-border);
+            background: var(--sa-surface);
+            color: var(--sa-text);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+            white-space: nowrap;
+        }
+
+        .sa-btn-action:hover {
+            border-color: var(--sa-gold);
+            color: var(--sa-gold);
+            background: var(--sa-gold-subtle);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .sa-btn-action i {
+            font-size: 0.82rem;
+            transition: transform 0.18s ease;
+        }
+
+        .sa-btn-action:hover i {
+            transform: translateX(2px);
+        }
+
+        /* Quick Action Tiles */
+        .sa-quick-tile {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 0.95rem;
+            background: var(--sa-surface);
+            border: 1px solid var(--sa-border);
+            border-radius: 10px;
+            color: var(--sa-text);
+            text-decoration: none;
+            transition: all 0.18s ease;
+            font-weight: 600;
+            font-size: 0.86rem;
+        }
+
+        .sa-quick-tile:hover {
+            border-color: var(--sa-gold);
+            color: var(--sa-gold);
+            background: var(--sa-gold-subtle);
+            transform: translateX(2px);
+        }
+
+        .sa-quick-tile-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            background: var(--sa-gold-subtle);
+            color: var(--sa-gold);
+            flex-shrink: 0;
         }
 
         /* Buttons */
@@ -543,7 +754,7 @@
         <div class="sa-sidebar-footer">
             <div class="d-flex align-items-center justify-content-between gap-2" style="min-width: 0;">
                 <div class="d-flex align-items-center gap-2" style="min-width: 0; overflow: hidden; flex: 1;">
-                    <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width: 34px; height: 34px; font-size: 0.82rem; background: var(--sa-gold); color: #000;">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width: 36px; height: 36px; font-size: 0.82rem; background: var(--sa-gold-subtle); color: var(--sa-gold); border: 1.5px solid var(--sa-gold);">
                         SA
                     </div>
                     <div class="sa-sidebar-user-text">
@@ -553,7 +764,7 @@
                 </div>
                 <form method="post" action="{% url 'accounts:logout' %}" class="m-0 p-0 flex-shrink-0">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-link p-1" style="color: var(--sa-muted);" title="Log out">
+                    <button type="submit" class="btn btn-sm btn-link p-1" style="color: var(--sa-muted); transition: color 0.15s ease;" title="Log out" onmouseover="this.style.color='var(--sa-gold)'" onmouseout="this.style.color='var(--sa-muted)'">
                         <i class="bi bi-box-arrow-right fs-5"></i>
                     </button>
                 </form>

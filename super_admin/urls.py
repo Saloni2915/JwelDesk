@@ -24,6 +24,8 @@ urlpatterns = [
     path('proposals/new/', views.proposal_create_view, name='proposal_create'),
     path('proposals/<int:proposal_id>/', views.proposal_detail_view, name='proposal_detail'),
     path('proposals/<int:proposal_id>/status/', views.proposal_status_update_view, name='proposal_status_update'),
+    path('proposals/<int:proposal_id>/pdf/', views.proposal_download_pdf_view, name='proposal_download_pdf'),
     path('proposals/share/<str:token>/', views.proposal_client_view, name='proposal_client_view'),
+    path('proposals/share/<str:token>/pdf/', views.proposal_client_download_pdf_view, name='proposal_client_download_pdf'),
     path('settings/', views.settings_view, name='settings'),
 ]

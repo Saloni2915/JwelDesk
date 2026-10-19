@@ -198,6 +198,50 @@
                         </div>
                     </li>
 
+                    <!-- 2.5 Outstation Sales & Trips -->
+                    <li class="nav-item">
+                        <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.app_name == 'outstation' or '/outstation/' in request.path %}parent-active{% else %}collapsed{% endif %}"
+                           data-bs-toggle="collapse"
+                           href="#submenu-outstation"
+                           role="button"
+                           aria-expanded="{% if request.resolver_match.app_name == 'outstation' or '/outstation/' in request.path %}true{% else %}false{% endif %}"
+                           aria-controls="submenu-outstation">
+                            <span class="sidebar-item-content">
+                                <i class="bi bi-airplane-engines sidebar-item-icon"></i>
+                                <span class="sidebar-item-title">Outstation Sales</span>
+                            </span>
+                            <i class="bi bi-chevron-down dropdown-chevron"></i>
+                        </a>
+                        <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.app_name == 'outstation' or '/outstation/' in request.path %}show{% endif %}" id="submenu-outstation">
+                            <ul class="nav flex-column sidebar-submenu">
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'outstation' and request.resolver_match.url_name in 'trip_list trip_detail trip_edit' %}active{% endif %}"
+                                       href="{% url 'outstation:trip_list' %}">
+                                        <i class="bi bi-briefcase"></i> All Trips &amp; Dashboard
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'outstation' and request.resolver_match.url_name == 'trip_create' %}active{% endif %}"
+                                       href="{% url 'outstation:trip_create' %}">
+                                        <i class="bi bi-plus-circle"></i> New Trip
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'outstation' and request.resolver_match.url_name in 'exhibition_list exhibition_detail exhibition_edit' %}active{% endif %}"
+                                       href="{% url 'outstation:exhibition_list' %}">
+                                        <i class="bi bi-building"></i> Exhibitions &amp; Expos
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'outstation' and request.resolver_match.url_name == 'exhibition_create' %}active{% endif %}"
+                                       href="{% url 'outstation:exhibition_create' %}">
+                                        <i class="bi bi-plus-square"></i> Register Exhibition
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+
                     <!-- 3. Stock -->
                     <li class="nav-item">
                         <a class="nav-link sidebar-dropdown-toggle {% if 'inventory' in request.resolver_match.url_name or request.resolver_match.url_name == 'stock_movement_list' or '/inventory/' in request.path %}parent-active{% else %}collapsed{% endif %}"
@@ -519,6 +563,7 @@
                                 </li>
                             </ul>
                         </div>
+                    </li>
                     <!-- 11. Get the App / APK Install Shortcut (Permanently visible in navigation) -->
                     <li class="nav-item pwa-install-item" id="pwaInstallNavItem">
                         <a class="nav-link nav-link-single pwa-install-btn text-gold pwa-install-trigger" href="{% url 'download_apk' %}" id="pwaInstallBtn" role="button" title="Download JewelDesk Android APK or Install App">

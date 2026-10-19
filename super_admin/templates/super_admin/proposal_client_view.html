@@ -120,6 +120,9 @@
                 </div>
             </div>
             <div class="no-print d-flex align-items-center gap-2">
+                <a href="{% url 'super_admin:proposal_client_download_pdf' proposal.share_token %}" class="btn btn-sm btn-gold d-inline-flex align-items-center gap-1 shadow-sm">
+                    <i class="bi bi-file-earmark-pdf-fill"></i> Download PDF
+                </a>
                 <button type="button" class="btn btn-sm btn-outline-light" onclick="window.print()">
                     <i class="bi bi-printer me-1"></i>Print Quote
                 </button>
@@ -252,21 +255,31 @@
                         <p class="small text-muted mb-3">
                             Our team is configuring your dedicated database. Contact us anytime for updates.
                         </p>
-                        <a href="https://api.whatsapp.com/send?text=Namaste,%20I%20have%20accepted%20proposal%20{{ proposal.proposal_number }}%20for%20{{ proposal.client_showroom_name }}." target="_blank" class="btn btn-sm btn-success px-4 py-2 fw-bold">
-                            <i class="bi bi-whatsapp me-1"></i>Chat with Support on WhatsApp
-                        </a>
+                        <div class="d-flex flex-wrap align-items-center justify-content-center gap-2">
+                            <a href="https://api.whatsapp.com/send?text=Namaste,%20I%20have%20accepted%20proposal%20{{ proposal.proposal_number }}%20for%20{{ proposal.client_showroom_name }}." target="_blank" class="btn btn-sm btn-success px-4 py-2 fw-bold">
+                                <i class="bi bi-whatsapp me-1"></i>Chat with Support on WhatsApp
+                            </a>
+                            <a href="{% url 'super_admin:proposal_client_download_pdf' proposal.share_token %}" class="btn btn-sm btn-gold px-4 py-2 fw-bold">
+                                <i class="bi bi-file-earmark-pdf-fill me-1"></i>Download Confirmed PDF
+                            </a>
+                        </div>
                     {% else %}
                         <h4 class="fw-bold mb-2" style="color: var(--jd-gold);">Ready to elevate {{ proposal.client_showroom_name }}?</h4>
                         <p class="small mb-4" style="color: var(--jd-text-secondary); max-width: 600px; margin: 0 auto;">
                             Click below to accept this commercial proposal. Our senior onboarding architect will initialize your showroom data within 24 hours.
                         </p>
-                        <form method="post" action="{% url 'super_admin:proposal_client_view' proposal.share_token %}" class="d-inline">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="accept">
-                            <button type="submit" class="btn btn-gold btn-lg px-5 py-3 fw-bold fs-6 mb-2">
-                                <i class="bi bi-check2-circle me-2"></i>Accept Proposal & Begin Onboarding
-                            </button>
-                        </form>
+                        <div class="d-flex flex-wrap align-items-center justify-content-center gap-2 mb-2">
+                            <form method="post" action="{% url 'super_admin:proposal_client_view' proposal.share_token %}" class="d-inline m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="accept">
+                                <button type="submit" class="btn btn-gold btn-lg px-4 py-3 fw-bold fs-6">
+                                    <i class="bi bi-check2-circle me-2"></i>Accept Proposal & Begin Onboarding
+                                </button>
+                            </form>
+                            <a href="{% url 'super_admin:proposal_client_download_pdf' proposal.share_token %}" class="btn btn-outline-light btn-lg px-4 py-3 fw-bold fs-6">
+                                <i class="bi bi-file-earmark-pdf me-2"></i>Download PDF
+                            </a>
+                        </div>
                         <div class="small text-muted mt-2">
                             Questions? Reach our team directly: <a href="tel:+919876543210" class="text-decoration-none" style="color: var(--jd-gold);"><i class="bi bi-telephone me-1"></i>Contact Onboarding Desk</a>
                         </div>

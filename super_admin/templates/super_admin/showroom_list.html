@@ -74,42 +74,56 @@
                 {% for t in page_obj %}
                 <tr>
                     <td>
-                        <div class="fw-semibold" style="color: var(--sa-text);">{{ t.name }}</div>
-                        {% if t.company_settings.company_name and t.company_settings.company_name != t.name %}
-                        <span class="small d-block" style="color: var(--sa-text-secondary);">{{ t.company_settings.company_name }}</span>
-                        {% endif %}
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="sa-showroom-avatar">
+                                {{ t.name|slice:":2"|upper }}
+                            </div>
+                            <div class="min-w-0">
+                                <div class="fw-bold text-truncate" style="color: var(--sa-text);" title="{{ t.name }}">{{ t.name }}</div>
+                                {% if t.company_settings.company_name and t.company_settings.company_name != t.name %}
+                                <span class="small d-block text-muted">{{ t.company_settings.company_name }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
                     </td>
                     <td>
-                        <code>/{{ t.slug }}</code>
+                        <span class="sa-slug-pill">/{{ t.slug }}</span>
                     </td>
                     <td>
                         <div class="d-flex align-items-center gap-1">
-                            <span style="color: var(--sa-text); font-weight: 600;">{{ t.owner.get_full_name|default:t.owner.username }}</span>
-                            <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50 px-1 py-0 small" style="font-size: 0.68rem;">Tenant Admin</span>
+                            <span class="fw-semibold" style="color: var(--sa-text);">{{ t.owner.get_full_name|default:t.owner.username }}</span>
+                            <span class="sa-admin-pill">Admin</span>
                         </div>
-                        <div class="small" style="color: var(--sa-text-secondary);">{{ t.owner.email|default:"No email" }}</div>
+                        <div class="small text-muted" style="font-size: 0.78rem;">{{ t.owner.email|default:"No email" }}</div>
                     </td>
                     <td>
-                        <span class="badge bg-secondary bg-opacity-25 px-2 py-1" style="color: var(--sa-text); border: 1px solid var(--sa-border);">
-                            <i class="bi bi-people me-1"></i>{{ t.employee_count }}
+                        <span class="sa-staff-pill">
+                            <i class="bi bi-people-fill text-warning"></i>
+                            <span>{{ t.employee_count }} staff</span>
                         </span>
                     </td>
                     <td>
-                        <span class="small" style="color: var(--sa-text-secondary);">{{ t.created_at|date:"d M Y, H:i" }}</span>
+                        <div class="small fw-semibold" style="color: var(--sa-text);">{{ t.created_at|date:"d M Y" }}</div>
+                        <div class="text-muted" style="font-size: 0.72rem;">{{ t.created_at|date:"H:i" }}</div>
                     </td>
                     <td>
                         <span class="sa-badge-unavailable">Core (Included)</span>
                     </td>
                     <td>
                         {% if t.is_active %}
-                        <span class="sa-badge-active"><i class="bi bi-check2-circle me-1"></i>Active</span>
+                        <span class="sa-status-pill sa-status-active">
+                            <span class="sa-status-dot"></span> Active
+                        </span>
                         {% else %}
-                        <span class="sa-badge-inactive"><i class="bi bi-x-circle me-1"></i>Suspended</span>
+                        <span class="sa-status-pill sa-status-inactive">
+                            <span class="sa-status-dot"></span> Suspended
+                        </span>
                         {% endif %}
                     </td>
                     <td class="text-end">
-                        <a href="{% url 'super_admin:showroom_detail' t.id %}" class="btn btn-sm btn-outline-gold py-1 px-3">
-                            Manage
+                        <a href="{% url 'super_admin:showroom_detail' t.id %}" class="sa-btn-action" title="Manage Showroom">
+                            <span>Manage</span>
+                            <i class="bi bi-arrow-right"></i>
                         </a>
                     </td>
                 </tr>

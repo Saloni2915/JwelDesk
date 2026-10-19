@@ -15,6 +15,7 @@ from django.contrib.auth import get_user_model, login as auth_login
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -22,6 +23,7 @@ from django.views.decorators.http import require_POST
 
 from accounts.models import Tenant
 from .decorators import super_admin_required
+from .proposal_pdf import build_proposal_pdf
 from .models import (
     PlatformAuditLog,
     TenantSubscription,
@@ -959,6 +961,30 @@ def proposal_status_update_view(request, proposal_id):
     return redirect('super_admin:proposal_detail', proposal_id=proposal.id)
 
 
+@super_admin_required
+def proposal_download_pdf_view(request, proposal_id):
+    """Download official B2B Proposal / Quotation as a branded PDF document."""
+    proposal = get_object_or_404(PlatformProposal, id=proposal_id)
+    pdf_bytes = build_proposal_pdf(proposal)
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    filename = f"Proposal-{proposal.proposal_number}.pdf"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    try:
+        PlatformAuditLog.objects.create(
+            actor=request.user,
+            action='PROPOSAL_DOWNLOAD',
+            reason=f"Downloaded PDF for proposal {proposal.proposal_number} ({proposal.client_showroom_name})",
+            ip_address=get_client_ip(request),
+            user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]
+        )
+    except Exception as e:
+        logger.warning("Audit log for proposal download deferred: %s", e)
+
+    return response
+
+
 def proposal_client_view(request, token):
     """Public, customer-facing proposal presentation page.
 
@@ -990,6 +1016,17 @@ def proposal_client_view(request, token):
         'terms_list': terms_list,
     }
     return render(request, 'super_admin/proposal_client_view.html', context)
+
+
+def proposal_client_download_pdf_view(request, token):
+    """Allow prospective customer to download their official proposal PDF directly."""
+    proposal = get_object_or_404(PlatformProposal, share_token=token)
+    pdf_bytes = build_proposal_pdf(proposal)
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    filename = f"Proposal-{proposal.proposal_number}.pdf"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
 
 
 # ============================================================================

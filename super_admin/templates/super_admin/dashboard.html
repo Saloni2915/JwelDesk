@@ -1,103 +1,96 @@
 {% extends 'super_admin/base_super_admin.html' %}
 
 {% block title %}Overview | Super Admin Portal{% endblock %}
-{% block page_title %}Platform Overview & Metrics{% endblock %}
+{% block page_title %}Platform Overview & Intelligence{% endblock %}
 
 {% block content %}
-<!-- 1. Real Database-Backed Metrics Grid -->
+<!-- 1. Executive Single-Row KPI Command Grid -->
 <div class="row g-3 mb-4">
     <!-- Total Showrooms -->
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="sa-metric-card">
+        <div class="sa-metric-card h-100">
             <div class="sa-metric-icon">
-                <i class="bi bi-shop"></i>
+                <i class="bi bi-shop-window"></i>
             </div>
-            <div>
-                <div class="sa-metric-val">{{ total_tenants }}</div>
-                <div class="sa-metric-lbl">Total Showrooms</div>
+            <div class="flex-grow-1 min-w-0">
+                <div class="d-flex align-items-baseline justify-content-between gap-1">
+                    <span class="sa-metric-val">{{ total_tenants }}</span>
+                    {% if new_tenants_30d > 0 %}
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 small" style="font-size: 0.72rem;">
+                        <i class="bi bi-arrow-up-right"></i> +{{ new_tenants_30d }} (30d)
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="sa-metric-lbl">Registered Showrooms</div>
+                <div class="d-flex align-items-center gap-2 mt-2 pt-1 border-top border-secondary border-opacity-10 small" style="font-size: 0.78rem;">
+                    <span class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>{{ active_tenants }} Active</span>
+                    {% if inactive_tenants > 0 %}
+                    <span class="text-danger fw-semibold"><i class="bi bi-pause-circle-fill me-1"></i>{{ inactive_tenants }} Suspended</span>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Active Showrooms -->
+    <!-- Tenant Admins & Platform Users -->
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="sa-metric-card">
-            <div class="sa-metric-icon" style="background: rgba(25, 135, 84, 0.15); color: #75b798;">
-                <i class="bi bi-check-circle-fill"></i>
+        <div class="sa-metric-card h-100">
+            <div class="sa-metric-icon" style="background: rgba(99, 102, 241, 0.12); color: #6366f1;">
+                <i class="bi bi-person-badge-fill"></i>
             </div>
-            <div>
-                <div class="sa-metric-val">{{ active_tenants }}</div>
-                <div class="sa-metric-lbl">Active Showrooms</div>
+            <div class="flex-grow-1 min-w-0">
+                <div class="d-flex align-items-baseline justify-content-between gap-1">
+                    <span class="sa-metric-val">{{ total_owners }}</span>
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 small" style="font-size: 0.72rem;">
+                        <i class="bi bi-people-fill me-1"></i>{{ total_users }} Total Users
+                    </span>
+                </div>
+                <div class="sa-metric-lbl">Tenant Admins</div>
+                <div class="mt-2 pt-1 border-top border-secondary border-opacity-10 small text-truncate" style="font-size: 0.78rem; color: var(--sa-text-secondary);">
+                    <i class="bi bi-shield-check text-primary me-1"></i>Showroom owners & executives
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Inactive Showrooms -->
+    <!-- Total Showroom Staff -->
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="sa-metric-card">
-            <div class="sa-metric-icon" style="background: rgba(220, 53, 69, 0.15); color: #ea868f;">
-                <i class="bi bi-pause-circle-fill"></i>
-            </div>
-            <div>
-                <div class="sa-metric-val">{{ inactive_tenants }}</div>
-                <div class="sa-metric-lbl">Deactivated / Suspended</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- New Registrations (30d) -->
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="sa-metric-card">
-            <div class="sa-metric-icon" style="background: rgba(13, 202, 240, 0.15); color: #6edff6;">
-                <i class="bi bi-graph-up-arrow"></i>
-            </div>
-            <div>
-                <div class="sa-metric-val">{{ new_tenants_30d }} <span class="fs-6 fw-normal" style="color: var(--sa-text-secondary);">({{ new_tenants_7d }} this week)</span></div>
-                <div class="sa-metric-lbl">New Showrooms (30d)</div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Secondary Metrics: Users, Staff, Subscriptions -->
-<div class="row g-3 mb-4">
-    <!-- Showroom Owners & Users -->
-    <div class="col-12 col-md-4">
-        <div class="sa-metric-card">
-            <div class="sa-metric-icon" style="background: rgba(111, 66, 193, 0.15); color: #d0bfff;">
-                <i class="bi bi-person-badge"></i>
-            </div>
-            <div>
-                <div class="sa-metric-val">{{ total_owners }}</div>
-                <div class="sa-metric-lbl">Tenant Admins ({{ total_users }} total users)</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Staff & Employees -->
-    <div class="col-12 col-md-4">
-        <div class="sa-metric-card">
-            <div class="sa-metric-icon" style="background: rgba(253, 126, 20, 0.15); color: #fd7e14;">
+        <div class="sa-metric-card h-100">
+            <div class="sa-metric-icon" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b;">
                 <i class="bi bi-people-fill"></i>
             </div>
-            <div>
-                <div class="sa-metric-val">{{ total_employees }}</div>
-                <div class="sa-metric-lbl">Total Showroom Employees</div>
+            <div class="flex-grow-1 min-w-0">
+                <div class="d-flex align-items-baseline justify-content-between gap-1">
+                    <span class="sa-metric-val">{{ total_employees }}</span>
+                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 small" style="font-size: 0.72rem;">
+                        Store Staff
+                    </span>
+                </div>
+                <div class="sa-metric-lbl">Showroom Employees</div>
+                <div class="mt-2 pt-1 border-top border-secondary border-opacity-10 small text-truncate" style="font-size: 0.78rem; color: var(--sa-text-secondary);">
+                    <i class="bi bi-person-workspace text-warning me-1"></i>Active store team accounts
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Subscription & Revenue Status -->
-    <div class="col-12 col-md-4">
+    <!-- Revenue & Subscriptions -->
+    <div class="col-12 col-sm-6 col-xl-3">
         <a href="{% url 'super_admin:subscriptions' %}" class="text-decoration-none">
-            <div class="sa-metric-card" style="border-left: 3px solid var(--sa-gold);">
+            <div class="sa-metric-card h-100" style="border-left: 3px solid var(--sa-gold);">
                 <div class="sa-metric-icon" style="background: var(--sa-gold-subtle); color: var(--sa-gold);">
                     <i class="bi bi-currency-rupee"></i>
                 </div>
-                <div>
-                    <div class="sa-metric-val">₹{{ total_revenue|floatformat:0 }}</div>
-                    <div class="sa-metric-lbl">
-                        Total Revenue ({{ active_subscribers }} Active / {{ total_subscribers }} Subscribed)
+                <div class="flex-grow-1 min-w-0">
+                    <div class="d-flex align-items-baseline justify-content-between gap-1">
+                        <span class="sa-metric-val">₹{{ total_revenue|floatformat:0 }}</span>
+                        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 small" style="font-size: 0.72rem;">
+                            {{ active_subscribers }} Active
+                        </span>
+                    </div>
+                    <div class="sa-metric-lbl">Platform Revenue</div>
+                    <div class="mt-2 pt-1 border-top border-secondary border-opacity-10 small text-truncate" style="font-size: 0.78rem; color: var(--sa-text-secondary);">
+                        <i class="bi bi-arrow-right-circle text-warning me-1"></i>{{ total_subscribers }} Subscriptions enrolled
                     </div>
                 </div>
             </div>
@@ -105,22 +98,31 @@
     </div>
 </div>
 
-<!-- 2. Recent Showrooms & Recent Activity Grid -->
+<!-- 2. Showrooms & Quick Hub Grid -->
 <div class="row g-4">
-    <!-- Left Column: Recent Showroom Registrations -->
-    <div class="col-12 col-xl-7">
-        <div class="sa-card">
-            <div class="d-flex align-items-center justify-content-between mb-3">
-                <h6 class="mb-0 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold);">
-                    <i class="bi bi-building"></i> Recent Showroom Registrations
-                </h6>
-                <a href="{% url 'super_admin:showroom_list' %}" class="btn btn-sm btn-outline-gold">
-                    View All ({{ total_tenants }})
-                </a>
+    <!-- Left Column: Showrooms Directory (col-12 col-xl-8) -->
+    <div class="col-12 col-xl-8">
+        <div class="sa-card mb-0 h-100 d-flex flex-column">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 pb-2 border-bottom border-secondary border-opacity-10">
+                <div>
+                    <h6 class="mb-1 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold); font-size: 1rem;">
+                        <i class="bi bi-shop"></i> Registered Showrooms
+                        <span class="badge bg-secondary bg-opacity-25 text-body border border-secondary border-opacity-25" style="font-size: 0.74rem;">{{ total_tenants }}</span>
+                    </h6>
+                    <div class="small" style="color: var(--sa-muted); font-size: 0.8rem;">
+                        Real-time showroom instances & tenant administration
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{% url 'super_admin:showroom_list' %}" class="btn btn-sm btn-outline-gold">
+                        <span>View All ({{ total_tenants }})</span>
+                        <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
             </div>
 
-            <div class="table-responsive">
-                <table class="table sa-table">
+            <div class="table-responsive flex-grow-1">
+                <table class="table sa-table align-middle">
                     <thead>
                         <tr>
                             <th>Showroom</th>
@@ -135,38 +137,59 @@
                         {% for t in recent_tenants %}
                         <tr>
                             <td>
-                                <div class="fw-semibold" style="color: var(--sa-text);">{{ t.name }}</div>
-                                <code>/{{ t.slug }}</code>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="sa-showroom-avatar">
+                                        {{ t.name|slice:":2"|upper }}
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="fw-bold text-truncate" style="color: var(--sa-text); font-size: 0.92rem;" title="{{ t.name }}">
+                                            {{ t.name }}
+                                        </div>
+                                        <span class="sa-slug-pill">/{{ t.slug }}</span>
+                                    </div>
+                                </div>
                             </td>
                             <td>
                                 <div class="d-flex align-items-center gap-1">
-                                    <span style="color: var(--sa-text); font-weight: 600;">{{ t.owner.get_full_name|default:t.owner.username }}</span>
-                                    <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50 px-1 py-0 small" style="font-size: 0.68rem;">Tenant Admin</span>
+                                    <span class="fw-semibold" style="color: var(--sa-text); font-size: 0.88rem;">{{ t.owner.get_full_name|default:t.owner.username }}</span>
+                                    <span class="sa-admin-pill">Admin</span>
                                 </div>
-                                <span class="small" style="color: var(--sa-text-secondary);">{{ t.owner.email|default:"No email" }}</span>
+                                <div class="small text-truncate" style="color: var(--sa-muted); font-size: 0.78rem; max-width: 170px;" title="{{ t.owner.email }}">
+                                    {{ t.owner.email|default:"No email configured" }}
+                                </div>
                             </td>
                             <td>
-                                <span class="badge bg-secondary bg-opacity-25 px-2 py-1" style="color: var(--sa-text); border: 1px solid var(--sa-border);">{{ t.employee_count }} staff</span>
+                                <span class="sa-staff-pill">
+                                    <i class="bi bi-people-fill text-warning"></i>
+                                    <span>{{ t.employee_count }} staff</span>
+                                </span>
                             </td>
                             <td>
-                                <span class="small" style="color: var(--sa-text-secondary);">{{ t.created_at|date:"d M Y" }}</span>
+                                <div class="fw-semibold small" style="color: var(--sa-text);">{{ t.created_at|date:"d M Y" }}</div>
+                                <div class="text-muted" style="font-size: 0.72rem;">{{ t.created_at|timesince }} ago</div>
                             </td>
                             <td>
                                 {% if t.is_active %}
-                                <span class="sa-badge-active"><i class="bi bi-check2-circle me-1"></i>Active</span>
+                                <span class="sa-status-pill sa-status-active">
+                                    <span class="sa-status-dot"></span> Active
+                                </span>
                                 {% else %}
-                                <span class="sa-badge-inactive"><i class="bi bi-x-circle me-1"></i>Suspended</span>
+                                <span class="sa-status-pill sa-status-inactive">
+                                    <span class="sa-status-dot"></span> Suspended
+                                </span>
                                 {% endif %}
                             </td>
                             <td class="text-end">
-                                <a href="{% url 'super_admin:showroom_detail' t.id %}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.8rem; color: var(--sa-text); border-color: var(--sa-border);">
-                                    Manage <i class="bi bi-arrow-right ms-1"></i>
+                                <a href="{% url 'super_admin:showroom_detail' t.id %}" class="sa-btn-action" title="Open showroom administration">
+                                    <span>Manage</span>
+                                    <i class="bi bi-arrow-right"></i>
                                 </a>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="6" class="text-center py-4" style="color: var(--sa-text-secondary);">
+                            <td colspan="6" class="text-center py-5" style="color: var(--sa-muted);">
+                                <i class="bi bi-shop fs-1 d-block mb-2 text-warning opacity-50"></i>
                                 No registered showrooms found.
                             </td>
                         </tr>
@@ -177,55 +200,127 @@
         </div>
     </div>
 
-    <!-- Right Column: Recent Activity / Audit Stream -->
-    <div class="col-12 col-xl-5">
-        <div class="sa-card">
-            <div class="d-flex align-items-center justify-content-between mb-3">
-                <h6 class="mb-0 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold);">
-                    <i class="bi bi-clock-history"></i> Recent Platform Activity
+    <!-- Right Column: Quick Hub & Activity (col-12 col-xl-4) -->
+    <div class="col-12 col-xl-4 d-flex flex-column gap-3">
+        <!-- Card 1: Platform Quick Hub & Shortcuts -->
+        <div class="sa-card mb-0">
+            <h6 class="mb-3 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold); font-size: 0.95rem;">
+                <i class="bi bi-lightning-charge-fill text-warning"></i> Platform Quick Hub
+            </h6>
+
+            <!-- Quick Action Links -->
+            <div class="d-flex flex-column gap-2 mb-3">
+                <a href="{% url 'super_admin:showroom_list' %}" class="sa-quick-tile">
+                    <div class="sa-quick-tile-icon">
+                        <i class="bi bi-shop"></i>
+                    </div>
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="fw-bold">Showrooms & Tenants</div>
+                        <div class="small text-muted" style="font-size: 0.74rem;">Browse, inspect & manage stores</div>
+                    </div>
+                    <i class="bi bi-chevron-right text-muted small"></i>
+                </a>
+
+                <a href="{% url 'super_admin:subscriptions' %}" class="sa-quick-tile">
+                    <div class="sa-quick-tile-icon" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b;">
+                        <i class="bi bi-credit-card-2-front"></i>
+                    </div>
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="fw-bold">Subscriptions & Billing</div>
+                        <div class="small text-muted" style="font-size: 0.74rem;">{{ active_subscribers }} Active • ₹{{ total_revenue|floatformat:0 }} collected</div>
+                    </div>
+                    <i class="bi bi-chevron-right text-muted small"></i>
+                </a>
+
+                <a href="{% url 'super_admin:proposal_create' %}" class="sa-quick-tile">
+                    <div class="sa-quick-tile-icon" style="background: rgba(99, 102, 241, 0.12); color: #6366f1;">
+                        <i class="bi bi-file-earmark-plus"></i>
+                    </div>
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="fw-bold">Create Proposal / Quote</div>
+                        <div class="small text-muted" style="font-size: 0.74rem;">Send quotation to prospective store</div>
+                    </div>
+                    <i class="bi bi-chevron-right text-muted small"></i>
+                </a>
+
+                <a href="{% url 'super_admin:settings' %}" class="sa-quick-tile">
+                    <div class="sa-quick-tile-icon" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">
+                        <i class="bi bi-sliders"></i>
+                    </div>
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="fw-bold">Platform Settings</div>
+                        <div class="small text-muted" style="font-size: 0.74rem;">Features, security & defaults</div>
+                    </div>
+                    <i class="bi bi-chevron-right text-muted small"></i>
+                </a>
+            </div>
+
+            <!-- Platform Health Badge Strip -->
+            <div class="p-2 rounded-3" style="background: var(--sa-border-subtle); border: 1px solid var(--sa-border);">
+                <div class="d-flex align-items-center justify-content-between mb-1" style="font-size: 0.76rem;">
+                    <span class="text-muted fw-semibold">Multi-Tenant Isolation</span>
+                    <span class="text-success fw-bold"><i class="bi bi-shield-check me-1"></i>Enforced</span>
+                </div>
+                <div class="d-flex align-items-center justify-content-between" style="font-size: 0.76rem;">
+                    <span class="text-muted fw-semibold">JewelDesk Core Engine</span>
+                    <span class="fw-bold" style="color: var(--sa-gold);">v2.4.0 Production</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Recent Activity / Audit Stream -->
+        <div class="sa-card mb-0 flex-grow-1">
+            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-10">
+                <h6 class="mb-0 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold); font-size: 0.95rem;">
+                    <i class="bi bi-clock-history"></i> Recent Activity
                 </h6>
-                <a href="{% url 'super_admin:audit_logs' %}" class="btn btn-sm btn-outline-secondary" style="color: var(--sa-text); border-color: var(--sa-border);">
+                <a href="{% url 'super_admin:audit_logs' %}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem; color: var(--sa-text); border-color: var(--sa-border);">
                     All Logs
                 </a>
             </div>
 
             <div class="list-group list-group-flush bg-transparent">
                 {% for log in recent_activity %}
-                <div class="list-group-item bg-transparent border-secondary border-opacity-25 px-0 py-2">
+                <div class="list-group-item bg-transparent border-secondary border-opacity-15 px-0 py-2">
                     <div class="d-flex align-items-start justify-content-between gap-2">
-                        <div>
-                            <div class="small fw-semibold">
+                        <div class="min-w-0">
+                            <div class="small fw-semibold text-truncate">
                                 {% if log.action == 'IMPERSONATION_START' %}
-                                <span class="text-warning"><i class="bi bi-eye-fill me-1"></i>Impersonation Started</span>
+                                <span class="text-warning"><i class="bi bi-eye-fill me-1"></i>Impersonation</span>
                                 {% elif log.action == 'IMPERSONATION_END' %}
-                                <span class="text-info"><i class="bi bi-check-circle me-1"></i>Impersonation Ended</span>
+                                <span class="text-info"><i class="bi bi-check-circle me-1"></i>Impersonation Done</span>
                                 {% elif log.action == 'TENANT_DEACTIVATE' %}
-                                <span class="text-danger"><i class="bi bi-pause-fill me-1"></i>Showroom Suspended</span>
+                                <span class="text-danger"><i class="bi bi-pause-fill me-1"></i>Store Suspended</span>
                                 {% elif log.action == 'TENANT_ACTIVATE' %}
-                                <span class="text-success"><i class="bi bi-play-fill me-1"></i>Showroom Activated</span>
+                                <span class="text-success"><i class="bi bi-play-fill me-1"></i>Store Activated</span>
                                 {% else %}
                                 <span style="color: var(--sa-text);">{{ log.get_action_display }}</span>
                                 {% endif %}
                             </div>
-                            <div class="small mt-1" style="color: var(--sa-text-secondary);">
+                            <div class="small mt-1 text-truncate" style="color: var(--sa-text-secondary); font-size: 0.78rem;">
                                 By <strong style="color: var(--sa-text);">{{ log.actor.username|default:"System" }}</strong>
                                 {% if log.target_tenant %}on <em style="color: var(--sa-gold);">{{ log.target_tenant.name }}</em>{% endif %}
                             </div>
                             {% if log.reason %}
-                            <div class="small mt-1 font-monospace" style="font-size: 0.78rem; color: var(--sa-muted);">
-                                "{{ log.reason|truncatechars:70 }}"
+                            <div class="small mt-1 text-truncate font-monospace" style="font-size: 0.74rem; color: var(--sa-muted);">
+                                "{{ log.reason|truncatechars:50 }}"
                             </div>
                             {% endif %}
                         </div>
-                        <div class="text-nowrap" style="font-size: 0.72rem; color: var(--sa-muted);">
-                            {{ log.created_at|timesince }} ago
+                        <div class="text-nowrap small text-muted" style="font-size: 0.70rem;">
+                            {{ log.created_at|timesince }}
                         </div>
                     </div>
                 </div>
                 {% empty %}
-                <div class="text-center py-4 small" style="color: var(--sa-text-secondary);">
-                    <i class="bi bi-shield-check fs-3 d-block mb-2" style="color: var(--sa-gold);"></i>
-                    No platform audit events recorded yet.
+                <div class="text-center py-4 px-2" style="color: var(--sa-muted);">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 44px; height: 44px; background: var(--sa-gold-subtle); color: var(--sa-gold);">
+                        <i class="bi bi-shield-check fs-4"></i>
+                    </div>
+                    <div class="fw-semibold small" style="color: var(--sa-text);">Audit Logging Active</div>
+                    <div class="small mt-1" style="font-size: 0.76rem; color: var(--sa-muted);">
+                        Administrative operations and showroom logins will record here automatically.
+                    </div>
                 </div>
                 {% endfor %}
             </div>

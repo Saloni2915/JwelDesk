@@ -1,0 +1,911 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ exhibition.exhibition_number }} — {{ exhibition.name }} | JewelDesk{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/sales_bullion.css' %}?v={% now "U" %}" rel="stylesheet">
+<style>
+.exh-tab-btn {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #a0aec0;
+    font-weight: 600;
+    padding: 0.75rem 1.25rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+.exh-tab-btn:hover {
+    color: #e2e8f0;
+}
+.exh-tab-btn.active {
+    color: #ECC86A;
+    border-bottom: 2px solid #ECC86A;
+}
+.status-pill-issued { background: rgba(13, 202, 240, 0.15); color: #0dcaf0; border: 1px solid rgba(13, 202, 240, 0.3); }
+.status-pill-sold { background: rgba(25, 135, 84, 0.15); color: #198754; border: 1px solid rgba(25, 135, 84, 0.3); }
+.status-pill-returned { background: rgba(108, 117, 125, 0.2); color: #ced4da; border: 1px solid rgba(108, 117, 125, 0.4); }
+.status-pill-damaged { background: rgba(253, 126, 20, 0.15); color: #fd7e14; border: 1px solid rgba(253, 126, 20, 0.35); }
+.status-pill-missing { background: rgba(220, 53, 69, 0.2); color: #ea868f; border: 1px solid rgba(220, 53, 69, 0.4); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="jd-sb-canvas">
+
+    <!-- Header Section -->
+    <div class="jd-sb-header mb-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25 px-2 py-1">
+                    <i class="bi bi-building me-1"></i> Exhibition
+                </span>
+                <span class="badge {% if exhibition.status == 'Closed' %}bg-success{% elif exhibition.status == 'In Progress' %}bg-warning text-dark{% else %}bg-secondary{% endif %} px-2 py-1">
+                    {{ exhibition.get_status_display }}
+                </span>
+                {% if exhibition.stall_number %}
+                <span class="badge bg-dark border border-secondary text-light px-2 py-1">
+                    <i class="bi bi-shop me-1 text-warning"></i> Stall: {{ exhibition.stall_number }}
+                </span>
+                {% endif %}
+            </div>
+            <h1 class="text-white mb-0 font-monospace">
+                {{ exhibition.exhibition_number }} — <span class="text-warning">{{ exhibition.name }}</span>
+            </h1>
+            <p class="jd-sb-subtitle mb-0 mt-1">
+                Venue: <strong class="text-light">{{ exhibition.venue }}{% if exhibition.city %}, {{ exhibition.city }}{% endif %}</strong>
+                &bull; Custodian: <strong class="text-light">{{ exhibition.responsible_employee.full_name }}</strong>
+                &bull; Dates: {{ exhibition.start_date|date:"d M Y" }} to {{ exhibition.end_date|date:"d M Y" }}
+                {% if exhibition.daily_opening_time and exhibition.daily_closing_time %}
+                &bull; Timings: {{ exhibition.daily_opening_time|time:"h:i A" }} - {{ exhibition.daily_closing_time|time:"h:i A" }}
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="jd-sb-header-actions d-flex flex-wrap gap-2">
+            {% if exhibition.status != 'Closed' and exhibition.status != 'Cancelled' %}
+            <a href="{% url 'outstation:exhibition_issue_stock' exhibition.pk %}" class="btn btn-warning text-dark fw-bold">
+                <i class="bi bi-plus-circle-fill me-1"></i> Issue Stock
+            </a>
+            <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
+                <i class="bi bi-receipt me-1"></i> + Add Expense
+            </button>
+            {% endif %}
+
+            <a href="{% url 'outstation:exhibition_stock_sheet' exhibition.pk %}" class="btn btn-outline-secondary" target="_blank" title="Printable Booth Stock Manifest">
+                <i class="bi bi-printer me-1"></i> Stock Sheet
+            </a>
+
+            <a href="{% url 'outstation:exhibition_export_csv' exhibition.pk %}" class="btn btn-outline-secondary" title="Export CSV Manifest">
+                <i class="bi bi-download me-1"></i> Export CSV
+            </a>
+
+            {% if exhibition.status != 'Closed' and exhibition.status != 'Cancelled' %}
+            <button type="button" class="btn btn-success fw-bold" data-bs-toggle="modal" data-bs-target="#closeExhibitionModal">
+                <i class="bi bi-check2-circle me-1"></i> Close Expo
+            </button>
+            {% endif %}
+
+            <a href="{% url 'outstation:exhibition_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats Metric Bar -->
+    <div class="row g-3 mb-4">
+        <!-- Stock Balance Metric -->
+        <div class="col-md-3 col-6">
+            <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-25 h-100">
+                <div class="text-muted small">Total Issued Pieces</div>
+                <div class="fs-4 fw-bold text-white mt-1">{{ exhibition.total_items_count }}</div>
+                <div class="small text-muted mt-1">
+                    <span class="text-success">{{ exhibition.sold_items_count }} Sold</span> &bull;
+                    <span class="text-info">{{ exhibition.returned_items_count }} Ret</span> &bull;
+                    <span class="text-warning">{{ exhibition.at_booth_items_count }} Booth</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Sales Revenue -->
+        <div class="col-md-3 col-6">
+            <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-25 h-100">
+                <div class="text-muted small">Exhibition Sales Revenue</div>
+                <div class="fs-4 fw-bold text-success mt-1">₹{{ exhibition.total_sales_amount|floatformat:2 }}</div>
+                <div class="small text-muted mt-1">Collections: ₹{{ exhibition.total_collected_amount|floatformat:2 }}</div>
+            </div>
+        </div>
+
+        <!-- Exhibition Expenses -->
+        <div class="col-md-3 col-6">
+            <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-25 h-100">
+                <div class="text-muted small">Exhibition Expenses</div>
+                <div class="fs-4 fw-bold text-danger mt-1">₹{{ exhibition.total_expenses_amount|floatformat:2 }}</div>
+                <div class="small text-muted mt-1">Rent, travel, hotel &amp; misc</div>
+            </div>
+        </div>
+
+        <!-- Operating Surplus -->
+        <div class="col-md-3 col-6">
+            <div class="p-3 rounded-3 bg-dark border border-secondary border-opacity-25 h-100">
+                <div class="text-muted small">Operating Surplus (Net)</div>
+                <div class="fs-4 fw-bold {% if exhibition.operating_surplus >= 0 %}text-warning{% else %}text-danger{% endif %} mt-1">
+                    ₹{{ exhibition.operating_surplus|floatformat:2 }}
+                </div>
+                <div class="small text-muted mt-1" style="font-size: 0.72rem;">*Sales - Direct Exhibition Expenses</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="border-bottom border-secondary border-opacity-25 mb-4 d-flex gap-2 overflow-auto">
+        <a href="?tab=overview" class="exh-tab-btn {% if active_tab == 'overview' %}active{% endif %}">
+            <i class="bi bi-info-circle me-1"></i> Overview
+        </a>
+        <a href="?tab=stock" class="exh-tab-btn {% if active_tab == 'stock' %}active{% endif %}">
+            <i class="bi bi-gem me-1"></i> Booth Stock ({{ issued_items.count }})
+        </a>
+        <a href="?tab=sales" class="exh-tab-btn {% if active_tab == 'sales' %}active{% endif %}">
+            <i class="bi bi-cart-check me-1"></i> Sales &amp; Invoices ({{ exhibition_sales.count }})
+        </a>
+        <a href="?tab=expenses" class="exh-tab-btn {% if active_tab == 'expenses' %}active{% endif %}">
+            <i class="bi bi-receipt me-1"></i> Expenses ({{ expenses.count }})
+        </a>
+        <a href="?tab=daywise" class="exh-tab-btn {% if active_tab == 'daywise' %}active{% endif %}">
+            <i class="bi bi-calendar3 me-1"></i> Day-wise Report
+        </a>
+        <a href="?tab=payments" class="exh-tab-btn {% if active_tab == 'payments' %}active{% endif %}">
+            <i class="bi bi-wallet2 me-1"></i> Collections ({{ payments|length }})
+        </a>
+        <a href="?tab=reconciliation" class="exh-tab-btn {% if active_tab == 'reconciliation' %}active{% endif %}">
+            <i class="bi bi-shield-check me-1"></i> Reconciliation
+            {% with disc_count=exhibition.unresolved_discrepancies_count %}
+            {% if disc_count > 0 %}
+            <span class="badge bg-danger rounded-pill ms-1">{{ disc_count }}</span>
+            {% endif %}
+            {% endwith %}
+        </a>
+        <a href="?tab=audit" class="exh-tab-btn {% if active_tab == 'audit' %}active{% endif %}">
+            <i class="bi bi-clock-history me-1"></i> Audit Trail
+        </a>
+    </div>
+
+    <!-- TAB CONTENT PANELS -->
+
+    <!-- 1. Overview Tab -->
+    {% if active_tab == 'overview' %}
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card bg-dark border-secondary border-opacity-25 rounded-3 p-4 mb-4">
+                <h5 class="text-warning mb-3"><i class="bi bi-building me-2"></i>Exhibition Profile</h5>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Exhibition Name</div>
+                        <div class="text-white fw-bold fs-6">{{ exhibition.name }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Reference Number</div>
+                        <div class="text-warning font-monospace">{{ exhibition.exhibition_number }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Host Venue</div>
+                        <div class="text-light">{{ exhibition.venue }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">City</div>
+                        <div class="text-light">{{ exhibition.city|default:"—" }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Stall / Booth Identifier</div>
+                        <div class="text-warning fw-semibold">{{ exhibition.stall_number|default:"—" }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Organiser / Council</div>
+                        <div class="text-light">{{ exhibition.organiser|default:"—" }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Event Dates</div>
+                        <div class="text-light">{{ exhibition.start_date|date:"d M Y" }} to {{ exhibition.end_date|date:"d M Y" }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Daily Operating Hours</div>
+                        <div class="text-light">
+                            {% if exhibition.daily_opening_time and exhibition.daily_closing_time %}
+                            {{ exhibition.daily_opening_time|time:"h:i A" }} &ndash; {{ exhibition.daily_closing_time|time:"h:i A" }}
+                            {% else %}—{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if exhibition.notes %}
+                <div class="mt-4 pt-3 border-top border-secondary border-opacity-25">
+                    <div class="text-muted small">Logistics &amp; Operational Notes</div>
+                    <div class="text-light mt-1">{{ exhibition.notes|linebreaksbr }}</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Financial Summary Box -->
+            <div class="card bg-dark border-secondary border-opacity-25 rounded-3 p-4">
+                <h5 class="text-warning mb-3"><i class="bi bi-graph-up me-2"></i>Financial Performance &amp; Surplus Statement</h5>
+                <div class="table-responsive">
+                    <table class="table table-dark table-sm mb-0">
+                        <tbody>
+                            <tr>
+                                <td class="text-muted">Total Sales Revenue Achieved:</td>
+                                <td class="text-end fw-bold text-success fs-6">₹{{ exhibition.total_sales_amount|floatformat:2 }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Direct Exhibition Expenses (Stall, Travel, Hotel, etc.):</td>
+                                <td class="text-end fw-bold text-danger fs-6">₹{{ exhibition.total_expenses_amount|floatformat:2 }}</td>
+                            </tr>
+                            <tr class="border-top border-secondary">
+                                <td class="text-light fw-bold">Operating Surplus:</td>
+                                <td class="text-end fw-bold fs-5 {% if exhibition.operating_surplus >= 0 %}text-warning{% else %}text-danger{% endif %}">
+                                    ₹{{ exhibition.operating_surplus|floatformat:2 }}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Customer Collections Received:</td>
+                                <td class="text-end text-info">₹{{ exhibition.total_collected_amount|floatformat:2 }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Outstanding Customer Receivables:</td>
+                                <td class="text-end {% if exhibition.outstanding_balance > 0 %}text-danger fw-bold{% else %}text-muted{% endif %}">
+                                    ₹{{ exhibition.outstanding_balance|floatformat:2 }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-3 p-2 rounded bg-secondary bg-opacity-10 border border-secondary border-opacity-25 text-muted small" style="font-size: 0.78rem;">
+                    <i class="bi bi-info-circle me-1 text-warning"></i>
+                    <strong>Note on Profit Reporting:</strong> Raw purchase/making cost is not tracked on individual inventory tags in this catalog; therefore, this statement computes the <strong>Operating Surplus</strong> (Total Revenue minus Direct Exhibition Expenses) rather than catalog gross profit.
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Custody & Staffing Card -->
+            <div class="card bg-dark border-secondary border-opacity-25 rounded-3 p-4 mb-4">
+                <h5 class="text-warning mb-3"><i class="bi bi-shield-lock-fill me-2"></i>Booth Custody &amp; Staff</h5>
+                <div class="mb-3">
+                    <div class="text-muted small">Lead Custodian (Responsible Manager)</div>
+                    <div class="text-white fw-bold fs-6 mt-1">
+                        <i class="bi bi-person-fill text-warning me-1"></i>{{ exhibition.responsible_employee.full_name }}
+                    </div>
+                    <div class="text-muted small">{{ exhibition.responsible_employee.mobile|default:"No phone recorded" }}</div>
+                </div>
+
+                <div class="pt-2 border-top border-secondary border-opacity-25">
+                    <div class="text-muted small mb-2">Assigned Booth Staff Members</div>
+                    {% for staff in exhibition.booth_staff.all %}
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="bi bi-person-check text-info"></i>
+                        <div>
+                            <div class="text-light small fw-semibold">{{ staff.full_name }}</div>
+                            <div class="text-muted" style="font-size: 0.72rem;">{{ staff.role|default:"Exhibition Staff" }} &bull; {{ staff.mobile|default:"—" }}</div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-muted small fst-italic">No additional booth staff assigned.</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Management Actions -->
+            <div class="card bg-dark border-secondary border-opacity-25 rounded-3 p-4">
+                <h5 class="text-warning mb-3"><i class="bi bi-gear-fill me-2"></i>Actions</h5>
+                <div class="d-grid gap-2">
+                    {% if exhibition.status != 'Closed' and exhibition.status != 'Cancelled' %}
+                    <a href="{% url 'outstation:exhibition_edit' exhibition.pk %}" class="btn btn-outline-warning btn-sm">
+                        <i class="bi bi-pencil me-1"></i> Edit Exhibition Details
+                    </a>
+                    <a href="{% url 'outstation:exhibition_issue_stock' exhibition.pk %}" class="btn btn-outline-info btn-sm">
+                        <i class="bi bi-gem me-1"></i> Allocate More Stock
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'outstation:exhibition_stock_sheet' exhibition.pk %}" class="btn btn-outline-secondary btn-sm" target="_blank">
+                        <i class="bi bi-printer me-1"></i> Printable Custody Sheet
+                    </a>
+                    <a href="{% url 'outstation:exhibition_export_csv' exhibition.pk %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export Manifest (CSV)
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 2. Booth Stock Tab -->
+    {% if active_tab == 'stock' %}
+    <div class="card bg-dark border-secondary border-opacity-25 rounded-3 overflow-hidden shadow-sm">
+        <div class="p-3 bg-dark border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="text-white mb-0"><i class="bi bi-gem text-warning me-2"></i>Jewellery Pieces Issued to Booth</h5>
+                <span class="text-muted small">Total: {{ issued_items.count }} piece(s) &bull; Gross: {{ exhibition.total_issued_gross_weight|floatformat:3 }}g &bull; Net: {{ exhibition.total_issued_net_weight|floatformat:3 }}g</span>
+            </div>
+            {% if exhibition.status != 'Closed' and exhibition.status != 'Cancelled' %}
+            <a href="{% url 'outstation:exhibition_issue_stock' exhibition.pk %}" class="btn btn-warning text-dark fw-bold btn-sm">
+                <i class="bi bi-plus-circle-fill me-1"></i> Issue More Pieces
+            </a>
+            {% endif %}
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0">
+                <thead style="background-color: rgba(0,0,0,0.4);">
+                    <tr class="text-secondary small text-uppercase">
+                        <th class="ps-3 py-3">Tag / Piece</th>
+                        <th>Category &amp; Purity</th>
+                        <th>Gross Wt (g)</th>
+                        <th>Net Wt (g)</th>
+                        <th>Issue Price</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-end pe-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ei in issued_items %}
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td class="ps-3 py-2">
+                            <div class="fw-bold text-warning font-monospace">{{ ei.item.tag_number|default:ei.item.item_code }}</div>
+                            <div class="text-white small">{{ ei.item.name }}</div>
+                            {% if ei.item.huid %}<div class="text-muted" style="font-size: 0.72rem;">HUID: {{ ei.item.huid }}</div>{% endif %}
+                        </td>
+                        <td>
+                            <div class="text-light small">{{ ei.item.category.name|default:"—" }}</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">{{ ei.item.metal_type }} &bull; {{ ei.item.purity }}</div>
+                        </td>
+                        <td class="text-white">{{ ei.issue_gross_weight|floatformat:3 }}g</td>
+                        <td class="text-white">{{ ei.issue_net_weight|floatformat:3 }}g</td>
+                        <td class="text-warning fw-semibold">₹{{ ei.issue_price|floatformat:2 }}</td>
+                        <td class="text-center">
+                            {% if ei.status == 'Issued' %}
+                                <span class="badge status-pill-issued rounded-pill">At Booth</span>
+                            {% elif ei.status == 'Sold' %}
+                                <span class="badge status-pill-sold rounded-pill">Sold</span>
+                            {% elif ei.status == 'Returned' %}
+                                <span class="badge status-pill-returned rounded-pill">Returned</span>
+                            {% elif ei.status == 'Damaged' %}
+                                <span class="badge status-pill-damaged rounded-pill">Damaged</span>
+                            {% elif ei.status == 'Missing' %}
+                                <span class="badge status-pill-missing rounded-pill">Missing</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-3">
+                            {% if ei.status == 'Issued' and exhibition.status != 'Closed' and exhibition.status != 'Cancelled' %}
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'outstation:exhibition_record_sale' exhibition.pk ei.item.id %}" class="btn btn-success fw-bold">
+                                    <i class="bi bi-cart-plus me-1"></i> Record Sale
+                                </a>
+                                <button type="button" class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#reconcileModal{{ ei.item.id }}">
+                                    Reconcile
+                                </button>
+                            </div>
+
+                            <!-- Reconcile Modal for this item -->
+                            <div class="modal fade" id="reconcileModal{{ ei.item.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered text-start">
+                                    <div class="modal-content bg-dark border-secondary">
+                                        <div class="modal-header border-secondary border-opacity-25">
+                                            <h5 class="modal-title text-warning">Reconcile Piece: {{ ei.item.tag_number|default:ei.item.item_code }}</h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form method="post" action="{% url 'outstation:exhibition_reconcile_item' exhibition.pk ei.item.id %}">
+                                            {% csrf_token %}
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label text-light small fw-bold">Reconciliation Outcome *</label>
+                                                    <select name="outcome" class="form-select bg-dark text-light border-secondary" required>
+                                                        <option value="Returned">Returned to Showroom (Safe &amp; Intact)</option>
+                                                        <option value="Damaged">Damaged at Exhibition</option>
+                                                        <option value="Missing">Missing / Theft / Untraceable</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label text-light small fw-bold">Discrepancy Reason (Mandatory for Damaged/Missing)</label>
+                                                    <textarea name="discrepancy_reason" class="form-control bg-dark text-light border-secondary" rows="2" placeholder="State reason..."></textarea>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label text-light small fw-bold">Verification Notes (Optional)</label>
+                                                    <input type="text" name="notes" class="form-control bg-dark text-light border-secondary" placeholder="Remarks...">
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer border-secondary border-opacity-25">
+                                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-warning text-dark fw-bold btn-sm">Confirm Reconciliation</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <span class="text-muted small">{{ ei.reconciliation_notes|default:"—" }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-gem fs-2 text-secondary"></i>
+                            <div class="mt-2 text-light">No stock currently allocated to this exhibition booth.</div>
+                            {% if exhibition.status != 'Closed' and exhibition.status != 'Cancelled' %}
+                            <a href="{% url 'outstation:exhibition_issue_stock' exhibition.pk %}" class="btn btn-warning text-dark fw-bold btn-sm mt-2">
+                                <i class="bi bi-plus-circle me-1"></i> Issue Stock Now
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 3. Sales & Invoices Tab -->
+    {% if active_tab == 'sales' %}
+    <div class="card bg-dark border-secondary border-opacity-25 rounded-3 overflow-hidden shadow-sm">
+        <div class="p-3 bg-dark border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center">
+            <h5 class="text-white mb-0"><i class="bi bi-cart-check text-warning me-2"></i>Exhibition Sales Transactions</h5>
+            <span class="text-success fw-bold">Total Sales: ₹{{ exhibition.total_sales_amount|floatformat:2 }}</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0">
+                <thead style="background-color: rgba(0,0,0,0.4);">
+                    <tr class="text-secondary small text-uppercase">
+                        <th class="ps-3 py-3">Sale # / Date</th>
+                        <th>Buyer &amp; Type</th>
+                        <th>Item Sold</th>
+                        <th>Gross Wt</th>
+                        <th>Sale Price</th>
+                        <th>Paid</th>
+                        <th>Balance</th>
+                        <th class="text-center pe-3">Invoice</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for es in exhibition_sales %}
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td class="ps-3 py-2">
+                            <div class="fw-bold font-monospace text-warning">#{{ es.sale.id }}</div>
+                            <div class="text-muted small">{{ es.sale_datetime|date:"d M Y, h:i A" }}</div>
+                        </td>
+                        <td>
+                            <div class="text-white fw-semibold">{{ es.sale.customer.name }}</div>
+                            {% if es.buyer_type == 'B2B' %}
+                            <span class="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-25 small">
+                                B2B Wholesale{% if es.business_name %}: {{ es.business_name }}{% endif %}
+                            </span>
+                            {% if es.business_gstin %}<div class="text-muted" style="font-size: 0.72rem;">GST: {{ es.business_gstin }}</div>{% endif %}
+                            {% else %}
+                            <span class="badge bg-secondary bg-opacity-25 text-light small">B2C Retail</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="text-light small fw-bold">{{ es.sale.jewellery_item.name }}</div>
+                            <div class="text-muted font-monospace" style="font-size: 0.75rem;">{{ es.sale.jewellery_item.tag_number|default:es.sale.jewellery_item.item_code }}</div>
+                        </td>
+                        <td class="text-white">{{ es.exhibition_item.issue_gross_weight|default:es.sale.jewellery_item.gross_weight|floatformat:3 }}g</td>
+                        <td class="text-success fw-bold">₹{{ es.sale.sale_price|floatformat:2 }}</td>
+                        <td class="text-info">₹{{ es.sale.paid_amount|floatformat:2 }}</td>
+                        <td>
+                            {% if es.sale.balance_due > 0 %}
+                            <span class="text-danger fw-bold">₹{{ es.sale.balance_due|floatformat:2 }}</span>
+                            {% else %}
+                            <span class="text-success small"><i class="bi bi-check-all"></i> Paid</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center pe-3">
+                            <a href="{% url 'sales:invoice_detail' es.sale.pk %}" class="btn btn-outline-secondary btn-sm" target="_blank" title="View Official GST Invoice">
+                                <i class="bi bi-receipt"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="bi bi-cart text-secondary fs-2"></i>
+                            <div class="mt-2 text-light">No sales transactions recorded yet for this exhibition.</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 4. Expenses Tab -->
+    {% if active_tab == 'expenses' %}
+    <div class="card bg-dark border-secondary border-opacity-25 rounded-3 overflow-hidden shadow-sm">
+        <div class="p-3 bg-dark border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="text-white mb-0"><i class="bi bi-receipt text-warning me-2"></i>Exhibition Direct Expenses</h5>
+                <span class="text-danger fw-bold">Total Expenses: ₹{{ exhibition.total_expenses_amount|floatformat:2 }}</span>
+            </div>
+            {% if exhibition.status != 'Closed' and exhibition.status != 'Cancelled' %}
+            <button type="button" class="btn btn-warning text-dark fw-bold btn-sm" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
+                <i class="bi bi-plus-circle-fill me-1"></i> Add Expense
+            </button>
+            {% endif %}
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0">
+                <thead style="background-color: rgba(0,0,0,0.4);">
+                    <tr class="text-secondary small text-uppercase">
+                        <th class="ps-3 py-3">Date</th>
+                        <th>Category</th>
+                        <th>Payee / Vendor</th>
+                        <th>Payment Method</th>
+                        <th>Reference #</th>
+                        <th class="text-end">Amount</th>
+                        <th class="text-center pe-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exp in expenses %}
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td class="ps-3 py-2 text-light small">{{ exp.expense_date|date:"d M Y" }}</td>
+                        <td>
+                            <span class="badge bg-secondary bg-opacity-25 text-warning border border-warning border-opacity-25">
+                                {{ exp.get_category_display }}
+                            </span>
+                            {% if exp.notes %}<div class="text-muted small mt-1">{{ exp.notes }}</div>{% endif %}
+                        </td>
+                        <td class="text-white">{{ exp.payee|default:"—" }}</td>
+                        <td class="text-muted small">{{ exp.payment_method }}</td>
+                        <td class="text-muted font-monospace small">{{ exp.reference_number|default:"—" }}</td>
+                        <td class="text-end text-danger fw-bold">₹{{ exp.amount|floatformat:2 }}</td>
+                        <td class="text-center pe-3">
+                            {% if exhibition.status != 'Closed' and exhibition.status != 'Cancelled' %}
+                            <form method="post" action="{% url 'outstation:exhibition_delete_expense' exhibition.pk exp.id %}" onsubmit="return confirm('Delete this expense entry?');" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-danger btn-sm p-1" title="Delete Expense">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                            {% else %}—{% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-receipt text-secondary fs-2"></i>
+                            <div class="mt-2 text-light">No expenses logged yet. Record stall rent, flights, hotel, or logistics.</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 5. Day-wise Breakdown Report Tab -->
+    {% if active_tab == 'daywise' %}
+    <div class="card bg-dark border-secondary border-opacity-25 rounded-3 overflow-hidden shadow-sm">
+        <div class="p-3 bg-dark border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="text-white mb-0"><i class="bi bi-calendar3 text-warning me-2"></i>Day-wise Performance Breakdown</h5>
+                <span class="text-muted small">Daily piece volume, weights, sales revenue, direct expenses &amp; operating surplus</span>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0">
+                <thead style="background-color: rgba(0,0,0,0.4);">
+                    <tr class="text-secondary small text-uppercase">
+                        <th class="ps-3 py-3">Day / Date</th>
+                        <th class="text-center">Pieces Sold</th>
+                        <th class="text-center">Gross Weight</th>
+                        <th class="text-end">Revenue</th>
+                        <th class="text-end">Expenses</th>
+                        <th class="text-end pe-3">Operating Surplus</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in daywise_data %}
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td class="ps-3 py-3">
+                            <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25 me-1">Day {{ row.day_num }}</span>
+                            <strong class="text-light">{{ row.date|date:"D, d M Y" }}</strong>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-dark border border-secondary text-white">{{ row.sales_count }} pc{{ row.sales_count|pluralize }}</span>
+                        </td>
+                        <td class="text-center text-muted">{{ row.gross_weight|floatformat:3 }}g</td>
+                        <td class="text-end text-success fw-bold">₹{{ row.revenue|floatformat:2 }}</td>
+                        <td class="text-end text-danger">₹{{ row.expenses|floatformat:2 }}</td>
+                        <td class="text-end pe-3 fw-bold {% if row.surplus >= 0 %}text-warning{% else %}text-danger{% endif %}">
+                            ₹{{ row.surplus|floatformat:2 }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            No dates configured for day-wise breakdown.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot style="background-color: rgba(0,0,0,0.6); border-top: 2px solid rgba(236,200,106,0.3);">
+                    <tr class="fw-bold">
+                        <td class="ps-3 py-3 text-warning">TOTAL EXHIBITION SUMMARY</td>
+                        <td class="text-center text-white">{{ exhibition.sold_items_count }} pcs</td>
+                        <td class="text-center text-muted">—</td>
+                        <td class="text-end text-success">₹{{ exhibition.total_sales_amount|floatformat:2 }}</td>
+                        <td class="text-end text-danger">₹{{ exhibition.total_expenses_amount|floatformat:2 }}</td>
+                        <td class="text-end pe-3 fs-6 {% if exhibition.operating_surplus >= 0 %}text-warning{% else %}text-danger{% endif %}">
+                            ₹{{ exhibition.operating_surplus|floatformat:2 }}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 6. Collections & Payments Tab -->
+    {% if active_tab == 'payments' %}
+    <div class="card bg-dark border-secondary border-opacity-25 rounded-3 overflow-hidden shadow-sm">
+        <div class="p-3 bg-dark border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center">
+            <h5 class="text-white mb-0"><i class="bi bi-wallet2 text-warning me-2"></i>Customer Payment Receipts</h5>
+            <span class="text-info fw-bold">Total Collected: ₹{{ exhibition.total_collected_amount|floatformat:2 }}</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0">
+                <thead style="background-color: rgba(0,0,0,0.4);">
+                    <tr class="text-secondary small text-uppercase">
+                        <th class="ps-3 py-3">Receipt / Date</th>
+                        <th>Sale Ref</th>
+                        <th>Customer</th>
+                        <th>Mode</th>
+                        <th>Reference / UTR</th>
+                        <th class="text-end pe-3">Amount Received</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pay in payments %}
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td class="ps-3 py-2">
+                            <span class="fw-bold font-monospace text-warning">#{{ pay.id }}</span>
+                            <div class="text-muted small">{{ pay.payment_date|date:"d M Y" }}</div>
+                        </td>
+                        <td>
+                            <a href="{% url 'sales:invoice_detail' pay.sale.pk %}" class="text-info text-decoration-none font-monospace small" target="_blank">
+                                Sale #{{ pay.sale.id }}
+                            </a>
+                        </td>
+                        <td class="text-white">{{ pay.sale.customer.name }}</td>
+                        <td><span class="badge bg-secondary bg-opacity-25 text-light">{{ pay.payment_method }}</span></td>
+                        <td class="text-muted font-monospace small">{{ pay.reference_number|default:"—" }}</td>
+                        <td class="text-end pe-3 text-success fw-bold">₹{{ pay.amount|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            No payment entries recorded yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 7. Reconciliation Tab -->
+    {% if active_tab == 'reconciliation' %}
+    <div class="card bg-dark border-secondary border-opacity-25 rounded-3 p-4 shadow-sm mb-4">
+        <h5 class="text-warning mb-2"><i class="bi bi-shield-check me-2"></i>Stock Reconciliation &amp; Discrepancy Oversight</h5>
+        <p class="text-muted small mb-4">Verify pieces returned from exhibition booth. Damaged or missing pieces require managerial resolution before closing the exhibition.</p>
+
+        {% with discrepancies=exhibition.unresolved_discrepancies %}
+        {% if discrepancies %}
+        <div class="alert alert-danger mb-4">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <strong>{{ discrepancies.count }} Unresolved Discrepanc{{ discrepancies.count|pluralize:"y,ies" }}:</strong>
+            Exhibition cannot be closed until all damaged or missing items are authorized by a showroom manager.
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0">
+                <thead style="background-color: rgba(0,0,0,0.4);">
+                    <tr class="text-secondary small text-uppercase">
+                        <th class="ps-3 py-3">Tag / Piece</th>
+                        <th>Outcome</th>
+                        <th>Discrepancy Reason</th>
+                        <th>Weight</th>
+                        <th>Valuation</th>
+                        <th class="text-end pe-3">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ei in discrepancies %}
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td class="ps-3 py-2">
+                            <div class="fw-bold text-warning font-monospace">{{ ei.item.tag_number|default:ei.item.item_code }}</div>
+                            <div class="text-white small">{{ ei.item.name }}</div>
+                        </td>
+                        <td>
+                            {% if ei.status == 'Damaged' %}
+                            <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">Damaged</span>
+                            {% else %}
+                            <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25">Missing</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-light small">{{ ei.discrepancy_reason|default:"No explanation provided" }}</td>
+                        <td class="text-muted">{{ ei.issue_gross_weight|floatformat:3 }}g</td>
+                        <td class="text-warning fw-semibold">₹{{ ei.issue_price|floatformat:2 }}</td>
+                        <td class="text-end pe-3">
+                            <button type="button" class="btn btn-warning text-dark fw-bold btn-sm" data-bs-toggle="modal" data-bs-target="#resolveModal{{ ei.item.id }}">
+                                Authorize &amp; Resolve
+                            </button>
+
+                            <!-- Resolve Modal -->
+                            <div class="modal fade" id="resolveModal{{ ei.item.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered text-start">
+                                    <div class="modal-content bg-dark border-secondary">
+                                        <div class="modal-header border-secondary border-opacity-25">
+                                            <h5 class="modal-title text-warning">Resolve Discrepancy: {{ ei.item.tag_number }}</h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form method="post" action="{% url 'outstation:exhibition_resolve_discrepancy' exhibition.pk ei.item.id %}">
+                                            {% csrf_token %}
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label text-light small fw-bold">Resolution Authorization Rationale *</label>
+                                                    <textarea name="resolution_notes" class="form-control bg-dark text-light border-secondary" rows="3" required placeholder="Manager rationale (e.g. Insurance claim filed, item written off in inventory, melted in karigar workshop)..."></textarea>
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    <input type="checkbox" name="write_off_stock" value="1" class="form-check-input" id="wo{{ ei.item.id }}" checked>
+                                                    <label class="form-check-label text-light small" for="wo{{ ei.item.id }}">
+                                                        Permanently deduct piece from showroom stock ledger (Write-Off / Loss)
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer border-secondary border-opacity-25">
+                                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-success fw-bold btn-sm">Authorize Resolution</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-4 rounded-3 bg-dark border border-secondary border-opacity-25 text-center text-muted">
+            <i class="bi bi-shield-check text-success fs-1"></i>
+            <h6 class="text-white mt-2">All Discrepancies Reconciled</h6>
+            <p class="small text-muted mb-0">No open discrepancies recorded. You may safely proceed with closing this exhibition when all pieces are accounted for.</p>
+        </div>
+        {% endif %}
+        {% endwith %}
+    </div>
+    {% endif %}
+
+    <!-- 8. Audit Trail Tab -->
+    {% if active_tab == 'audit' %}
+    <div class="card bg-dark border-secondary border-opacity-25 rounded-3 p-4 shadow-sm">
+        <h5 class="text-warning mb-3"><i class="bi bi-clock-history me-2"></i>Exhibition Audit Trail &amp; Activity Log</h5>
+        <div class="timeline">
+            {% for log in audit_logs %}
+            <div class="d-flex gap-3 mb-3 pb-3 border-bottom border-secondary border-opacity-25">
+                <div class="text-warning pt-1"><i class="bi bi-circle-fill" style="font-size: 0.6rem;"></i></div>
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between">
+                        <strong class="text-light">{{ log.get_action_display }}</strong>
+                        <span class="text-muted small">{{ log.timestamp|date:"d M Y, h:i A" }}</span>
+                    </div>
+                    <div class="text-muted small mt-1">{{ log.details }}</div>
+                    <div class="text-secondary small" style="font-size: 0.72rem;">By: {{ log.user.get_full_name|default:log.user.username }}</div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-muted small text-center py-4">No audit events recorded yet.</div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- MODAL: Add Expense Modal -->
+<div class="modal fade" id="addExpenseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header border-secondary border-opacity-25">
+                <h5 class="modal-title text-warning"><i class="bi bi-receipt me-2"></i>Log Exhibition Expense</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'outstation:exhibition_record_expense' exhibition.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label text-light small fw-bold">Expense Category *</label>
+                        {{ expense_form.category }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-light small fw-bold">Amount (INR) *</label>
+                        {{ expense_form.amount }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-light small fw-bold">Payee / Vendor</label>
+                        {{ expense_form.payee }}
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-light small fw-bold">Date *</label>
+                            {{ expense_form.expense_date }}
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-light small fw-bold">Payment Mode</label>
+                            {{ expense_form.payment_method }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-light small fw-bold">Reference / Cheque / UTR #</label>
+                        {{ expense_form.reference_number }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-light small fw-bold">Notes</label>
+                        {{ expense_form.notes }}
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary border-opacity-25">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning text-dark fw-bold btn-sm">Save Expense</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Close Exhibition Modal -->
+<div class="modal fade" id="closeExhibitionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header border-secondary border-opacity-25">
+                <h5 class="modal-title text-warning"><i class="bi bi-check2-circle me-2"></i>Conclude &amp; Close Exhibition</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'outstation:exhibition_close' exhibition.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p class="text-muted small">
+                        Closing the exhibition verifies that all pieces are sold, safely returned to the showroom, or resolved. This permanently concludes the exhibition record.
+                    </p>
+
+                    <div class="mb-3">
+                        <label class="form-label text-light small fw-bold">Actual Return / Closing Date *</label>
+                        {{ close_form.actual_return_date }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-light small fw-bold">Closing Summary &amp; Remarks</label>
+                        {{ close_form.closure_notes }}
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary border-opacity-25">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success fw-bold btn-sm">Confirm Exhibition Closure</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

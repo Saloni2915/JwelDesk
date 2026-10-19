@@ -56,6 +56,7 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     path('customers/', include('customers.urls')),
     path('custom-orders/', include('custom_orders.urls')),
+    path('outstation/', include('outstation.urls')),
     path('', include('sales.urls')),
     path('team/', include('team.urls')),
     path('karigar/', include('karigar.urls')),

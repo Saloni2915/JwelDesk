@@ -131,15 +131,24 @@
                     <tr>
                         <!-- Showroom -->
                         <td>
-                            <div class="fw-bold" style="color: var(--sa-text);">{{ sub.tenant.name }}</div>
-                            <div class="small text-muted">
-                                <code>/{{ sub.tenant.slug }}</code> • {{ sub.tenant.owner.email|default:sub.tenant.owner.username }}
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="sa-showroom-avatar">
+                                    {{ sub.tenant.name|slice:":2"|upper }}
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="fw-bold text-truncate" style="color: var(--sa-text);" title="{{ sub.tenant.name }}">{{ sub.tenant.name }}</div>
+                                    <div class="small text-muted d-flex align-items-center gap-1 flex-wrap mt-1">
+                                        <span class="sa-slug-pill">/{{ sub.tenant.slug }}</span>
+                                        <span>•</span>
+                                        <span class="text-truncate" style="max-width: 170px;" title="{{ sub.tenant.owner.email }}">{{ sub.tenant.owner.email|default:sub.tenant.owner.username }}</span>
+                                    </div>
+                                </div>
                             </div>
                         </td>
 
                         <!-- Plan Tier -->
                         <td>
-                            <span class="badge border" style="background: var(--sa-gold-subtle); color: var(--sa-gold); border-color: rgba(236, 200, 106, 0.4) !important;">
+                            <span class="badge border" style="background: var(--sa-gold-subtle); color: var(--sa-gold); border-color: var(--sa-border) !important; font-weight: 700; padding: 0.35rem 0.65rem; font-size: 0.78rem;">
                                 {{ sub.get_plan_name_display }}
                             </span>
                         </td>
@@ -147,32 +156,52 @@
                         <!-- Status -->
                         <td>
                             {% if sub.status == 'active' %}
-                                <span class="sa-badge-active"><i class="bi bi-check-circle me-1"></i>Active</span>
+                                <span class="sa-status-pill sa-status-active">
+                                    <span class="sa-status-dot"></span> Active
+                                </span>
                             {% elif sub.status == 'trial' %}
-                                <span class="badge bg-info bg-opacity-25 text-info border border-info border-opacity-50"><i class="bi bi-clock me-1"></i>Free Trial</span>
+                                <span class="sa-status-pill" style="background: rgba(56, 189, 248, 0.12); color: #0284c7; border: 1px solid rgba(56, 189, 248, 0.3);">
+                                    <span class="sa-status-dot" style="background: #0284c7;"></span> Free Trial
+                                </span>
                             {% elif sub.status == 'overdue' %}
-                                <span class="sa-badge-inactive"><i class="bi bi-exclamation-octagon me-1"></i>Overdue</span>
+                                <span class="sa-status-pill sa-status-inactive">
+                                    <span class="sa-status-dot"></span> Overdue
+                                </span>
                             {% elif sub.status == 'grace_period' %}
-                                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50">Grace Period</span>
+                                <span class="sa-status-pill" style="background: rgba(245, 158, 11, 0.12); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3);">
+                                    <span class="sa-status-dot" style="background: #f59e0b;"></span> Grace Period
+                                </span>
                             {% else %}
-                                <span class="sa-badge-inactive">{{ sub.get_status_display }}</span>
+                                <span class="sa-status-pill sa-status-inactive">
+                                    <span class="sa-status-dot"></span> {{ sub.get_status_display }}
+                                </span>
                             {% endif %}
                         </td>
 
                         <!-- Pricing / Cycle -->
                         <td>
-                            <div class="fw-bold" style="color: var(--sa-text);">₹{{ sub.price|floatformat:0 }}</div>
+                            <div class="fw-bold" style="color: var(--sa-text); font-size: 0.95rem;">₹{{ sub.price|floatformat:0 }}</div>
                             <div class="small text-muted">{{ sub.get_billing_cycle_display }}</div>
                         </td>
 
                         <!-- Payment Status -->
                         <td>
                             {% if sub.payment_status == 'paid' %}
-                                <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-50">Paid</span>
+                                <span class="sa-status-pill sa-status-active">
+                                    <span class="sa-status-dot"></span> Paid
+                                </span>
                             {% elif sub.payment_status == 'pending' %}
-                                <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-50">Pending</span>
+                                <span class="sa-status-pill sa-status-inactive">
+                                    <span class="sa-status-dot"></span> Pending
+                                </span>
+                            {% elif sub.payment_status == 'partial' %}
+                                <span class="sa-status-pill" style="background: rgba(245, 158, 11, 0.12); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3);">
+                                    <span class="sa-status-dot" style="background: #f59e0b;"></span> Partial
+                                </span>
                             {% else %}
-                                <span class="badge bg-secondary bg-opacity-20 text-light border border-secondary border-opacity-50">{{ sub.get_payment_status_display }}</span>
+                                <span class="sa-status-pill" style="background: rgba(148, 163, 184, 0.15); color: var(--sa-text-secondary); border: 1px solid var(--sa-border);">
+                                    <span class="sa-status-dot" style="background: var(--sa-muted);"></span> {{ sub.get_payment_status_display }}
+                                </span>
                             {% endif %}
                         </td>
 
@@ -196,7 +225,7 @@
                         <td class="text-end">
                             <div class="btn-group btn-group-sm">
                                 <!-- Record Payment Button -->
-                                <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#payModal{{ sub.id }}" title="Record Received Payment">
+                                <button type="button" class="btn btn-sm btn-outline-success fw-semibold" data-bs-toggle="modal" data-bs-target="#payModal{{ sub.id }}" title="Record Received Payment">
                                     <i class="bi bi-cash me-1"></i>+ Pay
                                 </button>
                                 <!-- Update Plan Button -->
