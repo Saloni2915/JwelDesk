@@ -1,0 +1,332 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ party.name }} — Wholesale Retailer Profile{% endblock %}
+{% block page_title %}Retailer: {{ party.name }}{% endblock %}
+
+{% block content %}
+<div class="jd-canvas">
+    <!-- Header -->
+    <div class="jd-header mb-3">
+        <div>
+            <div class="jd-badge"><i class="bi bi-shop me-1"></i> Retailer Statement &amp; Ledger</div>
+            <h1 class="jd-title">{{ party.name }}</h1>
+            <p class="jd-subtitle">Attn: {{ party.contact_person|default:"Store Manager" }} &bull; Phone: {{ party.phone }} &bull; GSTIN: {{ party.gstin|default:"URP" }}</p>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="{% url 'wholesale:order_create' %}?party={{ party.pk }}" class="jd-btn-gold">
+                <i class="bi bi-plus-circle me-1"></i> New Order
+            </a>
+            <a href="{% url 'wholesale:payment_create' %}?party={{ party.pk }}" class="jd-btn-ghost">
+                <i class="bi bi-cash-stack me-1"></i> Receive Payment
+            </a>
+            <a href="{% url 'wholesale:party_ledger_csv' party.pk %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-download me-1"></i> Export Ledger CSV
+            </a>
+            <a href="{% url 'wholesale:party_edit' party.pk %}" class="btn btn-outline-warning btn-sm">
+                <i class="bi bi-pencil me-1"></i> Edit
+            </a>
+        </div>
+    </div>
+
+    <!-- Financial Summary Cards -->
+    <div class="row g-3 mb-4">
+        <!-- 1. Current Balance Due -->
+        <div class="col-md-3">
+            <div class="jd-card p-3">
+                <div class="text-muted small fw-semibold">CURRENT OUTSTANDING BALANCE</div>
+                <div class="fs-4 fw-bold font-monospace mt-1 {% if party.current_balance > 0 %}text-danger{% elif party.current_balance < 0 %}text-success{% else %}text-muted{% endif %}">
+                    ₹{{ party.current_balance|floatformat:2 }}
+                </div>
+                <div class="small mt-1 text-muted">
+                    {% if party.current_balance > 0 %}Debit (Receivable from buyer){% else %}Nil / Settled{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Credit Limit Status -->
+        <div class="col-md-3">
+            <div class="jd-card p-3">
+                <div class="text-muted small fw-semibold">CREDIT LIMIT &amp; TERMS</div>
+                <div class="fs-4 fw-bold font-monospace mt-1">
+                    {% if party.credit_limit > 0 %}
+                    ₹{{ party.credit_limit|floatformat:2 }}
+                    {% else %}
+                    <span class="text-muted">Unlimited</span>
+                    {% endif %}
+                </div>
+                <div class="small mt-1">
+                    {% if party.is_over_credit_limit %}
+                    <span class="text-danger fw-bold"><i class="bi bi-exclamation-circle"></i> Over Limit by ₹{{ party.current_balance|floatformat:2 }}</span>
+                    {% elif party.credit_limit > 0 %}
+                    <span class="text-success">Available Credit: ₹{{ party.available_credit|floatformat:2 }}</span>
+                    {% else %}
+                    <span class="text-muted">Terms: {{ party.payment_terms_days }} Days Net</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Total Invoiced -->
+        <div class="col-md-3">
+            <div class="jd-card p-3">
+                <div class="text-muted small fw-semibold">TOTAL LIFETIME INVOICED</div>
+                <div class="fs-4 fw-bold font-monospace mt-1 text-gold">
+                    ₹{{ party.total_invoiced_amount|floatformat:2 }}
+                </div>
+                <div class="small mt-1 text-muted">
+                    <span>{{ party.total_orders_count }} wholesale orders</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Total Collections -->
+        <div class="col-md-3">
+            <div class="jd-card p-3">
+                <div class="text-muted small fw-semibold">TOTAL PAYMENTS RECEIVED</div>
+                <div class="fs-4 fw-bold font-monospace mt-1 text-success">
+                    ₹{{ party.total_paid_amount|floatformat:2 }}
+                </div>
+                <div class="small mt-1 text-muted">
+                    <span>Returns Credit: ₹{{ party.total_returns_credit_amount|floatformat:2 }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabbed Information -->
+    <div class="jd-card p-3">
+        <ul class="nav nav-pills mb-3" id="retailerTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active" id="ledger-tab" data-bs-toggle="tab" data-bs-target="#tab-ledger" type="button" role="tab">
+                    <i class="bi bi-journal-text me-1"></i> Account Ledger
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="invoices-tab" data-bs-toggle="tab" data-bs-target="#tab-invoices" type="button" role="tab">
+                    <i class="bi bi-receipt me-1"></i> Invoices ({{ invoices.count }})
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="orders-tab" data-bs-toggle="tab" data-bs-target="#tab-orders" type="button" role="tab">
+                    <i class="bi bi-bag-check me-1"></i> Orders ({{ orders.count }})
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="payments-tab" data-bs-toggle="tab" data-bs-target="#tab-payments" type="button" role="tab">
+                    <i class="bi bi-cash-stack me-1"></i> Payments ({{ payments.count }})
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="returns-tab" data-bs-toggle="tab" data-bs-target="#tab-returns" type="button" role="tab">
+                    <i class="bi bi-arrow-return-left me-1"></i> Returns &amp; RMA ({{ returns.count }})
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content pt-2">
+            <!-- 1. Ledger Tab -->
+            <div class="tab-pane fade show active" id="tab-ledger" role="tabpanel">
+                {% if ledger_entries %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="small text-muted">
+                                <th>Date</th>
+                                <th>Reference</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                                <th class="text-end">Debit (Dr)</th>
+                                <th class="text-end">Credit (Cr)</th>
+                                <th class="text-end">Running Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for e in ledger_entries %}
+                            <tr>
+                                <td class="small">{{ e.entry_date|date:"d-M-Y" }}</td>
+                                <td class="font-monospace fw-bold small">{{ e.reference_number }}</td>
+                                <td><span class="badge bg-secondary bg-opacity-25 text-secondary">{{ e.get_entry_type_display }}</span></td>
+                                <td class="small">{{ e.description }}</td>
+                                <td class="text-end font-monospace">{% if e.debit_amount > 0 %}₹{{ e.debit_amount|floatformat:2 }}{% else %}—{% endif %}</td>
+                                <td class="text-end font-monospace text-success">{% if e.credit_amount > 0 %}₹{{ e.credit_amount|floatformat:2 }}{% else %}—{% endif %}</td>
+                                <td class="text-end font-monospace fw-bold {% if e.balance_after > 0 %}text-danger{% elif e.balance_after < 0 %}text-success{% else %}text-muted{% endif %}">
+                                    ₹{{ e.balance_after|floatformat:2 }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">No ledger transactions posted yet for this retailer.</p>
+                {% endif %}
+            </div>
+
+            <!-- 2. Invoices Tab -->
+            <div class="tab-pane fade" id="tab-invoices" role="tabpanel">
+                {% if invoices %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="small text-muted">
+                                <th>Invoice #</th>
+                                <th>Date</th>
+                                <th>Due Date</th>
+                                <th class="text-end">Total Amount</th>
+                                <th class="text-end">Paid Amount</th>
+                                <th class="text-end">Outstanding</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-end">PDF</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for inv in invoices %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'wholesale:invoice_detail' inv.pk %}" class="fw-bold text-decoration-none text-gold">
+                                        {{ inv.invoice_number }}
+                                    </a>
+                                </td>
+                                <td class="small">{{ inv.invoice_date|date:"d-M-Y" }}</td>
+                                <td class="small">
+                                    {{ inv.due_date|date:"d-M-Y"|default:"—" }}
+                                    {% if inv.is_overdue %}<span class="badge bg-danger ms-1">Overdue</span>{% endif %}
+                                </td>
+                                <td class="text-end font-monospace fw-bold">₹{{ inv.total_amount|floatformat:2 }}</td>
+                                <td class="text-end font-monospace text-success">₹{{ inv.paid_amount|floatformat:2 }}</td>
+                                <td class="text-end font-monospace text-danger">₹{{ inv.outstanding_amount|floatformat:2 }}</td>
+                                <td class="text-center">
+                                    <span class="badge bg-secondary bg-opacity-25 text-secondary">{{ inv.status }}</span>
+                                </td>
+                                <td class="text-end">
+                                    <a href="{% url 'wholesale:invoice_pdf' inv.pk %}" class="btn btn-sm btn-outline-warning" target="_blank">
+                                        <i class="bi bi-file-earmark-pdf"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">No invoices generated yet for this retailer.</p>
+                {% endif %}
+            </div>
+
+            <!-- 3. Orders Tab -->
+            <div class="tab-pane fade" id="tab-orders" role="tabpanel">
+                {% if orders %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="small text-muted">
+                                <th>Order #</th>
+                                <th>Date</th>
+                                <th>Expected Delivery</th>
+                                <th>Status</th>
+                                <th class="text-end">Pieces</th>
+                                <th class="text-end">Total Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ord in orders %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'wholesale:order_detail' ord.pk %}" class="fw-bold text-decoration-none text-gold">
+                                        {{ ord.order_number }}
+                                    </a>
+                                </td>
+                                <td class="small">{{ ord.order_date|date:"d-M-Y" }}</td>
+                                <td class="small">{{ ord.expected_delivery_date|date:"d-M-Y"|default:"—" }}</td>
+                                <td><span class="badge bg-secondary bg-opacity-25 text-secondary">{{ ord.status }}</span></td>
+                                <td class="text-end">{{ ord.total_quantity }} pcs</td>
+                                <td class="text-end font-monospace fw-bold">₹{{ ord.total_amount|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">No wholesale orders recorded for this retailer.</p>
+                {% endif %}
+            </div>
+
+            <!-- 4. Payments Tab -->
+            <div class="tab-pane fade" id="tab-payments" role="tabpanel">
+                {% if payments %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="small text-muted">
+                                <th>Receipt #</th>
+                                <th>Date</th>
+                                <th>Method</th>
+                                <th>Reference</th>
+                                <th class="text-end">Amount Paid</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pay in payments %}
+                            <tr>
+                                <td class="font-monospace fw-bold">{{ pay.payment_number }}</td>
+                                <td class="small">{{ pay.payment_date|date:"d-M-Y" }}</td>
+                                <td>{{ pay.payment_method }}</td>
+                                <td class="small text-muted">{{ pay.reference|default:"—" }}</td>
+                                <td class="text-end font-monospace fw-bold text-success">₹{{ pay.amount|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">No payment collections recorded.</p>
+                {% endif %}
+            </div>
+
+            <!-- 5. Returns Tab -->
+            <div class="tab-pane fade" id="tab-returns" role="tabpanel">
+                {% if returns %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="small text-muted">
+                                <th>Return #</th>
+                                <th>Date</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                                <th class="text-end">Credit Amount</th>
+                                <th class="text-center">Credit Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in returns %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'wholesale:return_detail' r.pk %}" class="fw-bold text-decoration-none text-gold">
+                                        {{ r.return_number }}
+                                    </a>
+                                </td>
+                                <td class="small">{{ r.return_date|date:"d-M-Y" }}</td>
+                                <td>{{ r.reason }}</td>
+                                <td><span class="badge bg-secondary bg-opacity-25 text-secondary">{{ r.status }}</span></td>
+                                <td class="text-end font-monospace fw-bold">₹{{ r.total_credit_amount|floatformat:2 }}</td>
+                                <td class="text-center">
+                                    {% if r.credit_note_issued %}
+                                    <span class="badge bg-success bg-opacity-25 text-success">{{ r.credit_note_number }}</span>
+                                    {% else %}
+                                    <span class="text-muted small">Pending</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">No returns or RMA requests on file.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

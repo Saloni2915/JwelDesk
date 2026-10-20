@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Dispatch {{ dispatch.dispatch_number }} — JewelDesk{% endblock %}
+{% block page_title %}Dispatch {{ dispatch.dispatch_number }}{% endblock %}
+
+{% block content %}
+<div class="jd-canvas">
+    <div class="jd-header mb-3">
+        <div>
+            <div class="jd-badge"><i class="bi bi-truck me-1"></i> Dispatch Record</div>
+            <h1 class="jd-title">{{ dispatch.dispatch_number }}</h1>
+            <p class="jd-subtitle">Order Ref: <a href="{% url 'wholesale:order_detail' dispatch.order.pk %}" class="text-gold text-decoration-none fw-bold">{{ dispatch.order.order_number }}</a> &bull; Destination: <b>{{ dispatch.party.name }}</b></p>
+        </div>
+        <div>
+            <a href="{% url 'wholesale:dispatch_list' %}" class="jd-btn-ghost">
+                <i class="bi bi-arrow-left me-1"></i> Dispatches
+            </a>
+        </div>
+    </div>
+
+    <!-- Logistics Info Card -->
+    <div class="jd-card p-4 mb-4">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div class="text-muted small fw-semibold">DISPATCH DATE &amp; TIME</div>
+                <div class="fw-bold mt-1">{{ dispatch.dispatch_date|date:"d-M-Y H:i" }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-muted small fw-semibold">COURIER / CARRIER</div>
+                <div class="fw-bold mt-1">{{ dispatch.courier_name|default:"Self / Direct Delivery" }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-muted small fw-semibold">TRACKING / AWB #</div>
+                <div class="font-monospace fw-bold mt-1">{{ dispatch.tracking_number|default:"—" }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-muted small fw-semibold">STATUS</div>
+                <div class="mt-1"><span class="badge bg-success bg-opacity-25 text-success fs-6">{{ dispatch.status }}</span></div>
+            </div>
+            {% if dispatch.notes %}
+            <div class="col-12 mt-2">
+                <div class="text-muted small fw-semibold">DISPATCH NOTES</div>
+                <p class="mb-0 small">{{ dispatch.notes }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Dispatched Items Card -->
+    <div class="jd-card p-4">
+        <h5 class="fw-bold mb-3"><i class="bi bi-gem text-gold me-2"></i>Dispatched Jewellery Pieces</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr class="small text-muted">
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th>Metal &amp; Purity</th>
+                        <th>Tag Number</th>
+                        <th class="text-end">Quantity Dispatched</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for it in items %}
+                    <tr>
+                        <td class="fw-semibold">{{ it.item.name }}</td>
+                        <td>{{ it.item.category.name }}</td>
+                        <td>{{ it.item.metal_type }} ({{ it.item.purity }})</td>
+                        <td class="font-monospace">{{ it.tag_number|default:it.item.tag_number }}</td>
+                        <td class="text-end font-monospace fw-bold">{{ it.quantity }} pcs</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold fs-6">
+                        <td colspan="4" class="text-end">Total Pieces in Shipment:</td>
+                        <td class="text-end font-monospace text-gold">{{ dispatch.total_quantity }} pcs</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

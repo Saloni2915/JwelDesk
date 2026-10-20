@@ -108,6 +108,7 @@ INSTALLED_APPS = [
     'karigar',
     'super_admin',
     'outstation',
+    'wholesale',
 ]
 
 MIDDLEWARE = [
@@ -117,9 +118,9 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
     'accounts.middleware.TenantMiddleware',
     'super_admin.middleware.SuperAdminImpersonationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 

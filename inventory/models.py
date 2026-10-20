@@ -490,6 +490,8 @@ class StockMovement(models.Model):
         ('Stock Correction', 'Stock Correction'),
         ('Manual Adjustment', 'Manual Adjustment'),
         ('Sale', 'Sale'),
+        ('Wholesale Dispatch', 'Wholesale Dispatch'),
+        ('Wholesale Return', 'Wholesale Return'),
     ]
 
     tenant = models.ForeignKey(

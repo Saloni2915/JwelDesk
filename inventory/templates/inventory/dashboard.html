@@ -61,6 +61,11 @@
             <p class="jd-cockpit-subtitle">Real-time overview of sales, stock, and metal rates</p>
         </div>
         <div class="jd-cockpit-header-actions">
+            {% if request.tenant and request.tenant.is_wholesale %}
+            <a href="{% url 'wholesale:dashboard' %}" class="jd-btn-cockpit-ghost text-gold border-warning">
+                <i class="bi bi-buildings"></i> Wholesale Suite
+            </a>
+            {% endif %}
             <a href="{% url 'inventory_add' %}" class="jd-btn-cockpit-ghost">
                 <i class="bi bi-plus-lg"></i> Add Stock
             </a>

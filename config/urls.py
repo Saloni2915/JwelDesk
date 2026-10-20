@@ -60,6 +60,7 @@ urlpatterns = [
     path('', include('sales.urls')),
     path('team/', include('team.urls')),
     path('karigar/', include('karigar.urls')),
+    path('wholesale/', include('wholesale.urls')),
 
     # Direct URL aliases for compatibility with Django auth defaults
     path('signup/', signup_view, name='signup_root'),

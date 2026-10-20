@@ -40,6 +40,11 @@ def has_module_perm(user, module, action='view', tenant=None):
 
     # Check tenant-specific context
     if tenant is not None:
+        if module == 'wholesale' and not getattr(tenant, 'is_wholesale', True):
+            return False
+        if module in ('sales', 'customers', 'custom_orders') and not getattr(tenant, 'is_retail', True):
+            return False
+
         if tenant.owner_id == user.id and tenant.is_active:
             return True
 

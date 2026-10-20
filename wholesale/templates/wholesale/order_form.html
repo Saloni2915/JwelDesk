@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Wholesale Order — JewelDesk{% endblock %}
+{% block page_title %}New Wholesale Order{% endblock %}
+
+{% block content %}
+<div class="jd-canvas">
+    <div class="jd-header mb-3">
+        <div>
+            <div class="jd-badge"><i class="bi bi-bag-plus me-1"></i> B2B Order Entry</div>
+            <h1 class="jd-title">Create Wholesale Order</h1>
+            <p class="jd-subtitle">Add jewellery designs, quantities, locked wholesale prices, and delivery targets.</p>
+        </div>
+        <div>
+            <a href="{% url 'wholesale:order_list' %}" class="jd-btn-ghost">
+                <i class="bi bi-arrow-left me-1"></i> Back to Orders
+            </a>
+        </div>
+    </div>
+
+    <form method="post" id="orderForm">
+        {% csrf_token %}
+
+        <!-- Order Header Details -->
+        <div class="jd-card p-4 mb-4">
+            <h5 class="fw-bold mb-3"><i class="bi bi-card-heading text-gold me-2"></i>Order &amp; Retailer Information</h5>
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <label class="form-label fw-semibold">Retailer Party *</label>
+                    <select name="party" id="partySelect" class="form-select" required>
+                        <option value="">-- Choose Retailer Shop --</option>
+                        {% for p in parties %}
+                        <option value="{{ p.id }}">{{ p.name }} ({{ p.phone }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Order Date *</label>
+                    <input type="date" name="order_date" class="form-control" value="{% now 'Y-m-d' %}" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Requested Delivery Date</label>
+                    <input type="date" name="expected_delivery_date" class="form-control">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Notes for Retailer</label>
+                    <textarea name="notes" rows="2" class="form-control" placeholder="Optional notes printed on invoice..."></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Internal Remarks</label>
+                    <textarea name="internal_remarks" rows="2" class="form-control" placeholder="Internal supplier instructions..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Line Items -->
+        <div class="jd-card p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold m-0"><i class="bi bi-gem text-gold me-2"></i>Order Line Items</h5>
+                <button type="button" class="btn btn-sm btn-outline-warning" id="addRowBtn">
+                    <i class="bi bi-plus-lg me-1"></i> Add Another Item
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle mb-0" id="itemsTable">
+                    <thead>
+                        <tr class="small text-muted bg-light">
+                            <th style="width: 35%;">Jewellery Item / Design *</th>
+                            <th style="width: 12%;">Available</th>
+                            <th style="width: 12%;">Quantity *</th>
+                            <th style="width: 18%;">Wholesale Rate (₹) *</th>
+                            <th style="width: 10%;">Discount %</th>
+                            <th class="text-end" style="width: 13%;">Line Total (₹)</th>
+                            <th style="width: 50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemsBody">
+                        <!-- Initial Row -->
+                        <tr class="item-row">
+                            <td>
+                                <select name="item_id[]" class="form-select item-select" required>
+                                    <option value="">-- Select Jewellery Item --</option>
+                                    {% for item in items %}
+                                    <option value="{{ item.id }}" data-price="{{ item.selling_price }}" data-stock="{{ item.quantity }}">
+                                        {{ item.name }} [{{ item.tag_number|default:item.item_code }}] ({{ item.metal_type }} {{ item.purity }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td>
+                                <span class="stock-badge badge bg-secondary bg-opacity-25 text-secondary">-</span>
+                            </td>
+                            <td>
+                                <input type="number" name="quantity[]" class="form-control qty-input" value="1" min="1" required>
+                            </td>
+                            <td>
+                                <input type="number" name="unit_price[]" class="form-control price-input" step="0.01" value="0.00" required>
+                            </td>
+                            <td>
+                                <input type="number" name="discount_percent[]" class="form-control disc-input" step="0.01" value="0.00" min="0" max="100">
+                            </td>
+                            <td class="text-end font-monospace fw-bold line-total">₹0.00</td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" title="Remove Item"><i class="bi bi-trash"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Totals Footer -->
+            <div class="row justify-content-end mt-4">
+                <div class="col-md-5">
+                    <div class="p-3 bg-light rounded border">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Taxable Subtotal:</span>
+                            <span class="font-monospace fw-semibold" id="subtotalDisplay">₹0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Estimated GST (3%):</span>
+                            <span class="font-monospace text-muted" id="taxDisplay">₹0.00</span>
+                        </div>
+                        <hr class="my-2">
+                        <div class="d-flex justify-content-between fs-5 fw-bold text-gold">
+                            <span>Order Total:</span>
+                            <span class="font-monospace" id="grandTotalDisplay">₹0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mb-5">
+            <a href="{% url 'wholesale:order_list' %}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="jd-btn-gold">Create Wholesale Order</button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tableBody = document.getElementById('itemsBody');
+    const addRowBtn = document.getElementById('addRowBtn');
+
+    function calculateLine(row) {
+        const select = row.querySelector('.item-select');
+        const qtyInput = row.querySelector('.qty-input');
+        const priceInput = row.querySelector('.price-input');
+        const discInput = row.querySelector('.disc-input');
+        const totalCell = row.querySelector('.line-total');
+        const stockBadge = row.querySelector('.stock-badge');
+
+        const opt = select.selectedOptions[0];
+        if (opt && opt.dataset.stock) {
+            stockBadge.textContent = opt.dataset.stock + ' in stock';
+            stockBadge.className = 'stock-badge badge bg-success bg-opacity-25 text-success';
+        } else {
+            stockBadge.textContent = '-';
+            stockBadge.className = 'stock-badge badge bg-secondary bg-opacity-25 text-secondary';
+        }
+
+        const qty = parseFloat(qtyInput.value) || 0;
+        const price = parseFloat(priceInput.value) || 0;
+        const disc = parseFloat(discInput.value) || 0;
+
+        const sub = qty * price * (1 - (disc / 100));
+        const tax = sub * 0.03;
+        const lineTotal = sub + tax;
+
+        totalCell.textContent = '₹' + lineTotal.toFixed(2);
+        calculateOrderTotals();
+    }
+
+    function calculateOrderTotals() {
+        let subtotal = 0;
+        let tax = 0;
+
+        document.querySelectorAll('.item-row').forEach(function(row) {
+            const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
+            const price = parseFloat(row.querySelector('.price-input').value) || 0;
+            const disc = parseFloat(row.querySelector('.disc-input').value) || 0;
+
+            const lineSub = qty * price * (1 - (disc / 100));
+            const lineTax = lineSub * 0.03;
+
+            subtotal += lineSub;
+            tax += lineTax;
+        });
+
+        document.getElementById('subtotalDisplay').textContent = '₹' + subtotal.toFixed(2);
+        document.getElementById('taxDisplay').textContent = '₹' + tax.toFixed(2);
+        document.getElementById('grandTotalDisplay').textContent = '₹' + (subtotal + tax).toFixed(2);
+    }
+
+    tableBody.addEventListener('change', function(e) {
+        if (e.target.classList.contains('item-select')) {
+            const row = e.target.closest('.item-row');
+            const opt = e.target.selectedOptions[0];
+            if (opt && opt.dataset.price) {
+                row.querySelector('.price-input').value = opt.dataset.price;
+            }
+            calculateLine(row);
+        }
+    });
+
+    tableBody.addEventListener('input', function(e) {
+        if (e.target.classList.contains('qty-input') || e.target.classList.contains('price-input') || e.target.classList.contains('disc-input')) {
+            calculateLine(e.target.closest('.item-row'));
+        }
+    });
+
+    tableBody.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-row-btn')) {
+            if (document.querySelectorAll('.item-row').length > 1) {
+                e.target.closest('.item-row').remove();
+                calculateOrderTotals();
+            } else {
+                alert('An order must contain at least one line item.');
+            }
+        }
+    });
+
+    addRowBtn.addEventListener('click', function() {
+        const firstRow = document.querySelector('.item-row');
+        const newRow = firstRow.cloneNode(true);
+        newRow.querySelector('.item-select').value = '';
+        newRow.querySelector('.qty-input').value = '1';
+        newRow.querySelector('.price-input').value = '0.00';
+        newRow.querySelector('.disc-input').value = '0.00';
+        newRow.querySelector('.line-total').textContent = '₹0.00';
+        newRow.querySelector('.stock-badge').textContent = '-';
+        tableBody.appendChild(newRow);
+    });
+});
+</script>
+{% endblock %}

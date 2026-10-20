@@ -66,6 +66,10 @@ def dashboard(request):
 
     today = timezone.localdate()
 
+    tenant = getattr(request, 'tenant', None)
+    if tenant and getattr(tenant, 'business_type', None) == 'WHOLESALE' and request.GET.get('retail') != '1':
+        return redirect('wholesale:dashboard')
+
     # Import sales & enquiries models dynamically to prevent circular imports if any
     from sales.models import Sale, Enquiry, Payment
     from customers.models import Customer

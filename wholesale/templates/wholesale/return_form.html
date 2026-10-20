@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}Log Return Request — Wholesale JewelDesk{% endblock %}
+{% block page_title %}New Return Request (RMA){% endblock %}
+
+{% block content %}
+<div class="jd-canvas">
+    <div class="jd-header mb-3">
+        <div>
+            <div class="jd-badge"><i class="bi bi-arrow-return-left me-1"></i> RMA Request</div>
+            <h1 class="jd-title">Log Wholesale Return Request</h1>
+            <p class="jd-subtitle">Record returned pieces, specify return reasons and condition, and prepare for inspection.</p>
+        </div>
+        <div>
+            <a href="{% url 'wholesale:return_list' %}" class="jd-btn-ghost">
+                <i class="bi bi-arrow-left me-1"></i> Back to Returns
+            </a>
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="jd-card p-4 mb-4">
+            <h5 class="fw-bold mb-3"><i class="bi bi-info-circle text-gold me-2"></i>Return Details</h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Retailer / Buyer Party *</label>
+                    <select name="party" class="form-select" required>
+                        <option value="">-- Choose Retailer Party --</option>
+                        {% for p in parties %}
+                        <option value="{{ p.id }}">{{ p.name }} ({{ p.phone }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Primary Reason for Return *</label>
+                    <input type="text" name="reason" class="form-control" placeholder="e.g. Unsold stock exchange / Defective stone / Size adjustment" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Physical Inspection Notes</label>
+                    <textarea name="inspection_notes" rows="2" class="form-control" placeholder="Observations upon unboxing: seal intact, tag attached, gold scratch marks..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="jd-card p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold m-0"><i class="bi bi-gem text-gold me-2"></i>Returned Jewellery Pieces</h5>
+                <button type="button" class="btn btn-sm btn-outline-warning" id="addReturnRowBtn">
+                    <i class="bi bi-plus-lg me-1"></i> Add Another Item
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle mb-0" id="returnTable">
+                    <thead>
+                        <tr class="small text-muted bg-light">
+                            <th style="width: 40%;">Jewellery Item *</th>
+                            <th style="width: 15%;">Quantity *</th>
+                            <th style="width: 20%;">Credit Rate (₹) *</th>
+                            <th style="width: 25%;">Disposition</th>
+                            <th style="width: 50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="returnBody">
+                        <tr class="return-row">
+                            <td>
+                                <select name="item_id[]" class="form-select return-item-select" required>
+                                    <option value="">-- Select Returned Jewellery Piece --</option>
+                                    {% for item in items %}
+                                    <option value="{{ item.id }}" data-price="{{ item.selling_price }}">
+                                        {{ item.name }} [{{ item.tag_number|default:item.item_code }}] ({{ item.metal_type }} {{ item.purity }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td>
+                                <input type="number" name="quantity[]" class="form-control" value="1" min="1" required>
+                            </td>
+                            <td>
+                                <input type="number" name="unit_price[]" class="form-control price-input" step="0.01" value="0.00" required>
+                            </td>
+                            <td>
+                                <select name="disposition[]" class="form-select">
+                                    <option value="Sellable">Sellable (Restock to Showroom)</option>
+                                    <option value="Damaged">Damaged (Vault / Scrap)</option>
+                                    <option value="Repair Required">Repair Required (Send to Karigar)</option>
+                                    <option value="Melt Down">Melt Down (Gold Refinery)</option>
+                                </select>
+                            </td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-return-btn"><i class="bi bi-trash"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mb-5">
+            <a href="{% url 'wholesale:return_list' %}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="jd-btn-gold">Submit Return Request</button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tableBody = document.getElementById('returnBody');
+    const addBtn = document.getElementById('addReturnRowBtn');
+
+    tableBody.addEventListener('change', function(e) {
+        if (e.target.classList.contains('return-item-select')) {
+            const row = e.target.closest('.return-row');
+            const opt = e.target.selectedOptions[0];
+            if (opt && opt.dataset.price) {
+                row.querySelector('.price-input').value = opt.dataset.price;
+            }
+        }
+    });
+
+    tableBody.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-return-btn')) {
+            if (document.querySelectorAll('.return-row').length > 1) {
+                e.target.closest('.return-row').remove();
+            }
+        }
+    });
+
+    addBtn.addEventListener('click', function() {
+        const first = document.querySelector('.return-row');
+        const clone = first.cloneNode(true);
+        clone.querySelector('.return-item-select').value = '';
+        clone.querySelector('.price-input').value = '0.00';
+        tableBody.appendChild(clone);
+    });
+});
+</script>
+{% endblock %}

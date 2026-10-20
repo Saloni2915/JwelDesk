@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}Wholesale Dispatches — JewelDesk{% endblock %}
+{% block page_title %}Stock Dispatches{% endblock %}
+
+{% block content %}
+<div class="jd-canvas">
+    <div class="jd-header">
+        <div>
+            <div class="jd-badge"><i class="bi bi-truck me-1"></i> Stock Movement</div>
+            <h1 class="jd-title">Stock Dispatches &amp; Shipments</h1>
+            <p class="jd-subtitle">Audit shipments, courier tracking, and stock deductions linked to wholesale orders.</p>
+        </div>
+        <div>
+            <a href="{% url 'wholesale:order_list' %}" class="jd-btn-gold">
+                <i class="bi bi-bag-check me-1"></i> Orders
+            </a>
+            <a href="{% url 'wholesale:dashboard' %}" class="jd-btn-ghost">
+                <i class="bi bi-speedometer2 me-1"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="jd-card p-3">
+        {% if page_obj %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr class="small text-muted">
+                        <th>Dispatch #</th>
+                        <th>Order #</th>
+                        <th>Retailer Party</th>
+                        <th>Dispatch Date</th>
+                        <th>Courier / Carrier</th>
+                        <th>Tracking / LR #</th>
+                        <th class="text-end">Quantity</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in page_obj %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'wholesale:dispatch_detail' d.pk %}" class="fw-bold text-decoration-none text-gold">
+                                {{ d.dispatch_number }}
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{% url 'wholesale:order_detail' d.order.pk %}" class="text-decoration-none text-reset">
+                                {{ d.order.order_number }}
+                            </a>
+                        </td>
+                        <td>{{ d.party.name }}</td>
+                        <td class="small">{{ d.dispatch_date|date:"d-M-Y H:i" }}</td>
+                        <td>{{ d.courier_name|default:"—" }}</td>
+                        <td class="font-monospace small">{{ d.tracking_number|default:"—" }}</td>
+                        <td class="text-end font-monospace fw-bold">{{ d.total_quantity }} pcs</td>
+                        <td class="text-center">
+                            <span class="badge bg-success bg-opacity-25 text-success">{{ d.status }}</span>
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'wholesale:dispatch_detail' d.pk %}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-truck fs-1"></i>
+            <h5 class="mt-3">No dispatches recorded yet</h5>
+            <p class="small">Dispatches are created from confirmed wholesale orders to physically deduct inventory.</p>
+            <a href="{% url 'wholesale:order_list' %}" class="jd-btn-gold">View Orders to Dispatch</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

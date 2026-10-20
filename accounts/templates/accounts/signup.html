@@ -202,6 +202,17 @@
                         {% endif %}
                     </div>
 
+                    <div class="jd-auth__field">
+                        <label class="jd-auth__label" for="id_business_type">Business Model / Type</label>
+                        <div class="jd-auth__input">
+                            <i class="bi bi-briefcase jd-auth__icon" aria-hidden="true"></i>
+                            <select name="business_type" id="id_business_type" class="jd-auth__control" style="cursor: pointer;">
+                                <option value="RETAIL" {% if form.business_type.value == 'RETAIL' or not form.business_type.value %}selected{% endif %}>Retail Jewellery Store (B2C Showroom)</option>
+                                <option value="WHOLESALE" {% if form.business_type.value == 'WHOLESALE' %}selected{% endif %}>Wholesaler / Jewellery Supplier (B2B Supply)</option>
+                                <option value="BOTH" {% if form.business_type.value == 'BOTH' %}selected{% endif %}>Both (Retail Showroom &amp; B2B Wholesale)</option>
+                            </select>
+                        </div>
+                    </div>
 
                     <div class="jd-auth__field">
                         <label class="jd-auth__label" for="id_email">Email Address</label>

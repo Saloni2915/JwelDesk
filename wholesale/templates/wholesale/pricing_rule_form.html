@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Wholesale Pricing Rule — JewelDesk{% endblock %}
+{% block page_title %}New Wholesale Pricing Rule{% endblock %}
+
+{% block content %}
+<div class="jd-canvas">
+    <div class="jd-header mb-3">
+        <div>
+            <div class="jd-badge"><i class="bi bi-percent me-1"></i> Pricing Rule</div>
+            <h1 class="jd-title">Configure Wholesale Pricing Rule</h1>
+            <p class="jd-subtitle">Create tiered volume discounts, customer-specific rates, or category pricing.</p>
+        </div>
+        <div>
+            <a href="{% url 'wholesale:pricing_rules' %}" class="jd-btn-ghost">
+                <i class="bi bi-arrow-left me-1"></i> Back to Rules
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="jd-card p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Specific Retailer Party (Optional)</label>
+                            {{ form.party }}
+                            <div class="form-text small">Leave blank to apply to all wholesale buyers.</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Category (Optional)</label>
+                            {{ form.category }}
+                            <div class="form-text small">Apply to all jewellery pieces in this category.</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Specific Product (Optional)</label>
+                            {{ form.item }}
+                            <div class="form-text small">Apply rule only to this specific jewellery design.</div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Discount %</label>
+                            {{ form.discount_percent }}
+                            <div class="form-text small">Overall discount off retail selling price.</div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Making Charge Disc %</label>
+                            {{ form.making_charge_discount_percent }}
+                            <div class="form-text small">Discount on making charges.</div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Min Order Qty (MOQ)</label>
+                            {{ form.minimum_order_quantity }}
+                            <div class="form-text small">Minimum pieces required.</div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Fixed Wholesale Price Override (₹, Optional)</label>
+                            {{ form.fixed_price_override }}
+                            <div class="form-text small">If set, overrides all percentage calculations with a fixed rate.</div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-check form-switch mt-2">
+                                {{ form.is_active }}
+                                <label class="form-check-label fw-semibold" for="{{ form.is_active.id_for_label }}">Rule is Active</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+                        <a href="{% url 'wholesale:pricing_rules' %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="jd-btn-gold">Save Pricing Rule</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

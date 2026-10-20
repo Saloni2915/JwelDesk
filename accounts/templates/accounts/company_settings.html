@@ -63,6 +63,20 @@
                                 {% endfor %}
                             </div>
 
+                            <!-- Business Type -->
+                            <div class="col-md-6">
+                                <label class="jd-label fw-semibold" for="{{ form.business_type.id_for_label }}">
+                                    Business Operations Model
+                                </label>
+                                {{ form.business_type }}
+                                <div class="form-text" style="color: #9E9171; font-size: 0.78rem;">
+                                    Choose Retail (B2C Showroom), Wholesale (B2B Supplier), or Hybrid.
+                                </div>
+                                {% for e in form.business_type.errors %}
+                                    <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>
+                                {% endfor %}
+                            </div>
+
                             <!-- GSTIN -->
                             <div class="col-md-6">
                                 <label class="jd-label" for="{{ form.gstin.id_for_label }}">

@@ -120,6 +120,21 @@ class Tenant(models.Model):
         related_name='owned_tenants',
         help_text="Shop owner / primary administrator"
     )
+    TYPE_RETAIL = 'RETAIL'
+    TYPE_WHOLESALE = 'WHOLESALE'
+    TYPE_BOTH = 'BOTH'
+    BUSINESS_TYPE_CHOICES = [
+        (TYPE_RETAIL, 'Retail Jewellery Store'),
+        (TYPE_WHOLESALE, 'Wholesaler / Supplier'),
+        (TYPE_BOTH, 'Retail & Wholesale (Hybrid)'),
+    ]
+
+    business_type = models.CharField(
+        max_length=20,
+        choices=BUSINESS_TYPE_CHOICES,
+        default=TYPE_RETAIL,
+        help_text="Primary business model for this tenant"
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -131,6 +146,14 @@ class Tenant(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def is_retail(self):
+        return self.business_type in (self.TYPE_RETAIL, self.TYPE_BOTH)
+
+    @property
+    def is_wholesale(self):
+        return self.business_type in (self.TYPE_WHOLESALE, self.TYPE_BOTH)
 
     def save(self, *args, **kwargs):
         if not self.slug:

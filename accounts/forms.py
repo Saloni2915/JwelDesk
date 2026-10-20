@@ -99,9 +99,23 @@ class JewelDeskSignUpForm(UserCreationForm):
         }),
     )
 
+    business_type = forms.ChoiceField(
+        label='Business Type',
+        choices=[
+            (Tenant.TYPE_RETAIL, 'Retail Jewellery Store'),
+            (Tenant.TYPE_WHOLESALE, 'Wholesaler / Jewellery Supplier'),
+            (Tenant.TYPE_BOTH, 'Both (Retail & Wholesale)'),
+        ],
+        initial=Tenant.TYPE_RETAIL,
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'jd-auth__control',
+        }),
+    )
+
     class Meta(UserCreationForm.Meta):
         model = get_user_model()
-        fields = ('first_name', 'shop_name', 'email')
+        fields = ('first_name', 'shop_name', 'business_type', 'email')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -164,7 +178,8 @@ class JewelDeskSignUpForm(UserCreationForm):
             user.save()
             raw_shop_name = (self.cleaned_data.get('shop_name') or '').strip()
             shop_name = raw_shop_name or f"{user.first_name or user.username}'s Jewellery"
-            tenant = Tenant.objects.create(name=shop_name, owner=user)
+            b_type = self.cleaned_data.get('business_type') or Tenant.TYPE_RETAIL
+            tenant = Tenant.objects.create(name=shop_name, owner=user, business_type=b_type)
             CompanySettings.objects.create(tenant=tenant, company_name=shop_name)
 
             # Create default Tenant Administrator Employee profile for this store owner in their own shop
@@ -181,6 +196,13 @@ COMPANY_GSTIN_RE = re.compile(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]{3}$')
 class CompanySettingsForm(forms.ModelForm):
     """Admin form for the singleton company settings record."""
 
+    business_type = forms.ChoiceField(
+        choices=Tenant.BUSINESS_TYPE_CHOICES,
+        required=False,
+        label="Business Model / Operations Type",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
     class Meta:
         model = CompanySettings
         fields = ('company_name', 'logo', 'gstin', 'address', 'phone',
@@ -192,12 +214,23 @@ class CompanySettingsForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for name in ('company_name', 'gstin', 'phone', 'email'):
-            self.fields[name].widget.attrs.setdefault('class', 'form-control')
+        if self.instance and getattr(self.instance, 'tenant', None):
+            self.fields['business_type'].initial = self.instance.tenant.business_type
+        for name in ('company_name', 'gstin', 'phone', 'email', 'business_type'):
+            if name in self.fields:
+                self.fields[name].widget.attrs.setdefault('class', 'form-control')
         self.fields['address'].widget.attrs.setdefault('class', 'form-control')
         self.fields['invoice_footer_note'].widget.attrs.setdefault(
             'class', 'form-control')
         self.fields['logo'].widget.attrs.setdefault('class', 'form-control')
+
+    def save(self, commit=True):
+        obj = super().save(commit=commit)
+        b_type = self.cleaned_data.get('business_type')
+        if b_type and getattr(obj, 'tenant', None) and obj.tenant.business_type != b_type:
+            obj.tenant.business_type = b_type
+            obj.tenant.save(update_fields=['business_type', 'updated_at'])
+        return obj
 
     def clean_logo(self):
         logo = self.cleaned_data.get('logo')

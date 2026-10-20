@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}Wholesale Pricing Rules — JewelDesk{% endblock %}
+{% block page_title %}Wholesale Pricing Rules{% endblock %}
+
+{% block content %}
+<div class="jd-canvas">
+    <div class="jd-header">
+        <div>
+            <div class="jd-badge"><i class="bi bi-percent me-1"></i> B2B Pricing Engine</div>
+            <h1 class="jd-title">Wholesale Pricing Rules &amp; Discounts</h1>
+            <p class="jd-subtitle">Configure bulk discounts, minimum order quantities (MOQ), and retailer-specific price overrides.</p>
+        </div>
+        <div>
+            <a href="{% url 'wholesale:pricing_rule_create' %}" class="jd-btn-gold">
+                <i class="bi bi-plus-circle me-1"></i> Add Pricing Rule
+            </a>
+            <a href="{% url 'wholesale:catalogue' %}" class="jd-btn-ghost">
+                <i class="bi bi-gem me-1"></i> Catalogue
+            </a>
+        </div>
+    </div>
+
+    <div class="jd-card p-3">
+        {% if rules %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr class="small text-muted">
+                        <th>Rule Target</th>
+                        <th>Specific Retailer</th>
+                        <th class="text-end">Min Order Qty (MOQ)</th>
+                        <th class="text-end">Discount %</th>
+                        <th class="text-end">Making Charge Disc %</th>
+                        <th class="text-end">Fixed Override</th>
+                        <th class="text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in rules %}
+                    <tr>
+                        <td class="fw-semibold">
+                            {% if r.item %}
+                            <i class="bi bi-gem text-gold me-1"></i> {{ r.item.name }}
+                            {% elif r.category %}
+                            <i class="bi bi-folder text-warning me-1"></i> Category: {{ r.category.name }}
+                            {% else %}
+                            <i class="bi bi-globe text-primary me-1"></i> Entire Catalogue (Global)
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if r.party %}
+                            <a href="{% url 'wholesale:party_detail' r.party.pk %}" class="text-gold text-decoration-none">
+                                {{ r.party.name }}
+                            </a>
+                            {% else %}
+                            <span class="text-muted">All Retailers</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end font-monospace">{{ r.minimum_order_quantity }} pcs</td>
+                        <td class="text-end font-monospace text-success fw-bold">{{ r.discount_percent }}%</td>
+                        <td class="text-end font-monospace text-info">{{ r.making_charge_discount_percent }}%</td>
+                        <td class="text-end font-monospace">
+                            {% if r.fixed_price_override %}
+                            ₹{{ r.fixed_price_override|floatformat:2 }}
+                            {% else %}—{% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if r.is_active %}
+                            <span class="badge bg-success bg-opacity-25 text-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-secondary bg-opacity-25 text-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-percent fs-1"></i>
+            <h5 class="mt-3">No pricing rules configured</h5>
+            <p class="small">Add tier discounts, category markdowns, or party-specific agreements.</p>
+            <a href="{% url 'wholesale:pricing_rule_create' %}" class="jd-btn-gold">Add First Pricing Rule</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

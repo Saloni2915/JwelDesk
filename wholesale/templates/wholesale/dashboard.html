@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+
+{% block title %}Wholesale & Supplier Dashboard — JewelDesk{% endblock %}
+{% block page_title %}Wholesale Dashboard{% endblock %}
+
+{% block content %}
+<div class="jd-canvas">
+    <!-- Header -->
+    <div class="jd-header">
+        <div>
+            <div class="jd-badge"><i class="bi bi-buildings me-1"></i> B2B Jewellery Supplier Suite</div>
+            <h1 class="jd-title">Wholesale Operations Dashboard</h1>
+            <p class="jd-subtitle">Manage retail party accounts, bulk orders, dispatches, tax invoicing, and credit ledgers.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div class="btn-group btn-group-sm">
+                <a href="?range=today" class="btn btn-outline-secondary {% if range_filter == 'today' %}active{% endif %}">Today</a>
+                <a href="?range=7d" class="btn btn-outline-secondary {% if range_filter == '7d' %}active{% endif %}">7 Days</a>
+                <a href="?range=30d" class="btn btn-outline-secondary {% if range_filter == '30d' %}active{% endif %}">30 Days</a>
+                <a href="?range=month" class="btn btn-outline-secondary {% if range_filter == 'month' %}active{% endif %}">This Month</a>
+                <a href="?range=year" class="btn btn-outline-secondary {% if range_filter == 'year' %}active{% endif %}">This Year</a>
+            </div>
+            {% if request.tenant and request.tenant.is_retail %}
+            <a href="{% url 'dashboard' %}" class="jd-btn-ghost text-gold">
+                <i class="bi bi-shop me-1"></i> Retail Showroom
+            </a>
+            {% endif %}
+            <a href="{% url 'wholesale:order_create' %}" class="jd-btn-gold">
+                <i class="bi bi-plus-circle me-1"></i> New Wholesale Order
+            </a>
+            <a href="{% url 'wholesale:payment_create' %}" class="jd-btn-ghost">
+                <i class="bi bi-cash-stack me-1"></i> Receive Payment
+            </a>
+        </div>
+    </div>
+
+    <!-- KPI Grid -->
+    <div class="jd-kpi-grid mb-4">
+        <!-- 1. Total Wholesale Sales -->
+        <div class="jd-kpi-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="jd-kpi-label">Wholesale Sales (Period)</div>
+                <div class="jd-kpi-icon text-gold"><i class="bi bi-currency-rupee"></i></div>
+            </div>
+            <div class="jd-kpi-val text-gold font-monospace">₹{{ total_wholesale_sales|floatformat:2 }}</div>
+            <div class="mt-2 small text-muted">
+                <span>{{ order_count }} Orders in selected period</span>
+            </div>
+        </div>
+
+        <!-- 2. Active Orders Awaiting Processing -->
+        <div class="jd-kpi-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="jd-kpi-label">Orders to Process</div>
+                <div class="jd-kpi-icon text-warning"><i class="bi bi-hourglass-split"></i></div>
+            </div>
+            <div class="jd-kpi-val text-warning">{{ awaiting_confirmation }} <span class="fs-6 text-muted">Drafts</span></div>
+            <div class="mt-2 small text-muted">
+                <span>{{ ready_for_dispatch }} Ready for Dispatch</span>
+            </div>
+        </div>
+
+        <!-- 3. Outstanding Retailer Receivables -->
+        <div class="jd-kpi-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="jd-kpi-label">Retailer Balance Due</div>
+                <div class="jd-kpi-icon text-danger"><i class="bi bi-cash-coin"></i></div>
+            </div>
+            <div class="jd-kpi-val text-danger font-monospace">₹{{ total_outstanding|floatformat:2 }}</div>
+            <div class="mt-2 small">
+                <a href="{% url 'wholesale:ledger_view' %}" class="text-gold text-decoration-none">Review party balances &rarr;</a>
+            </div>
+        </div>
+
+        <!-- 4. Collections & Returns -->
+        <div class="jd-kpi-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="jd-kpi-label">Payments Collected</div>
+                <div class="jd-kpi-icon text-success"><i class="bi bi-check-circle"></i></div>
+            </div>
+            <div class="jd-kpi-val text-success font-monospace">₹{{ period_payments|floatformat:2 }}</div>
+            <div class="mt-2 small text-muted">
+                {% if returns_pending > 0 %}
+                <span class="text-warning"><i class="bi bi-arrow-return-left"></i> {{ returns_pending }} returns pending</span>
+                {% else %}
+                <span>Returns up to date</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Action / Navigation Pills -->
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="jd-card p-3 d-flex flex-wrap gap-2 align-items-center justify-content-between">
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{% url 'wholesale:party_list' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-shop me-1"></i> Retailer Parties
+                    </a>
+                    <a href="{% url 'wholesale:catalogue' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-gem me-1"></i> Wholesale Catalogue &amp; Rates
+                    </a>
+                    <a href="{% url 'wholesale:order_list' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-bag-check me-1"></i> All Orders
+                    </a>
+                    <a href="{% url 'wholesale:dispatch_list' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-truck me-1"></i> Dispatches
+                    </a>
+                    <a href="{% url 'wholesale:invoice_list' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-receipt me-1"></i> Invoices
+                    </a>
+                    <a href="{% url 'wholesale:ledger_view' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-journal-text me-1"></i> Party Ledger
+                    </a>
+                    <a href="{% url 'wholesale:return_list' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-return-left me-1"></i> Returns &amp; RMA
+                    </a>
+                    <a href="{% url 'wholesale:reports' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-bar-chart-line me-1"></i> B2B Reports
+                    </a>
+                </div>
+                <div>
+                    <a href="{% url 'wholesale:pricing_rules' %}" class="btn btn-sm btn-outline-warning">
+                        <i class="bi bi-percent me-1"></i> Pricing Rules
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Recent Orders -->
+        <div class="col-lg-7">
+            <div class="jd-card p-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="m-0 fw-bold"><i class="bi bi-bag-check text-gold me-2"></i>Recent Wholesale Orders</h5>
+                    <a href="{% url 'wholesale:order_list' %}" class="text-gold small text-decoration-none">View All &rarr;</a>
+                </div>
+                {% if recent_orders %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="small text-muted">
+                                <th>Order #</th>
+                                <th>Party</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th class="text-end">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ord in recent_orders %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'wholesale:order_detail' ord.pk %}" class="fw-bold text-decoration-none text-gold">
+                                        {{ ord.order_number }}
+                                    </a>
+                                </td>
+                                <td>{{ ord.party.name }}</td>
+                                <td class="small text-muted">{{ ord.order_date|date:"d-M-Y" }}</td>
+                                <td>
+                                    {% if ord.status == 'Confirmed' %}
+                                    <span class="badge bg-success bg-opacity-25 text-success">Confirmed</span>
+                                    {% elif ord.status == 'Ready for Dispatch' %}
+                                    <span class="badge bg-info bg-opacity-25 text-info">Ready</span>
+                                    {% elif ord.status == 'Dispatched' or ord.status == 'Completed' %}
+                                    <span class="badge bg-primary bg-opacity-25 text-primary">{{ ord.status }}</span>
+                                    {% elif ord.status == 'Draft' %}
+                                    <span class="badge bg-secondary bg-opacity-25 text-secondary">Draft</span>
+                                    {% else %}
+                                    <span class="badge bg-danger bg-opacity-25 text-danger">{{ ord.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end font-monospace fw-bold">₹{{ ord.total_amount|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-inbox fs-2"></i>
+                    <p class="mt-2 mb-0">No wholesale orders recorded yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Payments & Low Stock -->
+        <div class="col-lg-5">
+            <!-- Recent Payments -->
+            <div class="jd-card p-3 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="m-0 fw-bold"><i class="bi bi-cash-stack text-success me-2"></i>Recent Collections</h5>
+                    <a href="{% url 'wholesale:payment_list' %}" class="text-gold small text-decoration-none">View All &rarr;</a>
+                </div>
+                {% if recent_payments %}
+                <ul class="list-group list-group-flush">
+                    {% for p in recent_payments %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent">
+                        <div>
+                            <div class="fw-semibold">{{ p.party.name }}</div>
+                            <small class="text-muted">{{ p.payment_method }} &bull; {{ p.payment_date|date:"d-M-Y" }}</small>
+                        </div>
+                        <span class="text-success fw-bold font-monospace">₹{{ p.amount|floatformat:2 }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted small text-center my-3">No payments recorded in this period.</p>
+                {% endif %}
+            </div>
+
+            <!-- Low Stock Alert -->
+            <div class="jd-card p-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="m-0 fw-bold"><i class="bi bi-exclamation-triangle text-warning me-2"></i>Low Stock Alert</h5>
+                    <a href="{% url 'inventory_list' %}" class="text-gold small text-decoration-none">Inventory &rarr;</a>
+                </div>
+                {% if low_stock_items %}
+                <ul class="list-group list-group-flush">
+                    {% for item in low_stock_items %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent">
+                        <div>
+                            <div class="fw-semibold text-truncate" style="max-width: 220px;">{{ item.name }}</div>
+                            <small class="text-muted">Tag: {{ item.tag_number|default:item.item_code }} &bull; {{ item.purity }}</small>
+                        </div>
+                        <span class="badge bg-danger bg-opacity-25 text-danger font-monospace">{{ item.quantity }} left</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted small text-center my-3">All inventory items are well-stocked.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Wholesale Reports & Analytics — JewelDesk{% endblock %}
+{% block page_title %}Wholesale Reports &amp; Analytics{% endblock %}
+
+{% block content %}
+<div class="jd-canvas">
+    <div class="jd-header">
+        <div>
+            <div class="jd-badge"><i class="bi bi-bar-chart-line me-1"></i> B2B Analytics</div>
+            <h1 class="jd-title">Wholesale Reports &amp; Performance</h1>
+            <p class="jd-subtitle">Analyze sales by retailer, category performance, order fulfillment, and receivables aging.</p>
+        </div>
+        <div>
+            <a href="{% url 'wholesale:dashboard' %}" class="jd-btn-ghost">
+                <i class="bi bi-speedometer2 me-1"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Top Retailers by Wholesale Sales -->
+        <div class="col-lg-6">
+            <div class="jd-card p-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-trophy text-gold me-2"></i>Sales by Retailer Party</h5>
+                {% if top_retailers %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="small text-muted">
+                                <th>Retailer Party</th>
+                                <th class="text-end">Orders</th>
+                                <th class="text-end">Total Wholesale Value</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in top_retailers %}
+                            <tr>
+                                <td class="fw-semibold">
+                                    <a href="{% url 'wholesale:party_detail' r.pk %}" class="text-decoration-none text-gold">
+                                        {{ r.name }}
+                                    </a>
+                                </td>
+                                <td class="text-end font-monospace">{{ r.orders_count }}</td>
+                                <td class="text-end font-monospace fw-bold">₹{{ r.total_sales|floatformat:2 }}</td>
+                                <td class="text-end">
+                                    <a href="{% url 'wholesale:party_ledger_csv' r.pk %}" class="btn btn-sm btn-outline-secondary" title="Export Ledger CSV">
+                                        <i class="bi bi-download"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">No wholesale sales recorded yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sales by Jewellery Category -->
+        <div class="col-lg-6">
+            <div class="jd-card p-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-pie-chart text-gold me-2"></i>Sales by Category</h5>
+                {% if category_sales %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="small text-muted">
+                                <th>Category</th>
+                                <th class="text-end">Pieces Sold</th>
+                                <th class="text-end">Total Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cat in category_sales %}
+                            <tr>
+                                <td class="fw-semibold">{{ cat.name }}</td>
+                                <td class="text-end font-monospace">{{ cat.pieces_sold }} pcs</td>
+                                <td class="text-end font-monospace fw-bold text-gold">₹{{ cat.sales_val|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">No category sales recorded yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

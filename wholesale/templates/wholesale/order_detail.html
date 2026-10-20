@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+
+{% block title %}Order {{ order.order_number }} — Wholesale JewelDesk{% endblock %}
+{% block page_title %}Order {{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="jd-canvas">
+    <!-- Header -->
+    <div class="jd-header mb-3">
+        <div>
+            <div class="jd-badge"><i class="bi bi-bag-check me-1"></i> Wholesale Order</div>
+            <h1 class="jd-title">{{ order.order_number }}</h1>
+            <p class="jd-subtitle">Buyer: <a href="{% url 'wholesale:party_detail' order.party.pk %}" class="text-gold fw-bold text-decoration-none">{{ order.party.name }}</a> &bull; Placed: {{ order.order_date|date:"d-M-Y" }}</p>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            {% if order.status == 'Draft' %}
+            <form method="post" action="{% url 'wholesale:order_status_update' order.pk %}" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="target_status" value="Confirmed">
+                <button type="submit" class="jd-btn-gold" onclick="return confirm('Confirm this order and verify inventory availability?')">
+                    <i class="bi bi-check-circle me-1"></i> Confirm Order
+                </button>
+            </form>
+            {% elif order.status == 'Confirmed' %}
+            <form method="post" action="{% url 'wholesale:order_status_update' order.pk %}" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="target_status" value="Processing">
+                <button type="submit" class="btn btn-warning btn-sm">
+                    <i class="bi bi-arrow-repeat me-1"></i> Move to Processing
+                </button>
+            </form>
+            <form method="post" action="{% url 'wholesale:order_status_update' order.pk %}" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="target_status" value="Ready for Dispatch">
+                <button type="submit" class="btn btn-info btn-sm text-dark">
+                    <i class="bi bi-box-seam me-1"></i> Ready for Dispatch
+                </button>
+            </form>
+            {% elif order.status == 'Processing' %}
+            <form method="post" action="{% url 'wholesale:order_status_update' order.pk %}" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="target_status" value="Ready for Dispatch">
+                <button type="submit" class="btn btn-info btn-sm text-dark">
+                    <i class="bi bi-box-seam me-1"></i> Ready for Dispatch
+                </button>
+            </form>
+            {% endif %}
+
+            {% if order.status in 'Confirmed Processing Ready for Dispatch Dispatched' and not order.is_fully_dispatched %}
+            <a href="{% url 'wholesale:dispatch_create' order.pk %}" class="btn btn-primary btn-sm">
+                <i class="bi bi-truck me-1"></i> Dispatch Stock
+            </a>
+            {% endif %}
+
+            <a href="{% url 'wholesale:invoice_create_from_order' order.pk %}" class="btn btn-outline-warning btn-sm" onclick="return confirm('Generate tax invoice for this order?')">
+                <i class="bi bi-receipt me-1"></i> Generate Invoice
+            </a>
+
+            {% if order.status not in 'Completed Cancelled Dispatched' %}
+            <form method="post" action="{% url 'wholesale:order_status_update' order.pk %}" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="target_status" value="Cancelled">
+                <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Cancel this wholesale order?')">
+                    <i class="bi bi-x-circle me-1"></i> Cancel
+                </button>
+            </form>
+            {% endif %}
+
+            <a href="{% url 'wholesale:order_list' %}" class="jd-btn-ghost">
+                <i class="bi bi-arrow-left me-1"></i> All Orders
+            </a>
+        </div>
+    </div>
+
+    <!-- Order Meta Grid -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="jd-card p-3">
+                <div class="text-muted small fw-semibold">ORDER STATUS</div>
+                <div class="mt-1">
+                    {% if order.status == 'Confirmed' %}
+                    <span class="badge bg-success bg-opacity-25 text-success fs-6">Confirmed</span>
+                    {% elif order.status == 'Ready for Dispatch' %}
+                    <span class="badge bg-info bg-opacity-25 text-info fs-6">Ready for Dispatch</span>
+                    {% elif order.status == 'Processing' %}
+                    <span class="badge bg-warning bg-opacity-25 text-warning fs-6">Processing</span>
+                    {% elif order.status == 'Dispatched' or order.status == 'Completed' %}
+                    <span class="badge bg-primary bg-opacity-25 text-primary fs-6">{{ order.status }}</span>
+                    {% elif order.status == 'Draft' %}
+                    <span class="badge bg-secondary bg-opacity-25 text-secondary fs-6">Draft</span>
+                    {% else %}
+                    <span class="badge bg-danger bg-opacity-25 text-danger fs-6">{{ order.status }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="jd-card p-3">
+                <div class="text-muted small fw-semibold">FULFILLMENT PROGRESS</div>
+                <div class="fs-5 fw-bold font-monospace mt-1">
+                    {{ order.dispatched_quantity }} / {{ order.total_quantity }} <span class="fs-6 fw-normal text-muted">pcs</span>
+                </div>
+                <div class="small text-muted mt-1">
+                    {% if order.is_fully_dispatched %}
+                    <span class="text-success"><i class="bi bi-check2-all"></i> 100% Dispatched</span>
+                    {% else %}
+                    <span>{{ order.total_quantity|add:"-"|add:order.dispatched_quantity }} pcs remaining</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="jd-card p-3">
+                <div class="text-muted small fw-semibold">REQUESTED DELIVERY</div>
+                <div class="fs-5 fw-bold mt-1">
+                    {{ order.expected_delivery_date|date:"d-M-Y"|default:"Not specified" }}
+                </div>
+                <div class="small text-muted mt-1">Order Date: {{ order.order_date|date:"d-M-Y" }}</div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="jd-card p-3">
+                <div class="text-muted small fw-semibold">ORDER TOTAL AMOUNT</div>
+                <div class="fs-4 fw-bold font-monospace text-gold mt-1">
+                    ₹{{ order.total_amount|floatformat:2 }}
+                </div>
+                <div class="small text-muted mt-1">Includes ₹{{ order.tax_amount|floatformat:2 }} GST</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Line Items Table -->
+    <div class="jd-card p-4 mb-4">
+        <h5 class="fw-bold mb-3"><i class="bi bi-gem text-gold me-2"></i>Ordered Products &amp; Historical Prices</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr class="small text-muted">
+                        <th>Item Description</th>
+                        <th>Tag / Barcode</th>
+                        <th>Category</th>
+                        <th>Metal &amp; Purity</th>
+                        <th class="text-end">Ordered Qty</th>
+                        <th class="text-end">Dispatched</th>
+                        <th class="text-end">Unit Price</th>
+                        <th class="text-end">Tax Rate</th>
+                        <th class="text-end">Line Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for it in items %}
+                    <tr>
+                        <td class="fw-semibold">{{ it.item.name }}</td>
+                        <td class="font-monospace small">{{ it.item.tag_number|default:it.item.item_code }}</td>
+                        <td>{{ it.item.category.name }}</td>
+                        <td>{{ it.item.metal_type }} ({{ it.item.purity }})</td>
+                        <td class="text-end font-monospace fw-bold">{{ it.quantity }}</td>
+                        <td class="text-end font-monospace">
+                            {% if it.dispatched_quantity >= it.quantity %}
+                            <span class="text-success fw-bold">{{ it.dispatched_quantity }}</span>
+                            {% else %}
+                            <span class="text-warning">{{ it.dispatched_quantity }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end font-monospace">₹{{ it.unit_price|floatformat:2 }}</td>
+                        <td class="text-end font-monospace">{{ it.tax_rate }}%</td>
+                        <td class="text-end font-monospace fw-bold">₹{{ it.total_price|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="8" class="text-end fw-semibold">Taxable Subtotal:</td>
+                        <td class="text-end font-monospace fw-semibold">₹{{ order.subtotal|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="8" class="text-end fw-semibold">GST (3%):</td>
+                        <td class="text-end font-monospace">₹{{ order.tax_amount|floatformat:2 }}</td>
+                    </tr>
+                    <tr class="fs-5 fw-bold text-gold">
+                        <td colspan="8" class="text-end">Total Order Value:</td>
+                        <td class="text-end font-monospace">₹{{ order.total_amount|floatformat:2 }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- Related Dispatches & Invoices -->
+    <div class="row g-4">
+        <!-- Dispatches -->
+        <div class="col-md-6">
+            <div class="jd-card p-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold m-0"><i class="bi bi-truck text-gold me-2"></i>Stock Dispatches</h5>
+                    {% if not order.is_fully_dispatched and order.status in 'Confirmed Processing Ready for Dispatch' %}
+                    <a href="{% url 'wholesale:dispatch_create' order.pk %}" class="btn btn-sm btn-outline-warning">
+                        <i class="bi bi-plus-lg me-1"></i> New Dispatch
+                    </a>
+                    {% endif %}
+                </div>
+                {% if dispatches %}
+                <ul class="list-group list-group-flush">
+                    {% for d in dispatches %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent">
+                        <div>
+                            <a href="{% url 'wholesale:dispatch_detail' d.pk %}" class="fw-bold text-decoration-none text-gold">
+                                {{ d.dispatch_number }}
+                            </a>
+                            <div class="small text-muted">{{ d.dispatch_date|date:"d-M-Y H:i" }} &bull; {{ d.total_quantity }} pcs</div>
+                        </div>
+                        <span class="badge bg-secondary bg-opacity-25 text-secondary">{{ d.status }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted small text-center my-3">No shipments or stock dispatches logged yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Invoices -->
+        <div class="col-md-6">
+            <div class="jd-card p-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold m-0"><i class="bi bi-receipt text-gold me-2"></i>Invoices &amp; Billing</h5>
+                    <a href="{% url 'wholesale:invoice_create_from_order' order.pk %}" class="btn btn-sm btn-outline-warning">
+                        <i class="bi bi-plus-lg me-1"></i> Issue Invoice
+                    </a>
+                </div>
+                {% if invoices %}
+                <ul class="list-group list-group-flush">
+                    {% for inv in invoices %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent">
+                        <div>
+                            <a href="{% url 'wholesale:invoice_detail' inv.pk %}" class="fw-bold text-decoration-none text-gold">
+                                {{ inv.invoice_number }}
+                            </a>
+                            <div class="small text-muted">{{ inv.invoice_date|date:"d-M-Y" }} &bull; Total: ₹{{ inv.total_amount|floatformat:2 }}</div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-secondary bg-opacity-25 text-secondary">{{ inv.status }}</span>
+                            <a href="{% url 'wholesale:invoice_pdf' inv.pk %}" class="btn btn-sm btn-outline-secondary" target="_blank">
+                                <i class="bi bi-file-earmark-pdf"></i>
+                            </a>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted small text-center my-3">No tax invoices generated yet for this order.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

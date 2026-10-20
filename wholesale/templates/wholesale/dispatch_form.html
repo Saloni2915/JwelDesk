@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Stock Dispatch — JewelDesk{% endblock %}
+{% block page_title %}Dispatch Order {{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="jd-canvas">
+    <div class="jd-header mb-3">
+        <div>
+            <div class="jd-badge"><i class="bi bi-truck me-1"></i> Stock Dispatch</div>
+            <h1 class="jd-title">Dispatch Items for Order #{{ order.order_number }}</h1>
+            <p class="jd-subtitle">Buyer: <b>{{ order.party.name }}</b> &bull; Address: {{ order.party.shipping_address|default:order.party.billing_address|default:"N/A" }}</p>
+        </div>
+        <div>
+            <a href="{% url 'wholesale:order_detail' order.pk %}" class="jd-btn-ghost">
+                <i class="bi bi-arrow-left me-1"></i> Back to Order
+            </a>
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="jd-card p-4 mb-4">
+            <h5 class="fw-bold mb-3"><i class="bi bi-box-seam text-gold me-2"></i>Shipment &amp; Logistics Details</h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Courier / Logistics Carrier</label>
+                    <input type="text" name="courier_name" class="form-control" placeholder="e.g. BVC Logistics / Sequel / BlueDart Sec">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Tracking / Waybill / LR Number</label>
+                    <input type="text" name="tracking_number" class="form-control" placeholder="e.g. AWB-99882233">
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Dispatch Notes / Remarks</label>
+                    <textarea name="notes" rows="2" class="form-control" placeholder="Box seal numbers, security tamper-proof envelope IDs, etc."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="jd-card p-4 mb-4">
+            <h5 class="fw-bold mb-3"><i class="bi bi-check2-square text-gold me-2"></i>Select Items &amp; Quantities to Dispatch</h5>
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle mb-0">
+                    <thead>
+                        <tr class="small text-muted bg-light">
+                            <th>Item Description</th>
+                            <th>Tag / Piece ID</th>
+                            <th class="text-end">Ordered</th>
+                            <th class="text-end">Already Dispatched</th>
+                            <th class="text-end">Remaining</th>
+                            <th class="text-end" style="width: 140px;">Dispatch Qty *</th>
+                            <th style="width: 180px;">Dispatched Tag #</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for line in order_items %}
+                        <tr>
+                            <td class="fw-semibold">{{ line.item.name }}</td>
+                            <td class="font-monospace small">{{ line.item.tag_number|default:line.item.item_code }}</td>
+                            <td class="text-end font-monospace">{{ line.quantity }}</td>
+                            <td class="text-end font-monospace text-muted">{{ line.dispatched_quantity }}</td>
+                            <td class="text-end font-monospace fw-bold text-gold">{{ line.remaining_dispatch_quantity }}</td>
+                            <td>
+                                <input type="number" name="qty_{{ line.id }}" class="form-control text-end"
+                                       value="{{ line.remaining_dispatch_quantity }}"
+                                       min="0" max="{{ line.remaining_dispatch_quantity }}"
+                                       {% if line.remaining_dispatch_quantity <= 0 %}disabled{% endif %}>
+                            </td>
+                            <td>
+                                <input type="text" name="tag_{{ line.id }}" class="form-control small font-monospace"
+                                       value="{{ line.item.tag_number }}" placeholder="Piece tag #">
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4 pt-3 border-top">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="create_invoice" value="1" id="createInvoiceSwitch" checked>
+                    <label class="form-check-label fw-semibold" for="createInvoiceSwitch">
+                        Automatically generate B2B Tax Invoice for this dispatch
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mb-5">
+            <a href="{% url 'wholesale:order_detail' order.pk %}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="jd-btn-gold" onclick="return confirm('Deduct physical stock and dispatch these pieces?')">
+                <i class="bi bi-truck me-1"></i> Confirm Dispatch &amp; Deduct Stock
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

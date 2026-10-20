@@ -44,7 +44,7 @@
                 <button class="btn btn-link d-lg-none me-1 me-sm-2 p-1 border-0 flex-shrink-0" id="sidebarToggle" type="button" aria-label="Toggle navigation">
                     <i class="bi bi-list fs-4"></i>
                 </button>
-                <a class="navbar-brand d-inline-flex align-items-center text-truncate min-w-0 p-0 m-0 overflow-hidden" href="{% url 'dashboard' %}" style="line-height: 1.2;">
+                <a class="navbar-brand d-inline-flex align-items-center text-truncate min-w-0 p-0 m-0 overflow-hidden" href="{% if request.tenant and not request.tenant.is_retail %}{% url 'wholesale:dashboard' %}{% else %}{% url 'dashboard' %}{% endif %}" style="line-height: 1.2;">
                     {% if company.logo_url %}
                     <img src="{{ company.logo_url }}" alt="{{ company.name }}" class="me-1 me-sm-2 rounded flex-shrink-0 navbar-brand-logo" style="height: 34px; max-height: 38px; width: auto; max-width: 130px; object-fit: contain; background: #ffffff; padding: 2px 5px; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.18);" onerror="this.onerror=null; this.src='{% static 'icons/favicon-32x32.png' %}';">
                     {% else %}
@@ -95,7 +95,7 @@
                             {% endif %}
                         </div>
                         <span class="navbar-user-role">
-                            {% if user.is_superuser %}Super Admin{% elif request.tenant and request.tenant.owner_id == user.id %}Tenant Admin{% elif request.tenant and user.employee_profile and user.employee_profile.role.name in 'Tenant Administrator,Tenant Admin,Admin' %}Tenant Admin{% elif request.tenant and user.employee_profile %}{{ user.employee_profile.role.name }}{% else %}Tenant Admin{% endif %}
+                            {% if user.is_superuser %}Super Admin{% elif request.tenant and request.tenant.owner_id == user.id %}{{ request.tenant.get_business_type_display }}{% elif request.tenant and user.employee_profile and user.employee_profile.role.name in 'Tenant Administrator,Tenant Admin,Admin' %}Admin &bull; {{ request.tenant.get_business_type_display }}{% elif request.tenant and user.employee_profile %}{{ user.employee_profile.role.name }} &bull; {{ request.tenant.get_business_type_display }}{% else %}Tenant Admin{% endif %}
                         </span>
                     </div>
                     <!-- On mobile / PWA screens, show compact truncated username -->
@@ -128,7 +128,7 @@
                 </div>
                 <div class="d-flex flex-column min-w-0" style="line-height: 1.2;">
                     <span class="sidebar-username fw-semibold text-truncate small" title="{{ user.first_name|default:user.username }}">{{ user.first_name|default:user.username }}</span>
-                    <span class="text-muted text-truncate" style="font-size: 0.7rem;">{% if user.is_superuser %}Super Admin{% elif request.tenant and request.tenant.owner_id == user.id %}Tenant Admin{% elif request.tenant and user.employee_profile and user.employee_profile.role.name in 'Tenant Administrator,Tenant Admin,Admin' %}Tenant Admin{% elif request.tenant and user.employee_profile %}{{ user.employee_profile.role.name }}{% else %}Tenant Admin{% endif %}</span>
+                    <span class="text-muted text-truncate" style="font-size: 0.7rem;">{% if user.is_superuser %}Super Admin{% elif request.tenant and request.tenant.owner_id == user.id %}{{ request.tenant.get_business_type_display }}{% elif request.tenant and user.employee_profile %}{{ user.employee_profile.role.name }} &bull; {{ request.tenant.get_business_type_display }}{% else %}Tenant Admin{% endif %}</span>
                 </div>
             </div>
             {% endif %}
@@ -140,7 +140,7 @@
                     <!-- 1. Dashboard -->
                     <li class="nav-item">
                         <a class="nav-link nav-link-single {% if request.resolver_match.url_name == 'dashboard' and request.resolver_match.app_name != 'karigar' %}active{% endif %}"
-                           href="{% url 'dashboard' %}">
+                           href="{% if request.tenant and not request.tenant.is_retail %}{% url 'wholesale:dashboard' %}{% else %}{% url 'dashboard' %}{% endif %}">
                             <span class="sidebar-item-content">
                                 <i class="bi bi-speedometer2 sidebar-item-icon"></i>
                                 <span class="sidebar-item-title">Dashboard</span>
@@ -149,6 +149,7 @@
                     </li>
 
                     <!-- 2. Sales & Exchange -->
+                    {% if not request.tenant or request.tenant.is_retail or user.is_superuser %}
                     <li class="nav-item">
                         <a class="nav-link sidebar-dropdown-toggle {% if 'sale' in request.resolver_match.url_name and request.resolver_match.url_name != 'sales_report' or 'old_gold' in request.resolver_match.url_name or '/old-gold/' in request.path or '/sales/' in request.path and '/sales/report/' not in request.path %}parent-active{% else %}collapsed{% endif %}"
                            data-bs-toggle="collapse"
@@ -197,6 +198,91 @@
                             </ul>
                         </div>
                     </li>
+                    {% endif %}
+
+                    <!-- 2.3 Wholesale & B2B Supplier Module -->
+                    {% if request.tenant and request.tenant.is_wholesale or user.is_superuser %}
+                    {% if user.is_superuser or user.is_staff or not user.employee_profile or user_perms.wholesale.can_view %}
+                    <li class="nav-item">
+                        <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.app_name == 'wholesale' or '/wholesale/' in request.path %}parent-active{% else %}collapsed{% endif %}"
+                           data-bs-toggle="collapse"
+                           href="#submenu-wholesale"
+                           role="button"
+                           aria-expanded="{% if request.resolver_match.app_name == 'wholesale' or '/wholesale/' in request.path %}true{% else %}false{% endif %}"
+                           aria-controls="submenu-wholesale">
+                            <span class="sidebar-item-content">
+                                <i class="bi bi-buildings sidebar-item-icon"></i>
+                                <span class="sidebar-item-title">Wholesale &amp; B2B</span>
+                            </span>
+                            <i class="bi bi-chevron-down dropdown-chevron"></i>
+                        </a>
+                        <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.app_name == 'wholesale' or '/wholesale/' in request.path %}show{% endif %}" id="submenu-wholesale">
+                            <ul class="nav flex-column sidebar-submenu">
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+                                       href="{% url 'wholesale:dashboard' %}">
+                                        <i class="bi bi-speedometer2"></i> Wholesale Dashboard
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and 'party' in request.resolver_match.url_name %}active{% endif %}"
+                                       href="{% url 'wholesale:party_list' %}">
+                                        <i class="bi bi-shop"></i> Retailers / Parties
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name in 'catalogue pricing_rules pricing_rule_create' %}active{% endif %}"
+                                       href="{% url 'wholesale:catalogue' %}">
+                                        <i class="bi bi-gem"></i> Products &amp; Pricing
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and 'order' in request.resolver_match.url_name %}active{% endif %}"
+                                       href="{% url 'wholesale:order_list' %}">
+                                        <i class="bi bi-bag-check"></i> Wholesale Orders
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and 'dispatch' in request.resolver_match.url_name %}active{% endif %}"
+                                       href="{% url 'wholesale:dispatch_list' %}">
+                                        <i class="bi bi-truck"></i> Dispatches &amp; Shipping
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and 'invoice' in request.resolver_match.url_name %}active{% endif %}"
+                                       href="{% url 'wholesale:invoice_list' %}">
+                                        <i class="bi bi-receipt"></i> Wholesale Invoices
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name in 'payment_list payment_create' %}active{% endif %}"
+                                       href="{% url 'wholesale:payment_list' %}">
+                                        <i class="bi bi-cash-stack"></i> Payments Received
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name == 'ledger_view' %}active{% endif %}"
+                                       href="{% url 'wholesale:ledger_view' %}">
+                                        <i class="bi bi-journal-text"></i> Party Ledger
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and 'return' in request.resolver_match.url_name %}active{% endif %}"
+                                       href="{% url 'wholesale:return_list' %}">
+                                        <i class="bi bi-arrow-return-left"></i> Returns &amp; Credit Notes
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name == 'reports' %}active{% endif %}"
+                                       href="{% url 'wholesale:reports' %}">
+                                        <i class="bi bi-bar-chart-line"></i> Wholesale Reports
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                    {% endif %}
+                    {% endif %}
 
                     <!-- 2.5 Outstation Sales & Trips -->
                     <li class="nav-item">
@@ -319,6 +405,7 @@
                     </li>
 
                     <!-- 5. Customers -->
+                    {% if not request.tenant or request.tenant.is_retail or user.is_superuser %}
                     <li class="nav-item">
                         <a class="nav-link sidebar-dropdown-toggle {% if 'customer' in request.resolver_match.url_name or 'enquiry' in request.resolver_match.url_name or '/customers/' in request.path or '/enquiries/' in request.path %}parent-active{% else %}collapsed{% endif %}"
                            data-bs-toggle="collapse"
@@ -381,6 +468,7 @@
                             </ul>
                         </div>
                     </li>
+                    {% endif %}
 
                     <!-- 7. Karigar & Workshop -->
                     {% if user.is_superuser or user.is_staff or user_perms.karigar.can_view or not user.employee_profile %}
@@ -515,12 +603,22 @@
                         </a>
                         <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.url_name == 'sales_report' or request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'reports' or '/sales/report/' in request.path or '/karigar/reports/' in request.path %}show{% endif %}" id="submenu-reports">
                             <ul class="nav flex-column sidebar-submenu">
+                                {% if not request.tenant or request.tenant.is_retail or user.is_superuser %}
                                 <li class="nav-item">
                                     <a class="nav-link {% if request.resolver_match.url_name == 'sales_report' or '/sales/report/' in request.path %}active{% endif %}"
                                        href="{% url 'sales_report' %}">
-                                        <i class="bi bi-receipt"></i> Sales Report
+                                        <i class="bi bi-receipt"></i> Retail Sales Report
                                     </a>
                                 </li>
+                                {% endif %}
+                                {% if request.tenant and request.tenant.is_wholesale or user.is_superuser %}
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name == 'reports' %}active{% endif %}"
+                                       href="{% url 'wholesale:reports' %}">
+                                        <i class="bi bi-bar-chart-line"></i> Wholesale Reports
+                                    </a>
+                                </li>
+                                {% endif %}
                                 {% if user.is_superuser or user.is_staff or user_perms.karigar.can_view or not user.employee_profile %}
                                 <li class="nav-item">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'reports' %}active{% endif %}"

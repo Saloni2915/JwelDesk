@@ -51,4 +51,36 @@ class TenantMiddleware:
                 logging.getLogger(__name__).warning("TenantMiddleware resolution notice: %s", e)
                 request.tenant = None
 
+        # Enforce business category routing protection
+        if user and user.is_authenticated and request.tenant and not user.is_superuser:
+            path = getattr(request, 'path_info', '')
+            # Retail routes accessed by pure wholesale business
+            if not request.tenant.is_retail:
+                RETAIL_PREFIXES = ('/sales/', '/customers/', '/custom-orders/', '/enquiries/', '/old-gold/')
+                if any(path.startswith(prefix) for prefix in RETAIL_PREFIXES):
+                    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or '/api/' in path:
+                        from django.http import JsonResponse
+                        return JsonResponse({'error': 'Module not available for wholesale accounts.'}, status=403)
+                    try:
+                        from django.contrib import messages
+                        messages.warning(request, "Retail showroom features are not enabled for wholesale accounts.")
+                    except Exception:
+                        pass
+                    from django.shortcuts import redirect
+                    return redirect('wholesale:dashboard')
+
+            # Wholesale routes accessed by pure retail business
+            if not request.tenant.is_wholesale:
+                if path.startswith('/wholesale/'):
+                    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or '/api/' in path:
+                        from django.http import JsonResponse
+                        return JsonResponse({'error': 'Module not available for retail accounts.'}, status=403)
+                    try:
+                        from django.contrib import messages
+                        messages.warning(request, "Wholesale B2B features are not enabled for retail accounts.")
+                    except Exception:
+                        pass
+                    from django.shortcuts import redirect
+                    return redirect('dashboard')
+
         return self.get_response(request)

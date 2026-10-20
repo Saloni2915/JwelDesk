@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}Retailers & Parties — Wholesale JewelDesk{% endblock %}
+{% block page_title %}Retailers &amp; Wholesale Parties{% endblock %}
+
+{% block content %}
+<div class="jd-canvas">
+    <!-- Header -->
+    <div class="jd-header">
+        <div>
+            <div class="jd-badge"><i class="bi bi-shop me-1"></i> B2B Party Directory</div>
+            <h1 class="jd-title">Retailers &amp; Wholesale Customers</h1>
+            <p class="jd-subtitle">Manage retail shops, jewellery showrooms, and corporate buyers you supply to.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'wholesale:party_create' %}" class="jd-btn-gold">
+                <i class="bi bi-person-plus me-1"></i> Add Retailer Party
+            </a>
+            <a href="{% url 'wholesale:dashboard' %}" class="jd-btn-ghost">
+                <i class="bi bi-speedometer2 me-1"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters & Search -->
+    <div class="jd-card p-3 mb-4">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="q" value="{{ q }}" class="form-control border-start-0" placeholder="Search by shop name, contact person, mobile, or GSTIN...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select">
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active Retailers Only</option>
+                    <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Retailers</option>
+                    <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive Retailers</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-warning w-100">Filter</button>
+            </div>
+            {% if q or status_filter != 'active' %}
+            <div class="col-md-2">
+                <a href="{% url 'wholesale:party_list' %}" class="btn btn-outline-secondary w-100">Clear</a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Retailers Table -->
+    <div class="jd-card p-3">
+        {% if page_obj %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr class="small text-muted">
+                        <th>Business / Shop Name</th>
+                        <th>Contact Person</th>
+                        <th>Phone</th>
+                        <th>GSTIN</th>
+                        <th class="text-end">Credit Limit</th>
+                        <th class="text-end">Current Balance</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in page_obj %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'wholesale:party_detail' p.pk %}" class="fw-bold text-decoration-none text-gold">
+                                {{ p.name }}
+                            </a>
+                            {% if p.is_over_credit_limit %}
+                            <span class="badge bg-danger ms-1" style="font-size: 0.65rem;">Over Credit</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ p.contact_person|default:"—" }}</td>
+                        <td>{{ p.phone }}</td>
+                        <td class="font-monospace small">{{ p.gstin|default:"URP" }}</td>
+                        <td class="text-end font-monospace">
+                            {% if p.credit_limit > 0 %}
+                            ₹{{ p.credit_limit|floatformat:2 }}
+                            {% else %}
+                            <span class="text-muted">No Limit</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end font-monospace fw-bold {% if p.current_balance > 0 %}text-danger{% elif p.current_balance < 0 %}text-success{% else %}text-muted{% endif %}">
+                            ₹{{ p.current_balance|floatformat:2 }}
+                        </td>
+                        <td class="text-center">
+                            {% if p.is_active %}
+                            <span class="badge bg-success bg-opacity-25 text-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-secondary bg-opacity-25 text-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'wholesale:party_detail' p.pk %}" class="btn btn-sm btn-outline-secondary" title="View Statement & History">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{% url 'wholesale:party_edit' p.pk %}" class="btn btn-sm btn-outline-warning" title="Edit Retailer">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <nav class="mt-4 d-flex justify-content-center">
+            <ul class="pagination pagination-sm">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&status={{ status_filter }}">Previous</a></li>
+                {% endif %}
+                <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&status={{ status_filter }}">Next</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-shop fs-1"></i>
+            <h5 class="mt-3">No retailer parties found</h5>
+            <p class="small">Add jewellery retailers or business partners you supply jewellery to.</p>
+            <a href="{% url 'wholesale:party_create' %}" class="jd-btn-gold">Add First Retailer</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

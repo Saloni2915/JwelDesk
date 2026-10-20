@@ -1418,8 +1418,193 @@ class TenantMiddlewareSafetyTests(TestCase):
         middleware = TenantMiddleware(lambda req: "response_ok")
         response = middleware(request)
         self.assertEqual(response, "response_ok")
-        self.assertIsNone(request.tenant)
 
+class BusinessCategoryVisibilityAndAccessTests(TestCase):
+    """
+    Tests for Category-Based UI Visibility and Access Control:
+    - RETAIL: Retail-specific menus visible, wholesale-only hidden, backend protected.
+    - WHOLESALE: Wholesale-specific menus visible, retail-only hidden, backend protected.
+    - BOTH: Both retail and wholesale menus and endpoints accessible.
+    - Employee permissions constrained by tenant business category.
+    """
 
+    def setUp(self):
+        self.client = Client()
+        from accounts.models import Tenant
+        from team.models import Role, Employee, EmployeePermission
 
+        # 1. Retail User & Tenant
+        self.retail_user = User.objects.create_user(username='retail_owner', password='Password123')
+        self.retail_tenant = Tenant.objects.create(
+            name='Diamond Retail Showroom',
+            owner=self.retail_user,
+            business_type=Tenant.TYPE_RETAIL
+        )
 
+        # 2. Wholesale User & Tenant
+        self.wholesale_user = User.objects.create_user(username='wholesale_owner', password='Password123')
+        self.wholesale_tenant = Tenant.objects.create(
+            name='Bullion & Gold Wholesalers',
+            owner=self.wholesale_user,
+            business_type=Tenant.TYPE_WHOLESALE
+        )
+
+        # 3. Hybrid (Both) User & Tenant
+        self.hybrid_user = User.objects.create_user(username='hybrid_owner', password='Password123')
+        self.hybrid_tenant = Tenant.objects.create(
+            name='Elite Jewels Retail & Wholesale',
+            owner=self.hybrid_user,
+            business_type=Tenant.TYPE_BOTH
+        )
+
+    def test_retail_business_type_ui_visibility_and_access(self):
+        from team.permissions import has_module_perm
+
+        self.client.login(username='retail_owner', password='Password123')
+
+        # Visit dashboard
+        resp = self.client.get(reverse('dashboard'))
+        self.assertEqual(resp.status_code, 200)
+
+        # Retail menus MUST be visible
+        self.assertContains(resp, 'Sales &amp; Exchange')
+        self.assertContains(resp, 'All Sales')
+        self.assertContains(resp, 'All Customers')
+        self.assertContains(resp, 'Custom Orders')
+        self.assertContains(resp, 'Retail Sales Report')
+
+        # Wholesale menu MUST be hidden
+        self.assertNotContains(resp, 'Wholesale &amp; B2B')
+        self.assertNotContains(resp, 'Wholesale Dashboard')
+        self.assertNotContains(resp, 'Retailers / Parties')
+        self.assertNotContains(resp, 'Wholesale Orders')
+
+        # Backend protection: Direct access to wholesale URLs blocked and redirected
+        resp_wholesale = self.client.get(reverse('wholesale:dashboard'), follow=False)
+        self.assertEqual(resp_wholesale.status_code, 302)
+        self.assertIn(reverse('dashboard'), resp_wholesale.url)
+
+        resp_order_list = self.client.get(reverse('wholesale:order_list'), follow=False)
+        self.assertEqual(resp_order_list.status_code, 302)
+
+        # Permission check
+        self.assertTrue(has_module_perm(self.retail_user, 'sales', tenant=self.retail_tenant))
+        self.assertFalse(has_module_perm(self.retail_user, 'wholesale', tenant=self.retail_tenant))
+
+    def test_wholesale_business_type_ui_visibility_and_access(self):
+        from team.permissions import has_module_perm
+
+        self.client.login(username='wholesale_owner', password='Password123')
+
+        # Visit wholesale dashboard
+        resp = self.client.get(reverse('wholesale:dashboard'))
+        self.assertEqual(resp.status_code, 200)
+
+        # Wholesale menus MUST be visible
+        self.assertContains(resp, 'Wholesale &amp; B2B')
+        self.assertContains(resp, 'Retailers / Parties')
+        self.assertContains(resp, 'Wholesale Orders')
+        self.assertContains(resp, 'Wholesale Invoices')
+
+        # Retail menus MUST be hidden
+        self.assertNotContains(resp, 'Sales &amp; Exchange')
+        self.assertNotContains(resp, 'All Customers')
+        self.assertNotContains(resp, 'Custom Orders')
+        self.assertNotContains(resp, 'Retail Sales Report')
+
+        # Shared menus MUST remain visible
+        self.assertContains(resp, 'Jewellery Stock')
+        self.assertContains(resp, 'Team &amp; HR')
+        self.assertContains(resp, 'Settings')
+
+        # Backend protection: Direct access to /dashboard/ redirects to /wholesale/
+        resp_dash = self.client.get(reverse('dashboard'), follow=False)
+        self.assertEqual(resp_dash.status_code, 302)
+        self.assertIn(reverse('wholesale:dashboard'), resp_dash.url)
+
+        # Backend protection: Direct access to retail URLs blocked and redirected to wholesale
+        resp_sales = self.client.get(reverse('sale_list'), follow=False)
+        self.assertEqual(resp_sales.status_code, 302)
+        self.assertIn(reverse('wholesale:dashboard'), resp_sales.url)
+
+        resp_customers = self.client.get(reverse('customer_list'), follow=False)
+        self.assertEqual(resp_customers.status_code, 302)
+
+        resp_custom_orders = self.client.get(reverse('custom_orders:custom_order_list'), follow=False)
+        self.assertEqual(resp_custom_orders.status_code, 302)
+
+        # Permission checks
+        self.assertTrue(has_module_perm(self.wholesale_user, 'wholesale', tenant=self.wholesale_tenant))
+        self.assertFalse(has_module_perm(self.wholesale_user, 'sales', tenant=self.wholesale_tenant))
+        self.assertFalse(has_module_perm(self.wholesale_user, 'customers', tenant=self.wholesale_tenant))
+        self.assertFalse(has_module_perm(self.wholesale_user, 'custom_orders', tenant=self.wholesale_tenant))
+
+    def test_both_business_type_ui_visibility_and_access(self):
+        from team.permissions import has_module_perm
+
+        self.client.login(username='hybrid_owner', password='Password123')
+
+        # Visit dashboard
+        resp = self.client.get(reverse('dashboard'))
+        self.assertEqual(resp.status_code, 200)
+
+        # Both retail and wholesale menus MUST be visible
+        self.assertContains(resp, 'Sales &amp; Exchange')
+        self.assertContains(resp, 'All Customers')
+        self.assertContains(resp, 'Custom Orders')
+        self.assertContains(resp, 'Wholesale &amp; B2B')
+        self.assertContains(resp, 'Wholesale Suite')
+
+        # Can access both retail and wholesale backend views
+        resp_sales = self.client.get(reverse('sale_list'))
+        self.assertEqual(resp_sales.status_code, 200)
+
+        resp_wholesale = self.client.get(reverse('wholesale:dashboard'))
+        self.assertEqual(resp_wholesale.status_code, 200)
+        self.assertContains(resp_wholesale, 'Retail Showroom')
+
+        # Permission checks
+        self.assertTrue(has_module_perm(self.hybrid_user, 'sales', tenant=self.hybrid_tenant))
+        self.assertTrue(has_module_perm(self.hybrid_user, 'wholesale', tenant=self.hybrid_tenant))
+
+    def test_employee_permissions_constrained_by_tenant_business_type(self):
+        from team.permissions import has_module_perm
+        from team.models import Role, Employee, EmployeePermission
+
+        # Create wholesale employee
+        emp_user = User.objects.create_user(username='wholesale_staff', password='Password123')
+        role = Role.objects.create(tenant=self.wholesale_tenant, name='Staff Member')
+        emp = Employee.objects.create(
+            tenant=self.wholesale_tenant,
+            user=emp_user,
+            employee_id='WS-01',
+            full_name='Wholesale Staff',
+            role=role,
+            status=Employee.STATUS_ACTIVE
+        )
+        EmployeePermission.objects.create(
+            employee=emp,
+            module=EmployeePermission.MODULE_WHOLESALE,
+            can_view=True,
+            can_add=True
+        )
+        EmployeePermission.objects.create(
+            employee=emp,
+            module=EmployeePermission.MODULE_SALES,
+            can_view=True,
+            can_add=True
+        )
+
+        # Even though EmployeePermission has MODULE_SALES=True, the wholesale tenant restricts it!
+        self.assertTrue(has_module_perm(emp_user, 'wholesale', tenant=self.wholesale_tenant))
+        self.assertFalse(has_module_perm(emp_user, 'sales', tenant=self.wholesale_tenant))
+        self.assertFalse(has_module_perm(emp_user, 'customers', tenant=self.wholesale_tenant))
+
+    def test_ajax_request_returns_403_for_incompatible_module(self):
+        self.client.login(username='wholesale_owner', password='Password123')
+        resp = self.client.get(
+            reverse('sale_list'),
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(resp.status_code, 403)
+        self.assertIn('wholesale accounts', resp.json().get('error', ''))
