@@ -49,11 +49,14 @@ class Command(BaseCommand):
         updated_count = 0
 
         for name, description in BUILTIN_ROLES:
-            role, created = Role.objects.get_or_create(
-                name=name,
-                defaults={'description': description, 'is_builtin': True},
-            )
-            if created:
+            role = Role.objects.filter(name=name, tenant__isnull=True).first() or Role.objects.filter(name=name).first()
+            if not role:
+                role = Role.objects.create(
+                    name=name,
+                    tenant=None,
+                    description=description,
+                    is_builtin=True,
+                )
                 created_count += 1
                 self.stdout.write(self.style.SUCCESS(f'  Created role: {name}'))
             elif force:

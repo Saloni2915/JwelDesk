@@ -163,11 +163,14 @@ class Role(models.Model):
         ]
         created = 0
         for name, desc in roles_data:
-            _, was_created = cls.objects.get_or_create(
-                name=name,
-                defaults={'description': desc, 'is_builtin': True},
-            )
-            if was_created:
+            role = cls.objects.filter(name=name, tenant__isnull=True).first() or cls.objects.filter(name=name).first()
+            if not role:
+                cls.objects.create(
+                    name=name,
+                    tenant=None,
+                    description=desc,
+                    is_builtin=True,
+                )
                 created += 1
         return created
 
@@ -555,16 +558,19 @@ class Employee(models.Model):
 
         Role.ensure_builtin_roles()
         admin_role = (
-            Role.objects.filter(name=Role.ROLE_TENANT_ADMIN).first()
+            Role.objects.filter(name=Role.ROLE_TENANT_ADMIN, tenant__isnull=True).first()
+            or Role.objects.filter(name=Role.ROLE_TENANT_ADMIN, tenant=tenant).first()
+            or Role.objects.filter(name=Role.ROLE_TENANT_ADMIN).first()
+            or Role.objects.filter(name=Role.ROLE_ADMIN, tenant__isnull=True).first()
+            or Role.objects.filter(name=Role.ROLE_ADMIN, tenant=tenant).first()
             or Role.objects.filter(name=Role.ROLE_ADMIN).first()
         )
         if not admin_role:
-            admin_role, _ = Role.objects.get_or_create(
+            admin_role = Role.objects.create(
                 name=Role.ROLE_TENANT_ADMIN,
-                defaults={
-                    'description': 'Full administrative access across all modules as Tenant Administrator.',
-                    'is_builtin': True,
-                }
+                tenant=tenant,
+                description='Full administrative access across all modules as Tenant Administrator.',
+                is_builtin=True,
             )
 
         emp = cls.objects.filter(tenant=tenant, user=owner).first()
