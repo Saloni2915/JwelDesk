@@ -32,13 +32,16 @@ def seed_tenant_admin_and_ensure_owners(apps, schema_editor):
     Tenant = apps.get_model('accounts', 'Tenant')
 
     # 1. Seed or get 'Tenant Administrator' role
-    tenant_admin_role, _ = Role.objects.get_or_create(
-        name='Tenant Administrator',
-        defaults={
-            'description': 'Full administrative access across all modules as Tenant Administrator.',
-            'is_builtin': True,
-        },
+    tenant_admin_role = (
+        Role.objects.filter(name='Tenant Administrator').first()
+        or Role.objects.filter(name='Admin').first()
     )
+    if not tenant_admin_role:
+        tenant_admin_role = Role.objects.create(
+            name='Tenant Administrator',
+            description='Full administrative access across all modules as Tenant Administrator.',
+            is_builtin=True,
+        )
 
     # 2. Iterate through all tenants and ensure owner has an active Employee profile
     for tenant in Tenant.objects.all():
@@ -104,17 +107,24 @@ def seed_tenant_admin_and_ensure_owners(apps, schema_editor):
 
         # Grant full permissions for all 11 modules
         for mod in MODULES:
-            EmployeePermission.objects.update_or_create(
-                employee=emp,
-                module=mod,
-                defaults={
-                    'can_view': True,
-                    'can_add': True,
-                    'can_edit': True,
-                    'can_delete': True,
-                    'can_export': True,
-                },
-            )
+            perm = EmployeePermission.objects.filter(employee=emp, module=mod).first()
+            if perm:
+                perm.can_view = True
+                perm.can_add = True
+                perm.can_edit = True
+                perm.can_delete = True
+                perm.can_export = True
+                perm.save()
+            else:
+                EmployeePermission.objects.create(
+                    employee=emp,
+                    module=mod,
+                    can_view=True,
+                    can_add=True,
+                    can_edit=True,
+                    can_delete=True,
+                    can_export=True,
+                )
 
 
 def reverse_migration(apps, schema_editor):
