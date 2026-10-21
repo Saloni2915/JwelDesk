@@ -5,6 +5,7 @@ HTTP handlers for the JewelDesk Super Admin Portal.
 Provides platform analytics, customer/tenant management, append-only audit logging,
 and secure, reversible support impersonation.
 """
+import csv
 from datetime import timedelta
 from decimal import Decimal
 import logging
@@ -15,7 +16,7 @@ from django.contrib.auth import get_user_model, login as auth_login
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -29,6 +30,14 @@ from .models import (
     TenantSubscription,
     SubscriptionPayment,
     PlatformProposal,
+    PlatformDemoLead,
+    PlatformSupportTicket,
+)
+from .forms import (
+    PlatformDemoLeadForm,
+    DemoMeetingScheduleForm,
+    PublicDemoRequestForm,
+    PlatformSupportTicketForm,
 )
 
 User = get_user_model()
@@ -71,28 +80,64 @@ def ensure_all_tenant_subscriptions():
 
 @super_admin_required
 def dashboard_view(request):
-    """Main platform overview dashboard displaying database-backed metrics."""
+    """Main platform overview dashboard displaying database-backed metrics with date filtering."""
     now = timezone.now()
-    seven_days_ago = now - timedelta(days=7)
-    thirty_days_ago = now - timedelta(days=30)
+    today = timezone.localdate()
 
-    # Core tenant counts
+    # 1. Date Range Filter
+    period = request.GET.get('period', '30d')
+    start_date_str = request.GET.get('start_date', '')
+    end_date_str = request.GET.get('end_date', '')
+
+    if start_date_str and end_date_str:
+        try:
+            from django.utils.dateparse import parse_date
+            import datetime
+            s_date = parse_date(start_date_str)
+            e_date = parse_date(end_date_str)
+            if s_date and e_date:
+                period_start = timezone.make_aware(datetime.datetime.combine(s_date, datetime.time.min))
+                period_end = timezone.make_aware(datetime.datetime.combine(e_date, datetime.time.max))
+            else:
+                period_start = now - timedelta(days=30)
+                period_end = now
+        except Exception:
+            period_start = now - timedelta(days=30)
+            period_end = now
+    elif period == '7d':
+        period_start = now - timedelta(days=7)
+        period_end = now
+    elif period == '90d':
+        period_start = now - timedelta(days=90)
+        period_end = now
+    elif period == '1y':
+        period_start = now - timedelta(days=365)
+        period_end = now
+    elif period == 'all':
+        period_start = now - timedelta(days=3650)
+        period_end = now
+    else:
+        period = '30d'
+        period_start = now - timedelta(days=30)
+        period_end = now
+
+    # 2. Core Tenant Counts & Business Types
     total_tenants = Tenant.objects.count()
     active_tenants = Tenant.objects.filter(is_active=True).count()
     inactive_tenants = Tenant.objects.filter(is_active=False).count()
+    new_tenants_period = Tenant.objects.filter(created_at__range=(period_start, period_end)).count()
 
-    # User & Employee aggregates across tenants
+    retail_tenants = Tenant.objects.filter(business_type=Tenant.TYPE_RETAIL).count()
+    wholesale_tenants = Tenant.objects.filter(business_type=Tenant.TYPE_WHOLESALE).count()
+    hybrid_tenants = Tenant.objects.filter(business_type=Tenant.TYPE_BOTH).count()
+
+    # 3. User & Employee Aggregates
     total_users = User.objects.count()
     total_owners = User.objects.filter(owned_tenants__isnull=False).distinct().count()
-
     from team.models import Employee
     total_employees = Employee.objects.count()
 
-    # Registration growth metrics
-    new_tenants_7d = Tenant.objects.filter(created_at__gte=seven_days_ago).count()
-    new_tenants_30d = Tenant.objects.filter(created_at__gte=thirty_days_ago).count()
-
-    # Recent tenant registrations
+    # 4. Recent Tenant Registrations
     recent_tenants = (
         Tenant.objects
         .select_related('owner')
@@ -100,7 +145,56 @@ def dashboard_view(request):
         .order_by('-created_at')[:8]
     )
 
-    # Recent platform audit logs (resilient if table not yet migrated)
+    # 5. Leads & Demo Meetings Metrics
+    try:
+        total_leads = PlatformDemoLead.objects.count()
+        period_leads = PlatformDemoLead.objects.filter(created_at__range=(period_start, period_end)).count()
+        new_leads_count = PlatformDemoLead.objects.filter(status=PlatformDemoLead.STATUS_NEW).count()
+        scheduled_demos_count = PlatformDemoLead.objects.filter(status=PlatformDemoLead.STATUS_SCHEDULED).count()
+        completed_demos_count = PlatformDemoLead.objects.filter(status=PlatformDemoLead.STATUS_COMPLETED).count()
+        converted_leads_count = PlatformDemoLead.objects.filter(converted_tenant__isnull=False).count()
+        conversion_rate = round((converted_leads_count / total_leads * 100), 1) if total_leads > 0 else 0
+
+        upcoming_meetings = list(
+            PlatformDemoLead.objects
+            .filter(status=PlatformDemoLead.STATUS_SCHEDULED, requested_datetime__gte=now)
+            .select_related('assigned_staff')
+            .order_by('requested_datetime')[:5]
+        )
+        overdue_followups = list(
+            PlatformDemoLead.objects
+            .filter(follow_up_date__lt=today)
+            .exclude(status__in=[PlatformDemoLead.STATUS_COMPLETED, PlatformDemoLead.STATUS_CANCELLED, PlatformDemoLead.STATUS_NOT_INTERESTED])
+            .select_related('assigned_staff')
+            .order_by('follow_up_date')[:5]
+        )
+    except Exception as e:
+        logger.warning("Demo lead query deferred: %s", e)
+        total_leads = 0
+        period_leads = 0
+        new_leads_count = 0
+        scheduled_demos_count = 0
+        completed_demos_count = 0
+        converted_leads_count = 0
+        conversion_rate = 0
+        upcoming_meetings = []
+        overdue_followups = []
+
+    # 6. Support Tickets
+    try:
+        open_tickets_count = PlatformSupportTicket.objects.filter(
+            status__in=[PlatformSupportTicket.STATUS_OPEN, PlatformSupportTicket.STATUS_IN_PROGRESS]
+        ).count()
+        urgent_tickets_count = PlatformSupportTicket.objects.filter(
+            priority=PlatformSupportTicket.PRIORITY_URGENT,
+            status__in=[PlatformSupportTicket.STATUS_OPEN, PlatformSupportTicket.STATUS_IN_PROGRESS]
+        ).count()
+    except Exception as e:
+        logger.warning("Support ticket query deferred: %s", e)
+        open_tickets_count = 0
+        urgent_tickets_count = 0
+
+    # 7. Recent Platform Audit Logs
     try:
         recent_activity = list(
             PlatformAuditLog.objects
@@ -111,12 +205,21 @@ def dashboard_view(request):
         logger.warning("Audit log table query deferred: %s", e)
         recent_activity = []
 
-    # Live subscription & billing aggregates
+    # 8. Subscriptions & Verified Revenue
     try:
         ensure_all_tenant_subscriptions()
         total_subscribers = TenantSubscription.objects.count()
         active_subscribers = TenantSubscription.objects.filter(status=TenantSubscription.STATUS_ACTIVE).count()
         trial_subscribers = TenantSubscription.objects.filter(status=TenantSubscription.STATUS_TRIAL).count()
+        overdue_subscribers = TenantSubscription.objects.filter(
+            status__in=[TenantSubscription.STATUS_OVERDUE, TenantSubscription.STATUS_GRACE_PERIOD]
+        ).count()
+        suspended_subscribers = TenantSubscription.objects.filter(status=TenantSubscription.STATUS_SUSPENDED).count()
+
+        period_revenue = (
+            SubscriptionPayment.objects.filter(created_at__range=(period_start, period_end))
+            .aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        )
         total_revenue = SubscriptionPayment.objects.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
         proposals_count = PlatformProposal.objects.count()
         billing_configured = True
@@ -126,27 +229,51 @@ def dashboard_view(request):
         total_subscribers = 0
         active_subscribers = 0
         trial_subscribers = 0
+        overdue_subscribers = 0
+        suspended_subscribers = 0
+        period_revenue = Decimal('0.00')
         total_revenue = Decimal('0.00')
         proposals_count = 0
         billing_configured = False
         billing_status_label = 'Not Configured'
 
     context = {
+        'period': period,
+        'period_start': period_start,
+        'period_end': period_end,
+        'start_date_str': start_date_str,
+        'end_date_str': end_date_str,
         'total_tenants': total_tenants,
         'active_tenants': active_tenants,
         'inactive_tenants': inactive_tenants,
+        'new_tenants_period': new_tenants_period,
+        'retail_tenants': retail_tenants,
+        'wholesale_tenants': wholesale_tenants,
+        'hybrid_tenants': hybrid_tenants,
         'total_users': total_users,
         'total_owners': total_owners,
         'total_employees': total_employees,
-        'new_tenants_7d': new_tenants_7d,
-        'new_tenants_30d': new_tenants_30d,
         'recent_tenants': recent_tenants,
         'recent_activity': recent_activity,
+        'total_leads': total_leads,
+        'period_leads': period_leads,
+        'new_leads_count': new_leads_count,
+        'scheduled_demos_count': scheduled_demos_count,
+        'completed_demos_count': completed_demos_count,
+        'converted_leads_count': converted_leads_count,
+        'conversion_rate': conversion_rate,
+        'upcoming_meetings': upcoming_meetings,
+        'overdue_followups': overdue_followups,
+        'open_tickets_count': open_tickets_count,
+        'urgent_tickets_count': urgent_tickets_count,
         'billing_configured': billing_configured,
         'billing_status_label': billing_status_label,
         'total_subscribers': total_subscribers,
         'active_subscribers': active_subscribers,
         'trial_subscribers': trial_subscribers,
+        'overdue_subscribers': overdue_subscribers,
+        'suspended_subscribers': suspended_subscribers,
+        'period_revenue': period_revenue,
         'total_revenue': total_revenue,
         'proposals_count': proposals_count,
     }
@@ -187,6 +314,11 @@ def showroom_list_view(request):
     elif status == 'inactive':
         qs = qs.filter(is_active=False)
 
+    # Business type filter
+    business_type = request.GET.get('business_type', 'all').strip().upper()
+    if business_type in (Tenant.TYPE_RETAIL, Tenant.TYPE_WHOLESALE, Tenant.TYPE_BOTH):
+        qs = qs.filter(business_type=business_type)
+
     # Sorting
     sort = request.GET.get('sort', '-created_at')
     valid_sorts = {
@@ -208,6 +340,7 @@ def showroom_list_view(request):
         'page_obj': page_obj,
         'q': q,
         'status': status,
+        'business_type': business_type,
         'sort': sort,
         'total_filtered': paginator.count,
     }
@@ -253,7 +386,26 @@ def showroom_detail_view(request, tenant_id):
     except Exception:
         karigar_count = 0
 
-    # Tenant-specific audit logs (resilient if table not yet migrated)
+    # Subscription info
+    ensure_all_tenant_subscriptions()
+    try:
+        subscription = tenant.subscription
+    except Exception:
+        subscription = None
+
+    # Linked demo leads
+    try:
+        linked_demos = list(tenant.originating_demo_leads.order_by('-created_at')[:5])
+    except Exception:
+        linked_demos = []
+
+    # Linked support tickets
+    try:
+        linked_tickets = list(tenant.support_tickets.order_by('-created_at')[:5])
+    except Exception:
+        linked_tickets = []
+
+    # Tenant-specific audit logs
     try:
         audit_logs = list(
             PlatformAuditLog.objects
@@ -272,9 +424,12 @@ def showroom_detail_view(request, tenant_id):
         'sales_count': sales_count,
         'customers_count': customers_count,
         'karigar_count': karigar_count,
+        'subscription': subscription,
+        'linked_demos': linked_demos,
+        'linked_tickets': linked_tickets,
         'audit_logs': audit_logs,
-        'billing_configured': False,
-        'subscription_status_label': 'Core Plan (Standard Tier)',
+        'billing_configured': True if subscription else False,
+        'subscription_status_label': subscription.get_plan_name_display() if subscription else 'No Plan Assigned',
     }
     return render(request, 'super_admin/showroom_detail.html', context)
 
@@ -1054,3 +1209,709 @@ def settings_view(request):
         'media_storage': getattr(dj_settings, 'DEFAULT_FILE_STORAGE', 'default_storage'),
     }
     return render(request, 'super_admin/settings.html', context)
+
+
+# ============================================================================
+# 8. Demo Meetings & Lead Management
+# ============================================================================
+
+@super_admin_required
+def demo_list_view(request):
+    """Searchable, filterable list of prospective showroom demo leads."""
+    qs = PlatformDemoLead.objects.select_related('assigned_staff', 'converted_tenant').order_by('-created_at')
+
+    # Tab filters
+    tab = request.GET.get('tab', 'all').strip().lower()
+    now = timezone.now()
+    today = timezone.localdate()
+
+    if tab == 'upcoming':
+        qs = qs.filter(status=PlatformDemoLead.STATUS_SCHEDULED, requested_datetime__gte=now).order_by('requested_datetime')
+    elif tab == 'followup':
+        qs = qs.filter(follow_up_date__lt=today).exclude(
+            status__in=[PlatformDemoLead.STATUS_COMPLETED, PlatformDemoLead.STATUS_CANCELLED, PlatformDemoLead.STATUS_NOT_INTERESTED]
+        ).order_by('follow_up_date')
+    elif tab == 'scheduled':
+        qs = qs.filter(status=PlatformDemoLead.STATUS_SCHEDULED)
+    elif tab == 'completed':
+        qs = qs.filter(status=PlatformDemoLead.STATUS_COMPLETED)
+    elif tab == 'converted':
+        qs = qs.filter(converted_tenant__isnull=False)
+    elif tab == 'lost':
+        qs = qs.filter(status=PlatformDemoLead.STATUS_NOT_INTERESTED)
+    elif tab == 'new':
+        qs = qs.filter(status=PlatformDemoLead.STATUS_NEW)
+
+    # Search filter
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(
+            Q(lead_name__icontains=q) |
+            Q(contact_name__icontains=q) |
+            Q(phone__icontains=q) |
+            Q(email__icontains=q) |
+            Q(city__icontains=q)
+        )
+
+    # Status filter
+    status = request.GET.get('status', 'all').strip()
+    if status != 'all' and status:
+        qs = qs.filter(status=status)
+
+    # Business type filter
+    business_type = request.GET.get('business_type', 'all').strip().upper()
+    if business_type != 'ALL' and business_type:
+        qs = qs.filter(business_type=business_type)
+
+    # Source filter
+    source = request.GET.get('source', 'all').strip()
+    if source != 'all' and source:
+        qs = qs.filter(source=source)
+
+    # Counts for tabs
+    all_count = PlatformDemoLead.objects.count()
+    upcoming_count = PlatformDemoLead.objects.filter(status=PlatformDemoLead.STATUS_SCHEDULED, requested_datetime__gte=now).count()
+    followup_count = PlatformDemoLead.objects.filter(follow_up_date__lt=today).exclude(
+        status__in=[PlatformDemoLead.STATUS_COMPLETED, PlatformDemoLead.STATUS_CANCELLED, PlatformDemoLead.STATUS_NOT_INTERESTED]
+    ).count()
+    completed_count = PlatformDemoLead.objects.filter(status=PlatformDemoLead.STATUS_COMPLETED).count()
+    converted_count = PlatformDemoLead.objects.filter(converted_tenant__isnull=False).count()
+
+    paginator = Paginator(qs, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'tab': tab,
+        'q': q,
+        'status_filter': status,
+        'business_type_filter': business_type,
+        'source_filter': source,
+        'total_filtered': paginator.count,
+        'all_count': all_count,
+        'upcoming_count': upcoming_count,
+        'followup_count': followup_count,
+        'completed_count': completed_count,
+        'converted_count': converted_count,
+        'status_choices': PlatformDemoLead.STATUS_CHOICES,
+        'mode_choices': PlatformDemoLead.MODE_CHOICES,
+        'source_choices': PlatformDemoLead.SOURCE_CHOICES,
+        'business_type_choices': [
+            ('RETAIL', 'Retail Showroom'),
+            ('WHOLESALE', 'Wholesaler / Supplier'),
+            ('BOTH', 'Retail & Wholesale'),
+            ('OTHER', 'Other'),
+        ],
+    }
+    return render(request, 'super_admin/demo_list.html', context)
+
+
+@super_admin_required
+def demo_create_view(request):
+    """Create a new demo lead record manually."""
+    if request.method == 'POST':
+        form = PlatformDemoLeadForm(request.POST)
+        if form.is_valid():
+            lead = form.save()
+            PlatformAuditLog.objects.create(
+                actor=request.user,
+                action='DEMO_CREATE',
+                reason=f"Created demo lead for '{lead.lead_name}' ({lead.contact_name})",
+                ip_address=get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]
+            )
+            messages.success(request, f"Demo lead for '{lead.lead_name}' recorded successfully.")
+            return redirect('super_admin:demo_detail', lead_id=lead.id)
+    else:
+        form = PlatformDemoLeadForm(initial={'meeting_mode': 'online', 'status': 'new'})
+
+    context = {
+        'form': form,
+        'page_title': 'Add New Demo Lead / Meeting',
+    }
+    return render(request, 'super_admin/demo_form.html', context)
+
+
+@super_admin_required
+def demo_detail_view(request, lead_id):
+    """View details of a single demo lead, meetings, and interaction timeline."""
+    lead = get_object_or_404(
+        PlatformDemoLead.objects.select_related('assigned_staff', 'converted_tenant'),
+        pk=lead_id
+    )
+    schedule_form = DemoMeetingScheduleForm(initial={
+        'action_type': 'schedule' if lead.status == PlatformDemoLead.STATUS_NEW else 'reschedule',
+        'meeting_datetime': lead.requested_datetime,
+        'meeting_mode': lead.meeting_mode,
+        'meeting_link': lead.meeting_link,
+        'assigned_staff': lead.assigned_staff,
+        'follow_up_date': lead.follow_up_date,
+        'next_action': lead.next_action,
+    })
+
+    # Available tenants for manual conversion linkage
+    tenants = Tenant.objects.filter(is_active=True).order_by('name')[:100]
+
+    context = {
+        'lead': lead,
+        'schedule_form': schedule_form,
+        'tenants': tenants,
+    }
+    return render(request, 'super_admin/demo_detail.html', context)
+
+
+@super_admin_required
+def demo_edit_view(request, lead_id):
+    """Edit lead details and contact information."""
+    lead = get_object_or_404(PlatformDemoLead, pk=lead_id)
+    if request.method == 'POST':
+        form = PlatformDemoLeadForm(request.POST, instance=lead)
+        if form.is_valid():
+            form.save()
+            PlatformAuditLog.objects.create(
+                actor=request.user,
+                action='DEMO_UPDATE',
+                reason=f"Updated demo lead #{lead.id} ({lead.lead_name})",
+                ip_address=get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]
+            )
+            messages.success(request, f"Lead '{lead.lead_name}' updated successfully.")
+            return redirect('super_admin:demo_detail', lead_id=lead.id)
+    else:
+        form = PlatformDemoLeadForm(instance=lead)
+
+    context = {
+        'form': form,
+        'lead': lead,
+        'page_title': f"Edit Lead — {lead.lead_name}",
+    }
+    return render(request, 'super_admin/demo_form.html', context)
+
+
+@super_admin_required
+@require_POST
+def demo_action_view(request, lead_id):
+    """Handle scheduling, rescheduling, completing, or cancelling a demo meeting."""
+    lead = get_object_or_404(PlatformDemoLead, pk=lead_id)
+    form = DemoMeetingScheduleForm(request.POST)
+
+    if form.is_valid():
+        action_type = form.cleaned_data['action_type']
+        notes_input = form.cleaned_data.get('notes', '').strip()
+        follow_up = form.cleaned_data.get('follow_up_date')
+        next_action = form.cleaned_data.get('next_action', '').strip()
+
+        now_str = timezone.now().strftime('%Y-%m-%d %H:%M')
+        notes_entry = f"[{now_str} - {request.user.username}]: {notes_input}" if notes_input else ""
+
+        if action_type in (DemoMeetingScheduleForm.ACTION_SCHEDULE, DemoMeetingScheduleForm.ACTION_RESCHEDULE):
+            lead.requested_datetime = form.cleaned_data.get('meeting_datetime')
+            lead.meeting_mode = form.cleaned_data.get('meeting_mode') or lead.meeting_mode
+            lead.meeting_link = form.cleaned_data.get('meeting_link', '') or lead.meeting_link
+            lead.assigned_staff = form.cleaned_data.get('assigned_staff')
+            lead.status = PlatformDemoLead.STATUS_SCHEDULED if action_type == 'schedule' else PlatformDemoLead.STATUS_RESCHEDULED
+            msg = f"Meeting scheduled for {lead.requested_datetime} ({lead.get_meeting_mode_display()})."
+            audit_action = 'DEMO_UPDATE'
+
+        elif action_type == DemoMeetingScheduleForm.ACTION_COMPLETE:
+            lead.status = PlatformDemoLead.STATUS_COMPLETED
+            msg = f"Demo marked as completed for {lead.lead_name}."
+            audit_action = 'DEMO_COMPLETE'
+
+        elif action_type == DemoMeetingScheduleForm.ACTION_CANCEL:
+            lead.status = PlatformDemoLead.STATUS_CANCELLED
+            msg = f"Meeting cancelled for {lead.lead_name}."
+            audit_action = 'DEMO_UPDATE'
+
+        if follow_up:
+            lead.follow_up_date = follow_up
+        if next_action:
+            lead.next_action = next_action
+        if notes_entry:
+            lead.notes = (notes_entry + "\n\n" + (lead.notes or "")).strip()
+
+        lead.save()
+
+        PlatformAuditLog.objects.create(
+            actor=request.user,
+            action=audit_action,
+            reason=f"{msg} Follow-up: {lead.follow_up_date or 'N/A'}",
+            ip_address=get_client_ip(request),
+            user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]
+        )
+        messages.success(request, msg)
+    else:
+        messages.error(request, "Invalid meeting update data. Please check the form fields.")
+
+    return redirect('super_admin:demo_detail', lead_id=lead.id)
+
+
+@super_admin_required
+@require_POST
+def demo_convert_view(request, lead_id):
+    """Link a demo lead to a newly created or existing tenant showroom account."""
+    lead = get_object_or_404(PlatformDemoLead, pk=lead_id)
+    tenant_id = request.POST.get('tenant_id')
+
+    if not tenant_id:
+        messages.error(request, "Please select a showroom account to link.")
+        return redirect('super_admin:demo_detail', lead_id=lead.id)
+
+    tenant = get_object_or_404(Tenant, pk=tenant_id)
+    lead.converted_tenant = tenant
+    lead.conversion_date = timezone.now()
+    lead.status = PlatformDemoLead.STATUS_COMPLETED
+    lead.save(update_fields=['converted_tenant', 'conversion_date', 'status', 'updated_at'])
+
+    PlatformAuditLog.objects.create(
+        actor=request.user,
+        action='DEMO_CONVERT',
+        target_tenant=tenant,
+        reason=f"Converted lead '{lead.lead_name}' to Showroom '{tenant.name}'",
+        ip_address=get_client_ip(request),
+        user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]
+    )
+    messages.success(request, f"Lead successfully converted and linked to '{tenant.name}'!")
+    return redirect('super_admin:demo_detail', lead_id=lead.id)
+
+
+# ============================================================================
+# 9. Public Demo & Feedback Request API
+# ============================================================================
+
+def public_demo_request_view(request):
+    """
+    Public endpoint for prospects on landing page requesting a software demo or submitting feedback.
+    Validates submission, enforces honeypot anti-spam, and creates a PlatformDemoLead.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+
+    form = PublicDemoRequestForm(request.POST)
+    if form.is_valid():
+        cd = form.cleaned_data
+        msg = cd.get('message', '').strip()
+        lead = PlatformDemoLead.objects.create(
+            lead_name=cd['showroom_name'],
+            contact_name=cd['contact_person'],
+            phone=cd['phone'],
+            email=cd.get('email', ''),
+            city=cd.get('city', ''),
+            business_type=cd.get('business_type', 'RETAIL'),
+            source=PlatformDemoLead.SOURCE_WEBSITE,
+            status=PlatformDemoLead.STATUS_NEW,
+            notes=f"Inquiry message from landing page:\n{msg}" if msg else "Submitted via website demo request form."
+        )
+
+        try:
+            PlatformAuditLog.objects.create(
+                action='DEMO_CREATE',
+                reason=f"Public demo enquiry received from {lead.contact_name} ({lead.lead_name})",
+                ip_address=get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]
+            )
+        except Exception:
+            pass
+
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
+            return JsonResponse({
+                'success': True,
+                'message': 'Thank you! Your demo request has been received. Our jewellery software specialist will contact you shortly.'
+            })
+
+        messages.success(request, "Thank you! Your demo request has been received. Our team will contact you shortly.")
+        return redirect('/#contact')
+
+    errors = {field: [str(e) for e in err_list] for field, err_list in form.errors.items()}
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
+        return JsonResponse({'success': False, 'errors': errors}, status=400)
+
+    for field, errs in form.errors.items():
+        messages.error(request, f"{field.replace('_', ' ').capitalize()}: {errs[0]}")
+    return redirect('/#contact')
+
+
+# ============================================================================
+# 10. Platform Support Tickets
+# ============================================================================
+
+@super_admin_required
+def ticket_list_view(request):
+    """List of all support tickets with status, priority, and category filtering."""
+    qs = PlatformSupportTicket.objects.select_related('tenant', 'assigned_to').order_by('-created_at')
+
+    # Status filter
+    status = request.GET.get('status', 'all').strip()
+    if status != 'all' and status:
+        qs = qs.filter(status=status)
+
+    # Priority filter
+    priority = request.GET.get('priority', 'all').strip()
+    if priority != 'all' and priority:
+        qs = qs.filter(priority=priority)
+
+    # Category filter
+    category = request.GET.get('category', 'all').strip()
+    if category != 'all' and category:
+        qs = qs.filter(category=category)
+
+    # Search filter
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(
+            Q(ticket_number__icontains=q) |
+            Q(subject__icontains=q) |
+            Q(contact_name__icontains=q) |
+            Q(contact_phone__icontains=q) |
+            Q(tenant__name__icontains=q)
+        )
+
+    # Counts
+    all_count = PlatformSupportTicket.objects.count()
+    open_count = PlatformSupportTicket.objects.filter(status=PlatformSupportTicket.STATUS_OPEN).count()
+    in_progress_count = PlatformSupportTicket.objects.filter(status=PlatformSupportTicket.STATUS_IN_PROGRESS).count()
+    resolved_count = PlatformSupportTicket.objects.filter(status=PlatformSupportTicket.STATUS_RESOLVED).count()
+
+    paginator = Paginator(qs, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'q': q,
+        'status_filter': status,
+        'priority_filter': priority,
+        'category_filter': category,
+        'total_filtered': paginator.count,
+        'all_count': all_count,
+        'open_count': open_count,
+        'in_progress_count': in_progress_count,
+        'resolved_count': resolved_count,
+        'status_choices': PlatformSupportTicket.STATUS_CHOICES,
+        'priority_choices': PlatformSupportTicket.PRIORITY_CHOICES,
+        'category_choices': PlatformSupportTicket.CATEGORY_CHOICES,
+    }
+    return render(request, 'super_admin/ticket_list.html', context)
+
+
+@super_admin_required
+def ticket_create_view(request):
+    """Create a new platform support ticket."""
+    if request.method == 'POST':
+        form = PlatformSupportTicketForm(request.POST)
+        if form.is_valid():
+            ticket = form.save()
+            PlatformAuditLog.objects.create(
+                actor=request.user,
+                action='TICKET_CREATE',
+                target_tenant=ticket.tenant,
+                reason=f"Created support ticket #{ticket.ticket_number}: {ticket.subject}",
+                ip_address=get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]
+            )
+            messages.success(request, f"Support ticket #{ticket.ticket_number} created successfully.")
+            return redirect('super_admin:ticket_detail', ticket_id=ticket.id)
+    else:
+        form = PlatformSupportTicketForm(initial={'priority': 'medium', 'status': 'open'})
+
+    context = {
+        'form': form,
+        'page_title': 'Create Support Ticket',
+    }
+    return render(request, 'super_admin/ticket_form.html', context)
+
+
+@super_admin_required
+def ticket_detail_view(request, ticket_id):
+    """View ticket details, response history, and update status."""
+    ticket = get_object_or_404(
+        PlatformSupportTicket.objects.select_related('tenant', 'assigned_to'),
+        pk=ticket_id
+    )
+    staff_users = User.objects.filter(is_superuser=True) | User.objects.filter(is_staff=True)
+
+    context = {
+        'ticket': ticket,
+        'staff_users': staff_users,
+        'status_choices': PlatformSupportTicket.STATUS_CHOICES,
+        'priority_choices': PlatformSupportTicket.PRIORITY_CHOICES,
+    }
+    return render(request, 'super_admin/ticket_detail.html', context)
+
+
+@super_admin_required
+@require_POST
+def ticket_update_status_view(request, ticket_id):
+    """Update ticket resolution notes, status, priority, or assigned specialist."""
+    ticket = get_object_or_404(PlatformSupportTicket, pk=ticket_id)
+    new_status = request.POST.get('status', ticket.status)
+    new_priority = request.POST.get('priority', ticket.priority)
+    assigned_to_id = request.POST.get('assigned_to')
+    resolution_notes = request.POST.get('resolution_notes', '').strip()
+
+    ticket.status = new_status
+    ticket.priority = new_priority
+    if assigned_to_id:
+        ticket.assigned_to_id = assigned_to_id
+    elif assigned_to_id == '':
+        ticket.assigned_to = None
+
+    if resolution_notes:
+        now_str = timezone.now().strftime('%Y-%m-%d %H:%M')
+        ticket.resolution_notes = (f"[{now_str} - {request.user.username}]: {resolution_notes}\n\n" + (ticket.resolution_notes or "")).strip()
+
+    if new_status in (PlatformSupportTicket.STATUS_RESOLVED, PlatformSupportTicket.STATUS_CLOSED) and not ticket.resolved_at:
+        ticket.resolved_at = timezone.now()
+
+    ticket.save()
+
+    audit_action = 'TICKET_RESOLVE' if new_status in ('resolved', 'closed') else 'TICKET_UPDATE'
+    PlatformAuditLog.objects.create(
+        actor=request.user,
+        action=audit_action,
+        target_tenant=ticket.tenant,
+        reason=f"Updated ticket #{ticket.ticket_number} status to {ticket.get_status_display()}",
+        ip_address=get_client_ip(request),
+        user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]
+    )
+    messages.success(request, f"Ticket #{ticket.ticket_number} updated to '{ticket.get_status_display()}'.")
+    return redirect('super_admin:ticket_detail', ticket_id=ticket.id)
+
+
+# ============================================================================
+# 11. Reports & Analytics
+# ============================================================================
+
+@super_admin_required
+def reports_view(request):
+    """
+    Comprehensive platform reporting suite with date-range filters:
+    1. Registrations growth & business type distribution
+    2. Demo meeting conversion funnel & lead sources
+    3. Subscription plans & active trial distributions
+    4. Verified subscription revenue collections
+    5. Support ticket response volume
+    """
+    now = timezone.now()
+    period = request.GET.get('period', '30d')
+    start_date_str = request.GET.get('start_date', '')
+    end_date_str = request.GET.get('end_date', '')
+
+    if start_date_str and end_date_str:
+        try:
+            from django.utils.dateparse import parse_date
+            import datetime
+            s_d = parse_date(start_date_str)
+            e_d = parse_date(end_date_str)
+            if s_d and e_d:
+                start_dt = timezone.make_aware(datetime.datetime.combine(s_d, datetime.time.min))
+                end_dt = timezone.make_aware(datetime.datetime.combine(e_d, datetime.time.max))
+            else:
+                start_dt = now - timedelta(days=30)
+                end_dt = now
+        except Exception:
+            start_dt = now - timedelta(days=30)
+            end_dt = now
+    elif period == '7d':
+        start_dt = now - timedelta(days=7)
+        end_dt = now
+    elif period == '90d':
+        start_dt = now - timedelta(days=90)
+        end_dt = now
+    elif period == '1y':
+        start_dt = now - timedelta(days=365)
+        end_dt = now
+    elif period == 'all':
+        start_dt = now - timedelta(days=3650)
+        end_dt = now
+    else:
+        period = '30d'
+        start_dt = now - timedelta(days=30)
+        end_dt = now
+
+    # 1. Registration Metrics
+    new_tenants_period = Tenant.objects.filter(created_at__range=(start_dt, end_dt)).count()
+    total_tenants = Tenant.objects.count()
+    retail_count = Tenant.objects.filter(business_type=Tenant.TYPE_RETAIL).count()
+    wholesale_count = Tenant.objects.filter(business_type=Tenant.TYPE_WHOLESALE).count()
+    hybrid_count = Tenant.objects.filter(business_type=Tenant.TYPE_BOTH).count()
+
+    # 2. Demo Funnel Metrics
+    leads_period = PlatformDemoLead.objects.filter(created_at__range=(start_dt, end_dt)).count()
+    scheduled_period = PlatformDemoLead.objects.filter(created_at__range=(start_dt, end_dt), status=PlatformDemoLead.STATUS_SCHEDULED).count()
+    completed_period = PlatformDemoLead.objects.filter(created_at__range=(start_dt, end_dt), status=PlatformDemoLead.STATUS_COMPLETED).count()
+    converted_period = PlatformDemoLead.objects.filter(created_at__range=(start_dt, end_dt), converted_tenant__isnull=False).count()
+    conversion_rate = round((converted_period / leads_period * 100), 1) if leads_period > 0 else 0
+
+    lead_sources = (
+        PlatformDemoLead.objects.filter(created_at__range=(start_dt, end_dt))
+        .values('source')
+        .annotate(count=Count('id'))
+        .order_by('-count')
+    )
+
+    # 3. Subscriptions Breakdown
+    ensure_all_tenant_subscriptions()
+    active_subs = TenantSubscription.objects.filter(status=TenantSubscription.STATUS_ACTIVE).count()
+    trial_subs = TenantSubscription.objects.filter(status=TenantSubscription.STATUS_TRIAL).count()
+    overdue_subs = TenantSubscription.objects.filter(
+        status__in=[TenantSubscription.STATUS_OVERDUE, TenantSubscription.STATUS_GRACE_PERIOD]
+    ).count()
+
+    plan_distribution = (
+        TenantSubscription.objects.values('plan_name')
+        .annotate(count=Count('id'))
+        .order_by('-count')
+    )
+
+    # 4. Actual Revenue (SubscriptionPayment)
+    period_revenue = (
+        SubscriptionPayment.objects.filter(payment_date__range=(start_dt.date(), end_dt.date()))
+        .aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    )
+    total_revenue = SubscriptionPayment.objects.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    payment_methods_breakdown = (
+        SubscriptionPayment.objects.filter(payment_date__range=(start_dt.date(), end_dt.date()))
+        .values('payment_method')
+        .annotate(total=Sum('amount'), count=Count('id'))
+        .order_by('-total')
+    )
+
+    # 5. Support Tickets
+    tickets_period = PlatformSupportTicket.objects.filter(created_at__range=(start_dt, end_dt)).count()
+    resolved_period = PlatformSupportTicket.objects.filter(
+        created_at__range=(start_dt, end_dt),
+        status__in=[PlatformSupportTicket.STATUS_RESOLVED, PlatformSupportTicket.STATUS_CLOSED]
+    ).count()
+
+    categories_breakdown = (
+        PlatformSupportTicket.objects.filter(created_at__range=(start_dt, end_dt))
+        .values('category')
+        .annotate(count=Count('id'))
+        .order_by('-count')
+    )
+
+    context = {
+        'period': period,
+        'start_dt': start_dt,
+        'end_dt': end_dt,
+        'start_date_str': start_date_str,
+        'end_date_str': end_date_str,
+        'new_tenants_period': new_tenants_period,
+        'total_tenants': total_tenants,
+        'retail_count': retail_count,
+        'wholesale_count': wholesale_count,
+        'hybrid_count': hybrid_count,
+        'leads_period': leads_period,
+        'scheduled_period': scheduled_period,
+        'completed_period': completed_period,
+        'converted_period': converted_period,
+        'conversion_rate': conversion_rate,
+        'lead_sources': lead_sources,
+        'active_subs': active_subs,
+        'trial_subs': trial_subs,
+        'overdue_subs': overdue_subs,
+        'plan_distribution': plan_distribution,
+        'period_revenue': period_revenue,
+        'total_revenue': total_revenue,
+        'payment_methods_breakdown': payment_methods_breakdown,
+        'tickets_period': tickets_period,
+        'resolved_period': resolved_period,
+        'categories_breakdown': categories_breakdown,
+    }
+    return render(request, 'super_admin/reports.html', context)
+
+
+@super_admin_required
+def reports_export_csv_view(request, report_type):
+    """Export filtered report tables to CSV format."""
+    now = timezone.now()
+    response = HttpResponse(content_type='text/csv')
+    writer = csv.writer(response)
+
+    if report_type == 'registrations':
+        response['Content-Disposition'] = f'attachment; filename="JewelDesk_Registrations_{now.strftime("%Y%m%d")}.csv"'
+        writer.writerow(['Showroom ID', 'Showroom Name', 'Slug', 'Business Type', 'Owner Username', 'Owner Email', 'Status', 'Registered Date'])
+        for t in Tenant.objects.select_related('owner').order_by('-created_at'):
+            writer.writerow([
+                t.id,
+                t.name,
+                t.slug,
+                t.get_business_type_display(),
+                t.owner.username if t.owner else 'N/A',
+                t.owner.email if t.owner else 'N/A',
+                'Active' if t.is_active else 'Suspended',
+                t.created_at.strftime('%Y-%m-%d %H:%M') if t.created_at else 'N/A'
+            ])
+
+    elif report_type == 'demos':
+        response['Content-Disposition'] = f'attachment; filename="JewelDesk_Demo_Leads_{now.strftime("%Y%m%d")}.csv"'
+        writer.writerow(['Lead ID', 'Showroom Name', 'Contact Person', 'Phone', 'Email', 'City', 'Business Type', 'Source', 'Status', 'Meeting Date', 'Follow Up', 'Created Date'])
+        for d in PlatformDemoLead.objects.order_by('-created_at'):
+            writer.writerow([
+                d.id,
+                d.lead_name,
+                d.contact_name,
+                d.phone,
+                d.email,
+                d.city,
+                d.get_business_type_display(),
+                d.get_source_display(),
+                d.get_status_display(),
+                d.requested_datetime.strftime('%Y-%m-%d %H:%M') if d.requested_datetime else 'N/A',
+                d.follow_up_date.strftime('%Y-%m-%d') if d.follow_up_date else 'N/A',
+                d.created_at.strftime('%Y-%m-%d %H:%M') if d.created_at else 'N/A'
+            ])
+
+    elif report_type == 'subscriptions':
+        response['Content-Disposition'] = f'attachment; filename="JewelDesk_Subscriptions_{now.strftime("%Y%m%d")}.csv"'
+        writer.writerow(['Tenant Name', 'Plan', 'Status', 'Billing Cycle', 'Price (INR)', 'Payment Status', 'Started Date', 'Expires Date'])
+        ensure_all_tenant_subscriptions()
+        for s in TenantSubscription.objects.select_related('tenant').order_by('-started_at'):
+            writer.writerow([
+                s.tenant.name,
+                s.get_plan_name_display(),
+                s.get_status_display(),
+                s.get_billing_cycle_display(),
+                s.price,
+                s.get_payment_status_display(),
+                s.started_at.strftime('%Y-%m-%d') if s.started_at else 'N/A',
+                s.expires_at.strftime('%Y-%m-%d') if s.expires_at else 'N/A'
+            ])
+
+    elif report_type == 'revenue':
+        response['Content-Disposition'] = f'attachment; filename="JewelDesk_Subscription_Revenue_{now.strftime("%Y%m%d")}.csv"'
+        writer.writerow(['Payment ID', 'Showroom Name', 'Amount (INR)', 'Payment Date', 'Payment Method', 'Reference ID', 'Invoice Number'])
+        for p in SubscriptionPayment.objects.select_related('tenant').order_by('-payment_date'):
+            writer.writerow([
+                p.id,
+                p.tenant.name,
+                p.amount,
+                p.payment_date.strftime('%Y-%m-%d') if p.payment_date else 'N/A',
+                p.get_payment_method_display(),
+                p.reference_id,
+                p.invoice_number
+            ])
+
+    elif report_type == 'tickets':
+        response['Content-Disposition'] = f'attachment; filename="JewelDesk_Support_Tickets_{now.strftime("%Y%m%d")}.csv"'
+        writer.writerow(['Ticket Number', 'Showroom', 'Contact Name', 'Category', 'Priority', 'Status', 'Subject', 'Created Date', 'Resolved Date'])
+        for tk in PlatformSupportTicket.objects.select_related('tenant').order_by('-created_at'):
+            writer.writerow([
+                tk.ticket_number,
+                tk.tenant.name if tk.tenant else 'N/A',
+                tk.contact_name,
+                tk.get_category_display(),
+                tk.get_priority_display(),
+                tk.get_status_display(),
+                tk.subject,
+                tk.created_at.strftime('%Y-%m-%d %H:%M') if tk.created_at else 'N/A',
+                tk.resolved_at.strftime('%Y-%m-%d %H:%M') if tk.resolved_at else 'N/A'
+            ])
+
+    else:
+        return HttpResponse("Unknown report type", status=400)
+
+    return response
+

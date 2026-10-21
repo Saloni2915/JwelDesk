@@ -20,6 +20,26 @@ urlpatterns = [
     path('subscriptions/', views.subscriptions_view, name='subscriptions'),
     path('subscriptions/<int:tenant_id>/update/', views.subscription_update_view, name='subscription_update'),
     path('subscriptions/<int:tenant_id>/record-payment/', views.subscription_record_payment_view, name='subscription_record_payment'),
+    
+    # Demo meetings and lead management
+    path('demos/', views.demo_list_view, name='demo_list'),
+    path('demos/new/', views.demo_create_view, name='demo_create'),
+    path('demos/<int:lead_id>/', views.demo_detail_view, name='demo_detail'),
+    path('demos/<int:lead_id>/edit/', views.demo_edit_view, name='demo_edit'),
+    path('demos/<int:lead_id>/action/', views.demo_action_view, name='demo_action'),
+    path('demos/<int:lead_id>/convert/', views.demo_convert_view, name='demo_convert'),
+    path('api/demo-request/', views.public_demo_request_view, name='public_demo_request'),
+
+    # Platform support tickets
+    path('tickets/', views.ticket_list_view, name='ticket_list'),
+    path('tickets/new/', views.ticket_create_view, name='ticket_create'),
+    path('tickets/<int:ticket_id>/', views.ticket_detail_view, name='ticket_detail'),
+    path('tickets/<int:ticket_id>/update-status/', views.ticket_update_status_view, name='ticket_update_status'),
+
+    # Reports & Analytics
+    path('reports/', views.reports_view, name='reports'),
+    path('reports/export/<str:report_type>/', views.reports_export_csv_view, name='reports_export_csv'),
+
     path('proposals/', views.proposal_list_view, name='proposal_list'),
     path('proposals/new/', views.proposal_create_view, name='proposal_create'),
     path('proposals/<int:proposal_id>/', views.proposal_detail_view, name='proposal_detail'),

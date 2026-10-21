@@ -1,0 +1,173 @@
+{% extends 'super_admin/base_super_admin.html' %}
+
+{% block title %}Ticket {{ ticket.ticket_number }} | Super Admin Portal{% endblock %}
+{% block page_title %}Support Ticket #{{ ticket.ticket_number }}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <a href="{% url 'super_admin:ticket_list' %}" class="btn btn-sm btn-outline-secondary text-body">
+            <i class="bi bi-arrow-left me-1"></i> Back to Tickets
+        </a>
+        <h4 class="mb-0 fw-bold" style="color: var(--sa-text);">{{ ticket.ticket_number }}</h4>
+        {% if ticket.priority == 'urgent' %}
+        <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-30">Urgent</span>
+        {% elif ticket.priority == 'high' %}
+        <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-30">High</span>
+        {% else %}
+        <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-25">{{ ticket.get_priority_display }}</span>
+        {% endif %}
+
+        {% if ticket.status == 'resolved' or ticket.status == 'closed' %}
+        <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30">
+            <i class="bi bi-check-circle-fill me-1"></i> {{ ticket.get_status_display }}
+        </span>
+        {% else %}
+        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30">
+            {{ ticket.get_status_display }}
+        </span>
+        {% endif %}
+    </div>
+
+    <div>
+        {% if ticket.tenant %}
+        <a href="{% url 'super_admin:showroom_detail' ticket.tenant.id %}" class="btn btn-sm btn-outline-gold">
+            <i class="bi bi-shop me-1"></i> View Showroom ({{ ticket.tenant.name }})
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Ticket Details & Description -->
+    <div class="col-12 col-lg-7 d-flex flex-column gap-4">
+        <!-- Ticket Information Card -->
+        <div class="sa-card mb-0">
+            <h6 class="mb-3 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold); font-size: 0.95rem;">
+                <i class="bi bi-info-circle"></i> Ticket Overview
+            </h6>
+            <div class="row g-3">
+                <div class="col-sm-6">
+                    <div class="sa-label small">Showroom Tenant</div>
+                    <div class="fw-bold" style="color: var(--sa-text);">
+                        {{ ticket.tenant.name|default:"General / Prospect Inquiry" }}
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="sa-label small">Category</div>
+                    <div>
+                        <span class="badge bg-secondary bg-opacity-25 text-body border border-secondary border-opacity-25">
+                            {{ ticket.get_category_display }}
+                        </span>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="sa-label small">Contact Person</div>
+                    <div class="fw-semibold" style="color: var(--sa-text);">{{ ticket.contact_name }}</div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="sa-label small">Contact Phone / WhatsApp</div>
+                    <div class="fw-semibold" style="color: var(--sa-gold);">
+                        <i class="bi bi-telephone-fill me-1 small"></i>{{ ticket.contact_phone }}
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="sa-label small">Contact Email</div>
+                    <div style="color: var(--sa-text-secondary);">{{ ticket.contact_email|default:"Not provided" }}</div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="sa-label small">Assigned Specialist</div>
+                    <div style="color: var(--sa-text);">
+                        {% if ticket.assigned_to %}{{ ticket.assigned_to.get_full_name|default:ticket.assigned_to.username }}{% else %}Unassigned{% endif %}
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="sa-label small">Created Timestamp</div>
+                    <div style="color: var(--sa-text-secondary);">{{ ticket.created_at|date:"d M Y, h:i A" }}</div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="sa-label small">Resolved Timestamp</div>
+                    <div style="color: var(--sa-text-secondary);">
+                        {% if ticket.resolved_at %}
+                        {{ ticket.resolved_at|date:"d M Y, h:i A" }}
+                        {% else %}
+                        <span class="text-muted">Unresolved</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Issue Description Card -->
+        <div class="sa-card mb-0">
+            <h6 class="mb-2 fw-bold" style="color: var(--sa-gold); font-size: 0.95rem;">
+                {{ ticket.subject }}
+            </h6>
+            <div class="sa-label small mb-2">Detailed Issue Description</div>
+            <div class="p-3 rounded-3" style="background: var(--sa-bg); border: 1px solid var(--sa-border); white-space: pre-wrap; font-size: 0.9rem; color: var(--sa-text); line-height: 1.6;">{{ ticket.description }}</div>
+        </div>
+    </div>
+
+    <!-- Right Column: Resolution Notes & Update Controls -->
+    <div class="col-12 col-lg-5 d-flex flex-column gap-4">
+        <!-- Update Ticket Status Form -->
+        <div class="sa-card mb-0">
+            <h6 class="mb-3 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold); font-size: 0.95rem;">
+                <i class="bi bi-sliders"></i> Update Status & Assignee
+            </h6>
+            <form action="{% url 'super_admin:ticket_update_status' ticket.id %}" method="POST">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="sa-label small mb-1">Ticket Status</label>
+                    <select name="status" class="form-select sa-input">
+                        {% for code, label in status_choices %}
+                        <option value="{{ code }}" {% if ticket.status == code %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="sa-label small mb-1">Priority</label>
+                    <select name="priority" class="form-select sa-input">
+                        {% for code, label in priority_choices %}
+                        <option value="{{ code }}" {% if ticket.priority == code %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="sa-label small mb-1">Assigned Specialist</label>
+                    <select name="assigned_to" class="form-select sa-input">
+                        <option value="">-- Unassigned --</option>
+                        {% for u in staff_users %}
+                        <option value="{{ u.id }}" {% if ticket.assigned_to_id == u.id %}selected{% endif %}>{{ u.username }} ({{ u.email }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="sa-label small mb-1">Add Resolution Notes / Updates</label>
+                    <textarea name="resolution_notes" rows="3" class="form-control sa-input" placeholder="Document the technical fix, customer communication, or next steps..."></textarea>
+                </div>
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-sm btn-gold">
+                        <i class="bi bi-check2 me-1"></i> Update Ticket
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Resolution History -->
+        <div class="sa-card mb-0 flex-grow-1">
+            <h6 class="mb-3 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold); font-size: 0.95rem;">
+                <i class="bi bi-journal-text"></i> Resolution Notes History
+            </h6>
+            {% if ticket.resolution_notes %}
+            <div class="p-3 rounded-3" style="background: var(--sa-bg); border: 1px solid var(--sa-border); white-space: pre-wrap; font-size: 0.86rem; color: var(--sa-text-secondary); line-height: 1.6;">{{ ticket.resolution_notes }}</div>
+            {% else %}
+            <div class="text-center py-4 text-muted small">
+                <i class="bi bi-chat-square-text fs-3 d-block mb-2 text-warning opacity-50"></i>
+                No resolution notes recorded yet.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

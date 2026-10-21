@@ -1018,48 +1018,79 @@
         </section>
 
         <!-- ======================================================================
-             11. FEEDBACK & CONTACT SECTION
+             11. FEEDBACK & DEMO REQUEST SECTION
              ====================================================================== -->
         <section class="jd-section jd-section-alt" id="contact" aria-labelledby="feedbackTitle">
             <div class="jd-container">
                 <div class="jd-section-header">
-                    <span class="jd-section-pill">Showroom Support & Contact</span>
+                    <span class="jd-section-pill"><i class="bi bi-calendar-event me-1"></i> Live Demo & Platform Inquiries</span>
                     <h2 class="jd-section-title" id="feedbackTitle">
-                        Connect with the JewelDesk Team
+                        Request a Personalized Demo or Talk to Our Team
                     </h2>
                     <p class="jd-section-subtitle">
-                        JewelDesk is actively built for jewellery retailers. Share your workflow suggestions, feature requests, or questions with our product engineering team.
+                        See how JewelDesk automates your daily showroom billing, BIS HUID tracking, live bullion pricing, and Karigar ledgers. Fill out the details below and our jewellery SaaS specialist will schedule a live interactive walkthrough.
                     </p>
                 </div>
 
                 <div class="jd-feedback-card">
-                    <form id="feedbackForm" onsubmit="handleFeedbackSubmit(event)">
+                    <form id="feedbackForm" action="{% url 'super_admin:public_demo_request' %}" method="POST" onsubmit="handleFeedbackSubmit(event)">
+                        {% csrf_token %}
+                        <!-- Honeypot anti-spam trap (hidden from real users) -->
+                        <div style="display:none;" aria-hidden="true">
+                            <input type="text" name="website_hp" id="websiteHp" tabindex="-1" autocomplete="off">
+                        </div>
+
                         <div class="jd-feedback-form">
                             <div>
-                                <label class="jd-input-label" for="fbName">Your Name</label>
-                                <input type="text" id="fbName" class="jd-input-text" placeholder="e.g. Rajesh Soni" required>
+                                <label class="jd-input-label" for="fbShowroom">Showroom / Business Name <span class="text-danger">*</span></label>
+                                <input type="text" name="showroom_name" id="fbShowroom" class="jd-input-text" placeholder="e.g. Royal Gold Jewellers" required>
+                            </div>
+                            <div>
+                                <label class="jd-input-label" for="fbName">Contact Person Name <span class="text-danger">*</span></label>
+                                <input type="text" name="contact_person" id="fbName" class="jd-input-text" placeholder="e.g. Rajesh Soni" required>
+                            </div>
+                            <div>
+                                <label class="jd-input-label" for="fbPhone">Mobile / WhatsApp Number <span class="text-danger">*</span></label>
+                                <input type="tel" name="phone" id="fbPhone" class="jd-input-text" placeholder="e.g. +91 98765 43210" required>
                             </div>
                             <div>
                                 <label class="jd-input-label" for="fbEmail">Email Address</label>
-                                <input type="email" id="fbEmail" class="jd-input-text" placeholder="rajesh@jewellers.com" required>
+                                <input type="email" name="email" id="fbEmail" class="jd-input-text" placeholder="rajesh@royalgold.in">
+                            </div>
+                            <div>
+                                <label class="jd-input-label" for="fbCity">City / Location</label>
+                                <input type="text" name="city" id="fbCity" class="jd-input-text" placeholder="e.g. Zaveri Bazaar, Mumbai">
+                            </div>
+                            <div>
+                                <label class="jd-input-label" for="fbBusinessType">Business Type</label>
+                                <select name="business_type" id="fbBusinessType" class="jd-input-text form-select" style="background-color: var(--jd-bg-surface, #1E1712); color: var(--jd-text-primary, #F5EFEB); border-color: rgba(212,175,55,0.25);">
+                                    <option value="RETAIL" selected>Retail Jewellery Showroom</option>
+                                    <option value="WHOLESALE">Wholesaler / Bullion Supplier</option>
+                                    <option value="BOTH">Retail & Wholesale Combined</option>
+                                    <option value="OTHER">Manufacturer / Karigar Workshop</option>
+                                </select>
                             </div>
                             <div class="jd-form-full">
-                                <label class="jd-input-label" for="fbShowroom">Showroom / Business Name (Optional)</label>
-                                <input type="text" id="fbShowroom" class="jd-input-text" placeholder="e.g. Shree Jewellers, Mumbai">
+                                <label class="jd-input-label" for="fbMessage">Specific Requirements or Preferred Meeting Time</label>
+                                <textarea name="message" id="fbMessage" rows="3" class="jd-textarea" placeholder="Tell us about your counter setup, number of users, or preferred time for the software demo..."></textarea>
                             </div>
-                            <div class="jd-form-full">
-                                <label class="jd-input-label" for="fbMessage">Your Message or Feature Requirement</label>
-                                <textarea id="fbMessage" rows="4" class="jd-textarea" placeholder="Tell us about your showroom counter requirements..." required></textarea>
-                            </div>
-                            <div class="jd-form-full d-flex justify-content-end gap-2">
+                            <div class="jd-form-full d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                <div class="small text-muted">
+                                    <i class="bi bi-shield-check text-warning me-1"></i> No obligation • Free 1-on-1 personalized demo
+                                </div>
                                 <button type="submit" class="jd-btn jd-btn-gold" id="fbSubmitBtn">
-                                    <i class="bi bi-send me-1"></i> Send Message
+                                    <i class="bi bi-calendar-check me-1"></i> Request Live Demo
                                 </button>
                             </div>
                         </div>
                     </form>
-                    <div id="fbSuccessMsg" class="d-none mt-3 p-3 bg-light border border-success rounded text-success text-center">
-                        <i class="bi bi-check-circle-fill me-1"></i> Thank you! Your message has been received by the JewelDesk team.
+                    <div id="fbSuccessMsg" class="d-none mt-3 p-3 bg-dark border border-warning rounded text-warning text-center">
+                        <i class="bi bi-check-circle-fill me-1 fs-5"></i> 
+                        <span id="fbSuccessText">Thank you! Your demo request has been received. Our jewellery software specialist will contact you shortly to confirm your schedule.</span>
+                    </div>
+                    <div id="fbErrorMsg" class="d-none mt-3 p-3 bg-dark border border-danger rounded text-danger text-center">
+                        <i class="bi bi-exclamation-triangle-fill me-1 fs-5"></i> 
+                        <span id="fbErrorText">Could not submit demo request. Please check your details and try again.</span>
                     </div>
                 </div>
             </div>
@@ -1305,26 +1336,71 @@
             }
         }
 
-        // 4. Feedback Form Submission Handler
+        // 4. Feedback & Demo Request Form Submission Handler (Live API)
         function handleFeedbackSubmit(e) {
             e.preventDefault();
             var form = document.getElementById('feedbackForm');
             var successMsg = document.getElementById('fbSuccessMsg');
+            var successText = document.getElementById('fbSuccessText');
+            var errorMsg = document.getElementById('fbErrorMsg');
+            var errorText = document.getElementById('fbErrorText');
             var submitBtn = document.getElementById('fbSubmitBtn');
+
+            if (successMsg) successMsg.classList.add('d-none');
+            if (errorMsg) errorMsg.classList.add('d-none');
 
             if (submitBtn) {
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Sending...';
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Submitting...';
             }
 
-            setTimeout(function() {
-                if (form) form.reset();
-                if (successMsg) successMsg.classList.remove('d-none');
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Sent Successfully';
+            var formData = new FormData(form);
+
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
-            }, 600);
+            })
+            .then(function(response) {
+                return response.json().then(function(data) {
+                    return { ok: response.ok, data: data };
+                });
+            })
+            .then(function(res) {
+                if (res.ok && res.data.success) {
+                    form.reset();
+                    if (successText && res.data.message) {
+                        successText.textContent = res.data.message;
+                    }
+                    if (successMsg) successMsg.classList.remove('d-none');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Demo Requested';
+                    }
+                } else {
+                    var errMsg = 'Please check the entered details.';
+                    if (res.data && res.data.errors) {
+                        var firstKey = Object.keys(res.data.errors)[0];
+                        errMsg = firstKey + ': ' + res.data.errors[firstKey][0];
+                    } else if (res.data && res.data.error) {
+                        errMsg = res.data.error;
+                    }
+                    if (errorText) errorText.textContent = errMsg;
+                    if (errorMsg) errorMsg.classList.remove('d-none');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="bi bi-calendar-check me-1"></i> Try Again';
+                    }
+                }
+            })
+            .catch(function(err) {
+                // If network or JS error occurs, fallback to standard form submit
+                if (form) {
+                    form.submit();
+                }
+            });
         }
 
         // 5. Scroll effect on Top Navbar

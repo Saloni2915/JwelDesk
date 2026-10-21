@@ -550,6 +550,115 @@
             border-color: rgba(251, 191, 36, 0.35);
         }
 
+        /* Utility opacity fallbacks for Bootstrap */
+        .bg-opacity-15 {
+            --bs-bg-opacity: 0.15 !important;
+        }
+        .border-opacity-15 {
+            --bs-border-opacity: 0.15 !important;
+        }
+
+        /* Subscription Plan Badges (High Contrast in Light and Dark) */
+        .sa-plan-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.22rem 0.60rem;
+            font-size: 0.76rem;
+            font-weight: 700;
+            border-radius: 6px;
+            line-height: 1.25;
+            white-space: nowrap;
+            letter-spacing: 0.02em;
+            background: rgba(236, 200, 106, 0.15);
+            color: #ecc86a;
+            border: 1px solid rgba(236, 200, 106, 0.35);
+        }
+
+        /* Light Theme Overrides for Plan Badges */
+        [data-theme="light"] .sa-plan-pill {
+            background: #fffbeb;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+        [data-theme="light"] .sa-plan-core {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+        }
+        [data-theme="light"] .sa-plan-pro {
+            background: #e0e7ff;
+            color: #3730a3;
+            border: 1px solid #c7d2fe;
+        }
+        [data-theme="light"] .sa-plan-enterprise {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        [data-theme="light"] .sa-plan-trial {
+            background: #f3f4f6;
+            color: #4b5563;
+            border: 1px solid #e5e7eb;
+        }
+
+        /* Dark / Gold Theme Overrides for Plan Badges */
+        [data-theme="gold"] .sa-plan-core, [data-theme="dark"] .sa-plan-core {
+            background: rgba(236, 200, 106, 0.15);
+            color: #f5d77f;
+            border: 1px solid rgba(236, 200, 106, 0.35);
+        }
+        [data-theme="gold"] .sa-plan-pro, [data-theme="dark"] .sa-plan-pro {
+            background: rgba(99, 102, 241, 0.15);
+            color: #a5b4fc;
+            border: 1px solid rgba(99, 102, 241, 0.35);
+        }
+        [data-theme="gold"] .sa-plan-enterprise, [data-theme="dark"] .sa-plan-enterprise {
+            background: rgba(16, 185, 129, 0.15);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.35);
+        }
+        [data-theme="gold"] .sa-plan-trial, [data-theme="dark"] .sa-plan-trial {
+            background: rgba(148, 163, 184, 0.15);
+            color: #cbd5e1;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+        }
+
+        /* Business Type Badges */
+        .sa-type-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.22rem 0.60rem;
+            font-size: 0.74rem;
+            font-weight: 700;
+            border-radius: 6px;
+            white-space: nowrap;
+        }
+        .sa-type-retail {
+            background: rgba(148, 163, 184, 0.15);
+            color: var(--sa-text-secondary);
+            border: 1px solid var(--sa-border);
+        }
+        .sa-type-wholesale {
+            background: rgba(14, 165, 233, 0.12);
+            color: #0284c7;
+            border: 1px solid rgba(14, 165, 233, 0.3);
+        }
+        .sa-type-both {
+            background: rgba(245, 158, 11, 0.12);
+            color: #b45309;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        [data-theme="gold"] .sa-type-wholesale, [data-theme="dark"] .sa-type-wholesale {
+            color: #38bdf8;
+            border-color: rgba(56, 189, 248, 0.35);
+        }
+        [data-theme="gold"] .sa-type-both, [data-theme="dark"] .sa-type-both {
+            color: #fbbf24;
+            border-color: rgba(251, 191, 36, 0.35);
+        }
+
         /* Action Buttons */
         .sa-btn-action {
             display: inline-flex;
@@ -725,11 +834,23 @@
             </a>
             <a href="{% url 'super_admin:showroom_list' %}" class="sa-nav-item {% if 'showroom' in request.resolver_match.url_name %}active{% endif %}">
                 <i class="bi bi-shop"></i>
-                <span>Showrooms & Customers</span>
+                <span>Business Accounts</span>
+            </a>
+            <a href="{% url 'super_admin:demo_list' %}" class="sa-nav-item {% if 'demo' in request.resolver_match.url_name %}active{% endif %}">
+                <i class="bi bi-calendar-event"></i>
+                <span>Demos & Leads</span>
             </a>
             <a href="{% url 'super_admin:subscriptions' %}" class="sa-nav-item {% if request.resolver_match.url_name == 'subscriptions' %}active{% endif %}">
                 <i class="bi bi-credit-card"></i>
                 <span>Subscriptions & Revenue</span>
+            </a>
+            <a href="{% url 'super_admin:ticket_list' %}" class="sa-nav-item {% if 'ticket' in request.resolver_match.url_name %}active{% endif %}">
+                <i class="bi bi-headset"></i>
+                <span>Support & Feedback</span>
+            </a>
+            <a href="{% url 'super_admin:reports' %}" class="sa-nav-item {% if 'report' in request.resolver_match.url_name %}active{% endif %}">
+                <i class="bi bi-graph-up-arrow"></i>
+                <span>Reports & Analytics</span>
             </a>
             <a href="{% url 'super_admin:proposal_list' %}" class="sa-nav-item {% if 'proposal' in request.resolver_match.url_name %}active{% endif %}">
                 <i class="bi bi-file-earmark-text"></i>

@@ -189,7 +189,7 @@ class SuperAdminTenantManagementTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Kalyan Ornaments')
         self.assertContains(response, 'owner_a')
-        self.assertContains(response, 'Core Plan (Standard Tier)')
+        self.assertContains(response, 'Core Showroom Standard Tier')
 
     def test_toggle_tenant_status_requires_post_and_reason(self):
         """Toggling tenant status must require POST and a justification reason."""
@@ -500,5 +500,271 @@ class SubscriptionAndProposalFeatureTests(TestCase):
         self.assertEqual(res_client_pdf['Content-Type'], 'application/pdf')
         self.assertIn(f'Proposal-{proposal.proposal_number}.pdf', res_client_pdf['Content-Disposition'])
         self.assertTrue(res_client_pdf.content.startswith(b'%PDF-'))
+
+
+class SuperAdminDemoMeetingTests(TestCase):
+    """Test demo meetings, lead management, scheduling, and public demo capture."""
+
+    def setUp(self):
+        self.super_admin = User.objects.create_superuser(
+            username='demo_superadmin',
+            email='demos@platform.test',
+            password='Password123!'
+        )
+        self.owner = User.objects.create_user(
+            username='shop_owner',
+            email='shop@test.com',
+            password='Password123!'
+        )
+        self.tenant = Tenant.objects.create(
+            name='Swarna Jewellers',
+            slug='swarna-jewellers',
+            owner=self.owner,
+            is_active=True
+        )
+        self.client = Client()
+
+    def test_anonymous_and_ordinary_user_denied(self):
+        """Unauthorized users cannot access demo management."""
+        anon_client = Client()
+        res = anon_client.get(reverse('super_admin:demo_list'))
+        self.assertEqual(res.status_code, 302)
+
+        self.client.force_login(self.owner)
+        res_owner = self.client.get(reverse('super_admin:demo_list'))
+        self.assertEqual(res_owner.status_code, 403)
+
+    def test_demo_create_and_detail(self):
+        """Super admin can create a demo lead and view its detail."""
+        from super_admin.models import PlatformDemoLead
+        self.client.force_login(self.super_admin)
+
+        res = self.client.post(reverse('super_admin:demo_create'), {
+            'lead_name': 'Tanishq Ornaments',
+            'contact_name': 'Vikram Rathore',
+            'phone': '9876543210',
+            'email': 'vikram@tanishq-fake.test',
+            'city': 'Jaipur',
+            'business_type': 'RETAIL',
+            'business_size': '5-10 Users',
+            'source': 'website',
+            'meeting_mode': 'online',
+            'status': 'new',
+            'notes': 'Requested live overview of HUID and bullion pricing.',
+        })
+        self.assertEqual(res.status_code, 302)
+        lead = PlatformDemoLead.objects.filter(lead_name='Tanishq Ornaments').first()
+        self.assertIsNotNone(lead)
+        self.assertEqual(lead.contact_name, 'Vikram Rathore')
+        self.assertEqual(lead.status, 'new')
+
+        # View detail
+        res_detail = self.client.get(reverse('super_admin:demo_detail', kwargs={'lead_id': lead.id}))
+        self.assertEqual(res_detail.status_code, 200)
+        self.assertContains(res_detail, 'Tanishq Ornaments')
+        self.assertContains(res_detail, 'Vikram Rathore')
+
+    def test_meeting_action_schedule_reschedule_complete(self):
+        """Meeting scheduling, rescheduling, completing, and cancelling workflow."""
+        from django.utils import timezone
+        import datetime
+        from super_admin.models import PlatformDemoLead
+        self.client.force_login(self.super_admin)
+
+        lead = PlatformDemoLead.objects.create(
+            lead_name='Royal Gold',
+            contact_name='Anil Mehta',
+            phone='9123456780',
+            status='new'
+        )
+
+        # 1. Schedule meeting
+        mtg_time = (timezone.now() + datetime.timedelta(days=2)).strftime('%Y-%m-%dT%H:%M')
+        res_sched = self.client.post(reverse('super_admin:demo_action', kwargs={'lead_id': lead.id}), {
+            'action_type': 'schedule',
+            'meeting_datetime': mtg_time,
+            'meeting_mode': 'online',
+            'meeting_link': 'https://meet.google.com/abc-defg-hij',
+            'notes': 'Confirmed with Anil for 2 days later.',
+            'next_action': 'Send calendar link'
+        })
+        self.assertEqual(res_sched.status_code, 302)
+        lead.refresh_from_db()
+        self.assertEqual(lead.status, PlatformDemoLead.STATUS_SCHEDULED)
+        self.assertEqual(lead.meeting_link, 'https://meet.google.com/abc-defg-hij')
+
+        # 2. Mark complete
+        res_comp = self.client.post(reverse('super_admin:demo_action', kwargs={'lead_id': lead.id}), {
+            'action_type': 'complete',
+            'notes': 'Demo was successful. Sending proposal.'
+        })
+        self.assertEqual(res_comp.status_code, 302)
+        lead.refresh_from_db()
+        self.assertEqual(lead.status, PlatformDemoLead.STATUS_COMPLETED)
+
+    def test_convert_lead_to_tenant(self):
+        """Super admin can link a lead to a newly created tenant account."""
+        from super_admin.models import PlatformDemoLead
+        self.client.force_login(self.super_admin)
+
+        lead = PlatformDemoLead.objects.create(
+            lead_name='Swarna Prospect',
+            contact_name='Dev Swarna',
+            phone='9988776655',
+            status='completed'
+        )
+        res_conv = self.client.post(reverse('super_admin:demo_convert', kwargs={'lead_id': lead.id}), {
+            'tenant_id': self.tenant.id
+        })
+        self.assertEqual(res_conv.status_code, 302)
+        lead.refresh_from_db()
+        self.assertEqual(lead.converted_tenant, self.tenant)
+        self.assertIsNotNone(lead.conversion_date)
+
+    def test_public_demo_request_valid(self):
+        """Public prospects can submit demo requests through website form."""
+        from super_admin.models import PlatformDemoLead
+        anon_client = Client()
+
+        res = anon_client.post(reverse('super_admin:public_demo_request'), {
+            'showroom_name': 'Zaveri Jewellers',
+            'contact_person': 'Sunil Zaveri',
+            'phone': '9811122233',
+            'email': 'sunil@zaveri.test',
+            'city': 'Mumbai',
+            'business_type': 'RETAIL',
+            'message': 'Looking for HUID and bullion rate billing for 3 counters.',
+            'website_hp': '',  # Honeypot empty for real users
+        }, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data['success'])
+        self.assertIn('specialist will contact you', data['message'])
+
+        lead = PlatformDemoLead.objects.filter(lead_name='Zaveri Jewellers').first()
+        self.assertIsNotNone(lead)
+        self.assertEqual(lead.contact_name, 'Sunil Zaveri')
+        self.assertEqual(lead.source, 'website')
+
+    def test_public_demo_request_honeypot_spam_trap(self):
+        """Automated spam bots filling hidden honeypot field are rejected."""
+        from super_admin.models import PlatformDemoLead
+        anon_client = Client()
+
+        res = anon_client.post(reverse('super_admin:public_demo_request'), {
+            'showroom_name': 'Spam Bot Showroom',
+            'contact_person': 'Bot Spammer',
+            'phone': '9811122233',
+            'website_hp': 'http://buy-viagra-now.ru',  # Bot filled honeypot!
+        }, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+        self.assertEqual(res.status_code, 400)
+        self.assertFalse(PlatformDemoLead.objects.filter(lead_name='Spam Bot Showroom').exists())
+
+
+class SuperAdminSupportTicketTests(TestCase):
+    """Test platform support ticket logging, resolution, and status updates."""
+
+    def setUp(self):
+        self.super_admin = User.objects.create_superuser(
+            username='support_superadmin',
+            email='support@platform.test',
+            password='Password123!'
+        )
+        self.owner = User.objects.create_user(username='shop_owner2', email='shop2@test.com')
+        self.tenant = Tenant.objects.create(name='Purity Jewellers', slug='purity-jewellers', owner=self.owner)
+        self.client = Client()
+
+    def test_ticket_creation_and_auto_numbering(self):
+        """Creating a ticket auto-generates a formatted ticket number."""
+        from super_admin.models import PlatformSupportTicket
+        self.client.force_login(self.super_admin)
+
+        res = self.client.post(reverse('super_admin:ticket_create'), {
+            'tenant': self.tenant.id,
+            'contact_name': 'Amit Purity',
+            'contact_phone': '9876500000',
+            'contact_email': 'amit@purity.test',
+            'category': 'billing',
+            'priority': 'high',
+            'status': 'open',
+            'subject': 'GST Rate discrepancy on gold coin invoice',
+            'description': 'Customer reported 3% GST showing on exempt bar item.',
+        })
+        self.assertEqual(res.status_code, 302)
+        ticket = PlatformSupportTicket.objects.filter(subject__icontains='GST Rate discrepancy').first()
+        self.assertIsNotNone(ticket)
+        self.assertTrue(ticket.ticket_number.startswith('TICK-'))
+        self.assertEqual(ticket.category, 'billing')
+        self.assertEqual(ticket.priority, 'high')
+
+    def test_ticket_status_update_and_resolution(self):
+        """Updating status to resolved records timestamp and audit entry."""
+        from super_admin.models import PlatformSupportTicket
+        self.client.force_login(self.super_admin)
+
+        ticket = PlatformSupportTicket.objects.create(
+            tenant=self.tenant,
+            contact_name='Amit',
+            contact_phone='9876500000',
+            category='technical',
+            priority='medium',
+            status='open',
+            subject='Label printer alignment question',
+            description='Barcode cuts off by 2mm.'
+        )
+
+        res_update = self.client.post(reverse('super_admin:ticket_update_status', kwargs={'ticket_id': ticket.id}), {
+            'status': 'resolved',
+            'priority': 'low',
+            'resolution_notes': 'Adjusted barcode offset in company settings to +2mm.',
+        })
+        self.assertEqual(res_update.status_code, 302)
+        ticket.refresh_from_db()
+        self.assertEqual(ticket.status, 'resolved')
+        self.assertIsNotNone(ticket.resolved_at)
+        self.assertIn('Adjusted barcode offset', ticket.resolution_notes)
+
+
+class SuperAdminReportsAndAnalyticsTests(TestCase):
+    """Test platform reports, date range aggregation, and CSV exports."""
+
+    def setUp(self):
+        self.super_admin = User.objects.create_superuser(
+            username='reports_superadmin',
+            email='reports@platform.test',
+            password='Password123!'
+        )
+        self.owner = User.objects.create_user(username='shop_owner3', email='shop3@test.com')
+        self.tenant = Tenant.objects.create(name='Navratna Jewels', slug='navratna-jewels', owner=self.owner)
+        self.client = Client()
+
+    def test_reports_view_accessible(self):
+        """Super admin can view the platform reports dashboard with periods."""
+        self.client.force_login(self.super_admin)
+        for period in ['7d', '30d', '90d', '1y', 'all']:
+            res = self.client.get(reverse('super_admin:reports') + f'?period={period}')
+            self.assertEqual(res.status_code, 200, f"Failed on period {period}")
+            self.assertContains(res, "Platform Reports & Growth Analytics")
+
+    def test_reports_csv_exports(self):
+        """Exporting CSVs returns correct headers and valid CSV data."""
+        self.client.force_login(self.super_admin)
+
+        report_types = ['registrations', 'demos', 'subscriptions', 'revenue', 'tickets']
+        for r_type in report_types:
+            url = reverse('super_admin:reports_export_csv', kwargs={'report_type': r_type})
+            res = self.client.get(url)
+            self.assertEqual(res.status_code, 200, f"Failed on export {r_type}")
+            self.assertEqual(res['Content-Type'], 'text/csv')
+            self.assertIn('attachment;', res['Content-Disposition'])
+            self.assertTrue(len(res.content) > 0)
+
+    def test_unknown_report_csv_returns_400(self):
+        """Invalid report export returns 400 Bad Request."""
+        self.client.force_login(self.super_admin)
+        res = self.client.get(reverse('super_admin:reports_export_csv', kwargs={'report_type': 'nonexistent'}))
+        self.assertEqual(res.status_code, 400)
 
 

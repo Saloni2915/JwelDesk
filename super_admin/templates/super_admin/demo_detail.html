@@ -1,0 +1,309 @@
+{% extends 'super_admin/base_super_admin.html' %}
+
+{% block title %}Demo: {{ lead.lead_name }} | Super Admin Portal{% endblock %}
+{% block page_title %}Demo Meeting & Lead Detail{% endblock %}
+
+{% block content %}
+<!-- Back Button & Status Header -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <a href="{% url 'super_admin:demo_list' %}" class="btn btn-sm btn-outline-secondary text-body">
+            <i class="bi bi-arrow-left me-1"></i> Back to Demos
+        </a>
+        <h4 class="mb-0 fw-bold" style="color: var(--sa-text);">{{ lead.lead_name }}</h4>
+        {% if lead.status == 'new' %}
+        <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-30">New Enquiry</span>
+        {% elif lead.status == 'scheduled' %}
+        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30">Scheduled</span>
+        {% elif lead.status == 'rescheduled' %}
+        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30">Rescheduled</span>
+        {% elif lead.status == 'completed' %}
+        <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30">Demo Completed</span>
+        {% elif lead.status == 'cancelled' %}
+        <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-30">Cancelled</span>
+        {% elif lead.status == 'not_interested' %}
+        <span class="badge bg-secondary bg-opacity-25 text-muted border border-secondary border-opacity-25">Lost / Closed</span>
+        {% else %}
+        <span class="badge bg-secondary bg-opacity-25 text-body">{{ lead.get_status_display }}</span>
+        {% endif %}
+    </div>
+
+    <!-- Action Toolbar -->
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <a href="{% url 'super_admin:demo_edit' lead.id %}" class="btn btn-sm btn-outline-secondary text-body">
+            <i class="bi bi-pencil me-1"></i> Edit Lead
+        </a>
+        <button type="button" class="btn btn-sm btn-gold" data-bs-toggle="modal" data-bs-target="#scheduleMeetingModal">
+            <i class="bi bi-calendar-event me-1"></i> Update Schedule
+        </button>
+        {% if not lead.converted_tenant %}
+        <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#convertLeadModal">
+            <i class="bi bi-check-circle me-1"></i> Convert to Showroom
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Lead Profile & Meeting Information -->
+    <div class="col-12 col-lg-7 d-flex flex-column gap-4">
+        <!-- Lead Information Card -->
+        <div class="sa-card mb-0">
+            <h6 class="mb-3 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold); font-size: 0.95rem;">
+                <i class="bi bi-building"></i> Prospect Showroom Information
+            </h6>
+            <div class="row g-3">
+                <div class="col-sm-6">
+                    <div class="sa-label small">Showroom / Lead Name</div>
+                    <div class="fw-bold" style="color: var(--sa-text);">{{ lead.lead_name }}</div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="sa-label small">Contact Person</div>
+                    <div class="fw-semibold" style="color: var(--sa-text);">{{ lead.contact_name }}</div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="sa-label small">Mobile / WhatsApp</div>
+                    <div class="fw-semibold" style="color: var(--sa-gold);">
+                        <i class="bi bi-telephone-fill me-1 small"></i>{{ lead.phone }}
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="sa-label small">Email Address</div>
+                    <div style="color: var(--sa-text-secondary);">{{ lead.email|default:"Not provided" }}</div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="sa-label small">City / Location</div>
+                    <div style="color: var(--sa-text-secondary);">{{ lead.city|default:"Not provided" }}</div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="sa-label small">Business Type</div>
+                    <div>
+                        <span class="badge bg-secondary bg-opacity-25 text-body border border-secondary border-opacity-25">
+                            {{ lead.get_business_type_display }}
+                        </span>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="sa-label small">Business Size</div>
+                    <div style="color: var(--sa-text-secondary);">{{ lead.business_size|default:"Not specified" }}</div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="sa-label small">Enquiry Source</div>
+                    <div style="color: var(--sa-text-secondary);">{{ lead.get_source_display }}</div>
+                </div>
+            </div>
+
+            {% if lead.converted_tenant %}
+            <div class="mt-4 p-3 rounded-3" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25);">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i> Converted Customer Account</span>
+                        <div class="small text-muted mt-1">
+                            Linked to showroom: <strong style="color: var(--sa-text);">{{ lead.converted_tenant.name }}</strong> (Slug: /{{ lead.converted_tenant.slug }})
+                        </div>
+                    </div>
+                    <a href="{% url 'super_admin:showroom_detail' lead.converted_tenant.id %}" class="btn btn-sm btn-outline-success">
+                        View Showroom Account
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Meeting Details Card -->
+        <div class="sa-card mb-0">
+            <h6 class="mb-3 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold); font-size: 0.95rem;">
+                <i class="bi bi-calendar-check"></i> Meeting Details & Session Mode
+            </h6>
+            <div class="row g-3">
+                <div class="col-sm-6">
+                    <div class="sa-label small">Scheduled Date & Time</div>
+                    <div class="fw-bold" style="color: var(--sa-text);">
+                        {% if lead.requested_datetime %}
+                        {{ lead.requested_datetime|date:"l, d F Y @ h:i A" }}
+                        {% else %}
+                        <span class="text-muted">Not scheduled</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="sa-label small">Meeting Mode</div>
+                    <div>
+                        <span class="badge bg-dark border border-secondary text-muted">{{ lead.get_meeting_mode_display }}</span>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="sa-label small">Assigned Staff Specialist</div>
+                    <div style="color: var(--sa-text-secondary);">
+                        {% if lead.assigned_staff %}{{ lead.assigned_staff.get_full_name|default:lead.assigned_staff.username }}{% else %}Unassigned{% endif %}
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="sa-label small">Follow-up Date</div>
+                    <div class="{% if lead.is_follow_up_overdue %}text-danger fw-bold{% else %}text-body{% endif %}">
+                        {% if lead.follow_up_date %}
+                        {{ lead.follow_up_date|date:"d M Y" }}
+                        {% if lead.is_follow_up_overdue %} (Overdue){% endif %}
+                        {% else %}
+                        <span class="text-muted">No follow-up set</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if lead.meeting_link %}
+                <div class="col-12">
+                    <div class="sa-label small">Meeting Link / Location</div>
+                    <div class="font-monospace p-2 rounded small" style="background: var(--sa-code-bg); color: var(--sa-gold); word-break: break-all;">
+                        <a href="{{ lead.meeting_link }}" target="_blank" class="text-decoration-none" style="color: var(--sa-gold);">
+                            {{ lead.meeting_link }} <i class="bi bi-box-arrow-up-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+                {% if lead.next_action %}
+                <div class="col-12">
+                    <div class="sa-label small">Next Action Required</div>
+                    <div class="fw-semibold text-warning">{{ lead.next_action }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Notes & Timeline -->
+    <div class="col-12 col-lg-5">
+        <div class="sa-card h-100 mb-0 d-flex flex-column">
+            <h6 class="mb-3 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold); font-size: 0.95rem;">
+                <i class="bi bi-journal-text"></i> Interaction Notes & History
+            </h6>
+            
+            <div class="flex-grow-1">
+                {% if lead.notes %}
+                <div class="p-3 rounded-3" style="background: var(--sa-bg); border: 1px solid var(--sa-border); white-space: pre-wrap; font-size: 0.86rem; color: var(--sa-text-secondary); line-height: 1.6;">{{ lead.notes }}</div>
+                {% else %}
+                <div class="text-center py-4 text-muted small">
+                    <i class="bi bi-chat-left-dots fs-3 d-block mb-2 text-warning opacity-50"></i>
+                    No interaction notes recorded yet.
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Quick Add Note Form -->
+            <div class="mt-3 pt-3 border-top border-secondary border-opacity-15">
+                <form action="{% url 'super_admin:demo_action' lead.id %}" method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action_type" value="schedule">
+                    <input type="hidden" name="meeting_datetime" value="{{ lead.requested_datetime|date:'Y-m-d\TH:i' }}">
+                    <input type="hidden" name="meeting_mode" value="{{ lead.meeting_mode }}">
+                    <div class="mb-2">
+                        <label class="sa-label small mb-1">Add Quick Note / Interaction</label>
+                        <textarea name="notes" rows="3" class="form-control sa-input" placeholder="e.g. Spoke on phone, confirmed demo for Thursday..."></textarea>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-sm btn-outline-gold">
+                            <i class="bi bi-plus-lg me-1"></i> Save Note
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 1: Update Schedule & Meeting Action -->
+<div class="modal fade" id="scheduleMeetingModal" tabindex="-1" aria-labelledby="scheduleMeetingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: var(--sa-card); border: 1px solid var(--sa-border); color: var(--sa-text);">
+            <form action="{% url 'super_admin:demo_action' lead.id %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-header border-secondary border-opacity-25">
+                    <h6 class="modal-title fw-bold" id="scheduleMeetingModalLabel" style="color: var(--sa-gold);">
+                        <i class="bi bi-calendar-event me-1"></i> Update Demo Meeting Status & Time
+                    </h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="sa-label small mb-1">Meeting Action <span class="text-danger">*</span></label>
+                        {{ schedule_form.action_type }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="sa-label small mb-1">Meeting Date & Time</label>
+                        {{ schedule_form.meeting_datetime }}
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="sa-label small mb-1">Mode</label>
+                            {{ schedule_form.meeting_mode }}
+                        </div>
+                        <div class="col-6">
+                            <label class="sa-label small mb-1">Assigned Specialist</label>
+                            {{ schedule_form.assigned_staff }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="sa-label small mb-1">Meeting Link or Location</label>
+                        {{ schedule_form.meeting_link }}
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="sa-label small mb-1">Follow-up Date</label>
+                            {{ schedule_form.follow_up_date }}
+                        </div>
+                        <div class="col-6">
+                            <label class="sa-label small mb-1">Next Action</label>
+                            {{ schedule_form.next_action }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="sa-label small mb-1">Interaction Notes</label>
+                        {{ schedule_form.notes }}
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary border-opacity-25">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-gold">
+                        <i class="bi bi-check-lg me-1"></i> Update Meeting
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 2: Convert to Registered Tenant Showroom -->
+<div class="modal fade" id="convertLeadModal" tabindex="-1" aria-labelledby="convertLeadModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: var(--sa-card); border: 1px solid var(--sa-border); color: var(--sa-text);">
+            <form action="{% url 'super_admin:demo_convert' lead.id %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-header border-secondary border-opacity-25">
+                    <h6 class="modal-title fw-bold" id="convertLeadModalLabel" style="color: var(--sa-gold);">
+                        <i class="bi bi-shop me-1"></i> Convert Lead to Showroom Account
+                    </h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">
+                        Select the showroom tenant created for <strong>{{ lead.lead_name }}</strong> to record this lead as a converted paying customer.
+                    </p>
+                    <div class="mb-3">
+                        <label class="sa-label small mb-1">Select Showroom Account <span class="text-danger">*</span></label>
+                        <select name="tenant_id" class="form-select sa-input" required>
+                            <option value="">-- Choose Showroom --</option>
+                            {% for t in tenants %}
+                            <option value="{{ t.id }}">{{ t.name }} (/{{ t.slug }}) - {{ t.owner.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary border-opacity-25">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-gold">
+                        <i class="bi bi-check-circle me-1"></i> Confirm Conversion
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

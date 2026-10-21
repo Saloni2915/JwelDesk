@@ -21,6 +21,15 @@ class PlatformAuditLog(models.Model):
     ACTION_TENANT_DEACTIVATE   = 'TENANT_DEACTIVATE'
     ACTION_TENANT_ACTIVATE     = 'TENANT_ACTIVATE'
     ACTION_TENANT_VIEW         = 'TENANT_VIEW'
+    ACTION_DEMO_CREATE         = 'DEMO_CREATE'
+    ACTION_DEMO_UPDATE         = 'DEMO_UPDATE'
+    ACTION_DEMO_COMPLETE       = 'DEMO_COMPLETE'
+    ACTION_DEMO_CONVERT        = 'DEMO_CONVERT'
+    ACTION_TICKET_CREATE       = 'TICKET_CREATE'
+    ACTION_TICKET_UPDATE       = 'TICKET_UPDATE'
+    ACTION_TICKET_RESOLVE      = 'TICKET_RESOLVE'
+    ACTION_SUBSCRIPTION_UPDATE = 'SUBSCRIPTION_UPDATE'
+    ACTION_PAYMENT_RECORD      = 'PAYMENT_RECORD'
 
     ACTION_CHOICES = [
         (ACTION_IMPERSONATION_START, 'Started Customer Impersonation'),
@@ -28,6 +37,15 @@ class PlatformAuditLog(models.Model):
         (ACTION_TENANT_DEACTIVATE,   'Deactivated Showroom Tenant'),
         (ACTION_TENANT_ACTIVATE,     'Activated Showroom Tenant'),
         (ACTION_TENANT_VIEW,         'Viewed Showroom Details'),
+        (ACTION_DEMO_CREATE,         'Created Demo Lead / Meeting'),
+        (ACTION_DEMO_UPDATE,         'Updated Demo Lead / Meeting'),
+        (ACTION_DEMO_COMPLETE,       'Completed Demo Meeting'),
+        (ACTION_DEMO_CONVERT,        'Converted Lead to Tenant'),
+        (ACTION_TICKET_CREATE,       'Created Support Ticket'),
+        (ACTION_TICKET_UPDATE,       'Updated Support Ticket'),
+        (ACTION_TICKET_RESOLVE,      'Resolved Support Ticket'),
+        (ACTION_SUBSCRIPTION_UPDATE, 'Updated Tenant Subscription'),
+        (ACTION_PAYMENT_RECORD,      'Recorded Subscription Payment'),
     ]
 
     actor = models.ForeignKey(
@@ -403,3 +421,291 @@ class PlatformProposal(models.Model):
 
     def __str__(self):
         return f"{self.proposal_number} - {self.client_showroom_name} (₹{self.final_amount})"
+
+
+# ============================================================================
+# 4. Demo Meetings & Lead Management
+# ============================================================================
+
+class PlatformDemoLead(models.Model):
+    """Prospective jewellery business lead and scheduled software demonstration."""
+
+    STATUS_NEW            = 'new'
+    STATUS_CONTACTED      = 'contacted'
+    STATUS_SCHEDULED      = 'scheduled'
+    STATUS_COMPLETED      = 'completed'
+    STATUS_RESCHEDULED    = 'rescheduled'
+    STATUS_CANCELLED      = 'cancelled'
+    STATUS_NOT_INTERESTED = 'not_interested'
+
+    STATUS_CHOICES = [
+        (STATUS_NEW,            'New Lead / Enquiry'),
+        (STATUS_CONTACTED,      'Contacted / In Discussion'),
+        (STATUS_SCHEDULED,      'Demo Scheduled'),
+        (STATUS_COMPLETED,      'Demo Completed'),
+        (STATUS_RESCHEDULED,    'Rescheduled'),
+        (STATUS_CANCELLED,      'Cancelled'),
+        (STATUS_NOT_INTERESTED, 'Not Interested / Lost'),
+    ]
+
+    MODE_ONLINE    = 'online'
+    MODE_PHONE     = 'phone'
+    MODE_IN_PERSON = 'in_person'
+
+    MODE_CHOICES = [
+        (MODE_ONLINE,    'Online Video (Google Meet / Zoom)'),
+        (MODE_PHONE,     'Phone Consultation'),
+        (MODE_IN_PERSON, 'In-Person Showroom Visit'),
+    ]
+
+    SOURCE_WEBSITE    = 'website'
+    SOURCE_BROCHURE   = 'brochure'
+    SOURCE_REFERRAL   = 'referral'
+    SOURCE_WHATSAPP   = 'whatsapp'
+    SOURCE_EXHIBITION = 'exhibition'
+    SOURCE_COLD_CALL  = 'cold_call'
+    SOURCE_OTHER      = 'other'
+
+    SOURCE_CHOICES = [
+        (SOURCE_WEBSITE,    'Website Landing Page'),
+        (SOURCE_BROCHURE,   'Product Brochure Download'),
+        (SOURCE_REFERRAL,   'Jeweller Referral'),
+        (SOURCE_WHATSAPP,   'WhatsApp / Phone Inquiry'),
+        (SOURCE_EXHIBITION, 'Trade Exhibition / Expo'),
+        (SOURCE_COLD_CALL,  'Direct Outreach'),
+        (SOURCE_OTHER,      'Other'),
+    ]
+
+    lead_name = models.CharField(
+        max_length=200,
+        help_text="Showroom or jewellery business name"
+    )
+    contact_name = models.CharField(
+        max_length=150,
+        help_text="Contact person or owner name"
+    )
+    email = models.EmailField(blank=True)
+    phone = models.CharField(
+        max_length=30,
+        help_text="Primary mobile or WhatsApp number"
+    )
+    city = models.CharField(max_length=100, blank=True)
+    business_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('RETAIL',    'Retail Jewellery Showroom'),
+            ('WHOLESALE', 'Wholesaler / Supplier'),
+            ('BOTH',      'Retail & Wholesale (Hybrid)'),
+            ('OTHER',     'Other Jewellery Firm'),
+        ],
+        default='RETAIL'
+    )
+    business_size = models.CharField(
+        max_length=60,
+        blank=True,
+        help_text="e.g. Single counter, 2-5 counters, Multi-branch"
+    )
+    source = models.CharField(
+        max_length=30,
+        choices=SOURCE_CHOICES,
+        default=SOURCE_WEBSITE
+    )
+    requested_datetime = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Scheduled demo date and time"
+    )
+    assigned_staff = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_demo_leads',
+        help_text="Product specialist assigned to conduct this demo"
+    )
+    meeting_mode = models.CharField(
+        max_length=20,
+        choices=MODE_CHOICES,
+        default=MODE_ONLINE
+    )
+    meeting_link = models.CharField(
+        max_length=300,
+        blank=True,
+        help_text="Online meeting link (Google Meet / Zoom) or physical meeting address"
+    )
+    status = models.CharField(
+        max_length=30,
+        choices=STATUS_CHOICES,
+        default=STATUS_NEW,
+        db_index=True
+    )
+    follow_up_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Date for next follow-up touchpoint"
+    )
+    next_action = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Immediate next action (e.g. Send quote, call on Tuesday)"
+    )
+    notes = models.TextField(
+        blank=True,
+        help_text="Interaction history, feature requirements, notes"
+    )
+    converted_tenant = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='originating_demo_leads',
+        help_text="Showroom tenant account created if lead converted"
+    )
+    conversion_date = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Platform Demo Lead'
+        verbose_name_plural = 'Platform Demo Leads'
+
+    def __str__(self):
+        return f"{self.lead_name} ({self.contact_name}) - {self.get_status_display()}"
+
+    @property
+    def is_upcoming_meeting(self):
+        from django.utils import timezone
+        return (
+            self.status == self.STATUS_SCHEDULED and
+            self.requested_datetime is not None and
+            self.requested_datetime >= timezone.now()
+        )
+
+    @property
+    def is_overdue_followup(self):
+        from django.utils import timezone
+        if self.follow_up_date and self.status not in (self.STATUS_COMPLETED, self.STATUS_CANCELLED, self.STATUS_NOT_INTERESTED):
+            return self.follow_up_date < timezone.localdate()
+        return False
+
+    @property
+    def is_converted(self):
+        return self.converted_tenant_id is not None
+
+
+# ============================================================================
+# 5. Support Tickets & Customer Feedback
+# ============================================================================
+
+class PlatformSupportTicket(models.Model):
+    """Customer support, issue tracking, and feature feedback for platform administrators."""
+
+    PRIORITY_LOW    = 'low'
+    PRIORITY_MEDIUM = 'medium'
+    PRIORITY_HIGH   = 'high'
+    PRIORITY_URGENT = 'urgent'
+
+    PRIORITY_CHOICES = [
+        (PRIORITY_LOW,    'Low'),
+        (PRIORITY_MEDIUM, 'Medium'),
+        (PRIORITY_HIGH,   'High'),
+        (PRIORITY_URGENT, 'Urgent / Critical'),
+    ]
+
+    STATUS_OPEN           = 'open'
+    STATUS_IN_PROGRESS    = 'in_progress'
+    STATUS_WAITING_CLIENT = 'waiting_client'
+    STATUS_RESOLVED       = 'resolved'
+    STATUS_CLOSED         = 'closed'
+
+    STATUS_CHOICES = [
+        (STATUS_OPEN,           'Open'),
+        (STATUS_IN_PROGRESS,    'In Progress'),
+        (STATUS_WAITING_CLIENT, 'Waiting on Client'),
+        (STATUS_RESOLVED,       'Resolved'),
+        (STATUS_CLOSED,         'Closed'),
+    ]
+
+    CATEGORY_TECH       = 'technical'
+    CATEGORY_BILLING    = 'billing'
+    CATEGORY_FEATURE    = 'feature_request'
+    CATEGORY_ONBOARDING = 'onboarding'
+    CATEGORY_BUG        = 'bug'
+    CATEGORY_FEEDBACK   = 'feedback'
+    CATEGORY_GENERAL    = 'general'
+
+    CATEGORY_CHOICES = [
+        (CATEGORY_TECH,       'Technical Issue'),
+        (CATEGORY_BILLING,    'Billing & Subscription'),
+        (CATEGORY_FEATURE,    'Feature Request'),
+        (CATEGORY_ONBOARDING, 'Onboarding / Training'),
+        (CATEGORY_BUG,        'Bug Report'),
+        (CATEGORY_FEEDBACK,   'Showroom Feedback'),
+        (CATEGORY_GENERAL,    'General Inquiry'),
+    ]
+
+    ticket_number = models.CharField(
+        max_length=40,
+        unique=True,
+        db_index=True
+    )
+    tenant = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='support_tickets',
+        help_text="Showroom tenant reporting the issue (if registered)"
+    )
+    contact_name = models.CharField(max_length=150)
+    contact_email = models.EmailField(blank=True)
+    contact_phone = models.CharField(max_length=30, blank=True)
+    category = models.CharField(
+        max_length=30,
+        choices=CATEGORY_CHOICES,
+        default=CATEGORY_GENERAL
+    )
+    priority = models.CharField(
+        max_length=20,
+        choices=PRIORITY_CHOICES,
+        default=PRIORITY_MEDIUM
+    )
+    status = models.CharField(
+        max_length=30,
+        choices=STATUS_CHOICES,
+        default=STATUS_OPEN,
+        db_index=True
+    )
+    subject = models.CharField(max_length=255)
+    description = models.TextField()
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_support_tickets'
+    )
+    resolution_notes = models.TextField(blank=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Platform Support Ticket'
+        verbose_name_plural = 'Platform Support Tickets'
+
+    def __str__(self):
+        return f"{self.ticket_number} - {self.subject} ({self.get_status_display()})"
+
+    def save(self, *args, **kwargs):
+        if not self.ticket_number:
+            import random
+            from django.utils import timezone
+            year = timezone.localdate().year
+            last = PlatformSupportTicket.objects.order_by('-id').first()
+            next_id = (last.id + 1) if last else random.randint(1001, 1999)
+            self.ticket_number = f"TICK-{year}-{next_id:04d}"
+        super().save(*args, **kwargs)
+

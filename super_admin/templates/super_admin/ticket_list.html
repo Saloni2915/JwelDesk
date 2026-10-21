@@ -1,0 +1,248 @@
+{% extends 'super_admin/base_super_admin.html' %}
+
+{% block title %}Support Tickets | Super Admin Portal{% endblock %}
+{% block page_title %}Platform Support & Feedback Tickets{% endblock %}
+
+{% block content %}
+<!-- Top Header & Action Buttons -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <p class="text-muted mb-0" style="font-size: 0.88rem;">
+            Track customer technical issues, counter queries, billing inquiries, and feedback across all showroom instances.
+        </p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="{% url 'super_admin:reports_export_csv' 'tickets' %}" class="btn btn-sm btn-outline-secondary text-body">
+            <i class="bi bi-download me-1"></i> Export CSV
+        </a>
+        <a href="{% url 'super_admin:ticket_create' %}" class="btn btn-sm btn-gold">
+            <i class="bi bi-plus-lg me-1"></i> New Support Ticket
+        </a>
+    </div>
+</div>
+
+<!-- Ticket Metric Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="sa-metric-card">
+            <div class="sa-metric-icon">
+                <i class="bi bi-ticket-detailed-fill"></i>
+            </div>
+            <div class="flex-grow-1 min-w-0">
+                <div class="sa-metric-val">{{ all_count }}</div>
+                <div class="sa-metric-lbl">Total Tickets</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="sa-metric-card">
+            <div class="sa-metric-icon" style="background: rgba(239, 68, 68, 0.12); color: #ef4444;">
+                <i class="bi bi-exclamation-circle-fill"></i>
+            </div>
+            <div class="flex-grow-1 min-w-0">
+                <div class="sa-metric-val text-danger">{{ open_count }}</div>
+                <div class="sa-metric-lbl">Open / Unresolved</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="sa-metric-card">
+            <div class="sa-metric-icon" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b;">
+                <i class="bi bi-gear-wide-connected"></i>
+            </div>
+            <div class="flex-grow-1 min-w-0">
+                <div class="sa-metric-val text-warning">{{ in_progress_count }}</div>
+                <div class="sa-metric-lbl">In Progress</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="sa-metric-card">
+            <div class="sa-metric-icon" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">
+                <i class="bi bi-check2-circle"></i>
+            </div>
+            <div class="flex-grow-1 min-w-0">
+                <div class="sa-metric-val text-success">{{ resolved_count }}</div>
+                <div class="sa-metric-lbl">Resolved</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search & Filtering Bar -->
+<div class="sa-card mb-4">
+    <form method="get" class="row g-2 align-items-center">
+        <!-- Search input -->
+        <div class="col-12 col-md-4">
+            <div class="input-group">
+                <span class="input-group-text bg-transparent border-secondary text-muted">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" name="q" value="{{ q }}" class="form-control sa-input" placeholder="Search ticket #, subject, contact, showroom...">
+            </div>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="col-6 col-md-2">
+            <select name="status" class="form-select sa-input" onchange="this.form.submit()">
+                <option value="all" {% if status_filter == 'all' or not status_filter %}selected{% endif %}>All Statuses</option>
+                {% for code, label in status_choices %}
+                <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Priority Filter -->
+        <div class="col-6 col-md-2">
+            <select name="priority" class="form-select sa-input" onchange="this.form.submit()">
+                <option value="all" {% if priority_filter == 'all' or not priority_filter %}selected{% endif %}>All Priorities</option>
+                {% for code, label in priority_choices %}
+                <option value="{{ code }}" {% if priority_filter == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Category Filter -->
+        <div class="col-6 col-md-2">
+            <select name="category" class="form-select sa-input" onchange="this.form.submit()">
+                <option value="all" {% if category_filter == 'all' or not category_filter %}selected{% endif %}>All Categories</option>
+                {% for code, label in category_choices %}
+                <option value="{{ code }}" {% if category_filter == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Filter & Clear -->
+        <div class="col-6 col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-gold flex-grow-1">Filter</button>
+            {% if q or status_filter != 'all' or priority_filter != 'all' or category_filter != 'all' %}
+            <a href="{% url 'super_admin:ticket_list' %}" class="btn btn-outline-secondary" title="Reset filters">
+                <i class="bi bi-x-lg"></i>
+            </a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Tickets Data Table -->
+<div class="sa-card">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="small" style="color: var(--sa-text-secondary);">
+            Showing {{ page_obj.start_index|default:0 }}–{{ page_obj.end_index|default:0 }} of {{ total_filtered }} tickets
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table sa-table align-middle">
+            <thead>
+                <tr>
+                    <th>Ticket #</th>
+                    <th>Showroom / Contact</th>
+                    <th>Category</th>
+                    <th>Priority</th>
+                    <th>Subject</th>
+                    <th>Assigned To</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th class="text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tk in page_obj %}
+                <tr>
+                    <td>
+                        <span class="font-monospace fw-bold" style="color: var(--sa-gold); font-size: 0.88rem;">{{ tk.ticket_number }}</span>
+                    </td>
+                    <td>
+                        <div class="fw-bold" style="color: var(--sa-text); font-size: 0.9rem;">
+                            {{ tk.tenant.name|default:"General Inquiry" }}
+                        </div>
+                        <div class="small text-muted">
+                            {{ tk.contact_name }} &bull; {{ tk.contact_phone }}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary bg-opacity-25 text-body border border-secondary border-opacity-25 small">
+                            {{ tk.get_category_display }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if tk.priority == 'urgent' %}
+                        <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-30">Urgent</span>
+                        {% elif tk.priority == 'high' %}
+                        <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-30">High</span>
+                        {% elif tk.priority == 'low' %}
+                        <span class="badge bg-secondary bg-opacity-25 text-muted border border-secondary border-opacity-25">Low</span>
+                        {% else %}
+                        <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-25">Medium</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="fw-semibold text-truncate" style="max-width: 280px; color: var(--sa-text);" title="{{ tk.subject }}">
+                            {{ tk.subject }}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="small text-muted">{{ tk.assigned_to.username|default:"Unassigned" }}</span>
+                    </td>
+                    <td>
+                        {% if tk.status == 'open' %}
+                        <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-25">Open</span>
+                        {% elif tk.status == 'in_progress' %}
+                        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-25">In Progress</span>
+                        {% elif tk.status == 'waiting_customer' %}
+                        <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-25">Awaiting Reply</span>
+                        {% elif tk.status == 'resolved' %}
+                        <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-25">Resolved</span>
+                        {% elif tk.status == 'closed' %}
+                        <span class="badge bg-secondary bg-opacity-25 text-muted border border-secondary border-opacity-25">Closed</span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ tk.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="small fw-semibold" style="color: var(--sa-text);">{{ tk.created_at|date:"d M Y" }}</div>
+                        <div class="text-muted" style="font-size: 0.72rem;">{{ tk.created_at|timesince }} ago</div>
+                    </td>
+                    <td class="text-end">
+                        <a href="{% url 'super_admin:ticket_detail' tk.id %}" class="sa-btn-action" title="View & Resolve Ticket">
+                            <span>Manage</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center py-5 text-muted">
+                        <i class="bi bi-headset fs-1 d-block mb-2 text-warning opacity-50"></i>
+                        No support tickets found matching the selected filters.
+                        <div class="mt-2">
+                            <a href="{% url 'super_admin:ticket_create' %}" class="btn btn-sm btn-gold">
+                                <i class="bi bi-plus-lg me-1"></i> Create Support Ticket
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    {% if page_obj.has_other_pages %}
+    <div class="d-flex justify-content-center align-items-center gap-2 mt-4">
+        {% if page_obj.has_previous %}
+        <a href="?page=1&q={{ q }}&status={{ status_filter }}&priority={{ priority_filter }}&category={{ category_filter }}" class="btn btn-sm btn-outline-secondary">« First</a>
+        <a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&status={{ status_filter }}&priority={{ priority_filter }}&category={{ category_filter }}" class="btn btn-sm btn-outline-secondary">‹ Prev</a>
+        {% endif %}
+
+        <span class="text-muted small px-2">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&q={{ q }}&status={{ status_filter }}&priority={{ priority_filter }}&category={{ category_filter }}" class="btn btn-sm btn-outline-secondary">Next ›</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}&q={{ q }}&status={{ status_filter }}&priority={{ priority_filter }}&category={{ category_filter }}" class="btn btn-sm btn-outline-secondary">Last »</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,243 @@
+{% extends 'super_admin/base_super_admin.html' %}
+
+{% block title %}Demos & Leads | Super Admin Portal{% endblock %}
+{% block page_title %}Demo Meetings & Prospective Leads{% endblock %}
+
+{% block content %}
+<!-- Top Header & Action Buttons -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <p class="text-muted mb-0" style="font-size: 0.88rem;">
+            Manage inbound jewellery showroom demo requests, schedule live walkthroughs, and track lead conversion.
+        </p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="{% url 'super_admin:reports_export_csv' 'demos' %}" class="btn btn-sm btn-outline-secondary text-body">
+            <i class="bi bi-download me-1"></i> Export CSV
+        </a>
+        <a href="{% url 'super_admin:demo_create' %}" class="btn btn-sm btn-gold">
+            <i class="bi bi-calendar-plus me-1"></i> New Demo / Lead
+        </a>
+    </div>
+</div>
+
+<!-- Status Tab Navigation Strip -->
+<div class="sa-card mb-3 p-2">
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <a href="?tab=all{% if q %}&q={{ q }}{% endif %}" class="btn btn-sm {% if tab == 'all' or not tab %}btn-gold{% else %}btn-outline-secondary text-body{% endif %} py-1 px-3" style="font-size: 0.82rem;">
+            All Leads <span class="badge bg-secondary bg-opacity-25 ms-1">{{ all_count }}</span>
+        </a>
+        <a href="?tab=upcoming{% if q %}&q={{ q }}{% endif %}" class="btn btn-sm {% if tab == 'upcoming' %}btn-gold{% else %}btn-outline-secondary text-body{% endif %} py-1 px-3" style="font-size: 0.82rem;">
+            <i class="bi bi-clock-history me-1 text-warning"></i> Upcoming Meetings <span class="badge bg-warning bg-opacity-25 text-warning ms-1">{{ upcoming_count }}</span>
+        </a>
+        <a href="?tab=followup{% if q %}&q={{ q }}{% endif %}" class="btn btn-sm {% if tab == 'followup' %}btn-gold{% else %}btn-outline-secondary text-body{% endif %} py-1 px-3" style="font-size: 0.82rem;">
+            <i class="bi bi-bell-fill me-1 text-danger"></i> Overdue Follow-ups <span class="badge bg-danger bg-opacity-25 text-danger ms-1">{{ followup_count }}</span>
+        </a>
+        <a href="?tab=completed{% if q %}&q={{ q }}{% endif %}" class="btn btn-sm {% if tab == 'completed' %}btn-gold{% else %}btn-outline-secondary text-body{% endif %} py-1 px-3" style="font-size: 0.82rem;">
+            Completed <span class="badge bg-secondary bg-opacity-25 ms-1">{{ completed_count }}</span>
+        </a>
+        <a href="?tab=converted{% if q %}&q={{ q }}{% endif %}" class="btn btn-sm {% if tab == 'converted' %}btn-gold{% else %}btn-outline-secondary text-body{% endif %} py-1 px-3" style="font-size: 0.82rem;">
+            <i class="bi bi-check-circle-fill me-1 text-success"></i> Converted Customers <span class="badge bg-success bg-opacity-25 text-success ms-1">{{ converted_count }}</span>
+        </a>
+    </div>
+</div>
+
+<!-- Search & Filtering Bar -->
+<div class="sa-card mb-4">
+    <form method="get" class="row g-2 align-items-center">
+        {% if tab %}
+        <input type="hidden" name="tab" value="{{ tab }}">
+        {% endif %}
+
+        <!-- Search input -->
+        <div class="col-12 col-md-4">
+            <div class="input-group">
+                <span class="input-group-text bg-transparent border-secondary text-muted">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" name="q" value="{{ q }}" class="form-control sa-input" placeholder="Search lead name, contact, phone, email, city...">
+            </div>
+        </div>
+
+        <!-- Business Type -->
+        <div class="col-6 col-md-2">
+            <select name="business_type" class="form-select sa-input" onchange="this.form.submit()">
+                <option value="all" {% if business_type_filter == 'ALL' or not business_type_filter %}selected{% endif %}>All Business Types</option>
+                {% for code, label in business_type_choices %}
+                <option value="{{ code }}" {% if business_type_filter == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Status -->
+        <div class="col-6 col-md-2">
+            <select name="status" class="form-select sa-input" onchange="this.form.submit()">
+                <option value="all" {% if status_filter == 'all' or not status_filter %}selected{% endif %}>All Statuses</option>
+                {% for code, label in status_choices %}
+                <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Source -->
+        <div class="col-6 col-md-2">
+            <select name="source" class="form-select sa-input" onchange="this.form.submit()">
+                <option value="all" {% if source_filter == 'all' or not source_filter %}selected{% endif %}>All Sources</option>
+                {% for code, label in source_choices %}
+                <option value="{{ code }}" {% if source_filter == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Filter & Clear -->
+        <div class="col-6 col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-gold flex-grow-1">Filter</button>
+            {% if q or status_filter != 'all' or business_type_filter != 'ALL' or source_filter != 'all' %}
+            <a href="{% url 'super_admin:demo_list' %}?tab={{ tab }}" class="btn btn-outline-secondary" title="Reset filters">
+                <i class="bi bi-x-lg"></i>
+            </a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Leads Data Table Container -->
+<div class="sa-card">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="small" style="color: var(--sa-text-secondary);">
+            Showing {{ page_obj.start_index|default:0 }}–{{ page_obj.end_index|default:0 }} of {{ total_filtered }} leads
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table sa-table align-middle">
+            <thead>
+                <tr>
+                    <th>Lead / Showroom</th>
+                    <th>Contact Person</th>
+                    <th>Phone / Email</th>
+                    <th>Business Type</th>
+                    <th>Source</th>
+                    <th>Status</th>
+                    <th>Meeting Schedule</th>
+                    <th>Follow Up</th>
+                    <th class="text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in page_obj %}
+                <tr>
+                    <td>
+                        <div class="fw-bold" style="color: var(--sa-text); font-size: 0.92rem;">
+                            {{ d.lead_name }}
+                        </div>
+                        {% if d.city %}
+                        <div class="small text-muted"><i class="bi bi-geo-alt me-1"></i>{{ d.city }}</div>
+                        {% endif %}
+                        {% if d.converted_tenant %}
+                        <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30 small mt-1">
+                            <i class="bi bi-shop me-1"></i>Showroom: {{ d.converted_tenant.name }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="fw-semibold" style="color: var(--sa-text-secondary);">{{ d.contact_name }}</div>
+                        {% if d.business_size %}
+                        <div class="small text-muted">{{ d.business_size }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="fw-semibold" style="color: var(--sa-gold); font-size: 0.88rem;">
+                            <i class="bi bi-telephone-fill me-1 small"></i>{{ d.phone }}
+                        </div>
+                        {% if d.email %}
+                        <div class="small text-muted text-truncate" style="max-width: 170px;">{{ d.email }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary bg-opacity-25 text-body border border-secondary border-opacity-25" style="font-size: 0.74rem;">
+                            {{ d.get_business_type_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="small text-muted">{{ d.get_source_display }}</span>
+                    </td>
+                    <td>
+                        {% if d.status == 'new' %}
+                        <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-30">New</span>
+                        {% elif d.status == 'scheduled' %}
+                        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30">Scheduled</span>
+                        {% elif d.status == 'rescheduled' %}
+                        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30">Rescheduled</span>
+                        {% elif d.status == 'completed' %}
+                        <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30">Completed</span>
+                        {% elif d.status == 'cancelled' %}
+                        <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-30">Cancelled</span>
+                        {% elif d.status == 'not_interested' %}
+                        <span class="badge bg-secondary bg-opacity-25 text-muted border border-secondary border-opacity-25">Lost / Closed</span>
+                        {% else %}
+                        <span class="badge bg-secondary bg-opacity-25 text-body">{{ d.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if d.requested_datetime %}
+                        <div class="fw-semibold small" style="color: var(--sa-text);">{{ d.requested_datetime|date:"d M Y, h:i A" }}</div>
+                        <div class="small text-muted">
+                            <span class="badge bg-dark border border-secondary text-muted">{{ d.get_meeting_mode_display }}</span>
+                            {% if d.assigned_staff %} &bull; {{ d.assigned_staff.username }}{% endif %}
+                        </div>
+                        {% else %}
+                        <span class="text-muted small">Not scheduled</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if d.follow_up_date %}
+                        <div class="small {% if d.is_follow_up_overdue %}text-danger fw-bold{% else %}text-muted{% endif %}">
+                            <i class="bi bi-clock me-1"></i>{{ d.follow_up_date|date:"d M Y" }}
+                        </div>
+                        {% else %}
+                        <span class="text-muted small">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a href="{% url 'super_admin:demo_detail' d.id %}" class="sa-btn-action" title="View & Schedule Demo">
+                            <span>Manage</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center py-5 text-muted">
+                        <i class="bi bi-calendar-x fs-1 d-block mb-2 text-warning opacity-50"></i>
+                        No demo leads found matching the filter criteria.
+                        <div class="mt-2">
+                            <a href="{% url 'super_admin:demo_create' %}" class="btn btn-sm btn-gold">
+                                <i class="bi bi-plus-lg me-1"></i> Record New Lead
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    {% if page_obj.has_other_pages %}
+    <div class="d-flex justify-content-center align-items-center gap-2 mt-4">
+        {% if page_obj.has_previous %}
+        <a href="?page=1&tab={{ tab }}&q={{ q }}&status={{ status_filter }}&business_type={{ business_type_filter }}&source={{ source_filter }}" class="btn btn-sm btn-outline-secondary">« First</a>
+        <a href="?page={{ page_obj.previous_page_number }}&tab={{ tab }}&q={{ q }}&status={{ status_filter }}&business_type={{ business_type_filter }}&source={{ source_filter }}" class="btn btn-sm btn-outline-secondary">‹ Prev</a>
+        {% endif %}
+
+        <span class="text-muted small px-2">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&tab={{ tab }}&q={{ q }}&status={{ status_filter }}&business_type={{ business_type_filter }}&source={{ source_filter }}" class="btn btn-sm btn-outline-secondary">Next ›</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}&tab={{ tab }}&q={{ q }}&status={{ status_filter }}&business_type={{ business_type_filter }}&source={{ source_filter }}" class="btn btn-sm btn-outline-secondary">Last »</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

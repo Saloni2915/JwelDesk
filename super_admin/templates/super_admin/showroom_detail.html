@@ -152,13 +152,39 @@
 
             <hr class="border-secondary border-opacity-25 my-3">
 
+            {% if subscription %}
+            <div class="p-3 rounded" style="background: rgba(0,0,0,0.15); border: 1px solid var(--sa-border);">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div>
+                        <div class="small fw-semibold" style="color: var(--sa-text);">{{ subscription.get_plan_name_display }}</div>
+                        <div style="font-size: 0.78rem; color: var(--sa-text-secondary);">₹{{ subscription.price|floatformat:0 }} / {{ subscription.get_billing_cycle_display }}</div>
+                    </div>
+                    {% if subscription.status == 'active' %}
+                    <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30">Active Plan</span>
+                    {% elif subscription.status == 'trial' %}
+                    <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30">Trial Period</span>
+                    {% elif subscription.status == 'overdue' or subscription.status == 'grace_period' %}
+                    <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-30">Payment Overdue</span>
+                    {% else %}
+                    <span class="badge bg-secondary bg-opacity-25 text-body">{{ subscription.get_status_display }}</span>
+                    {% endif %}
+                </div>
+                <div class="d-flex align-items-center justify-content-between small text-muted">
+                    <span>Expires: {{ subscription.expires_at|date:"d M Y"|default:"Indefinite" }}</span>
+                    <a href="{% url 'super_admin:subscriptions' %}?q={{ tenant.name }}" class="text-warning text-decoration-none">
+                        Manage Plan <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+            {% else %}
             <div class="d-flex align-items-center justify-content-between p-2 rounded" style="background: rgba(0,0,0,0.15); border: 1px solid var(--sa-border);">
                 <div>
                     <div class="small fw-semibold" style="color: var(--sa-text);">Subscription Status</div>
-                    <div style="font-size: 0.78rem; color: var(--sa-text-secondary);">{{ subscription_status_label|default:"Core Plan (Standard Tier)" }}</div>
+                    <div style="font-size: 0.78rem; color: var(--sa-text-secondary);">No active subscription profile</div>
                 </div>
-                <span class="sa-badge-unavailable">No Billing Attached</span>
+                <span class="sa-badge-unavailable">Trial / Unassigned</span>
             </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -220,6 +246,85 @@
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+</div>
+
+<!-- Linked Demo Leads & Support Tickets Row -->
+<div class="row g-4 mb-4">
+    <!-- Linked Demos -->
+    <div class="col-12 col-lg-6">
+        <div class="sa-card h-100 mb-0">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h6 class="fw-bold mb-0 d-flex align-items-center gap-2" style="color: var(--sa-gold);">
+                    <i class="bi bi-calendar-event"></i> Originating Demo Enquiries ({{ linked_demos|length }})
+                </h6>
+                <a href="{% url 'super_admin:demo_list' %}?q={{ tenant.name }}" class="small text-warning text-decoration-none">
+                    View in Demos <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+            {% if linked_demos %}
+            <div class="list-group list-group-flush bg-transparent">
+                {% for d in linked_demos %}
+                <div class="list-group-item bg-transparent px-0 py-2 border-secondary border-opacity-15">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="fw-semibold small" style="color: var(--sa-text);">{{ d.lead_name }} ({{ d.contact_name }})</div>
+                            <div class="text-muted small" style="font-size: 0.74rem;">{{ d.phone }} &bull; Converted {{ d.conversion_date|date:"d M Y" }}</div>
+                        </div>
+                        <a href="{% url 'super_admin:demo_detail' d.id %}" class="btn btn-sm btn-outline-gold py-0 px-2" style="font-size: 0.75rem;">
+                            View
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4 text-muted small">
+                No demo enquiry records linked to this showroom.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Support Tickets -->
+    <div class="col-12 col-lg-6">
+        <div class="sa-card h-100 mb-0">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h6 class="fw-bold mb-0 d-flex align-items-center gap-2" style="color: var(--sa-gold);">
+                    <i class="bi bi-headset"></i> Support Tickets ({{ linked_tickets|length }})
+                </h6>
+                <a href="{% url 'super_admin:ticket_create' %}?tenant={{ tenant.id }}" class="btn btn-sm btn-outline-gold py-0 px-2" style="font-size: 0.75rem;">
+                    <i class="bi bi-plus-lg me-1"></i> New Ticket
+                </a>
+            </div>
+            {% if linked_tickets %}
+            <div class="list-group list-group-flush bg-transparent">
+                {% for tk in linked_tickets %}
+                <div class="list-group-item bg-transparent px-0 py-2 border-secondary border-opacity-15">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="min-w-0">
+                            <div class="fw-semibold small text-truncate" style="color: var(--sa-text);" title="{{ tk.subject }}">
+                                <span class="font-monospace text-warning me-1">#{{ tk.ticket_number }}</span>{{ tk.subject }}
+                            </div>
+                            <div class="text-muted small" style="font-size: 0.74rem;">
+                                {{ tk.get_category_display }} &bull; {{ tk.created_at|date:"d M Y" }}
+                            </div>
+                        </div>
+                        <div class="ms-2">
+                            <a href="{% url 'super_admin:ticket_detail' tk.id %}" class="btn btn-sm btn-outline-gold py-0 px-2" style="font-size: 0.75rem;">
+                                View
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4 text-muted small">
+                No support tickets filed for this showroom.
+            </div>
+            {% endif %}
+        </div>
     </div>
 </div>
 

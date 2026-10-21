@@ -1,0 +1,247 @@
+{% extends 'super_admin/base_super_admin.html' %}
+
+{% block title %}Reports & Analytics | Super Admin Portal{% endblock %}
+{% block page_title %}Platform Reports & Growth Analytics{% endblock %}
+
+{% block content %}
+<!-- 0. Date Period Filter & CSV Exports Bar -->
+<div class="sa-card mb-4 p-3">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <!-- Period Filters -->
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="small fw-bold text-uppercase" style="color: var(--sa-gold); font-size: 0.76rem; letter-spacing: 0.05em;">
+                <i class="bi bi-funnel-fill me-1"></i> Range:
+            </span>
+            <a href="?period=7d" class="btn btn-sm {% if period == '7d' %}btn-gold{% else %}btn-outline-secondary text-body{% endif %} py-1 px-3" style="font-size: 0.8rem;">7 Days</a>
+            <a href="?period=30d" class="btn btn-sm {% if period == '30d' %}btn-gold{% else %}btn-outline-secondary text-body{% endif %} py-1 px-3" style="font-size: 0.8rem;">30 Days</a>
+            <a href="?period=90d" class="btn btn-sm {% if period == '90d' %}btn-gold{% else %}btn-outline-secondary text-body{% endif %} py-1 px-3" style="font-size: 0.8rem;">90 Days</a>
+            <a href="?period=1y" class="btn btn-sm {% if period == '1y' %}btn-gold{% else %}btn-outline-secondary text-body{% endif %} py-1 px-3" style="font-size: 0.8rem;">1 Year</a>
+            <a href="?period=all" class="btn btn-sm {% if period == 'all' %}btn-gold{% else %}btn-outline-secondary text-body{% endif %} py-1 px-3" style="font-size: 0.8rem;">All Time</a>
+        </div>
+
+        <!-- Custom Date Range Form -->
+        <form method="GET" class="d-flex align-items-center gap-2">
+            <input type="date" name="start_date" value="{{ start_date_str }}" class="sa-input py-1 px-2" style="font-size: 0.8rem; width: 135px;" title="Start date">
+            <span class="text-muted small">to</span>
+            <input type="date" name="end_date" value="{{ end_date_str }}" class="sa-input py-1 px-2" style="font-size: 0.8rem; width: 135px;" title="End date">
+            <button type="submit" class="btn btn-sm btn-outline-gold py-1 px-2" style="font-size: 0.8rem;">
+                <i class="bi bi-filter"></i> Apply
+            </button>
+        </form>
+
+        <!-- Dropdown CSV Export Actions -->
+        <div class="dropdown">
+            <button class="btn btn-sm btn-gold dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-download me-1"></i> Export Report (CSV)
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" style="background: var(--sa-card); border: 1px solid var(--sa-border);">
+                <li><a class="dropdown-item small" href="{% url 'super_admin:reports_export_csv' 'registrations' %}"><i class="bi bi-shop me-2 text-warning"></i> Business Registrations CSV</a></li>
+                <li><a class="dropdown-item small" href="{% url 'super_admin:reports_export_csv' 'demos' %}"><i class="bi bi-calendar-event me-2 text-primary"></i> Demo Leads & Meetings CSV</a></li>
+                <li><a class="dropdown-item small" href="{% url 'super_admin:reports_export_csv' 'subscriptions' %}"><i class="bi bi-credit-card me-2 text-info"></i> Tenant Subscriptions CSV</a></li>
+                <li><a class="dropdown-item small" href="{% url 'super_admin:reports_export_csv' 'revenue' %}"><i class="bi bi-currency-rupee me-2 text-success"></i> Payment Revenue Ledger CSV</a></li>
+                <li><a class="dropdown-item small" href="{% url 'super_admin:reports_export_csv' 'tickets' %}"><i class="bi bi-headset me-2 text-danger"></i> Support Tickets CSV</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Section 1: Business Account Growth & Types -->
+<div class="row g-4 mb-4">
+    <div class="col-12 col-lg-6">
+        <div class="sa-card h-100 mb-0">
+            <h6 class="mb-3 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold); font-size: 0.95rem;">
+                <i class="bi bi-shop"></i> 1. Business Registrations & Account Growth
+            </h6>
+            <div class="d-flex align-items-baseline gap-2 mb-3">
+                <span class="fs-2 fw-bold" style="color: var(--sa-text);">+{{ new_tenants_period }}</span>
+                <span class="text-muted small">New businesses enrolled during selected period</span>
+            </div>
+
+            <div class="p-3 rounded-3 mb-3" style="background: var(--sa-bg); border: 1px solid var(--sa-border);">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small fw-semibold" style="color: var(--sa-text-secondary);">Retail Jewellery Showrooms</span>
+                    <span class="badge bg-secondary bg-opacity-25 text-body">{{ retail_count }} accounts</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small fw-semibold" style="color: var(--sa-text-secondary);">Wholesalers & Bullion Suppliers</span>
+                    <span class="badge bg-info bg-opacity-15 text-info border border-info border-opacity-25">{{ wholesale_count }} accounts</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="small fw-semibold" style="color: var(--sa-text-secondary);">Retail & Wholesale Combined</span>
+                    <span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-25">{{ hybrid_count }} accounts</span>
+                </div>
+            </div>
+
+            <div class="small text-muted">
+                Total Lifetime Registered Accounts: <strong style="color: var(--sa-text);">{{ total_tenants }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Demo Conversion Funnel -->
+    <div class="col-12 col-lg-6">
+        <div class="sa-card h-100 mb-0">
+            <h6 class="mb-3 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold); font-size: 0.95rem;">
+                <i class="bi bi-funnel-fill"></i> 2. Demo Conversion Funnel
+            </h6>
+            <div class="d-flex align-items-baseline gap-2 mb-3">
+                <span class="fs-2 fw-bold text-success">{{ conversion_rate }}%</span>
+                <span class="text-muted small">Lead-to-paid showroom conversion rate</span>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-3">
+                    <div class="p-2 rounded text-center" style="background: var(--sa-bg); border: 1px solid var(--sa-border);">
+                        <div class="fw-bold fs-5" style="color: var(--sa-text);">{{ leads_period }}</div>
+                        <div class="small text-muted" style="font-size: 0.72rem;">Enquiries</div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="p-2 rounded text-center" style="background: var(--sa-bg); border: 1px solid var(--sa-border);">
+                        <div class="fw-bold fs-5 text-warning">{{ scheduled_period }}</div>
+                        <div class="small text-muted" style="font-size: 0.72rem;">Scheduled</div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="p-2 rounded text-center" style="background: var(--sa-bg); border: 1px solid var(--sa-border);">
+                        <div class="fw-bold fs-5 text-info">{{ completed_period }}</div>
+                        <div class="small text-muted" style="font-size: 0.72rem;">Completed</div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="p-2 rounded text-center" style="background: var(--sa-bg); border: 1px solid var(--sa-border);">
+                        <div class="fw-bold fs-5 text-success">{{ converted_period }}</div>
+                        <div class="small text-muted" style="font-size: 0.72rem;">Converted</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lead Sources Breakdown -->
+            <div class="sa-label small mb-1">Inquiry Sources in Period</div>
+            <div class="d-flex flex-wrap gap-2">
+                {% for s in lead_sources %}
+                <span class="badge bg-secondary bg-opacity-25 text-body border border-secondary border-opacity-25" style="font-size: 0.76rem;">
+                    {{ s.source|title }}: {{ s.count }}
+                </span>
+                {% empty %}
+                <span class="text-muted small">No source records during this period.</span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section 3: Subscriptions & Verified Revenue Collection -->
+<div class="row g-4 mb-4">
+    <div class="col-12 col-lg-6">
+        <div class="sa-card h-100 mb-0">
+            <h6 class="mb-3 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold); font-size: 0.95rem;">
+                <i class="bi bi-credit-card-2-front"></i> 3. Active Subscription Distribution
+            </h6>
+            <div class="row g-3 mb-3">
+                <div class="col-4">
+                    <div class="p-2 rounded text-center" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25);">
+                        <div class="fw-bold fs-4 text-success">{{ active_subs }}</div>
+                        <div class="small text-success" style="font-size: 0.74rem;">Active Paid</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-2 rounded text-center" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25);">
+                        <div class="fw-bold fs-4 text-warning">{{ trial_subs }}</div>
+                        <div class="small text-warning" style="font-size: 0.74rem;">In Trial</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-2 rounded text-center" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25);">
+                        <div class="fw-bold fs-4 text-danger">{{ overdue_subs }}</div>
+                        <div class="small text-danger" style="font-size: 0.74rem;">Overdue</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sa-label small mb-2">Enrolled Plans</div>
+            <div class="list-group list-group-flush bg-transparent">
+                {% for p in plan_distribution %}
+                <div class="list-group-item bg-transparent d-flex justify-content-between align-items-center px-0 py-1 border-secondary border-opacity-15">
+                    <span class="small" style="color: var(--sa-text);">{{ p.plan_name|title }} Plan</span>
+                    <span class="badge bg-secondary bg-opacity-25 text-body">{{ p.count }} showrooms</span>
+                </div>
+                {% empty %}
+                <div class="text-muted small">No plan data available.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Verified Revenue Collections -->
+    <div class="col-12 col-lg-6">
+        <div class="sa-card h-100 mb-0">
+            <h6 class="mb-3 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold); font-size: 0.95rem;">
+                <i class="bi bi-currency-rupee"></i> 4. Verified Subscription Collections
+            </h6>
+            <div class="d-flex align-items-baseline gap-2 mb-3">
+                <span class="fs-2 fw-bold" style="color: var(--sa-gold);">₹{{ period_revenue|floatformat:0 }}</span>
+                <span class="text-muted small">Collected in selected period</span>
+            </div>
+
+            <div class="p-3 rounded-3 mb-3" style="background: var(--sa-bg); border: 1px solid var(--sa-border);">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="small text-muted">All-Time Platform Revenue Collections:</span>
+                    <span class="fw-bold" style="color: var(--sa-text);">₹{{ total_revenue|floatformat:0 }}</span>
+                </div>
+                <div class="small text-muted" style="font-size: 0.74rem;">
+                    *Only verified and reconciled offline / bank transfer payment entries are included.
+                </div>
+            </div>
+
+            <div class="sa-label small mb-1">Collections by Payment Method</div>
+            <div class="d-flex flex-wrap gap-2">
+                {% for m in payment_methods_breakdown %}
+                <span class="badge bg-secondary bg-opacity-25 text-body border border-secondary border-opacity-25" style="font-size: 0.76rem;">
+                    {{ m.payment_method|upper }}: ₹{{ m.total|floatformat:0 }} ({{ m.count }} payments)
+                </span>
+                {% empty %}
+                <span class="text-muted small">No verified payment transactions in this period.</span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section 4: Customer Support & SLA Resolution -->
+<div class="row g-4">
+    <div class="col-12">
+        <div class="sa-card mb-0">
+            <h6 class="mb-3 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold); font-size: 0.95rem;">
+                <i class="bi bi-headset"></i> 5. Support Ticket Volume & Resolution Status
+            </h6>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="p-3 rounded text-center" style="background: var(--sa-bg); border: 1px solid var(--sa-border);">
+                        <div class="fw-bold fs-3" style="color: var(--sa-text);">{{ tickets_period }}</div>
+                        <div class="small text-muted">Tickets Received</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="p-3 rounded text-center" style="background: var(--sa-bg); border: 1px solid var(--sa-border);">
+                        <div class="fw-bold fs-3 text-success">{{ resolved_period }}</div>
+                        <div class="small text-muted">Resolved Tickets</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="sa-label small mb-2">Tickets by Category</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for c in categories_breakdown %}
+                        <span class="badge bg-secondary bg-opacity-25 text-body border border-secondary border-opacity-25" style="font-size: 0.76rem;">
+                            {{ c.category|title }}: {{ c.count }}
+                        </span>
+                        {% empty %}
+                        <span class="text-muted small">No ticket records in this period.</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
