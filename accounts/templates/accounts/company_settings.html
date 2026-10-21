@@ -19,6 +19,9 @@
             </p>
         </div>
         <div class="jd-header-actions">
+            <a href="{% url 'accounts:menu_settings' %}" class="jd-btn-secondary">
+                <i class="bi bi-layout-sidebar-inset" aria-hidden="true"></i> Menu Bar Settings
+            </a>
             <a href="{% url 'dashboard' %}" class="jd-btn-ghost">
                 <i class="bi bi-arrow-left" aria-hidden="true"></i> Dashboard
             </a>
@@ -27,6 +30,25 @@
 
     <div class="row justify-content-center">
         <div class="col-xl-9 col-lg-10">
+
+            <!-- Menu Bar Settings Quick Link Card -->
+            <div class="jd-card mb-4" style="background: linear-gradient(135deg, rgba(21, 19, 14, 0.95), rgba(32, 28, 20, 0.9)); border: 1px solid rgba(236, 200, 106, 0.25);">
+                <div class="p-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="jd-kpi-icon" style="width: 40px; height: 40px; font-size: 1.2rem; background: rgba(236, 200, 106, 0.15); color: var(--jd-gold);">
+                            <i class="bi bi-layout-sidebar-inset"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold" style="color: #FAF4EA; font-size: 0.95rem;">Sidebar Menu Bar Customisation</div>
+                            <small class="text-muted">Turn on "Hide" for any sidebar module (Sales, Karigar, Reports, etc.) to hide it, or unhide it anytime.</small>
+                        </div>
+                    </div>
+                    <a href="{% url 'accounts:menu_settings' %}" class="jd-btn-gold btn-sm d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-sliders"></i> Configure Menu Bar
+                    </a>
+                </div>
+            </div>
+
             <div class="jd-card">
                 <div class="jd-card-header">
                     <div class="d-flex align-items-center gap-2">
@@ -109,6 +131,20 @@
                                 </label>
                                 {{ form.email }}
                                 {% for e in form.email.errors %}
+                                    <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- System Language -->
+                            <div class="col-md-6">
+                                <label class="jd-label fw-semibold" for="{{ form.language.id_for_label }}">
+                                    <i class="bi bi-translate me-1 text-warning"></i> System Language / सिस्टम की भाषा
+                                </label>
+                                {{ form.language }}
+                                <div class="form-text" style="color: #9E9171; font-size: 0.78rem;">
+                                    Switch the entire application interface between English and Hindi (हिंदी).
+                                </div>
+                                {% for e in form.language.errors %}
                                     <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>
                                 {% endfor %}
                             </div>

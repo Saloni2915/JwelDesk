@@ -21,14 +21,39 @@ def company_settings_context(request):
     path = getattr(request, 'path', '')
     tenant = getattr(request, 'tenant', None)
     if path in ('/', '/landing/'):
+        fallback = _make_fallback_company()
         return {
-            'company': _make_fallback_company(),
+            'company': fallback,
             'current_tenant': tenant,
+            'hidden_menus': [],
         }
 
+    company_obj = _load_company(tenant=tenant)
+
+    # Resolve current language: check session, cookie, or company setting
+    lang = (
+        (request.session.get('django_language') if hasattr(request, 'session') else None)
+        or request.COOKIES.get('django_language')
+        or request.COOKIES.get('jd_language')
+    )
+
+    if not lang and company_obj and hasattr(company_obj, 'language') and company_obj.language:
+        lang = company_obj.language
+
+    if lang not in ('en', 'hi'):
+        lang = 'en'
+
+    hidden_menus = company_obj.get_hidden_menus() if hasattr(company_obj, 'get_hidden_menus') else []
     return {
-        'company': _load_company(tenant=tenant),
+        'company': company_obj,
         'current_tenant': tenant,
+        'hidden_menus': hidden_menus,
+        'current_language': lang,
+        'is_hindi': (lang == 'hi'),
+        'available_languages': [
+            {'code': 'en', 'name': 'English', 'flag': '🇬🇧'},
+            {'code': 'hi', 'name': 'हिंदी', 'flag': '🇮🇳'},
+        ],
     }
 
 
@@ -67,6 +92,14 @@ class _FallbackCompany:
     phone = ''
     email = ''
     invoice_footer_note = ''
+    hidden_menu_items = ''
+    language = 'en'
+
+    def get_hidden_menus(self):
+        return []
+
+    def is_menu_hidden(self, menu_key):
+        return False
 
 
 def _make_fallback_company():

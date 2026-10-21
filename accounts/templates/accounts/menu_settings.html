@@ -1,0 +1,505 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Menu Bar Settings — JewelDesk{% endblock %}
+{% block page_title %}Menu Bar Settings{% endblock %}
+
+{% block content %}
+<div class="jd-canvas">
+
+    <!-- Page Header -->
+    <header class="jd-header mb-4">
+        <div class="jd-header-left">
+            <span class="jd-badge-pill">
+                <i class="bi bi-layout-sidebar-inset" aria-hidden="true"></i> {% if is_hindi %}नेविगेशन सेटिंग्स{% else %}Navigation Settings{% endif %}
+            </span>
+            <h1 class="jd-title">{% if is_hindi %}मेनू बार दृश्यता एवं उप-विकल्प अनुकूलन{% else %}Menu Bar &amp; Sub-Options Visibility{% endif %}</h1>
+            <p class="jd-subtitle">
+                {% if is_hindi %}
+                चुनें कि कौन से मेनू मॉड्यूल और उनके उप-विकल्प (Sub-options) आपके साइडबार नेविगेशन में दिखाई देंगे। किसी भी विकल्प को छिपाने के लिए "Hide Option" <strong>ON</strong> करें, या वापस दिखाने के लिए <strong>OFF</strong> करें।
+                {% else %}
+                Choose which menu modules and individual sub-options appear in your sidebar navigation. Turn "Hide Option" <strong>ON</strong> to hide any module or sub-item, or turn it <strong>OFF</strong> to unhide and restore it.
+                {% endif %}
+            </p>
+        </div>
+        <div class="jd-header-actions d-flex align-items-center gap-2">
+            <form method="post" class="d-inline" onsubmit="return confirm('{% if is_hindi %}क्या आप सभी मेनू विकल्प एवं उप-विकल्प वापस लाना चाहते हैं?{% else %}Are you sure you want to unhide all menu options and sub-options?{% endif %}');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="unhide_all">
+                <button type="submit" class="btn btn-outline-warning btn-sm d-inline-flex align-items-center gap-1 shadow-sm" id="btnUnhideAll">
+                    <i class="bi bi-arrow-counterclockwise"></i> {% if is_hindi %}सभी मेनू वापस लाएं{% else %}Unhide All Menus{% endif %}
+                </button>
+            </form>
+            <a href="{% url 'accounts:company_settings' %}" class="jd-btn-ghost btn-sm">
+                <i class="bi bi-gear" aria-hidden="true"></i> {% if is_hindi %}दुकान सेटिंग्स{% else %}Company Settings{% endif %}
+            </a>
+            <a href="{% url 'dashboard' %}" class="jd-btn-ghost btn-sm">
+                <i class="bi bi-arrow-left" aria-hidden="true"></i> {% if is_hindi %}डैशबोर्ड{% else %}Dashboard{% endif %}
+            </a>
+        </div>
+    </header>
+
+    <!-- KPI Summary Pills -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+            <div class="card p-3 shadow-sm border" style="background: var(--card-bg, rgba(255,255,255,0.03)); border-color: rgba(255,255,255,0.08) !important;">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small fw-semibold text-uppercase">{% if is_hindi %}कुल मेनू मॉड्यूल{% else %}Total Menu Modules{% endif %}</div>
+                        <div class="fs-4 fw-bold text-light" id="totalCountBadge">{{ total_count }}</div>
+                        <small class="text-muted">{% if is_hindi %}{{ total_options_count }} कुल विकल्प (उप-विकल्प सहित){% else %}{{ total_options_count }} total items including sub-options{% endif %}</small>
+                    </div>
+                    <div class="rounded-circle bg-secondary bg-opacity-25 text-secondary d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                        <i class="bi bi-menu-button-wide"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card p-3 shadow-sm border" style="background: var(--card-bg, rgba(255,255,255,0.03)); border-color: rgba(255,255,255,0.08) !important;">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small fw-semibold text-uppercase">{% if is_hindi %}वर्तमान में दिखाई देने वाले{% else %}Currently Visible Modules{% endif %}</div>
+                        <div class="fs-4 fw-bold text-success" id="visibleCountBadge">{{ visible_count }}</div>
+                        <small class="text-muted">{% if is_hindi %}सक्रिय नेविगेशन मॉड्यूल{% else %}Active sidebar navigation links{% endif %}</small>
+                    </div>
+                    <div class="rounded-circle bg-success bg-opacity-25 text-success d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                        <i class="bi bi-eye-fill"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card p-3 shadow-sm border" style="background: var(--card-bg, rgba(255,255,255,0.03)); border-color: rgba(255,255,255,0.08) !important;">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small fw-semibold text-uppercase">{% if is_hindi %}छिपे हुए विकल्प{% else %}Hidden from Sidebar{% endif %}</div>
+                        <div class="fs-4 fw-bold text-warning" id="hiddenCountBadge">{{ total_hidden_count }}</div>
+                        <small class="text-muted"><span id="hiddenModulesBadge">{{ hidden_count }}</span> {% if is_hindi %}मुख्य मॉड्यूल + उप-विकल्प{% else %}modules + sub-options{% endif %}</small>
+                    </div>
+                    <div class="rounded-circle bg-warning bg-opacity-25 text-warning d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                        <i class="bi bi-eye-slash-fill"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Toast Notice for Instant Feedback -->
+    <div id="menuToastNotice" class="alert alert-success d-none align-items-center gap-2 py-2 px-3 mb-4 shadow-sm" role="status" style="border-radius: 8px;">
+        <i class="bi bi-check-circle-fill text-success fs-5"></i>
+        <span id="menuToastMsg" class="fw-semibold small">{% if is_hindi %}मेनू सेटिंग्स अपडेट हो गई।{% else %}Menu settings updated.{% endif %}</span>
+    </div>
+
+    <!-- Main Settings Form -->
+    <form method="post" id="menuSettingsForm">
+        {% csrf_token %}
+
+        <div class="card border shadow-sm mb-4" style="background: var(--card-bg, rgba(255,255,255,0.02)); border-color: rgba(255,255,255,0.08) !important;">
+            <div class="card-header border-bottom py-3 px-4 d-flex align-items-center justify-content-between flex-wrap gap-2" style="background: transparent;">
+                <div>
+                    <h2 class="fs-5 fw-bold mb-0 text-light"><i class="bi bi-sliders text-warning me-2"></i>{% if is_hindi %}नेविगेशन मेनू एवं उप-विकल्प कॉन्फ़िगर करें{% else %}Configure Navigation Menus &amp; Sub-Options{% endif %}</h2>
+                    <small class="text-muted">{% if is_hindi %}प्रत्येक मॉड्यूल या उसके अंदर के उप-विकल्पों को अलग-अलग छिपाएं/दिखाएं — बदलाव तुरंत लागू होते हैं{% else %}Hide or show modules and individual sub-options separately — changes apply immediately{% endif %}</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1 shadow-sm" id="btnToggleAllSubgroups">
+                        <i class="bi bi-chevron-expand"></i> {% if is_hindi %}सभी उप-विकल्प खोलें/बंद करें{% else %}Expand/Collapse Sub-options{% endif %}
+                    </button>
+                    <button type="submit" class="btn btn-warning btn-sm fw-bold px-3 d-inline-flex align-items-center gap-1 shadow-sm">
+                        <i class="bi bi-save"></i> {% if is_hindi %}सभी बदलाव सहेजें{% else %}Save All Changes{% endif %}
+                    </button>
+                </div>
+            </div>
+
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="menuOptionsTable">
+                        <thead class="text-uppercase small border-bottom" style="font-size: 0.76rem; letter-spacing: 0.5px; background: rgba(0,0,0,0.15);">
+                            <tr>
+                                <th style="width: 5%;" class="text-center ps-4">#</th>
+                                <th style="width: 40%;">{% if is_hindi %}मेनू मॉड्यूल विकल्प{% else %}Menu Module Option{% endif %}</th>
+                                <th style="width: 15%;">{% if is_hindi %}श्रेणी{% else %}Category{% endif %}</th>
+                                <th style="width: 15%;" class="text-center">{% if is_hindi %}स्थिति{% else %}Status{% endif %}</th>
+                                <th style="width: 25%;" class="text-end pe-4">{% if is_hindi %}छिपाएं / दिखाएं नियंत्रण{% else %}Hide / Show Control{% endif %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for option in menu_options %}
+                            <!-- Main Parent Module Row -->
+                            <tr class="menu-row {% if option.is_hidden %}is-hidden-row{% endif %}" id="row-{{ option.key }}" data-menu-key="{{ option.key }}">
+                                <td class="text-center ps-4 text-muted font-monospace small">
+                                    {{ forloop.counter }}
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="rounded p-2 bg-dark border border-secondary border-opacity-25 text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px; font-size: 1.15rem;">
+                                            <i class="bi {{ option.icon }}"></i>
+                                        </div>
+                                        <div>
+                                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                <span class="fw-bold text-light fs-6 mb-0">{{ option.name }}</span>
+                                                {% if option.sub_items %}
+                                                <button type="button"
+                                                        class="btn btn-xs btn-outline-warning py-0 px-2 rounded-pill sub-toggle-btn shadow-none"
+                                                        data-bs-toggle="collapse"
+                                                        data-bs-target="#subgroup-{{ option.key }}"
+                                                        aria-expanded="false"
+                                                        aria-controls="subgroup-{{ option.key }}"
+                                                        style="font-size: 0.72rem; border-width: 1px;"
+                                                        title="{% if is_hindi %}उप-विकल्प सूची खोलें या बंद करें{% else %}View or manage individual sub-options{% endif %}">
+                                                    <i class="bi bi-diagram-2 me-1"></i>{{ option.sub_count }} {% if is_hindi %}उप-विकल्प{% else %}Sub-options{% endif %} <i class="bi bi-chevron-down ms-1 toggle-chevron"></i>
+                                                </button>
+                                                {% endif %}
+                                            </div>
+                                            <small class="text-muted d-block" style="font-size: 0.8rem; line-height: 1.3;">{{ option.desc }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-25 px-2 py-1 small">
+                                        {{ option.category }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge-status-container" id="status-container-{{ option.key }}">
+                                        {% if option.is_locked %}
+                                        <span class="badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-25 px-2 py-1">
+                                            <i class="bi bi-shield-lock-fill me-1 text-warning"></i> {% if is_hindi %}सुरक्षित दृश्य{% else %}Always Visible{% endif %}
+                                        </span>
+                                        {% elif option.is_hidden %}
+                                        <span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-25 px-2 py-1">
+                                            <i class="bi bi-eye-slash-fill me-1"></i> {% if is_hindi %}छिपा हुआ{% else %}Hidden{% endif %}
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 px-2 py-1">
+                                            <i class="bi bi-eye-fill me-1"></i> {% if is_hindi %}दिखाई देगा{% else %}Visible{% endif %}
+                                        </span>
+                                        {% endif %}
+                                    </span>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <div class="d-inline-flex align-items-center gap-2">
+                                        {% if option.is_locked %}
+                                        <div class="form-check form-switch m-0 d-flex align-items-center gap-2" title="{% if is_hindi %}सेटिंग्स विकल्प हमेशा उपलब्ध रहता है{% else %}Settings menu option is permanently unlocked{% endif %}">
+                                            <input class="form-check-input"
+                                                   type="checkbox"
+                                                   role="switch"
+                                                   disabled
+                                                   checked
+                                                   style="cursor: not-allowed; width: 2.5rem; height: 1.35rem; opacity: 0.6;">
+                                            <label class="form-check-label small user-select-none text-muted fw-semibold"
+                                                   style="min-width: 90px; text-align: left;">
+                                                <span class="text-muted"><i class="bi bi-lock-fill me-1"></i>{% if is_hindi %}स्थायी{% else %}Locked{% endif %}</span>
+                                            </label>
+                                        </div>
+                                        {% else %}
+                                        <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+                                            <input class="form-check-input menu-toggle-switch"
+                                                   type="checkbox"
+                                                   role="switch"
+                                                   name="hide_{{ option.key }}"
+                                                   value="1"
+                                                   id="switch-{{ option.key }}"
+                                                   data-key="{{ option.key }}"
+                                                   data-name="{{ option.name }}"
+                                                   {% if option.is_hidden %}checked{% endif %}
+                                                   style="cursor: pointer; width: 2.5rem; height: 1.35rem;">
+                                            <label class="form-check-label small user-select-none fw-semibold"
+                                                   for="switch-{{ option.key }}"
+                                                   id="label-{{ option.key }}"
+                                                   style="min-width: 90px; text-align: left;">
+                                                {% if option.is_hidden %}
+                                                <span class="text-warning">{% if is_hindi %}छिपाएं (ON){% else %}Hide ON{% endif %}</span>
+                                                {% else %}
+                                                <span class="text-muted">{% if is_hindi %}दिखाएं (OFF){% else %}Hide OFF{% endif %}</span>
+                                                {% endif %}
+                                            </label>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Nested Collapsible Sub-Options Row -->
+                            {% if option.sub_items %}
+                            <tr class="collapse sub-items-collapse" id="subgroup-{{ option.key }}">
+                                <td colspan="5" class="p-0 border-0">
+                                    <div class="sub-items-container p-3 ms-4 me-3 my-2 rounded border border-secondary border-opacity-25" style="background: rgba(0, 0, 0, 0.35);">
+                                        <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom border-secondary border-opacity-25 flex-wrap gap-2">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-diagram-3-fill text-warning"></i>
+                                                <strong class="text-warning small text-uppercase" style="letter-spacing: 0.5px; font-size: 0.78rem;">
+                                                    {{ option.name }} — {% if is_hindi %}उप-विकल्प दृश्यता नियंत्रण{% else %}Sub-Options Visibility Controls{% endif %}
+                                                </strong>
+                                            </div>
+                                            <span class="text-muted small" style="font-size: 0.75rem;">
+                                                {% if is_hindi %}प्रत्येक उप-विकल्प को अलग से छिपाने के लिए स्विच <strong>ON</strong> करें{% else %}Turn switch <strong>ON</strong> to hide any individual sub-option{% endif %}
+                                            </span>
+                                        </div>
+
+                                        <div class="row g-2">
+                                            {% for sub in option.sub_items %}
+                                            <div class="col-md-6 col-lg-4">
+                                                <div class="sub-item-card p-2 rounded border {% if sub.is_hidden %}border-warning bg-warning bg-opacity-10{% else %}border-secondary border-opacity-25 bg-dark bg-opacity-50{% endif %}" id="subcard-{{ sub.key }}">
+                                                    <div class="d-flex align-items-center justify-content-between">
+                                                        <div class="d-flex align-items-center gap-2 overflow-hidden me-2">
+                                                            <div class="rounded p-1 bg-dark border border-secondary border-opacity-25 text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width: 30px; height: 30px; font-size: 0.95rem;">
+                                                                <i class="bi {{ sub.icon }}"></i>
+                                                            </div>
+                                                            <div class="text-truncate">
+                                                                <div class="fw-semibold text-light small text-truncate" title="{{ sub.name }}">{{ sub.name }}</div>
+                                                                <small class="text-muted d-block text-truncate" style="font-size: 0.7rem;" title="{{ sub.desc }}">{{ sub.desc }}</small>
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-check form-switch m-0 flex-shrink-0">
+                                                            <input class="form-check-input menu-toggle-switch submenu-switch"
+                                                                   type="checkbox"
+                                                                   role="switch"
+                                                                   name="hide_{{ sub.key }}"
+                                                                   value="1"
+                                                                   id="switch-{{ sub.key }}"
+                                                                   data-key="{{ sub.key }}"
+                                                                   data-parent-key="{{ option.key }}"
+                                                                   data-name="{{ sub.name }}"
+                                                                   {% if sub.is_hidden %}checked{% endif %}
+                                                                   style="cursor: pointer; width: 2.3rem; height: 1.25rem;">
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex align-items-center justify-content-between mt-2 pt-1 border-top border-secondary border-opacity-10">
+                                                        <span class="badge-status-container" id="status-container-{{ sub.key }}">
+                                                            {% if sub.is_hidden %}
+                                                            <span class="badge bg-warning bg-opacity-15 text-warning px-1 py-0" style="font-size: 0.68rem;">
+                                                                <i class="bi bi-eye-slash-fill me-1"></i>{% if is_hindi %}छिपा हुआ{% else %}Hidden{% endif %}
+                                                            </span>
+                                                            {% else %}
+                                                            <span class="badge bg-success bg-opacity-15 text-success px-1 py-0" style="font-size: 0.68rem;">
+                                                                <i class="bi bi-eye-fill me-1"></i>{% if is_hindi %}दिखाई देगा{% else %}Visible{% endif %}
+                                                            </span>
+                                                            {% endif %}
+                                                        </span>
+                                                        <label class="form-check-label user-select-none small" for="switch-{{ sub.key }}" id="label-{{ sub.key }}" style="font-size: 0.72rem;">
+                                                            {% if sub.is_hidden %}
+                                                            <span class="text-warning fw-semibold">{% if is_hindi %}छिपाएं (ON){% else %}Hide ON{% endif %}</span>
+                                                            {% else %}
+                                                            <span class="text-muted">{% if is_hindi %}दिखाएं (OFF){% else %}Hide OFF{% endif %}</span>
+                                                            {% endif %}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card-footer border-top py-3 px-4 d-flex align-items-center justify-content-between flex-wrap gap-2" style="background: transparent;">
+                <div class="text-muted small">
+                    <i class="bi bi-shield-check text-warning me-1"></i>
+                    <strong>{% if is_hindi %}स्थायी पहुंच:{% else %}Permanent Access:{% endif %}</strong> {% if is_hindi %}सेटिंग्स मेनू विकल्प हमेशा सुरक्षित और दिखाई देगा ताकि आप कभी भी नेविगेशन पुनः कॉन्फ़िगर कर सकें।{% else %}Settings menu option is locked visible so you can always re-configure navigation.{% endif %}
+                </div>
+                <button type="submit" class="btn btn-warning btn-sm fw-bold px-4 shadow-sm">
+                    <i class="bi bi-check-circle-fill me-1"></i> {% if is_hindi %}बदलाव सहेजें{% else %}Save Changes{% endif %}
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Helpful Architecture & Usage Advice Card -->
+    <div class="card border border-info border-opacity-25 bg-info bg-opacity-10 p-3 rounded mb-4">
+        <div class="d-flex align-items-start gap-2">
+            <i class="bi bi-info-circle-fill text-info fs-5 mt-1"></i>
+            <div>
+                <strong class="text-info d-block mb-1">{% if is_hindi %}यह कैसे काम करता है?{% else %}How It Works{% endif %}</strong>
+                <p class="mb-1 text-light small">
+                    {% if is_hindi %}
+                    1. <strong>मुख्य मॉड्यूल छिपाना:</strong> मुख्य मॉड्यूल पर <strong>Hide ON</strong> करने पर वह पूरा मेनू समूह साइडबार से छिप जाता है।<br>
+                    2. <strong>उप-विकल्प (Sub-options) छिपाना:</strong> "उप-विकल्प" बटन पर क्लिक करके आप किसी विशिष्ट सब-मेन्यू (जैसे पुराना सोना बायबैक या धातु भाव) को अलग से छिपा या दिखा सकते हैं।<br>
+                    3. <strong>डेटा सुरक्षा:</strong> किसी भी विकल्प को छिपाने से कोई लेन-देन, बिल या डेटा डिलीट नहीं होता — सभी रिकॉर्ड्स पूरी तरह सुरक्षित रहते हैं।
+                    {% else %}
+                    1. <strong>Hiding Parent Modules:</strong> Turning <strong>Hide ON</strong> for a main module removes that entire module dropdown from your sidebar navigation.<br>
+                    2. <strong>Hiding Individual Sub-Options:</strong> Click the "Sub-options" pill on any module to granularly hide or show specific links (e.g. Old Gold Buyback or Metal Rates) independently.<br>
+                    3. <strong>Data Safety:</strong> Hiding menu items never deletes any business data, invoices, or records — all backend pages remain fully safe.
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Client-side Instant Interactive Switch Engine -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var switches = document.querySelectorAll('.menu-toggle-switch');
+    var toastNotice = document.getElementById('menuToastNotice');
+    var toastMsg = document.getElementById('menuToastMsg');
+    var visibleBadge = document.getElementById('visibleCountBadge');
+    var hiddenBadge = document.getElementById('hiddenCountBadge');
+    var isHindi = {% if is_hindi %}true{% else %}false{% endif %};
+
+    function showToast(message, isWarning) {
+        if (!toastNotice || !toastMsg) return;
+        toastMsg.textContent = message;
+        toastNotice.className = 'alert d-flex align-items-center gap-2 py-2 px-3 mb-4 shadow-sm ' + (isWarning ? 'alert-warning' : 'alert-success');
+        toastNotice.classList.remove('d-none');
+        clearTimeout(window._toastTimeout);
+        window._toastTimeout = setTimeout(function() {
+            toastNotice.classList.add('d-none');
+        }, 4000);
+    }
+
+    // Toggle all sub-option accordions
+    var btnToggleAll = document.getElementById('btnToggleAllSubgroups');
+    if (btnToggleAll) {
+        btnToggleAll.addEventListener('click', function() {
+            var subCollapses = document.querySelectorAll('.sub-items-collapse');
+            var anyOpen = false;
+            subCollapses.forEach(function(el) {
+                if (el.classList.contains('show')) {
+                    anyOpen = true;
+                }
+            });
+
+            subCollapses.forEach(function(el) {
+                if (window.bootstrap && bootstrap.Collapse) {
+                    var bsCollapse = bootstrap.Collapse.getInstance(el) || new bootstrap.Collapse(el, { toggle: false });
+                    if (anyOpen) {
+                        bsCollapse.hide();
+                    } else {
+                        bsCollapse.show();
+                    }
+                } else {
+                    if (anyOpen) {
+                        el.classList.remove('show');
+                    } else {
+                        el.classList.add('show');
+                    }
+                }
+            });
+        });
+    }
+
+    switches.forEach(function(sw) {
+        sw.addEventListener('change', function() {
+            var key = this.getAttribute('data-key');
+            var name = this.getAttribute('data-name');
+            var isHidden = this.checked;
+            var isSubmenu = this.classList.contains('submenu-switch');
+
+            var statusContainer = document.getElementById('status-container-' + key);
+            var label = document.getElementById('label-' + key);
+            var row = document.getElementById('row-' + key);
+            var subcard = document.getElementById('subcard-' + key);
+
+            // 1. Instantly update row/card visual state
+            if (isHidden) {
+                if (statusContainer) {
+                    statusContainer.innerHTML = '<span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-25 px-2 py-1"><i class="bi bi-eye-slash-fill me-1"></i> ' + (isHindi ? 'छिपा हुआ' : 'Hidden') + '</span>';
+                }
+                if (label) {
+                    label.innerHTML = '<span class="text-warning">' + (isHindi ? 'छिपाएं (ON)' : 'Hide ON') + '</span>';
+                }
+                if (row) {
+                    row.classList.add('is-hidden-row');
+                }
+                if (subcard) {
+                    subcard.classList.remove('border-secondary', 'border-opacity-25', 'bg-dark', 'bg-opacity-50');
+                    subcard.classList.add('border-warning', 'bg-warning', 'bg-opacity-10');
+                }
+            } else {
+                if (statusContainer) {
+                    statusContainer.innerHTML = '<span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 px-2 py-1"><i class="bi bi-eye-fill me-1"></i> ' + (isHindi ? 'दिखाई देगा' : 'Visible') + '</span>';
+                }
+                if (label) {
+                    label.innerHTML = '<span class="text-muted">' + (isHindi ? 'दिखाएं (OFF)' : 'Hide OFF') + '</span>';
+                }
+                if (row) {
+                    row.classList.remove('is-hidden-row');
+                }
+                if (subcard) {
+                    subcard.classList.remove('border-warning', 'bg-warning', 'bg-opacity-10');
+                    subcard.classList.add('border-secondary', 'border-opacity-25', 'bg-dark', 'bg-opacity-50');
+                }
+            }
+
+            // 2. Instantly update live left sidebar navigation
+            if (isSubmenu) {
+                var submenuItem = document.querySelector('.sidebar [data-submenu-key="' + key + '"]');
+                if (submenuItem) {
+                    submenuItem.style.display = isHidden ? 'none' : '';
+                }
+            } else {
+                var sidebarItem = document.querySelector('.sidebar [data-menu-key="' + key + '"]');
+                if (sidebarItem) {
+                    sidebarItem.style.display = isHidden ? 'none' : '';
+                }
+            }
+
+            // 3. Send asynchronous AJAX POST to persist immediately without full reload
+            var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            fetch("{% url 'accounts:menu_toggle_api' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    menu_key: key,
+                    is_hidden: isHidden
+                })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    if (hiddenBadge) {
+                        hiddenBadge.textContent = data.hidden_count;
+                    }
+                    if (isHidden) {
+                        showToast(isHindi ? ("'" + name + "' विकल्प अब साइडबार मेनू से छिपा दिया गया है।") : ("'" + name + "' option is now HIDDEN from the sidebar menu."), true);
+                    } else {
+                        showToast(isHindi ? ("'" + name + "' विकल्प अब साइडबार मेनू में दिखाई दे रहा है।") : ("'" + name + "' option is now UNHIDDEN and visible in the sidebar menu."), false);
+                    }
+                } else {
+                    showToast(data.error || (isHindi ? 'सेटिंग्स अपडेट करने में विफल।' : 'Failed to update menu setting.'), true);
+                }
+            })
+            .catch(function(err) {
+                console.warn('Menu toggle network error:', err);
+            });
+        });
+    });
+});
+</script>
+
+<style>
+.is-hidden-row {
+    background: rgba(245, 158, 11, 0.04);
+}
+.menu-toggle-switch:checked {
+    background-color: #f59e0b;
+    border-color: #f59e0b;
+}
+.sub-items-collapse.collapsing,
+.sub-items-collapse.collapse.show {
+    background: rgba(0, 0, 0, 0.12);
+}
+.sub-toggle-btn {
+    transition: all 0.2s ease;
+}
+.sub-toggle-btn[aria-expanded="true"] .toggle-chevron {
+    transform: rotate(180deg);
+}
+.toggle-chevron {
+    transition: transform 0.2s ease;
+    display: inline-block;
+}
+</style>
+{% endblock %}

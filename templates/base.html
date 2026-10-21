@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ current_language|default:'en' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,7 +15,9 @@
     <!-- Google Fonts: Cinzel, Playfair Display & Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- JewelDesk Multi-Language Localization Engine -->
+    <script src="{% static 'js/jeweldesk_i18n.js' %}?v={% now "U" %}"></script>
     {% block extra_css %}{% endblock %}
     <!-- PWA & Mobile Web App Meta Tags -->
     {% include 'includes/pwa_head.html' %}
@@ -33,7 +35,7 @@
         })();
     </script>
 </head>
-<body>
+<body data-lang="{{ current_language|default:'en' }}" class="{% if is_hindi %}jd-lang-hi{% endif %}">
 
     <!-- Top Navbar -->
     <nav class="navbar navbar-expand navbar-dark bg-dark fixed-top top-navbar">
@@ -54,28 +56,61 @@
                 </a>
             </div>
 
-            <!-- Right Top Corner: Logged-in User Profile + Logout -->
+            <!-- Right Top Corner: Language Switcher + User Profile + Logout -->
             <div class="ms-auto d-flex align-items-center gap-2 flex-shrink-0">
+
+                <!-- Language Switcher Dropdown in Navbar -->
+                <div class="dropdown d-inline-block">
+                    <button class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1 dropdown-toggle text-light py-1 px-2"
+                            type="button" id="navLanguageDropdown" data-bs-toggle="dropdown" aria-expanded="false"
+                            style="border-radius: 9999px; font-size: 0.8rem; background: rgba(255,255,255,0.06); border-color: rgba(236, 200, 106, 0.25);"
+                            title="Switch Language / भाषा बदलें">
+                        <i class="bi bi-translate text-warning"></i>
+                        <span class="d-none d-sm-inline fw-semibold">{% if is_hindi %}🇮🇳 हिंदी{% else %}🇬🇧 EN{% endif %}</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="navLanguageDropdown" style="background: #1a1712; border: 1px solid rgba(236, 200, 106, 0.3) !important;">
+                        <li>
+                            <form method="post" action="{% url 'accounts:set_language' %}" class="m-0 p-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="language" value="en">
+                                <button type="submit" class="dropdown-item d-flex align-items-center justify-content-between py-2 text-light {% if not is_hindi %}active bg-warning bg-opacity-25 text-warning fw-bold{% endif %}" style="font-size: 0.85rem;">
+                                    <span>🇬🇧 English</span>
+                                    {% if not is_hindi %}<i class="bi bi-check2 text-warning ms-2"></i>{% endif %}
+                                </button>
+                            </form>
+                        </li>
+                        <li>
+                            <form method="post" action="{% url 'accounts:set_language' %}" class="m-0 p-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="language" value="hi">
+                                <button type="submit" class="dropdown-item d-flex align-items-center justify-content-between py-2 text-light {% if is_hindi %}active bg-warning bg-opacity-25 text-warning fw-bold{% endif %}" style="font-size: 0.85rem;">
+                                    <span>🇮🇳 हिंदी (Hindi)</span>
+                                    {% if is_hindi %}<i class="bi bi-check2 text-warning ms-2"></i>{% endif %}
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
                 {% if is_impersonating %}
                 <!-- Impersonation Quick Exit in Navbar -->
                 <form method="post" action="{% url 'super_admin:impersonate_exit' %}" class="d-inline-flex m-0 p-0 align-items-center">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-warning text-dark fw-bold btn-sm d-inline-flex align-items-center gap-1" style="border-radius: 9999px; font-size: 0.8rem; height: 38px; padding: 0 0.85rem;" title="Exit Customer Impersonation and return to Super Admin">
+                    <button type="submit" class="btn btn-warning text-dark fw-bold btn-sm d-inline-flex align-items-center gap-1" style="border-radius: 9999px; font-size: 0.8rem; height: 38px; padding: 0 0.85rem;" title="Exit Customer Impersonation / उपयोगकर्ता मोड समाप्त करें">
                         <i class="bi bi-box-arrow-left"></i>
-                        <span class="d-none d-sm-inline">Exit Impersonation</span>
+                        <span class="d-none d-sm-inline">{% if is_hindi %}उपयोगकर्ता मोड समाप्त करें{% else %}Exit Impersonation{% endif %}</span>
                     </button>
                 </form>
                 {% elif is_platform_admin %}
                 <!-- Super Admin Link (Only visible to verified platform admins, never ordinary users) -->
                 <a href="{% url 'super_admin:dashboard' %}" class="btn btn-outline-warning btn-sm d-none d-md-inline-flex align-items-center gap-1" style="border-radius: 9999px; font-size: 0.82rem; height: 38px; padding: 0 0.85rem;" title="Go to Platform Super Admin Portal">
                     <i class="bi bi-shield-lock-fill text-warning"></i>
-                    <span>Super Admin</span>
+                    <span>{% if is_hindi %}सुपर एडमिन{% else %}Super Admin{% endif %}</span>
                 </a>
                 {% endif %}
 
                 {% if user.is_authenticated %}
                 <!-- User Profile Pill in Right Top Corner -->
-                <div class="navbar-user-pill d-inline-flex align-items-center" title="Logged in as {{ user.first_name|default:user.username }} ({% if user.is_superuser %}Super Admin{% elif request.tenant and request.tenant.owner_id == user.id %}Tenant Admin{% else %}Tenant Admin{% endif %})">
+                <div class="navbar-user-pill d-inline-flex align-items-center" title="Logged in as {{ user.first_name|default:user.username }} ({% if user.is_superuser %}{% if is_hindi %}सुपर एडमिन{% else %}Super Admin{% endif %}{% elif request.tenant and request.tenant.owner_id == user.id %}{% if is_hindi %}स्टोर एडमिन{% else %}Tenant Admin{% endif %}{% else %}{% if is_hindi %}स्टोर एडमिन{% else %}Tenant Admin{% endif %}{% endif %})">
                     <div class="navbar-user-avatar rounded-circle d-flex align-items-center justify-content-center flex-shrink-0">
                         <i class="bi bi-person-fill"></i>
                     </div>
@@ -83,19 +118,19 @@
                         <div class="d-flex align-items-center gap-1">
                             <span class="fw-semibold navbar-username text-truncate">{{ user.first_name|default:user.username }}</span>
                             {% if user.is_superuser %}
-                            <span class="badge navbar-user-badge navbar-user-badge-admin">Super Admin</span>
+                            <span class="badge navbar-user-badge navbar-user-badge-admin">{% if is_hindi %}सुपर एडमिन{% else %}Super Admin{% endif %}</span>
                             {% elif request.tenant and request.tenant.owner_id == user.id %}
-                            <span class="badge navbar-user-badge navbar-user-badge-admin">Tenant Admin</span>
+                            <span class="badge navbar-user-badge navbar-user-badge-admin">{% if is_hindi %}स्टोर एडमिन{% else %}Tenant Admin{% endif %}</span>
                             {% elif request.tenant and user.employee_profile and user.employee_profile.role.name in 'Tenant Administrator,Tenant Admin,Admin' %}
-                            <span class="badge navbar-user-badge navbar-user-badge-admin">Tenant Admin</span>
+                            <span class="badge navbar-user-badge navbar-user-badge-admin">{% if is_hindi %}स्टोर एडमिन{% else %}Tenant Admin{% endif %}</span>
                             {% elif request.tenant and user.employee_profile %}
                             <span class="badge navbar-user-badge navbar-user-badge-staff">{{ user.employee_profile.role.name }}</span>
                             {% else %}
-                            <span class="badge navbar-user-badge navbar-user-badge-admin">Tenant Admin</span>
+                            <span class="badge navbar-user-badge navbar-user-badge-admin">{% if is_hindi %}स्टोर एडमिन{% else %}Tenant Admin{% endif %}</span>
                             {% endif %}
                         </div>
                         <span class="navbar-user-role">
-                            {% if user.is_superuser %}Super Admin{% elif request.tenant and request.tenant.owner_id == user.id %}{{ request.tenant.get_business_type_display }}{% elif request.tenant and user.employee_profile and user.employee_profile.role.name in 'Tenant Administrator,Tenant Admin,Admin' %}Admin &bull; {{ request.tenant.get_business_type_display }}{% elif request.tenant and user.employee_profile %}{{ user.employee_profile.role.name }} &bull; {{ request.tenant.get_business_type_display }}{% else %}Tenant Admin{% endif %}
+                            {% if user.is_superuser %}{% if is_hindi %}सुपर एडमिन{% else %}Super Admin{% endif %}{% elif request.tenant and request.tenant.owner_id == user.id %}{{ request.tenant.get_business_type_display }}{% elif request.tenant and user.employee_profile and user.employee_profile.role.name in 'Tenant Administrator,Tenant Admin,Admin' %}{% if is_hindi %}एडमिन{% else %}Admin{% endif %} &bull; {{ request.tenant.get_business_type_display }}{% elif request.tenant and user.employee_profile %}{{ user.employee_profile.role.name }} &bull; {{ request.tenant.get_business_type_display }}{% else %}{% if is_hindi %}स्टोर एडमिन{% else %}Tenant Admin{% endif %}{% endif %}
                         </span>
                     </div>
                     <!-- On mobile / PWA screens, show compact truncated username -->
@@ -107,9 +142,9 @@
                 <!-- Logout Button -->
                 <form method="post" action="{% url 'accounts:logout' %}" class="d-inline-flex m-0 p-0 align-items-center">
                     {% csrf_token %}
-                    <button type="submit" class="btn navbar-logout-btn" title="Logout ({{ user.first_name|default:user.username }})" aria-label="Logout">
+                    <button type="submit" class="btn navbar-logout-btn" title="Logout / लॉग आउट ({{ user.first_name|default:user.username }})" aria-label="Logout">
                         <i class="bi bi-box-arrow-right"></i>
-                        <span class="d-none d-md-inline ms-1">Logout</span>
+                        <span class="d-none d-md-inline ms-1">{% if is_hindi %}लॉग आउट{% else %}Logout{% endif %}</span>
                     </button>
                 </form>
                 {% endif %}
@@ -128,7 +163,7 @@
                 </div>
                 <div class="d-flex flex-column min-w-0" style="line-height: 1.2;">
                     <span class="sidebar-username fw-semibold text-truncate small" title="{{ user.first_name|default:user.username }}">{{ user.first_name|default:user.username }}</span>
-                    <span class="text-muted text-truncate" style="font-size: 0.7rem;">{% if user.is_superuser %}Super Admin{% elif request.tenant and request.tenant.owner_id == user.id %}{{ request.tenant.get_business_type_display }}{% elif request.tenant and user.employee_profile %}{{ user.employee_profile.role.name }} &bull; {{ request.tenant.get_business_type_display }}{% else %}Tenant Admin{% endif %}</span>
+                    <span class="text-muted text-truncate" style="font-size: 0.7rem;">{% if user.is_superuser %}{% if is_hindi %}सुपर एडमिन{% else %}Super Admin{% endif %}{% elif request.tenant and request.tenant.owner_id == user.id %}{{ request.tenant.get_business_type_display }}{% elif request.tenant and user.employee_profile %}{{ user.employee_profile.role.name }} &bull; {{ request.tenant.get_business_type_display }}{% else %}{% if is_hindi %}स्टोर एडमिन{% else %}Tenant Admin{% endif %}{% endif %}</span>
                 </div>
             </div>
             {% endif %}
@@ -138,19 +173,22 @@
                 <ul class="nav flex-column">
 
                     <!-- 1. Dashboard -->
-                    <li class="nav-item">
+                    {% if 'dashboard' not in hidden_menus %}
+                    <li class="nav-item" data-menu-key="dashboard">
                         <a class="nav-link nav-link-single {% if request.resolver_match.url_name == 'dashboard' and request.resolver_match.app_name != 'karigar' %}active{% endif %}"
                            href="{% if request.tenant and not request.tenant.is_retail %}{% url 'wholesale:dashboard' %}{% else %}{% url 'dashboard' %}{% endif %}">
                             <span class="sidebar-item-content">
                                 <i class="bi bi-speedometer2 sidebar-item-icon"></i>
-                                <span class="sidebar-item-title">Dashboard</span>
+                                <span class="sidebar-item-title">{% if is_hindi %}डैशबोर्ड{% else %}Dashboard{% endif %}</span>
                             </span>
                         </a>
                     </li>
+                    {% endif %}
 
                     <!-- 2. Sales & Exchange -->
+                    {% if 'sales' not in hidden_menus %}
                     {% if not request.tenant or request.tenant.is_retail or user.is_superuser %}
-                    <li class="nav-item">
+                    <li class="nav-item" data-menu-key="sales">
                         <a class="nav-link sidebar-dropdown-toggle {% if 'sale' in request.resolver_match.url_name and request.resolver_match.url_name != 'sales_report' or 'old_gold' in request.resolver_match.url_name or '/old-gold/' in request.path or '/sales/' in request.path and '/sales/report/' not in request.path %}parent-active{% else %}collapsed{% endif %}"
                            data-bs-toggle="collapse"
                            href="#submenu-sales"
@@ -159,51 +197,71 @@
                            aria-controls="submenu-sales">
                             <span class="sidebar-item-content">
                                 <i class="bi bi-receipt sidebar-item-icon"></i>
-                                <span class="sidebar-item-title">Sales &amp; Exchange</span>
+                                <span class="sidebar-item-title">{% if is_hindi %}बिक्री एवं एक्सचेंज{% else %}Sales &amp; Exchange{% endif %}</span>
                             </span>
                             <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
                         <div class="collapse sidebar-submenu-collapse {% if 'sale' in request.resolver_match.url_name and request.resolver_match.url_name != 'sales_report' or 'old_gold' in request.resolver_match.url_name or '/old-gold/' in request.path or '/sales/' in request.path and '/sales/report/' not in request.path %}show{% endif %}" id="submenu-sales">
                             <ul class="nav flex-column sidebar-submenu">
-                                <li class="nav-item">
-                                    <a class="nav-link {% if 'sale' in request.resolver_match.url_name and request.resolver_match.url_name != 'sales_report' and request.resolver_match.url_name != 'payment_list' and 'old_gold' not in request.resolver_match.url_name %}active{% endif %}"
-                                       href="{% url 'sale_list' %}">
-                                        <i class="bi bi-receipt"></i> All Sales
+                                {% if 'sub_sales_add' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_sales_add">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'sale_add' %}active{% endif %}"
+                                       href="{% url 'sale_add' %}">
+                                        <i class="bi bi-cart-plus"></i> {% if is_hindi %}नई बिक्री (POS){% else %}New Sale (POS){% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_sales_list' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_sales_list">
+                                    <a class="nav-link {% if 'sale' in request.resolver_match.url_name and request.resolver_match.url_name != 'sales_report' and request.resolver_match.url_name != 'payment_list' and request.resolver_match.url_name != 'sale_add' and 'old_gold' not in request.resolver_match.url_name %}active{% endif %}"
+                                       href="{% url 'sale_list' %}">
+                                        <i class="bi bi-receipt"></i> {% if is_hindi %}सभी बिक्री एवं बिल{% else %}All Sales{% endif %}
+                                    </a>
+                                </li>
+                                {% endif %}
+                                {% if 'sub_sales_payments' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_sales_payments">
                                     <a class="nav-link {% if request.resolver_match.url_name == 'payment_list' %}active{% endif %}"
                                        href="{% url 'payment_list' %}">
-                                        <i class="bi bi-cash-coin"></i> Payments &amp; Receipts
+                                        <i class="bi bi-cash-coin"></i> {% if is_hindi %}भुगतान एवं रसीदें{% else %}Payments &amp; Receipts{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_sales_og_exchange' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_sales_og_exchange">
                                     <a class="nav-link {% if request.resolver_match.url_name == 'old_gold_exchange_create' %}active{% endif %}"
                                        href="{% url 'old_gold_exchange_create' %}">
-                                        <i class="bi bi-arrow-repeat"></i> Old Gold Exchange
+                                        <i class="bi bi-arrow-repeat"></i> {% if is_hindi %}पुराना सोना एक्सचेंज{% else %}Old Gold Exchange{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_sales_og_buyback' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_sales_og_buyback">
                                     <a class="nav-link {% if request.resolver_match.url_name == 'old_gold_buyback_create' %}active{% endif %}"
                                        href="{% url 'old_gold_buyback_create' %}">
-                                        <i class="bi bi-cash-stack"></i> Old Gold Buyback
+                                        <i class="bi bi-cash-stack"></i> {% if is_hindi %}पुराना सोना बायबैक{% else %}Old Gold Buyback{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_sales_og_history' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_sales_og_history">
                                     <a class="nav-link {% if request.resolver_match.url_name == 'old_gold_list' or request.resolver_match.url_name == 'old_gold_detail' %}active{% endif %}"
                                        href="{% url 'old_gold_list' %}">
-                                        <i class="bi bi-journal-text"></i> Old Gold History
+                                        <i class="bi bi-journal-text"></i> {% if is_hindi %}पुराना सोना इतिहास{% else %}Old Gold History{% endif %}
                                     </a>
                                 </li>
+                                {% endif %}
                             </ul>
                         </div>
                     </li>
                     {% endif %}
+                    {% endif %}
 
                     <!-- 2.3 Wholesale & B2B Supplier Module -->
+                    {% if 'wholesale' not in hidden_menus %}
                     {% if request.tenant and request.tenant.is_wholesale or user.is_superuser %}
                     {% if user.is_superuser or user.is_staff or not user.employee_profile or user_perms.wholesale.can_view %}
-                    <li class="nav-item">
+                    <li class="nav-item" data-menu-key="wholesale">
                         <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.app_name == 'wholesale' or '/wholesale/' in request.path %}parent-active{% else %}collapsed{% endif %}"
                            data-bs-toggle="collapse"
                            href="#submenu-wholesale"
@@ -212,80 +270,102 @@
                            aria-controls="submenu-wholesale">
                             <span class="sidebar-item-content">
                                 <i class="bi bi-buildings sidebar-item-icon"></i>
-                                <span class="sidebar-item-title">Wholesale &amp; B2B</span>
+                                <span class="sidebar-item-title">{% if is_hindi %}थोक व्यापार (B2B){% else %}Wholesale &amp; B2B{% endif %}</span>
                             </span>
                             <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
                         <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.app_name == 'wholesale' or '/wholesale/' in request.path %}show{% endif %}" id="submenu-wholesale">
                             <ul class="nav flex-column sidebar-submenu">
-                                <li class="nav-item">
+                                {% if 'sub_wholesale_dashboard' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_wholesale_dashboard">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
                                        href="{% url 'wholesale:dashboard' %}">
-                                        <i class="bi bi-speedometer2"></i> Wholesale Dashboard
+                                        <i class="bi bi-speedometer2"></i> {% if is_hindi %}थोक डैशबोर्ड{% else %}Wholesale Dashboard{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_wholesale_parties' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_wholesale_parties">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and 'party' in request.resolver_match.url_name %}active{% endif %}"
                                        href="{% url 'wholesale:party_list' %}">
-                                        <i class="bi bi-shop"></i> Retailers / Parties
+                                        <i class="bi bi-shop"></i> {% if is_hindi %}खुदरा विक्रेता / पार्टियां{% else %}Retailers / Parties{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_wholesale_catalogue' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_wholesale_catalogue">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name in 'catalogue pricing_rules pricing_rule_create' %}active{% endif %}"
                                        href="{% url 'wholesale:catalogue' %}">
-                                        <i class="bi bi-gem"></i> Products &amp; Pricing
+                                        <i class="bi bi-gem"></i> {% if is_hindi %}उत्पाद एवं मूल्य निर्धारण{% else %}Products &amp; Pricing{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_wholesale_orders' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_wholesale_orders">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and 'order' in request.resolver_match.url_name %}active{% endif %}"
                                        href="{% url 'wholesale:order_list' %}">
-                                        <i class="bi bi-bag-check"></i> Wholesale Orders
+                                        <i class="bi bi-bag-check"></i> {% if is_hindi %}थोक ऑर्डर्स{% else %}Wholesale Orders{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_wholesale_dispatches' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_wholesale_dispatches">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and 'dispatch' in request.resolver_match.url_name %}active{% endif %}"
                                        href="{% url 'wholesale:dispatch_list' %}">
-                                        <i class="bi bi-truck"></i> Dispatches &amp; Shipping
+                                        <i class="bi bi-truck"></i> {% if is_hindi %}प्रेषण एवं शिपिंग{% else %}Dispatches &amp; Shipping{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_wholesale_invoices' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_wholesale_invoices">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and 'invoice' in request.resolver_match.url_name %}active{% endif %}"
                                        href="{% url 'wholesale:invoice_list' %}">
-                                        <i class="bi bi-receipt"></i> Wholesale Invoices
+                                        <i class="bi bi-receipt"></i> {% if is_hindi %}थोक बिल / इनवॉइस{% else %}Wholesale Invoices{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_wholesale_payments' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_wholesale_payments">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name in 'payment_list payment_create' %}active{% endif %}"
                                        href="{% url 'wholesale:payment_list' %}">
-                                        <i class="bi bi-cash-stack"></i> Payments Received
+                                        <i class="bi bi-cash-stack"></i> {% if is_hindi %}प्राप्त भुगतान{% else %}Payments Received{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_wholesale_ledger' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_wholesale_ledger">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name == 'ledger_view' %}active{% endif %}"
                                        href="{% url 'wholesale:ledger_view' %}">
-                                        <i class="bi bi-journal-text"></i> Party Ledger
+                                        <i class="bi bi-journal-text"></i> {% if is_hindi %}पार्टी खाता बही{% else %}Party Ledger{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_wholesale_returns' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_wholesale_returns">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and 'return' in request.resolver_match.url_name %}active{% endif %}"
                                        href="{% url 'wholesale:return_list' %}">
-                                        <i class="bi bi-arrow-return-left"></i> Returns &amp; Credit Notes
+                                        <i class="bi bi-arrow-return-left"></i> {% if is_hindi %}वापसी एवं क्रेडिट नोट{% else %}Returns &amp; Credit Notes{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_wholesale_reports' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_wholesale_reports">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name == 'reports' %}active{% endif %}"
                                        href="{% url 'wholesale:reports' %}">
-                                        <i class="bi bi-bar-chart-line"></i> Wholesale Reports
+                                        <i class="bi bi-bar-chart-line"></i> {% if is_hindi %}थोक रिपोर्ट्स{% else %}Wholesale Reports{% endif %}
                                     </a>
                                 </li>
+                                {% endif %}
                             </ul>
                         </div>
                     </li>
                     {% endif %}
                     {% endif %}
+                    {% endif %}
 
                     <!-- 2.5 Outstation Sales & Trips -->
-                    <li class="nav-item">
+                    {% if 'outstation' not in hidden_menus %}
+                    <li class="nav-item" data-menu-key="outstation">
                         <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.app_name == 'outstation' or '/outstation/' in request.path %}parent-active{% else %}collapsed{% endif %}"
                            data-bs-toggle="collapse"
                            href="#submenu-outstation"
@@ -294,42 +374,52 @@
                            aria-controls="submenu-outstation">
                             <span class="sidebar-item-content">
                                 <i class="bi bi-airplane-engines sidebar-item-icon"></i>
-                                <span class="sidebar-item-title">Outstation Sales</span>
+                                <span class="sidebar-item-title">{% if is_hindi %}आउटस्टेशन बिक्री{% else %}Outstation Sales{% endif %}</span>
                             </span>
                             <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
                         <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.app_name == 'outstation' or '/outstation/' in request.path %}show{% endif %}" id="submenu-outstation">
                             <ul class="nav flex-column sidebar-submenu">
-                                <li class="nav-item">
+                                {% if 'sub_outstation_trips' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_outstation_trips">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'outstation' and request.resolver_match.url_name in 'trip_list trip_detail trip_edit' %}active{% endif %}"
                                        href="{% url 'outstation:trip_list' %}">
-                                        <i class="bi bi-briefcase"></i> All Trips &amp; Dashboard
+                                        <i class="bi bi-briefcase"></i> {% if is_hindi %}सभी यात्राएं एवं डैशबोर्ड{% else %}All Trips &amp; Dashboard{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_outstation_new_trip' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_outstation_new_trip">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'outstation' and request.resolver_match.url_name == 'trip_create' %}active{% endif %}"
                                        href="{% url 'outstation:trip_create' %}">
-                                        <i class="bi bi-plus-circle"></i> New Trip
+                                        <i class="bi bi-plus-circle"></i> {% if is_hindi %}नई यात्रा{% else %}New Trip{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_outstation_exhibitions' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_outstation_exhibitions">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'outstation' and request.resolver_match.url_name in 'exhibition_list exhibition_detail exhibition_edit' %}active{% endif %}"
                                        href="{% url 'outstation:exhibition_list' %}">
-                                        <i class="bi bi-building"></i> Exhibitions &amp; Expos
+                                        <i class="bi bi-building"></i> {% if is_hindi %}प्रदर्शनी एवं एक्सपो{% else %}Exhibitions &amp; Expos{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_outstation_new_exhibition' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_outstation_new_exhibition">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'outstation' and request.resolver_match.url_name == 'exhibition_create' %}active{% endif %}"
                                        href="{% url 'outstation:exhibition_create' %}">
-                                        <i class="bi bi-plus-square"></i> Register Exhibition
+                                        <i class="bi bi-plus-square"></i> {% if is_hindi %}नई प्रदर्शनी दर्ज करें{% else %}Register Exhibition{% endif %}
                                     </a>
                                 </li>
+                                {% endif %}
                             </ul>
                         </div>
                     </li>
+                    {% endif %}
 
                     <!-- 3. Stock -->
-                    <li class="nav-item">
+                    {% if 'inventory' not in hidden_menus %}
+                    <li class="nav-item" data-menu-key="inventory">
                         <a class="nav-link sidebar-dropdown-toggle {% if 'inventory' in request.resolver_match.url_name or request.resolver_match.url_name == 'stock_movement_list' or '/inventory/' in request.path %}parent-active{% else %}collapsed{% endif %}"
                            data-bs-toggle="collapse"
                            href="#submenu-inventory"
@@ -338,42 +428,52 @@
                            aria-controls="submenu-inventory">
                             <span class="sidebar-item-content">
                                 <i class="bi bi-gem sidebar-item-icon"></i>
-                                <span class="sidebar-item-title">Jewellery Stock</span>
+                                <span class="sidebar-item-title">{% if is_hindi %}आभूषण स्टॉक{% else %}Jewellery Stock{% endif %}</span>
                             </span>
                             <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
                         <div class="collapse sidebar-submenu-collapse {% if 'inventory' in request.resolver_match.url_name or request.resolver_match.url_name == 'stock_movement_list' or '/inventory/' in request.path %}show{% endif %}" id="submenu-inventory">
                             <ul class="nav flex-column sidebar-submenu">
-                                <li class="nav-item">
+                                {% if 'sub_inventory_items' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_inventory_items">
                                     <a class="nav-link {% if 'inventory' in request.resolver_match.url_name and 'import' not in request.resolver_match.url_name and request.resolver_match.url_name != 'stock_movement_list' %}active{% endif %}"
                                        href="{% url 'inventory_list' %}">
-                                        <i class="bi bi-gem"></i> All Stock Items
+                                        <i class="bi bi-gem"></i> {% if is_hindi %}सभी स्टॉक आभूषण{% else %}All Stock Items{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_inventory_history' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_inventory_history">
                                     <a class="nav-link {% if request.resolver_match.url_name == 'stock_movement_list' %}active{% endif %}"
                                        href="{% url 'stock_movement_list' %}">
-                                        <i class="bi bi-arrow-left-right"></i> Stock History
+                                        <i class="bi bi-arrow-left-right"></i> {% if is_hindi %}स्टॉक गतिविधि इतिहास{% else %}Stock History{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_inventory_import' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_inventory_import">
                                     <a class="nav-link {% if request.resolver_match.url_name == 'inventory_import' or request.resolver_match.url_name == 'inventory_import_sample' %}active{% endif %}"
                                        href="{% url 'inventory_import' %}">
-                                        <i class="bi bi-upload"></i> Import Stock
+                                        <i class="bi bi-upload"></i> {% if is_hindi %}स्टॉक आयात{% else %}Import Stock{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_inventory_photo_studio' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_inventory_photo_studio">
                                     <a class="nav-link {% if request.resolver_match.url_name == 'photo_studio' %}active{% endif %}"
                                        href="{% url 'photo_studio' %}">
-                                        <i class="bi bi-camera-fill text-warning"></i> AI Photo Studio
+                                        <i class="bi bi-camera-fill text-warning"></i> {% if is_hindi %}एआई फोटो स्टूडियो{% else %}AI Photo Studio{% endif %}
                                     </a>
                                 </li>
+                                {% endif %}
                             </ul>
                         </div>
                     </li>
+                    {% endif %}
 
                     <!-- 4. Pricing & Rates -->
-                    <li class="nav-item">
+                    {% if 'pricing' not in hidden_menus %}
+                    <li class="nav-item" data-menu-key="pricing">
                         <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.url_name == 'pricing_calculator' or request.resolver_match.url_name == 'metal_rates' or '/pricing/' in request.path or '/metal-rates/' in request.path %}parent-active{% else %}collapsed{% endif %}"
                            data-bs-toggle="collapse"
                            href="#submenu-pricing"
@@ -382,31 +482,37 @@
                            aria-controls="submenu-pricing">
                             <span class="sidebar-item-content">
                                 <i class="bi bi-calculator sidebar-item-icon"></i>
-                                <span class="sidebar-item-title">Pricing &amp; Rates</span>
+                                <span class="sidebar-item-title">{% if is_hindi %}मूल्य एवं दरें{% else %}Pricing &amp; Rates{% endif %}</span>
                             </span>
                             <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
                         <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.url_name == 'pricing_calculator' or request.resolver_match.url_name == 'metal_rates' or '/pricing/' in request.path or '/metal-rates/' in request.path %}show{% endif %}" id="submenu-pricing">
                             <ul class="nav flex-column sidebar-submenu">
-                                <li class="nav-item">
+                                {% if 'sub_pricing_calculator' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_pricing_calculator">
                                     <a class="nav-link {% if request.resolver_match.url_name == 'pricing_calculator' or '/pricing/' in request.path %}active{% endif %}"
                                        href="{% url 'pricing_calculator' %}">
-                                        <i class="bi bi-calculator"></i> Price Calculator
+                                        <i class="bi bi-calculator"></i> {% if is_hindi %}मूल्य कैलकुलेटर{% else %}Price Calculator{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_pricing_rates' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_pricing_rates">
                                     <a class="nav-link {% if request.resolver_match.url_name == 'metal_rates' or '/metal-rates/' in request.path %}active{% endif %}"
                                        href="{% url 'metal_rates' %}">
-                                        <i class="bi bi-coin"></i> Metal Rates
+                                        <i class="bi bi-coin"></i> {% if is_hindi %}धातु के भाव (Metal Rates){% else %}Metal Rates{% endif %}
                                     </a>
                                 </li>
+                                {% endif %}
                             </ul>
                         </div>
                     </li>
+                    {% endif %}
 
                     <!-- 5. Customers -->
+                    {% if 'customers' not in hidden_menus %}
                     {% if not request.tenant or request.tenant.is_retail or user.is_superuser %}
-                    <li class="nav-item">
+                    <li class="nav-item" data-menu-key="customers">
                         <a class="nav-link sidebar-dropdown-toggle {% if 'customer' in request.resolver_match.url_name or 'enquiry' in request.resolver_match.url_name or '/customers/' in request.path or '/enquiries/' in request.path %}parent-active{% else %}collapsed{% endif %}"
                            data-bs-toggle="collapse"
                            href="#submenu-customers"
@@ -415,30 +521,37 @@
                            aria-controls="submenu-customers">
                             <span class="sidebar-item-content">
                                 <i class="bi bi-people sidebar-item-icon"></i>
-                                <span class="sidebar-item-title">Customers</span>
+                                <span class="sidebar-item-title">{% if is_hindi %}ग्राहक (कस्टमर){% else %}Customers{% endif %}</span>
                             </span>
                             <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
                         <div class="collapse sidebar-submenu-collapse {% if 'customer' in request.resolver_match.url_name or 'enquiry' in request.resolver_match.url_name or '/customers/' in request.path or '/enquiries/' in request.path %}show{% endif %}" id="submenu-customers">
                             <ul class="nav flex-column sidebar-submenu">
-                                <li class="nav-item">
+                                {% if 'sub_customers_list' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_customers_list">
                                     <a class="nav-link {% if 'customer' in request.resolver_match.url_name or '/customers/' in request.path %}active{% endif %}"
                                        href="{% url 'customer_list' %}">
-                                        <i class="bi bi-people"></i> All Customers
+                                        <i class="bi bi-people"></i> {% if is_hindi %}सभी ग्राहक{% else %}All Customers{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_customers_enquiries' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_customers_enquiries">
                                     <a class="nav-link {% if 'enquiry' in request.resolver_match.url_name or '/enquiries/' in request.path %}active{% endif %}"
                                        href="{% url 'enquiry_list' %}">
-                                        <i class="bi bi-chat-left-text"></i> Customer Enquiries
+                                        <i class="bi bi-chat-left-text"></i> {% if is_hindi %}ग्राहक पूछताछ{% else %}Customer Enquiries{% endif %}
                                     </a>
                                 </li>
+                                {% endif %}
                             </ul>
                         </div>
                     </li>
+                    {% endif %}
+                    {% endif %}
 
                     <!-- 6. Custom Orders -->
-                    <li class="nav-item">
+                    {% if 'custom_orders' not in hidden_menus %}
+                    <li class="nav-item" data-menu-key="custom_orders">
                         <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.app_name == 'custom_orders' or 'custom_order' in request.resolver_match.url_name or '/custom-orders/' in request.path %}parent-active{% else %}collapsed{% endif %}"
                            data-bs-toggle="collapse"
                            href="#submenu-orders"
@@ -447,32 +560,37 @@
                            aria-controls="submenu-orders">
                             <span class="sidebar-item-content">
                                 <i class="bi bi-hammer sidebar-item-icon"></i>
-                                <span class="sidebar-item-title">Custom Orders</span>
+                                <span class="sidebar-item-title">{% if is_hindi %}कस्टम ऑर्डर्स{% else %}Custom Orders{% endif %}</span>
                             </span>
                             <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
                         <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.app_name == 'custom_orders' or 'custom_order' in request.resolver_match.url_name or '/custom-orders/' in request.path %}show{% endif %}" id="submenu-orders">
                             <ul class="nav flex-column sidebar-submenu">
-                                <li class="nav-item">
+                                {% if 'sub_custom_orders_list' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_custom_orders_list">
                                     <a class="nav-link {% if 'custom_order' in request.resolver_match.url_name or request.resolver_match.app_name == 'custom_orders' and request.resolver_match.url_name != 'custom_order_add' %}active{% endif %}"
                                        href="{% url 'custom_orders:custom_order_list' %}">
-                                        <i class="bi bi-hammer"></i> All Custom Orders
+                                        <i class="bi bi-hammer"></i> {% if is_hindi %}सभी कस्टम ऑर्डर्स{% else %}All Custom Orders{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_custom_orders_add' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_custom_orders_add">
                                     <a class="nav-link {% if request.resolver_match.url_name == 'custom_order_add' %}active{% endif %}"
                                        href="{% url 'custom_orders:custom_order_add' %}">
-                                        <i class="bi bi-plus-circle"></i> New Custom Order
+                                        <i class="bi bi-plus-circle"></i> {% if is_hindi %}नया कस्टम ऑर्डर{% else %}New Custom Order{% endif %}
                                     </a>
                                 </li>
+                                {% endif %}
                             </ul>
                         </div>
                     </li>
                     {% endif %}
 
                     <!-- 7. Karigar & Workshop -->
+                    {% if 'karigar' not in hidden_menus %}
                     {% if user.is_superuser or user.is_staff or user_perms.karigar.can_view or not user.employee_profile %}
-                    <li class="nav-item">
+                    <li class="nav-item" data-menu-key="karigar">
                         <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.app_name == 'karigar' or '/karigar/' in request.path %}parent-active{% else %}collapsed{% endif %}"
                            data-bs-toggle="collapse"
                            href="#submenu-karigar"
@@ -481,56 +599,70 @@
                            aria-controls="submenu-karigar">
                             <span class="sidebar-item-content">
                                 <i class="bi bi-person-workspace sidebar-item-icon"></i>
-                                <span class="sidebar-item-title">Karigar &amp; Workshop</span>
+                                <span class="sidebar-item-title">{% if is_hindi %}कारीगर एवं कार्यशाला{% else %}Karigar &amp; Workshop{% endif %}</span>
                             </span>
                             <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
                         <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.app_name == 'karigar' or '/karigar/' in request.path %}show{% endif %}" id="submenu-karigar">
                             <ul class="nav flex-column sidebar-submenu">
-                                <li class="nav-item">
+                                {% if 'sub_karigar_dashboard' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_karigar_dashboard">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
                                        href="{% url 'karigar:dashboard' %}">
-                                        <i class="bi bi-speedometer2"></i> Karigar Dashboard
+                                        <i class="bi bi-speedometer2"></i> {% if is_hindi %}कारीगर डैशबोर्ड{% else %}Karigar Dashboard{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_karigar_list' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_karigar_list">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and 'karigar_' in request.resolver_match.url_name %}active{% endif %}"
                                        href="{% url 'karigar:karigar_list' %}">
-                                        <i class="bi bi-person-workspace"></i> Karigar List
+                                        <i class="bi bi-person-workspace"></i> {% if is_hindi %}कारीगर सूची{% else %}Karigar List{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_karigar_assignments' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_karigar_assignments">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'assignment_list' or request.resolver_match.url_name == 'assignment_create' or request.resolver_match.url_name == 'assignment_detail' or request.resolver_match.url_name == 'assignment_edit' %}active{% endif %}"
                                        href="{% url 'karigar:assignment_list' %}">
-                                        <i class="bi bi-clipboard2-check"></i> Karigar Jobs
+                                        <i class="bi bi-clipboard2-check"></i> {% if is_hindi %}कारीगर जॉब्स{% else %}Karigar Jobs{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_karigar_pending' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_karigar_pending">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'pending_assignments' %}active{% endif %}"
                                        href="{% url 'karigar:pending_assignments' %}">
-                                        <i class="bi bi-hourglass-split"></i> Pending &amp; Overdue
+                                        <i class="bi bi-hourglass-split"></i> {% if is_hindi %}लंबित एवं बकाया कार्य{% else %}Pending &amp; Overdue{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_karigar_settlements' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_karigar_settlements">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and 'settlement_' in request.resolver_match.url_name %}active{% endif %}"
                                        href="{% url 'karigar:settlement_list' %}">
-                                        <i class="bi bi-cash-stack"></i> Karigar Payments
+                                        <i class="bi bi-cash-stack"></i> {% if is_hindi %}कारीगर भुगतान{% else %}Karigar Payments{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_karigar_reports' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_karigar_reports">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'reports' %}active{% endif %}"
                                        href="{% url 'karigar:reports' %}">
-                                        <i class="bi bi-file-earmark-bar-graph"></i> Karigar Reports
+                                        <i class="bi bi-file-earmark-bar-graph"></i> {% if is_hindi %}कारीगर रिपोर्ट्स{% else %}Karigar Reports{% endif %}
                                     </a>
                                 </li>
+                                {% endif %}
                             </ul>
                         </div>
                     </li>
                     {% endif %}
+                    {% endif %}
 
                     <!-- 8. Team & HR -->
+                    {% if 'team' not in hidden_menus %}
                     {% if user.is_superuser or user.is_staff or user_perms.team.can_view or not user.employee_profile %}
-                    <li class="nav-item">
+                    <li class="nav-item" data-menu-key="team">
                         <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.app_name == 'team' or '/team/' in request.path %}parent-active{% else %}collapsed{% endif %}"
                            data-bs-toggle="collapse"
                            data-bs-target="#submenu-team"
@@ -540,55 +672,65 @@
                            aria-controls="submenu-team">
                             <span class="sidebar-item-content">
                                 <i class="bi bi-people-fill sidebar-item-icon"></i>
-                                <span class="sidebar-item-title">Team &amp; HR</span>
+                                <span class="sidebar-item-title">{% if is_hindi %}टीम एवं कर्मचारी{% else %}Team &amp; HR{% endif %}</span>
                             </span>
                             <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
                         <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.app_name == 'team' or '/team/' in request.path %}show{% endif %}" id="submenu-team">
                             <ul class="nav flex-column sidebar-submenu">
-                                <li class="nav-item">
+                                {% if 'sub_team_employees' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_team_employees">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'team' and request.resolver_match.url_name in 'employee_list employee_detail employee_edit employee_branches employee_permissions' %}active{% endif %}"
                                        href="{% url 'team:employee_list' %}">
-                                        <i class="bi bi-people-fill"></i> Employees
-                                    </a>
-                                </li>
-                                {% if user.is_superuser or user.is_staff or user_perms.team.can_add or not user.employee_profile %}
-                                <li class="nav-item">
-                                    <a class="nav-link {% if request.resolver_match.app_name == 'team' and request.resolver_match.url_name == 'employee_create' %}active{% endif %}"
-                                       href="{% url 'team:employee_create' %}">
-                                        <i class="bi bi-person-plus-fill"></i> Add Employee
+                                        <i class="bi bi-people-fill"></i> {% if is_hindi %}कर्मचारी सूची{% else %}Employees{% endif %}
                                     </a>
                                 </li>
                                 {% endif %}
-                                <li class="nav-item">
+                                {% if user.is_superuser or user.is_staff or user_perms.team.can_add or not user.employee_profile %}
+                                {% if 'sub_team_add_employee' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_team_add_employee">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'team' and request.resolver_match.url_name == 'employee_create' %}active{% endif %}"
+                                       href="{% url 'team:employee_create' %}">
+                                        <i class="bi bi-person-plus-fill"></i> {% if is_hindi %}नया कर्मचारी जोड़ें{% else %}Add Employee{% endif %}
+                                    </a>
+                                </li>
+                                {% endif %}
+                                {% endif %}
+                                {% if 'sub_team_roles' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_team_roles">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'team' and 'role' in request.resolver_match.url_name %}active{% endif %}"
                                        href="{% url 'team:role_list' %}">
-                                        <i class="bi bi-shield-lock-fill"></i> Roles &amp; Permissions
+                                        <i class="bi bi-shield-lock-fill"></i> {% if is_hindi %}भूमिकाएं एवं अनुमतियां{% else %}Roles &amp; Permissions{% endif %}
                                     </a>
                                 </li>
-                                <li class="nav-item">
+                                {% endif %}
+                                {% if 'sub_team_branches' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_team_branches">
                                     <a class="nav-link {% if 'branch' in request.resolver_match.url_name %}active{% endif %}"
                                        href="{% url 'team:branch_list' %}">
-                                        <i class="bi bi-shop"></i> Branches
+                                        <i class="bi bi-shop"></i> {% if is_hindi %}शाखाएं{% else %}Branches{% endif %}
                                     </a>
                                 </li>
+                                {% endif %}
                             </ul>
                         </div>
                     </li>
                     {% elif user.employee_profile %}
-                    <li class="nav-item">
+                    <li class="nav-item" data-menu-key="team">
                         <a class="nav-link nav-link-single {% if request.resolver_match.app_name == 'team' %}active{% endif %}"
                            href="{% url 'team:employee_detail' user.employee_profile.pk %}">
                             <span class="sidebar-item-content">
                                 <i class="bi bi-person-badge-fill sidebar-item-icon"></i>
-                                <span class="sidebar-item-title">My Profile</span>
+                                <span class="sidebar-item-title">{% if is_hindi %}मेरी प्रोफाइल{% else %}My Profile{% endif %}</span>
                             </span>
                         </a>
                     </li>
                     {% endif %}
+                    {% endif %}
 
                     <!-- 9. Reports -->
-                    <li class="nav-item">
+                    {% if 'reports' not in hidden_menus %}
+                    <li class="nav-item" data-menu-key="reports">
                         <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.url_name == 'sales_report' or request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'reports' or '/sales/report/' in request.path or '/karigar/reports/' in request.path %}parent-active{% else %}collapsed{% endif %}"
                            data-bs-toggle="collapse"
                            href="#submenu-reports"
@@ -597,81 +739,103 @@
                            aria-controls="submenu-reports">
                             <span class="sidebar-item-content">
                                 <i class="bi bi-bar-chart-line sidebar-item-icon"></i>
-                                <span class="sidebar-item-title">Reports</span>
+                                <span class="sidebar-item-title">{% if is_hindi %}रिपोर्ट्स एवं विश्लेषण{% else %}Reports{% endif %}</span>
                             </span>
                             <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
                         <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.url_name == 'sales_report' or request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'reports' or '/sales/report/' in request.path or '/karigar/reports/' in request.path %}show{% endif %}" id="submenu-reports">
                             <ul class="nav flex-column sidebar-submenu">
-                                {% if not request.tenant or request.tenant.is_retail or user.is_superuser %}
-                                <li class="nav-item">
+                                {% if 'sub_reports_retail' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_reports_retail">
                                     <a class="nav-link {% if request.resolver_match.url_name == 'sales_report' or '/sales/report/' in request.path %}active{% endif %}"
                                        href="{% url 'sales_report' %}">
-                                        <i class="bi bi-receipt"></i> Retail Sales Report
+                                        <i class="bi bi-receipt"></i> {% if is_hindi %}खुदरा बिक्री रिपोर्ट{% else %}Retail Sales Report{% endif %}
                                     </a>
                                 </li>
                                 {% endif %}
                                 {% if request.tenant and request.tenant.is_wholesale or user.is_superuser %}
-                                <li class="nav-item">
+                                {% if 'sub_reports_wholesale' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_reports_wholesale">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name == 'reports' %}active{% endif %}"
                                        href="{% url 'wholesale:reports' %}">
-                                        <i class="bi bi-bar-chart-line"></i> Wholesale Reports
+                                        <i class="bi bi-bar-chart-line"></i> {% if is_hindi %}थोक व्यापार रिपोर्ट{% else %}Wholesale Reports{% endif %}
                                     </a>
                                 </li>
                                 {% endif %}
+                                {% endif %}
                                 {% if user.is_superuser or user.is_staff or user_perms.karigar.can_view or not user.employee_profile %}
-                                <li class="nav-item">
+                                {% if 'sub_reports_karigar' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_reports_karigar">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'reports' %}active{% endif %}"
                                        href="{% url 'karigar:reports' %}">
-                                        <i class="bi bi-file-earmark-bar-graph"></i> Karigar Reports
+                                        <i class="bi bi-file-earmark-bar-graph"></i> {% if is_hindi %}कारीगर रिपोर्ट्स{% else %}Karigar Reports{% endif %}
                                     </a>
                                 </li>
+                                {% endif %}
                                 {% endif %}
                             </ul>
                         </div>
                     </li>
+                    {% endif %}
 
                     <!-- 10. Settings -->
-                    <li class="nav-item">
-                        <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.url_name == 'company_settings' or request.resolver_match.url_name == 'themes' or '/settings/' in request.path or '/company-settings/' in request.path %}parent-active{% else %}collapsed{% endif %}"
+                    <li class="nav-item" data-menu-key="settings">
+                        <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.url_name == 'company_settings' or request.resolver_match.url_name == 'menu_settings' or request.resolver_match.url_name == 'themes' or '/settings/' in request.path or '/company-settings/' in request.path %}parent-active{% else %}collapsed{% endif %}"
                            data-bs-toggle="collapse"
                            href="#submenu-settings"
                            role="button"
-                           aria-expanded="{% if request.resolver_match.url_name == 'company_settings' or request.resolver_match.url_name == 'themes' or '/settings/' in request.path or '/company-settings/' in request.path %}true{% else %}false{% endif %}"
+                           aria-expanded="{% if request.resolver_match.url_name == 'company_settings' or request.resolver_match.url_name == 'menu_settings' or request.resolver_match.url_name == 'themes' or '/settings/' in request.path or '/company-settings/' in request.path %}true{% else %}false{% endif %}"
                            aria-controls="submenu-settings">
                             <span class="sidebar-item-content">
                                 <i class="bi bi-gear sidebar-item-icon"></i>
-                                <span class="sidebar-item-title sidebar-section">Settings</span>
+                                <span class="sidebar-item-title sidebar-section">{% if is_hindi %}सेटिंग्स{% else %}Settings{% endif %}</span>
                             </span>
                             <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
-                        <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.url_name == 'company_settings' or request.resolver_match.url_name == 'themes' or '/settings/' in request.path or '/company-settings/' in request.path %}show{% endif %}" id="submenu-settings">
+                        <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.url_name == 'company_settings' or request.resolver_match.url_name == 'menu_settings' or request.resolver_match.url_name == 'themes' or '/settings/' in request.path or '/company-settings/' in request.path %}show{% endif %}" id="submenu-settings">
                             <ul class="nav flex-column sidebar-submenu">
-                                <li class="nav-item">
+                                {% if 'sub_settings_company' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_settings_company">
                                     <a class="nav-link {% if request.resolver_match.url_name == 'company_settings' %}active{% endif %}"
                                        href="{% url 'accounts:company_settings' %}">
-                                        <i class="bi bi-building"></i> Company Settings
+                                        <i class="bi bi-building"></i> {% if is_hindi %}दुकान सेटिंग्स{% else %}Company Settings{% endif %}
+                                    </a>
+                                </li>
+                                {% endif %}
+                                <li class="nav-item" data-submenu-key="sub_settings_menu">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'menu_settings' %}active{% endif %}"
+                                       href="{% url 'accounts:menu_settings' %}">
+                                        <i class="bi bi-layout-sidebar-inset"></i> {% if is_hindi %}मेनू बार सेटिंग्स{% else %}Menu Bar Settings{% endif %}
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link {% if request.resolver_match.url_name == 'themes' %}active{% endif %}"
-                                       href="{% url 'accounts:themes' %}">
-                                        <i class="bi bi-palette"></i> Themes
+                                    <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#languageModal">
+                                        <i class="bi bi-translate"></i> {% if is_hindi %}भाषा: 🇮🇳 हिंदी{% else %}Language: 🇬🇧 English{% endif %}
                                     </a>
                                 </li>
+                                {% if 'sub_settings_themes' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_settings_themes">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'themes' %}active{% endif %}"
+                                       href="{% url 'accounts:themes' %}">
+                                        <i class="bi bi-palette"></i> {% if is_hindi %}थीम्स / रंग{% else %}Themes{% endif %}
+                                    </a>
+                                </li>
+                                {% endif %}
                             </ul>
                         </div>
                     </li>
                     <!-- 11. Get the App / APK Install Shortcut (Permanently visible in navigation) -->
-                    <li class="nav-item pwa-install-item" id="pwaInstallNavItem">
+                    {% if 'app_install' not in hidden_menus %}
+                    <li class="nav-item pwa-install-item" id="pwaInstallNavItem" data-menu-key="app_install">
                         <a class="nav-link nav-link-single pwa-install-btn text-gold pwa-install-trigger" href="{% url 'download_apk' %}" id="pwaInstallBtn" role="button" title="Download JewelDesk Android APK or Install App">
                             <span class="sidebar-item-content">
                                 <i class="bi bi-phone sidebar-item-icon"></i>
-                                <span class="sidebar-item-title">Get the App</span>
+                                <span class="sidebar-item-title">{% if is_hindi %}मोबाइल ऐप डाउनलोड{% else %}Get the App{% endif %}</span>
                             </span>
-                            <span class="badge bg-warning text-dark ms-auto fw-bold" style="font-size: 0.65rem; padding: 0.2rem 0.45rem; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.15);">APK / Install</span>
+                            <span class="badge bg-warning text-dark ms-auto fw-bold" style="font-size: 0.65rem; padding: 0.2rem 0.45rem; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.15);">{% if is_hindi %}ऐप इंस्टॉल{% else %}APK / Install{% endif %}</span>
                         </a>
                     </li>
+                    {% endif %}
 
                 </ul>
             </div>
@@ -879,6 +1043,59 @@
             });
         })();
     </script>
+
+    <!-- System Language Selection Modal -->
+    <div class="modal fade" id="languageModal" tabindex="-1" aria-labelledby="languageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+            <div class="modal-content shadow-lg border" style="background: #171511; border-color: rgba(236, 200, 106, 0.3) !important; color: #FAF4EA;">
+                <div class="modal-header border-bottom border-secondary border-opacity-25 pb-3">
+                    <h5 class="modal-title fs-6 fw-bold d-flex align-items-center gap-2" id="languageModalLabel">
+                        <i class="bi bi-translate text-warning"></i>
+                        <span>System Language / भाषा चयन</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="small text-muted mb-3">
+                        Choose software interface language. Switching to Hindi will translate the entire system interface (Navigation, Sales, Stock, Orders, Invoices, Karigar, Reports, and Settings).
+                    </p>
+                    <div class="d-grid gap-3">
+                        <!-- English Option -->
+                        <form method="post" action="{% url 'accounts:set_language' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="language" value="en">
+                            <button type="submit" class="btn w-100 text-start d-flex align-items-center justify-content-between p-3 rounded {% if not is_hindi %}btn-warning text-dark fw-bold shadow-sm{% else %}btn-outline-secondary text-light{% endif %}" style="border-width: 1.5px;">
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="fs-3">🇬🇧</span>
+                                    <div>
+                                        <div class="fw-bold" style="font-size: 1.05rem;">English</div>
+                                        <small class="{% if not is_hindi %}text-dark opacity-75{% else %}text-muted{% endif %}">Default software language</small>
+                                    </div>
+                                </div>
+                                {% if not is_hindi %}<i class="bi bi-check-circle-fill fs-4 text-dark"></i>{% endif %}
+                            </button>
+                        </form>
+
+                        <!-- Hindi Option -->
+                        <form method="post" action="{% url 'accounts:set_language' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="language" value="hi">
+                            <button type="submit" class="btn w-100 text-start d-flex align-items-center justify-content-between p-3 rounded {% if is_hindi %}btn-warning text-dark fw-bold shadow-sm{% else %}btn-outline-secondary text-light{% endif %}" style="border-width: 1.5px;">
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="fs-3">🇮🇳</span>
+                                    <div>
+                                        <div class="fw-bold" style="font-size: 1.05rem;">हिंदी (Hindi)</div>
+                                        <small class="{% if is_hindi %}text-dark opacity-75{% else %}text-muted{% endif %}">संपूर्ण सॉफ्टवेयर हिंदी भाषा में</small>
+                                    </div>
+                                </div>
+                                {% if is_hindi %}<i class="bi bi-check-circle-fill fs-4 text-dark"></i>{% endif %}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Progressive Web App (PWA) Offline Toast, Install Prompt & Service Worker -->
     {% include 'includes/pwa_scripts.html' %}

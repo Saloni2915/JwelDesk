@@ -9,6 +9,11 @@ urlpatterns = [
     path('signup/', views.signup_view, name='signup'),
     path('logout/', views.logout_view, name='logout'),
     path('company-settings/', views.company_settings, name='company_settings'),
+    path('settings/menu/', views.menu_settings, name='menu_settings'),
+    path('menu-settings/', views.menu_settings, name='menu_settings_alias'),
+    path('settings/menu/toggle/', views.menu_toggle_api, name='menu_toggle_api'),
+    path('settings/language/', views.set_language_view, name='set_language'),
+    path('set-language/', views.set_language_view, name='set_language_alias'),
     path('settings/themes/', views.themes, name='themes'),
     path('themes/', views.themes, name='themes_alias'),
 

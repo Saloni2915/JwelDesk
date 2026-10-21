@@ -10,6 +10,7 @@ from django.contrib.auth.views import (
 )
 from django.db import IntegrityError, transaction
 from django.db.models import Q
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse, reverse_lazy
 
@@ -219,6 +220,8 @@ def company_settings(request):
                 instance = form.save(commit=False)
                 instance.tenant = tenant
                 instance.save()
+                if hasattr(instance, 'language') and instance.language:
+                    request.session['django_language'] = instance.language
 
                 if logo_cleared:
                     clear_logo_blob()
@@ -321,4 +324,780 @@ def themes(request):
     if requested_theme in ('light', 'dark', 'gold'):
         response.set_cookie('jd-theme', requested_theme, max_age=31536000, samesite='Lax')
     return response
+
+
+SIDEBAR_MENU_OPTIONS = (
+    {
+        'key': 'dashboard',
+        'name': 'Dashboard',
+        'name_hi': 'डैशबोर्ड',
+        'icon': 'bi-speedometer2',
+        'category': 'Overview',
+        'category_hi': 'विवरण / सारांश',
+        'desc': 'Showroom dashboard overview, KPI summary statistics, and daily business metrics.',
+        'desc_hi': 'शोरूम डैशबोर्ड विवरण, मुख्य केपीआई आंकड़े और दैनिक व्यापार मेट्रिक्स।',
+        'sub_items': [],
+    },
+    {
+        'key': 'sales',
+        'name': 'Sales & Exchange',
+        'name_hi': 'बिक्री एवं एक्सचेंज',
+        'icon': 'bi-receipt',
+        'category': 'Sales & Billing',
+        'category_hi': 'बिक्री एवं बिलिंग',
+        'desc': 'Counter retail sales billing, payments ledger, old gold exchange and buyback records.',
+        'desc_hi': 'काउंटर खुदरा बिक्री बिलिंग, भुगतान लेज़र, पुराना सोना एक्सचेंज और बायबैक रिकॉर्ड्स।',
+        'sub_items': [
+            {
+                'key': 'sub_sales_add',
+                'name': 'New Sale (POS)',
+                'name_hi': 'नई बिक्री (POS)',
+                'icon': 'bi-cart-plus',
+                'desc': 'Instant retail POS billing counter',
+                'desc_hi': 'त्वरित खुदरा पीओएस बिलिंग काउंटर',
+            },
+            {
+                'key': 'sub_sales_list',
+                'name': 'All Sales & Bills',
+                'name_hi': 'सभी बिक्री एवं बिल',
+                'icon': 'bi-receipt',
+                'desc': 'All customer sales invoices and cash memos',
+                'desc_hi': 'सभी ग्राहक बिक्री बिल और कैश मेमो',
+            },
+            {
+                'key': 'sub_sales_payments',
+                'name': 'Payments & Receipts',
+                'name_hi': 'भुगतान एवं रसीदें',
+                'icon': 'bi-cash-coin',
+                'desc': 'Customer advance receipts and split tender payments',
+                'desc_hi': 'ग्राहक अग्रिम रसीदें और भुगतान विवरण',
+            },
+            {
+                'key': 'sub_sales_og_exchange',
+                'name': 'Old Gold Exchange',
+                'name_hi': 'पुराना सोना एक्सचेंज',
+                'icon': 'bi-arrow-repeat',
+                'desc': 'Exchange customer old jewellery towards new bill',
+                'desc_hi': 'पुराने आभूषण के बदले नए बिल में एक्सचेंज',
+            },
+            {
+                'key': 'sub_sales_og_buyback',
+                'name': 'Old Gold Buyback',
+                'name_hi': 'पुराना सोना बायबैक',
+                'icon': 'bi-cash-stack',
+                'desc': 'Instant cash buyback for scrap gold/silver',
+                'desc_hi': 'पुराने सोने/चांदी का नकद बायबैक',
+            },
+            {
+                'key': 'sub_sales_og_history',
+                'name': 'Old Gold History',
+                'name_hi': 'पुराना सोना इतिहास',
+                'icon': 'bi-journal-text',
+                'desc': 'Historical old metal purchases and melt purity records',
+                'desc_hi': 'पुराने सोने-चांदी के पूर्व रिकॉर्ड एवं शुद्धता',
+            },
+        ],
+    },
+    {
+        'key': 'wholesale',
+        'name': 'Wholesale & B2B',
+        'name_hi': 'थोक व्यापार (B2B)',
+        'icon': 'bi-buildings',
+        'category': 'Sales & Billing',
+        'category_hi': 'बिक्री एवं बिलिंग',
+        'desc': 'B2B merchant portal, retailer parties, wholesale bulk order booking, dispatches, and ledger.',
+        'desc_hi': 'B2B व्यापारी पोर्टल, खुदरा विक्रेता पार्टियां, थोक ऑर्डर बुकिंग, प्रेषण और लेज़र।',
+        'sub_items': [
+            {
+                'key': 'sub_wholesale_dashboard',
+                'name': 'Wholesale Dashboard',
+                'name_hi': 'थोक डैशबोर्ड',
+                'icon': 'bi-speedometer2',
+                'desc': 'B2B overview, orders, and merchant KPIs',
+                'desc_hi': 'थोक व्यापार सारांश और केपीआई आंकड़े',
+            },
+            {
+                'key': 'sub_wholesale_parties',
+                'name': 'Retailers / Parties',
+                'name_hi': 'खुदरा विक्रेता / पार्टियां',
+                'icon': 'bi-shop',
+                'desc': 'Wholesale merchant accounts and store parties',
+                'desc_hi': 'थोक व्यापारी खाते और खुदरा स्टोर पार्टियां',
+            },
+            {
+                'key': 'sub_wholesale_catalogue',
+                'name': 'Products & Pricing',
+                'name_hi': 'उत्पाद एवं मूल्य निर्धारण',
+                'icon': 'bi-gem',
+                'desc': 'Wholesale catalogue and tiered discount rules',
+                'desc_hi': 'थोक उत्पाद कैटलॉग और मूल्य नियम',
+            },
+            {
+                'key': 'sub_wholesale_orders',
+                'name': 'Wholesale Orders',
+                'name_hi': 'थोक ऑर्डर्स',
+                'icon': 'bi-bag-check',
+                'desc': 'Bulk merchant bookings and production status',
+                'desc_hi': 'थोक व्यापार बुकिंग और उत्पादन स्थिति',
+            },
+            {
+                'key': 'sub_wholesale_dispatches',
+                'name': 'Dispatches & Shipping',
+                'name_hi': 'प्रेषण एवं शिपिंग',
+                'icon': 'bi-truck',
+                'desc': 'Parcel dispatches, logistics, and delivery slips',
+                'desc_hi': 'पार्सल प्रेषण, लॉजिस्टिक्स और डिलीवरी रसीदें',
+            },
+            {
+                'key': 'sub_wholesale_invoices',
+                'name': 'Wholesale Invoices',
+                'name_hi': 'थोक बिल / इनवॉइस',
+                'icon': 'bi-receipt',
+                'desc': 'B2B tax invoices and GST delivery challans',
+                'desc_hi': 'थोक जीएसटी बिल और डिलीवरी चालान',
+            },
+            {
+                'key': 'sub_wholesale_payments',
+                'name': 'Payments Received',
+                'name_hi': 'प्राप्त भुगतान',
+                'icon': 'bi-cash-stack',
+                'desc': 'B2B payment collections and bank receipts',
+                'desc_hi': 'थोक वसूली और बैंक भुगतान रसीदें',
+            },
+            {
+                'key': 'sub_wholesale_ledger',
+                'name': 'Party Ledger',
+                'name_hi': 'पार्टी खाता बही',
+                'icon': 'bi-journal-text',
+                'desc': 'Retailer party outstanding balance and statements',
+                'desc_hi': 'पार्टी बकाया उधारी और विस्तृत खाता विवरण',
+            },
+            {
+                'key': 'sub_wholesale_returns',
+                'name': 'Returns & Credit Notes',
+                'name_hi': 'वापसी एवं क्रेडिट नोट',
+                'icon': 'bi-arrow-return-left',
+                'desc': 'Goods returns and wholesale credit notes',
+                'desc_hi': 'माल वापसी और क्रेडिट नोट जारी करना',
+            },
+            {
+                'key': 'sub_wholesale_reports',
+                'name': 'Wholesale Reports',
+                'name_hi': 'थोक रिपोर्ट्स',
+                'icon': 'bi-bar-chart-line',
+                'desc': 'Turnover analytics, sales tax and merchant audits',
+                'desc_hi': 'थोक टर्नओवर और टैक्स विश्लेषण रिपोर्ट्स',
+            },
+        ],
+    },
+    {
+        'key': 'outstation',
+        'name': 'Outstation Sales',
+        'name_hi': 'आउटस्टेशन बिक्री',
+        'icon': 'bi-airplane-engines',
+        'category': 'Sales & Billing',
+        'category_hi': 'बिक्री एवं बिलिंग',
+        'desc': 'Outstation sales trips, travelling representative orders, and exhibition expos.',
+        'desc_hi': 'आउटस्टेशन बिक्री यात्राएं, प्रतिनिधि ऑर्डर्स और आभूषण प्रदर्शनी एक्सपो।',
+        'sub_items': [
+            {
+                'key': 'sub_outstation_trips',
+                'name': 'All Trips & Dashboard',
+                'name_hi': 'सभी यात्राएं एवं डैशबोर्ड',
+                'icon': 'bi-briefcase',
+                'desc': 'Sales agent trips, samples carried and tour summary',
+                'desc_hi': 'प्रतिनिधि दौरे, सैंपल स्टॉक और यात्रा सारांश',
+            },
+            {
+                'key': 'sub_outstation_new_trip',
+                'name': 'New Trip',
+                'name_hi': 'नई यात्रा',
+                'icon': 'bi-plus-circle',
+                'desc': 'Create new outstation route and issue jewellery box',
+                'desc_hi': 'नया आउटस्टेशन दौरा दर्ज करें और बॉक्स जारी करें',
+            },
+            {
+                'key': 'sub_outstation_exhibitions',
+                'name': 'Exhibitions & Expos',
+                'name_hi': 'प्रदर्शनी एवं एक्सपो',
+                'icon': 'bi-building',
+                'desc': 'Jewellery exhibitions, stall orders, and trade expos',
+                'desc_hi': 'आभूषण प्रदर्शनियां, स्टॉल और एक्सपो ऑर्डर्स',
+            },
+            {
+                'key': 'sub_outstation_new_exhibition',
+                'name': 'Register Exhibition',
+                'name_hi': 'नई प्रदर्शनी दर्ज करें',
+                'icon': 'bi-plus-square',
+                'desc': 'Register upcoming jewellery expo participation',
+                'desc_hi': 'आगामी आभूषण प्रदर्शनी में भागीदारी दर्ज करें',
+            },
+        ],
+    },
+    {
+        'key': 'inventory',
+        'name': 'Jewellery Stock',
+        'name_hi': 'आभूषण स्टॉक',
+        'icon': 'bi-gem',
+        'category': 'Inventory & Catalog',
+        'category_hi': 'इन्वेंट्री एवं कैटलॉग',
+        'desc': 'Physical stock items, weights, purity grades, BIS hallmarks, HUIDs & AI Photo Studio.',
+        'desc_hi': 'भौतिक स्टॉक आभूषण, वज़न, शुद्धता ग्रेड, बीआईएस हॉलमार्क, एचयूआईडी और एआई फोटो स्टूडियो।',
+        'sub_items': [
+            {
+                'key': 'sub_inventory_items',
+                'name': 'All Stock Items',
+                'name_hi': 'सभी स्टॉक आभूषण',
+                'icon': 'bi-gem',
+                'desc': 'Catalog of live ornaments with tags and purity',
+                'desc_hi': 'टैग, वज़न और शुद्धता के साथ स्टॉक सूची',
+            },
+            {
+                'key': 'sub_inventory_history',
+                'name': 'Stock History',
+                'name_hi': 'स्टॉक गतिविधि इतिहास',
+                'icon': 'bi-arrow-left-right',
+                'desc': 'Stock additions, adjustments, inward and outward logs',
+                'desc_hi': 'स्टॉक आगमन, निकासी और परिवर्तन इतिहास',
+            },
+            {
+                'key': 'sub_inventory_import',
+                'name': 'Import Stock',
+                'name_hi': 'स्टॉक आयात',
+                'icon': 'bi-upload',
+                'desc': 'Bulk upload jewellery items via Excel/CSV spreadsheet',
+                'desc_hi': 'एक्सेल/सीएसवी से थोक स्टॉक आयात करें',
+            },
+            {
+                'key': 'sub_inventory_photo_studio',
+                'name': 'AI Photo Studio',
+                'name_hi': 'एआई फोटो स्टूडियो',
+                'icon': 'bi-camera-fill',
+                'desc': 'AI jewellery photography background enhancer',
+                'desc_hi': 'आभूषणों के लिए एआई फोटो बैकग्राउंड स्टूडियो',
+            },
+        ],
+    },
+    {
+        'key': 'pricing',
+        'name': 'Pricing & Rates',
+        'name_hi': 'मूल्य एवं दरें',
+        'icon': 'bi-calculator',
+        'category': 'Inventory & Catalog',
+        'category_hi': 'इन्वेंट्री एवं कैटलॉग',
+        'desc': 'Live gold & silver bullion market rates, making charges, and retail price calculator.',
+        'desc_hi': 'सोना एवं चांदी के लाइव बाजार भाव, मेकिंग चार्ज नियम और खुदरा मूल्य कैलकुलेटर।',
+        'sub_items': [
+            {
+                'key': 'sub_pricing_calculator',
+                'name': 'Price Calculator',
+                'name_hi': 'मूल्य कैलकुलेटर',
+                'icon': 'bi-calculator',
+                'desc': 'Estimate live jewellery retail sale price and taxes',
+                'desc_hi': 'लाइव धातु भाव और बनाई के साथ अनुमानित मूल्य',
+            },
+            {
+                'key': 'sub_pricing_rates',
+                'name': 'Metal Rates',
+                'name_hi': 'धातु के भाव (Metal Rates)',
+                'icon': 'bi-coin',
+                'desc': 'Daily gold and silver market buying/selling rates',
+                'desc_hi': 'दैनिक सोना और चांदी के क्रय-विक्रय बाजार भाव',
+            },
+        ],
+    },
+    {
+        'key': 'customers',
+        'name': 'Customers',
+        'name_hi': 'ग्राहक (कस्टमर)',
+        'icon': 'bi-people',
+        'category': 'CRM & Relationship',
+        'category_hi': 'ग्राहक संबंध (CRM)',
+        'desc': 'Customer profiles, loyalty directory, outstanding credit khata, and sales enquiries.',
+        'desc_hi': 'ग्राहक प्रोफ़ाइल, लॉयल्टी डायरेक्टरी, बकाया उधारी खाता और बिक्री पूछताछ।',
+        'sub_items': [
+            {
+                'key': 'sub_customers_list',
+                'name': 'All Customers',
+                'name_hi': 'सभी ग्राहक',
+                'icon': 'bi-people',
+                'desc': 'Customer database, contact directory and balance khata',
+                'desc_hi': 'ग्राहक संपर्क सूची और उधारी/जमा खाता',
+            },
+            {
+                'key': 'sub_customers_enquiries',
+                'name': 'Customer Enquiries',
+                'name_hi': 'ग्राहक पूछताछ',
+                'icon': 'bi-chat-left-text',
+                'desc': 'Follow up showroom leads, requests and wedding quotes',
+                'desc_hi': 'दुकान पूछताछ, लीड्स और शादी के कोटेशन',
+            },
+        ],
+    },
+    {
+        'key': 'custom_orders',
+        'name': 'Custom Orders',
+        'name_hi': 'कस्टम ऑर्डर्स',
+        'icon': 'bi-hammer',
+        'category': 'Workshop & Manufacturing',
+        'category_hi': 'वर्कशॉप एवं निर्माण',
+        'desc': 'Bespoke ornament customer orders, custom designs, CAD milestones, and delivery tracking.',
+        'desc_hi': 'कस्टम आभूषण ऑर्डर्स, विशेष डिज़ाइन, सीएडी चरण और डिलीवरी ट्रैकिंग।',
+        'sub_items': [
+            {
+                'key': 'sub_custom_orders_list',
+                'name': 'All Custom Orders',
+                'name_hi': 'सभी कस्टम ऑर्डर्स',
+                'icon': 'bi-hammer',
+                'desc': 'Directory of bespoke orders with milestones and due dates',
+                'desc_hi': 'कस्टम आभूषण ऑर्डर्स और डिलीवरी तारीखें',
+            },
+            {
+                'key': 'sub_custom_orders_add',
+                'name': 'New Custom Order',
+                'name_hi': 'नया कस्टम ऑर्डर',
+                'icon': 'bi-plus-circle',
+                'desc': 'Book bespoke jewellery order with design reference',
+                'desc_hi': 'डिज़ाइन और अग्रिम भुगतान के साथ नया ऑर्डर लें',
+            },
+        ],
+    },
+    {
+        'key': 'karigar',
+        'name': 'Karigar & Workshop',
+        'name_hi': 'कारीगर एवं कार्यशाला',
+        'icon': 'bi-person-workspace',
+        'category': 'Workshop & Manufacturing',
+        'category_hi': 'वर्कशॉप एवं निर्माण',
+        'desc': 'Artisan job cards, gold issue/receive weights, scrap recovery, and karigar wage settlements.',
+        'desc_hi': 'कारीगर जॉब कार्ड, सोना जारी/प्राप्ति वज़न, छीलन रिकवरी और मजदूरी भुगतान।',
+        'sub_items': [
+            {
+                'key': 'sub_karigar_dashboard',
+                'name': 'Karigar Dashboard',
+                'name_hi': 'कारीगर डैशबोर्ड',
+                'icon': 'bi-speedometer2',
+                'desc': 'Artisan workshop overview, active gold and pending jobs',
+                'desc_hi': 'वर्कशॉप सारांश, कारीगरों के पास सोना और सक्रिय कार्य',
+            },
+            {
+                'key': 'sub_karigar_list',
+                'name': 'Karigar List',
+                'name_hi': 'कारीगर सूची',
+                'icon': 'bi-person-workspace',
+                'desc': 'Master directory of goldsmiths, artisans and workshops',
+                'desc_hi': 'कारीगरों की मास्टर सूची एवं संपर्क विवरण',
+            },
+            {
+                'key': 'sub_karigar_assignments',
+                'name': 'Karigar Jobs',
+                'name_hi': 'कारीगर जॉब्स',
+                'icon': 'bi-clipboard2-check',
+                'desc': 'Job cards with gold issue weight and design deadline',
+                'desc_hi': 'जॉब कार्ड, सोना जारी वज़न और निर्माण अवधि',
+            },
+            {
+                'key': 'sub_karigar_pending',
+                'name': 'Pending & Overdue',
+                'name_hi': 'लंबित एवं बकाया कार्य',
+                'icon': 'bi-hourglass-split',
+                'desc': 'Urgent jobs past target completion deadline',
+                'desc_hi': 'समय सीमा पार कर चुके जरूरी आभूषण कार्य',
+            },
+            {
+                'key': 'sub_karigar_settlements',
+                'name': 'Karigar Payments',
+                'name_hi': 'कारीगर भुगतान',
+                'icon': 'bi-cash-stack',
+                'desc': 'Wages calculation, scrap reconciliation and settlements',
+                'desc_hi': 'मजदूरी हिसाब, छीलन कटौती और भुगतान',
+            },
+            {
+                'key': 'sub_karigar_reports',
+                'name': 'Karigar Reports',
+                'name_hi': 'कारीगर रिपोर्ट्स',
+                'icon': 'bi-file-earmark-bar-graph',
+                'desc': 'Metal loss reports, artisan yield and performance audits',
+                'desc_hi': 'धातु हानि, कारीगर दक्षता और प्रदर्शन ऑडिट',
+            },
+        ],
+    },
+    {
+        'key': 'team',
+        'name': 'Team & HR',
+        'name_hi': 'टीम एवं कर्मचारी',
+        'icon': 'bi-people-fill',
+        'category': 'Administration',
+        'category_hi': 'प्रशासन (Admin)',
+        'desc': 'Counter sales staff, store employees, role-based module permissions, and showroom branches.',
+        'desc_hi': 'काउंटर सेल्स स्टाफ, दुकान कर्मचारी, भूमिका-आधारित अनुमतियां और शाखाएं।',
+        'sub_items': [
+            {
+                'key': 'sub_team_employees',
+                'name': 'Employees',
+                'name_hi': 'कर्मचारी सूची',
+                'icon': 'bi-people-fill',
+                'desc': 'Staff profiles, designated branch and permissions',
+                'desc_hi': 'कर्मचारी प्रोफ़ाइल, शाखा और असाइन की गई भूमिकाएं',
+            },
+            {
+                'key': 'sub_team_add_employee',
+                'name': 'Add Employee',
+                'name_hi': 'नया कर्मचारी जोड़ें',
+                'icon': 'bi-person-plus-fill',
+                'desc': 'Register new staff member login and showroom branch',
+                'desc_hi': 'नया स्टाफ खाता बनाएं और शाखा आवंटित करें',
+            },
+            {
+                'key': 'sub_team_roles',
+                'name': 'Roles & Permissions',
+                'name_hi': 'भूमिकाएं एवं अनुमतियां',
+                'icon': 'bi-shield-lock-fill',
+                'desc': 'Manage role access matrix (Sales, Accounts, Karigar)',
+                'desc_hi': 'मॉड्यूल पहुंच अनुमतियां और अधिकार मैट्रिक्स',
+            },
+            {
+                'key': 'sub_team_branches',
+                'name': 'Branches',
+                'name_hi': 'दुकान शाखाएं',
+                'icon': 'bi-shop',
+                'desc': 'Store branches, locations and inventory warehouses',
+                'desc_hi': 'दुकान की शाखाएं, स्थान और स्टॉक गोदाम',
+            },
+        ],
+    },
+    {
+        'key': 'reports',
+        'name': 'Reports & Analytics',
+        'name_hi': 'रिपोर्ट्स एवं विश्लेषण',
+        'icon': 'bi-bar-chart-line',
+        'category': 'Administration',
+        'category_hi': 'प्रशासन (Admin)',
+        'desc': 'Comprehensive retail GST invoices, wholesale turnover ledgers, and artisan workshop reports.',
+        'desc_hi': 'विस्तृत खुदरा जीएसटी बिल, थोक टर्नओवर लेज़र और कारीगर वर्कशॉप रिपोर्ट्स।',
+        'sub_items': [
+            {
+                'key': 'sub_reports_retail',
+                'name': 'Retail Sales Report',
+                'name_hi': 'खुदरा बिक्री रिपोर्ट',
+                'icon': 'bi-receipt',
+                'desc': 'Detailed GST retail sales ledger and daily counter receipts',
+                'desc_hi': 'जीएसटी बिक्री लेज़र और दैनिक काउंटर बिक्री रिपोर्ट',
+            },
+            {
+                'key': 'sub_reports_wholesale',
+                'name': 'Wholesale Reports',
+                'name_hi': 'थोक व्यापार रिपोर्ट',
+                'icon': 'bi-bar-chart-line',
+                'desc': 'B2B turnover, dispatch reports and party balances',
+                'desc_hi': 'थोक व्यापार टर्नओवर और पार्टी बैलेंस रिपोर्ट',
+            },
+            {
+                'key': 'sub_reports_karigar',
+                'name': 'Karigar Reports',
+                'name_hi': 'कारीगर रिपोर्ट्स',
+                'icon': 'bi-file-earmark-bar-graph',
+                'desc': 'Artisan yield, gold loss, and job completion turnaround',
+                'desc_hi': 'कारीगर धातु हानि और कार्य समाप्ति रिपोर्ट',
+            },
+        ],
+    },
+    {
+        'key': 'settings',
+        'name': 'Settings',
+        'name_hi': 'सेटिंग्स',
+        'icon': 'bi-gear',
+        'category': 'Administration',
+        'category_hi': 'प्रशासन (Admin)',
+        'desc': 'Company branding, invoice settings, themes and menu bar customization.',
+        'desc_hi': 'दुकान ब्रांडिंग, बिल सेटिंग्स, थीम्स और मेनू बार अनुकूलन।',
+        'is_locked': True,
+        'sub_items': [
+            {
+                'key': 'sub_settings_company',
+                'name': 'Company Settings',
+                'name_hi': 'दुकान सेटिंग्स',
+                'icon': 'bi-building',
+                'desc': 'Shop profile, GSTIN, invoice address and logo',
+                'desc_hi': 'दुकान प्रोफ़ाइल, जीएसटी नंबर, पता और बिल लोगो',
+            },
+            {
+                'key': 'sub_settings_themes',
+                'name': 'Themes / Colors',
+                'name_hi': 'थीम्स / रंग',
+                'icon': 'bi-palette',
+                'desc': 'Dark, light, and luxury gold display modes',
+                'desc_hi': 'डार्क, लाइट और लग्जरी गोल्ड डिस्प्ले मोड',
+            },
+        ],
+    },
+    {
+        'key': 'app_install',
+        'name': 'Get the App',
+        'name_hi': 'मोबाइल ऐप डाउनलोड',
+        'icon': 'bi-phone',
+        'category': 'App & Shortcuts',
+        'category_hi': 'ऐप एवं शॉर्टकट',
+        'desc': 'JewelDesk Progressive Web App (PWA) and Android APK install shortcut in sidebar.',
+        'desc_hi': 'JewelDesk प्रोग्रेसिव वेब ऐप (PWA) और एंड्रॉइड एपीके इंस्टॉल शॉर्टकट।',
+        'sub_items': [],
+    },
+)
+
+
+@login_required
+def menu_settings(request):
+    """Configure which sidebar navigation menu options and sub-options are visible or hidden for the active store."""
+    tenant = getattr(request, 'tenant', None)
+    if not tenant:
+        tenant = getattr(request.user, 'owned_tenants', None)
+        tenant = tenant.first() if tenant else None
+
+    # Tenant admin permission check
+    if tenant and not request.user.is_superuser:
+        from team.permissions import is_admin_user
+        if not (is_admin_user(request.user, tenant=tenant) or tenant.owner_id == request.user.id):
+            messages.error(request, 'Access restricted. Only store administrators can modify menu bar settings.')
+            return redirect('dashboard')
+
+    settings_obj = CompanySettings.load(tenant=tenant)
+
+    # Collect all valid keys across modules and sub-options
+    valid_keys = set()
+    for item in SIDEBAR_MENU_OPTIONS:
+        valid_keys.add(item['key'])
+        for sub in item.get('sub_items', []):
+            valid_keys.add(sub['key'])
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'unhide_all':
+            settings_obj.hidden_menu_items = ''
+            settings_obj.save()
+            messages.success(request, 'All menu options and sub-options have been restored and unhidden!')
+            return redirect('accounts:menu_settings')
+
+        submitted_lists = set(request.POST.getlist('hidden_menus') + request.POST.getlist('hidden_items'))
+        hidden_keys = set()
+        for key in valid_keys:
+            if request.POST.get(f'hide_{key}') in ('1', 'on', 'true') or key in submitted_lists:
+                hidden_keys.add(key)
+
+        settings_obj.hidden_menu_items = ','.join(sorted(hidden_keys))
+        settings_obj.save()
+        messages.success(request, 'Menu bar navigation settings updated successfully!')
+        return redirect('accounts:menu_settings')
+
+    is_hindi = (
+        request.session.get('django_language') == 'hi'
+        or request.COOKIES.get('django_language') == 'hi'
+        or request.COOKIES.get('jd_language') == 'hi'
+        or (settings_obj and getattr(settings_obj, 'language', None) == 'hi')
+    )
+
+    hidden_set = set(settings_obj.get_hidden_menus())
+    menu_items_with_state = []
+    total_options_count = 0
+    total_hidden_count = 0
+
+    for item in SIDEBAR_MENU_OPTIONS:
+        is_hidden = item['key'] in hidden_set
+        name_val = item.get('name_hi') if is_hindi else item['name']
+        desc_val = item.get('desc_hi') if is_hindi else item['desc']
+        cat_val = item.get('category_hi') if is_hindi else item.get('category', 'General')
+
+        processed_subs = []
+        for sub in item.get('sub_items', []):
+            sub_is_hidden = sub['key'] in hidden_set
+            total_options_count += 1
+            if sub_is_hidden:
+                total_hidden_count += 1
+            processed_subs.append({
+                'key': sub['key'],
+                'name': sub.get('name_hi') if is_hindi else sub['name'],
+                'desc': sub.get('desc_hi') if is_hindi else sub.get('desc', ''),
+                'english_name': sub['name'],
+                'icon': sub.get('icon', 'bi-circle'),
+                'is_hidden': sub_is_hidden,
+            })
+
+        total_options_count += 1
+        if is_hidden:
+            total_hidden_count += 1
+
+        menu_items_with_state.append({
+            'key': item['key'],
+            'name': name_val,
+            'desc': desc_val,
+            'category': cat_val,
+            'english_name': item['name'],
+            'icon': item['icon'],
+            'is_hidden': is_hidden,
+            'is_locked': item.get('is_locked', False),
+            'sub_items': processed_subs,
+            'sub_count': len(processed_subs),
+        })
+
+    hidden_count = sum(1 for it in menu_items_with_state if it['is_hidden'])
+    visible_count = len(menu_items_with_state) - hidden_count
+
+    return render(request, 'accounts/menu_settings.html', {
+        'menu_options': menu_items_with_state,
+        'hidden_count': hidden_count,
+        'visible_count': visible_count,
+        'total_count': len(menu_items_with_state),
+        'total_options_count': total_options_count,
+        'total_hidden_count': total_hidden_count,
+        'settings_obj': settings_obj,
+        'is_hindi': is_hindi,
+    })
+
+
+@login_required
+def menu_toggle_api(request):
+    """AJAX endpoint for instant real-time toggle of menu bar or sub-option visibility."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST method required.'}, status=405)
+
+    tenant = getattr(request, 'tenant', None)
+    if not tenant:
+        tenant = getattr(request.user, 'owned_tenants', None)
+        tenant = tenant.first() if tenant else None
+
+    if tenant and not request.user.is_superuser:
+        from team.permissions import is_admin_user
+        if not (is_admin_user(request.user, tenant=tenant) or tenant.owner_id == request.user.id):
+            return JsonResponse({'error': 'Only store administrators can modify menu settings.'}, status=403)
+
+    import json
+    menu_key = None
+    is_hidden = None
+
+    if request.content_type == 'application/json':
+        try:
+            payload = json.loads(request.body.decode('utf-8'))
+            menu_key = payload.get('menu_key')
+            if 'is_hidden' in payload:
+                is_hidden = payload.get('is_hidden')
+            elif 'hide' in payload:
+                is_hidden = payload.get('hide')
+        except Exception:
+            pass
+    else:
+        menu_key = request.POST.get('menu_key')
+        is_hidden_raw = request.POST.get('is_hidden') if request.POST.get('is_hidden') is not None else request.POST.get('hide')
+        if is_hidden_raw is not None:
+            if isinstance(is_hidden_raw, bool):
+                is_hidden = is_hidden_raw
+            else:
+                is_hidden = str(is_hidden_raw).lower() in ('1', 'true', 'on', 'yes')
+
+    valid_keys = set()
+    for item in SIDEBAR_MENU_OPTIONS:
+        valid_keys.add(item['key'])
+        for sub in item.get('sub_items', []):
+            valid_keys.add(sub['key'])
+
+    if not menu_key or menu_key not in valid_keys:
+        return JsonResponse({'error': f"Invalid menu key '{menu_key}'."}, status=400)
+
+    if is_hidden is None:
+        return JsonResponse({'error': 'is_hidden flag is required.'}, status=400)
+
+    settings_obj = CompanySettings.load(tenant=tenant)
+    settings_obj.set_menu_hidden(menu_key, is_hidden=bool(is_hidden))
+    settings_obj.save()
+
+    hidden_list = settings_obj.get_hidden_menus()
+    return JsonResponse({
+        'success': True,
+        'menu_key': menu_key,
+        'is_hidden': bool(is_hidden),
+        'hidden_count': len(hidden_list),
+        'hidden_menus': hidden_list,
+        'message': f"Menu option '{menu_key}' is now {'hidden' if is_hidden else 'visible'}.",
+    })
+
+
+def set_language_view(request):
+    """
+    Switch application UI language between English ('en') and Hindi ('hi').
+    Saves language choice to:
+      1. Tenant's CompanySettings record (if authenticated tenant owner/admin)
+      2. request.session['django_language']
+      3. response cookie 'django_language' and 'jd_language'
+    Supports both traditional POST/GET and AJAX requests.
+    """
+    import json
+    lang_code = None
+
+    if request.content_type == 'application/json':
+        try:
+            payload = json.loads(request.body.decode('utf-8'))
+            lang_code = payload.get('language')
+        except Exception:
+            pass
+
+    if not lang_code:
+        lang_code = request.POST.get('language') or request.GET.get('language')
+
+    if not lang_code or lang_code not in ('en', 'hi'):
+        lang_code = 'en'
+
+    # 1. Update company settings if user has a tenant
+    tenant = getattr(request, 'tenant', None)
+    if not tenant and request.user.is_authenticated:
+        tenant = getattr(request.user, 'owned_tenants', None)
+        tenant = tenant.first() if tenant else None
+
+    if tenant:
+        try:
+            settings_obj = CompanySettings.load(tenant=tenant)
+            settings_obj.language = lang_code
+            settings_obj.save()
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning("Failed to save language to CompanySettings: %s", e)
+
+    # 2. Update session
+    if hasattr(request, 'session'):
+        request.session['django_language'] = lang_code
+
+    try:
+        from django.utils import translation
+        translation.activate(lang_code)
+    except Exception:
+        pass
+
+    # 3. Respond
+    is_ajax = (
+        request.headers.get('x-requested-with') == 'XMLHttpRequest'
+        or request.content_type == 'application/json'
+    )
+    if is_ajax:
+        res = JsonResponse({
+            'success': True,
+            'language': lang_code,
+            'label': 'हिंदी' if lang_code == 'hi' else 'English',
+            'message': 'भाषा बदलकर हिंदी कर दी गई है।' if lang_code == 'hi' else 'Language changed to English.',
+        })
+        res.set_cookie('django_language', lang_code, max_age=365*24*60*60, path='/')
+        res.set_cookie('jd_language', lang_code, max_age=365*24*60*60, path='/')
+        return res
+
+    next_url = request.POST.get('next') or request.GET.get('next') or request.META.get('HTTP_REFERER') or '/'
+    from urllib.parse import urlparse
+    if urlparse(next_url).netloc and urlparse(next_url).netloc != request.get_host():
+        next_url = '/'
+
+    if lang_code == 'hi':
+        messages.success(request, 'सिस्टम की भाषा सफलतापूर्वक बदलकर हिंदी कर दी गई है। (System language switched to Hindi)')
+    else:
+        messages.success(request, 'System language successfully switched to English.')
+
+    res = redirect(next_url)
+    res.set_cookie('django_language', lang_code, max_age=365*24*60*60, path='/')
+    res.set_cookie('jd_language', lang_code, max_age=365*24*60*60, path='/')
+    return res
+
 

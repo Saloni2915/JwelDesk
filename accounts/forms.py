@@ -206,17 +206,18 @@ class CompanySettingsForm(forms.ModelForm):
     class Meta:
         model = CompanySettings
         fields = ('company_name', 'logo', 'gstin', 'address', 'phone',
-                  'email', 'invoice_footer_note')
+                  'email', 'language', 'invoice_footer_note')
         widgets = {
             'address': forms.Textarea(attrs={'rows': 3}),
             'invoice_footer_note': forms.Textarea(attrs={'rows': 2}),
+            'language': forms.Select(attrs={'class': 'form-select'}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance and getattr(self.instance, 'tenant', None):
             self.fields['business_type'].initial = self.instance.tenant.business_type
-        for name in ('company_name', 'gstin', 'phone', 'email', 'business_type'):
+        for name in ('company_name', 'gstin', 'phone', 'email', 'business_type', 'language'):
             if name in self.fields:
                 self.fields[name].widget.attrs.setdefault('class', 'form-control')
         self.fields['address'].widget.attrs.setdefault('class', 'form-control')

@@ -192,6 +192,23 @@ class CompanySettings(models.Model):
     phone = models.CharField(max_length=20, blank=True)
     email = models.EmailField(blank=True)
     invoice_footer_note = models.CharField(max_length=255, blank=True)
+    hidden_menu_items = models.TextField(
+        blank=True, default='',
+        help_text='Comma-separated keys of menu items hidden in the sidebar navigation.'
+    )
+    LANGUAGE_EN = 'en'
+    LANGUAGE_HI = 'hi'
+    LANGUAGE_CHOICES = (
+        (LANGUAGE_EN, 'English'),
+        (LANGUAGE_HI, 'Hindi (हिंदी)'),
+    )
+    language = models.CharField(
+        max_length=10,
+        choices=LANGUAGE_CHOICES,
+        default=LANGUAGE_EN,
+        blank=True,
+        help_text='System display language (English or Hindi).'
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -205,6 +222,30 @@ class CompanySettings(models.Model):
     def name(self):
         """Display name for templates (alias of ``company_name``)."""
         return self.company_name or 'JewelDesk'
+
+    def get_hidden_menus(self):
+        """Return a clean list of lowercased keys of menu items currently hidden."""
+        if not self.hidden_menu_items:
+            return []
+        return [k.strip().lower() for k in self.hidden_menu_items.split(',') if k.strip()]
+
+    def is_menu_hidden(self, menu_key):
+        """Check if a specific menu key is currently hidden."""
+        if not menu_key:
+            return False
+        return menu_key.strip().lower() in self.get_hidden_menus()
+
+    def set_menu_hidden(self, menu_key, is_hidden=True, commit=False):
+        """Mark a specific menu key as hidden or visible."""
+        current = set(self.get_hidden_menus())
+        key = menu_key.strip().lower()
+        if is_hidden:
+            current.add(key)
+        else:
+            current.discard(key)
+        self.hidden_menu_items = ','.join(sorted(current))
+        if commit:
+            self.save()
 
     def ensure_logo_file(self):
         """Restore logo to disk from DB blob table if missing on ephemeral filesystem."""
