@@ -32,6 +32,7 @@ from .models import (
     PlatformProposal,
     PlatformDemoLead,
     PlatformSupportTicket,
+    PlatformTicketMessage,
     CouponDesignTemplate,
     CouponPrintBatch,
     CouponBatchItem,
@@ -44,6 +45,8 @@ from .forms import (
     CouponDesignTemplateForm,
     CouponPrintBatchForm,
 )
+from .forms_support import StaffTicketReplyForm
+from .ai_assistant import ai_summarize_ticket, ai_categorize_ticket
 from .coupon_engine import (
     ALLOWED_PLACEHOLDERS,
     generate_unique_batch_codes,
@@ -1635,20 +1638,104 @@ def ticket_create_view(request):
 
 @super_admin_required
 def ticket_detail_view(request, ticket_id):
-    """View ticket details, response history, and update status."""
+    """View ticket details, response history, staff conversation thread, and update status."""
     ticket = get_object_or_404(
-        PlatformSupportTicket.objects.select_related('tenant', 'assigned_to'),
+        PlatformSupportTicket.objects.select_related('tenant', 'assigned_to', 'created_by'),
         pk=ticket_id
     )
     staff_users = User.objects.filter(is_superuser=True) | User.objects.filter(is_staff=True)
+    messages_list = ticket.messages.select_related('sender').order_by('created_at')
+    reply_form = StaffTicketReplyForm()
 
     context = {
         'ticket': ticket,
         'staff_users': staff_users,
+        'messages_list': messages_list,
+        'reply_form': reply_form,
         'status_choices': PlatformSupportTicket.STATUS_CHOICES,
         'priority_choices': PlatformSupportTicket.PRIORITY_CHOICES,
     }
     return render(request, 'super_admin/ticket_detail.html', context)
+
+
+@super_admin_required
+@require_POST
+def ticket_staff_reply_view(request, ticket_id):
+    """Post a staff reply to customer, or add a private internal note."""
+    ticket = get_object_or_404(PlatformSupportTicket, pk=ticket_id)
+    form = StaffTicketReplyForm(request.POST, request.FILES)
+    if form.is_valid():
+        msg = form.save(commit=False)
+        msg.ticket = ticket
+        msg.sender = request.user
+        msg.save()
+
+        # If replying publicly to customer, update status to Waiting for Customer or In Progress
+        if not msg.is_internal:
+            if ticket.status == PlatformSupportTicket.STATUS_OPEN:
+                ticket.status = PlatformSupportTicket.STATUS_WAITING_CUSTOMER
+            ticket.updated_at = timezone.now()
+            ticket.save(update_fields=['status', 'updated_at'])
+            messages.success(request, f"Customer reply sent for ticket #{ticket.ticket_number}.")
+        else:
+            ticket.updated_at = timezone.now()
+            ticket.save(update_fields=['updated_at'])
+            messages.info(request, f"Internal note recorded (visible to staff only).")
+
+        PlatformAuditLog.objects.create(
+            actor=request.user,
+            action='TICKET_MESSAGE',
+            target_tenant=ticket.tenant,
+            reason=f"Added {'internal note' if msg.is_internal else 'reply'} to ticket #{ticket.ticket_number}",
+            ip_address=get_client_ip(request),
+            user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]
+        )
+    else:
+        error_msg = "Please provide a valid message."
+        if 'attachment' in form.errors:
+            error_msg = form.errors['attachment'][0]
+        messages.error(request, error_msg)
+
+    return redirect('super_admin:ticket_detail', ticket_id=ticket.id)
+
+
+@super_admin_required
+@require_POST
+def ticket_ai_summary_view(request, ticket_id):
+    """Generate or refresh concise AI summary and recommended action plan for staff review."""
+    ticket = get_object_or_404(PlatformSupportTicket, pk=ticket_id)
+    messages_qs = ticket.messages.select_related('sender').order_by('created_at')
+    
+    conversation_lines = []
+    for m in messages_qs:
+        sender_label = "Staff" if (m.sender and (m.sender.is_superuser or m.sender.is_staff)) else "Customer"
+        if m.is_internal:
+            sender_label += " (Internal Note)"
+        conversation_lines.append(f"{sender_label}: {m.message}")
+
+    conversation_text = "\n".join(conversation_lines)
+    summary = ai_summarize_ticket(ticket.subject, ticket.description, conversation_text)
+    ticket.ai_summary = summary
+
+    # Auto-categorize if not already categorized
+    cat_sug, pri_sug = ai_categorize_ticket(ticket.subject, ticket.description)
+    if not ticket.ai_suggested_category:
+        ticket.ai_suggested_category = cat_sug
+    if not ticket.ai_suggested_priority:
+        ticket.ai_suggested_priority = pri_sug
+
+    ticket.save(update_fields=['ai_summary', 'ai_suggested_category', 'ai_suggested_priority'])
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('format') == 'json':
+        return JsonResponse({
+            'success': True,
+            'ai_summary': ticket.ai_summary,
+            'ai_suggested_category': ticket.ai_suggested_category,
+            'ai_suggested_priority': ticket.ai_suggested_priority,
+        })
+
+    messages.success(request, f"AI summary generated for ticket #{ticket.ticket_number}.")
+    return redirect('super_admin:ticket_detail', ticket_id=ticket.id)
 
 
 @super_admin_required

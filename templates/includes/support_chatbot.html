@@ -1,0 +1,782 @@
+{% load static %}
+<!-- JewelDesk Floating AI Support Chatbot & Ticket Assistant Widget -->
+<style>
+/* Floating Chatbot Widget Styling */
+#jdSupportWidget {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1045;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+#jdSupportLauncher {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ECC86A 0%, #D4AF37 50%, #A88420 100%);
+    color: #141009;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 8px 24px rgba(212, 175, 55, 0.4), 0 2px 6px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    user-select: none;
+}
+#jdSupportLauncher:hover {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 0 12px 30px rgba(212, 175, 55, 0.55), 0 4px 10px rgba(0,0,0,0.35);
+}
+#jdSupportLauncher .jd-pulse-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid #ECC86A;
+    animation: jdLauncherPulse 2.5s infinite;
+    pointer-events: none;
+}
+@keyframes jdLauncherPulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.35); opacity: 0; }
+    100% { transform: scale(1.35); opacity: 0; }
+}
+
+#jdSupportPanel {
+    position: absolute;
+    bottom: 72px;
+    right: 0;
+    width: 390px;
+    max-width: calc(100vw - 32px);
+    height: 600px;
+    max-height: calc(100vh - 110px);
+    background: #1a1712;
+    border: 1px solid rgba(236, 200, 106, 0.3);
+    border-radius: 20px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65), 0 0 35px rgba(212, 175, 55, 0.15);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(20px) scale(0.95);
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#jdSupportWidget.open #jdSupportPanel {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+}
+
+#jdSupportWidget.open #jdSupportLauncher {
+    transform: rotate(90deg);
+    background: #241e17;
+    color: #ECC86A;
+    border-color: rgba(236, 200, 106, 0.4);
+}
+
+/* Panel Header */
+.jd-chat-header {
+    background: linear-gradient(180deg, #241e17 0%, #1a1712 100%);
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(236, 200, 106, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+.jd-chat-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.jd-chat-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #ECC86A, #A88420);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #141009;
+    font-size: 19px;
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.35);
+}
+.jd-chat-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #FAF4EA;
+    line-height: 1.2;
+}
+.jd-chat-subtitle {
+    font-size: 0.72rem;
+    color: #10B981;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.jd-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: #10B981;
+    box-shadow: 0 0 6px #10B981;
+}
+
+/* Mode Tabs */
+.jd-mode-tabs {
+    display: flex;
+    background: #141009;
+    padding: 4px;
+    border-bottom: 1px solid rgba(236, 200, 106, 0.15);
+    flex-shrink: 0;
+}
+.jd-mode-tab {
+    flex: 1;
+    text-align: center;
+    padding: 7px 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #a89f91;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+.jd-mode-tab:hover {
+    color: #FAF4EA;
+}
+.jd-mode-tab.active {
+    background: rgba(236, 200, 106, 0.15);
+    color: #ECC86A;
+    border: 1px solid rgba(236, 200, 106, 0.3);
+}
+
+/* Body Areas */
+.jd-panel-view {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Messages Stream */
+.jd-chat-stream {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.jd-msg {
+    max-width: 86%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 0.86rem;
+    line-height: 1.5;
+    word-break: break-word;
+}
+.jd-msg-bot {
+    align-self: flex-start;
+    background: #241e17;
+    color: #FAF4EA;
+    border: 1px solid rgba(236, 200, 106, 0.2);
+    border-top-left-radius: 4px;
+}
+.jd-msg-bot a.jd-msg-link {
+    color: #ECC86A;
+    font-weight: 600;
+    text-decoration: underline;
+}
+.jd-msg-user {
+    align-self: flex-end;
+    background: linear-gradient(135deg, #ECC86A, #D4AF37);
+    color: #141009;
+    font-weight: 500;
+    border-top-right-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+
+/* Quick Question Chips */
+.jd-quick-chips {
+    padding: 10px 16px;
+    background: #18140e;
+    border-top: 1px solid rgba(236, 200, 106, 0.1);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    flex-shrink: 0;
+}
+.jd-chip-btn {
+    font-size: 0.73rem;
+    padding: 5px 9px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(236, 200, 106, 0.25);
+    color: #FAF4EA;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+.jd-chip-btn:hover {
+    background: rgba(236, 200, 106, 0.2);
+    color: #ECC86A;
+    border-color: #ECC86A;
+}
+
+/* Chat Input Bar */
+.jd-chat-input-bar {
+    padding: 12px 14px;
+    background: #141009;
+    border-top: 1px solid rgba(236, 200, 106, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.jd-chat-input {
+    flex: 1;
+    background: #241e17;
+    border: 1px solid rgba(236, 200, 106, 0.25);
+    border-radius: 12px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    color: #FAF4EA;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.jd-chat-input:focus {
+    border-color: #ECC86A;
+}
+.jd-send-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: #ECC86A;
+    color: #141009;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+.jd-send-btn:hover:not(:disabled) {
+    background: #D4AF37;
+    transform: scale(1.05);
+}
+.jd-send-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Ticket Form Styling */
+.jd-ticket-form-container {
+    padding: 16px;
+    overflow-y: auto;
+    flex: 1;
+}
+.jd-ticket-form-container label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #ECC86A;
+    margin-bottom: 4px;
+    display: block;
+}
+.jd-ticket-input, .jd-ticket-select, .jd-ticket-textarea {
+    width: 100%;
+    background: #241e17;
+    border: 1px solid rgba(236, 200, 106, 0.25);
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: #FAF4EA;
+    font-size: 0.83rem;
+    outline: none;
+    margin-bottom: 12px;
+}
+.jd-ticket-input:focus, .jd-ticket-select:focus, .jd-ticket-textarea:focus {
+    border-color: #ECC86A;
+}
+
+/* Typing Indicator Animation */
+.jd-typing-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+}
+.jd-typing-indicator span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #ECC86A;
+    animation: jdTypingBounce 1.4s infinite ease-in-out both;
+}
+.jd-typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+.jd-typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+@keyframes jdTypingBounce {
+    0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+    40% { transform: scale(1); opacity: 1; }
+}
+
+@media (max-width: 576px) {
+    #jdSupportWidget {
+        bottom: 18px;
+        right: 18px;
+    }
+    #jdSupportPanel {
+        bottom: 68px;
+        right: 0;
+        width: calc(100vw - 32px);
+        height: calc(100vh - 120px);
+    }
+}
+</style>
+
+<div id="jdSupportWidget">
+    <!-- Floating Launcher Button -->
+    <div id="jdSupportLauncher" title="JewelDesk AI Support &amp; Help Desk" aria-label="Open Support Assistant">
+        <div class="jd-pulse-ring"></div>
+        <i class="bi bi-chat-dots-fill" id="jdLauncherIcon"></i>
+    </div>
+
+    <!-- Floating Chat / Ticket Panel -->
+    <div id="jdSupportPanel" role="dialog" aria-modal="true" aria-label="JewelDesk AI Support Panel">
+        <!-- Panel Header -->
+        <div class="jd-chat-header">
+            <div class="jd-chat-brand">
+                <div class="jd-chat-avatar">
+                    <i class="bi bi-gem"></i>
+                </div>
+                <div>
+                    <div class="jd-chat-title">JewelDesk Assistant</div>
+                    <div class="jd-chat-subtitle">
+                        <span class="jd-status-dot"></span> Verified Support Grounding
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-1">
+                <a href="{% url 'support_customer:ticket_list' %}" class="btn btn-sm btn-outline-warning text-gold py-1 px-2" style="font-size: 0.72rem; border-color: rgba(236,200,106,0.35);" title="View My Support Tickets">
+                    <i class="bi bi-ticket-perforated me-1"></i> My Tickets
+                </a>
+                <button type="button" class="btn btn-sm btn-link text-muted p-1" id="jdCloseChatBtn" title="Close" aria-label="Close chat">
+                    <i class="bi bi-x-lg text-light fs-6"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mode Navigation Tabs -->
+        <div class="jd-mode-tabs">
+            <button type="button" class="jd-mode-tab active" id="jdTabChat" onclick="switchSupportTab('chat')">
+                <i class="bi bi-robot"></i> Ask AI Assistant
+            </button>
+            <button type="button" class="jd-mode-tab" id="jdTabTicket" onclick="switchSupportTab('ticket')">
+                <i class="bi bi-plus-circle"></i> Raise a Ticket
+            </button>
+        </div>
+
+        <!-- View 1: AI Chat View -->
+        <div id="jdViewChat" class="jd-panel-view">
+            <!-- Messages Stream -->
+            <div class="jd-chat-stream" id="jdChatStream">
+                <!-- Welcome Bot Message -->
+                <div class="jd-msg jd-msg-bot">
+                    <div class="fw-bold mb-1" style="color: #ECC86A;">
+                        <i class="bi bi-stars me-1"></i> Welcome to JewelDesk Support!
+                    </div>
+                    Namaste! I am your AI assistant for JewelDesk. Ask me anything about billing, jewellery stock, gold rates, coupons, or reports.
+                    <div class="mt-2 text-muted" style="font-size: 0.75rem;">
+                        If you need personalized staff resolution, tap <strong>Raise a Ticket</strong> anytime!
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Question Chips -->
+            <div class="jd-quick-chips" id="jdQuickChips">
+                <button type="button" class="jd-chip-btn" onclick="sendQuickPrompt('How do I create a sales invoice?')">🧾 Create Invoice</button>
+                <button type="button" class="jd-chip-btn" onclick="sendQuickPrompt('How can I add a new jewellery item?')">💎 Add Stock Item</button>
+                <button type="button" class="jd-chip-btn" onclick="sendQuickPrompt('How do I update gold and silver rates?')">📈 Daily Gold Rates</button>
+                <button type="button" class="jd-chip-btn" onclick="sendQuickPrompt('How do I create and redeem a customer coupon?')">🏷️ Coupons</button>
+                <button type="button" class="jd-chip-btn" onclick="sendQuickPrompt('Why is my report not loading?')">📊 Reports Help</button>
+            </div>
+
+            <!-- Chat Input Bar -->
+            <form id="jdChatForm" class="jd-chat-input-bar" onsubmit="handleChatSubmit(event)">
+                <input type="text" id="jdChatInput" class="jd-chat-input" placeholder="Type your question in English or Hindi..." autocomplete="off">
+                <button type="submit" id="jdChatSendBtn" class="jd-send-btn" title="Send Question" aria-label="Send message">
+                    <i class="bi bi-send-fill"></i>
+                </button>
+            </form>
+        </div>
+
+        <!-- View 2: Raise a Ticket View -->
+        <div id="jdViewTicket" class="jd-panel-view" style="display: none;">
+            <div class="jd-ticket-form-container">
+                <div class="mb-3">
+                    <h6 class="fw-bold mb-1" style="color: #FAF4EA; font-size: 0.92rem;">
+                        <i class="bi bi-ticket-detailed text-warning me-1"></i> Submit a Support Ticket
+                    </h6>
+                    <small class="text-muted" style="font-size: 0.75rem;">
+                        Our specialist engineers will review and resolve your request.
+                    </small>
+                </div>
+
+                <form id="jdInlineTicketForm" onsubmit="handleTicketSubmit(event)" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div>
+                        <label for="id_ticket_subject">Subject *</label>
+                        <input type="text" id="id_ticket_subject" name="subject" class="jd-ticket-input" placeholder="e.g. Sales invoice printing issue" required maxlength="200">
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-7">
+                            <label for="id_ticket_category">Category *</label>
+                            <select id="id_ticket_category" name="category" class="jd-ticket-select" required>
+                                <option value="sales">Sales &amp; POS Billing</option>
+                                <option value="inventory">Inventory &amp; Stock</option>
+                                <option value="account">Login &amp; Account</option>
+                                <option value="billing">Subscription / Billing</option>
+                                <option value="customers">Customers &amp; KYC</option>
+                                <option value="reports">Reports &amp; Analytics</option>
+                                <option value="coupons">Coupons &amp; Offers</option>
+                                <option value="wholesale">Wholesale &amp; Karigar</option>
+                                <option value="technical">Technical Glitch / Bug</option>
+                                <option value="other">Other Inquiry</option>
+                            </select>
+                        </div>
+                        <div class="col-5">
+                            <label for="id_ticket_priority">Priority *</label>
+                            <select id="id_ticket_priority" name="priority" class="jd-ticket-select" required>
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High (Urgent)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="id_ticket_description">Detailed Description *</label>
+                        <textarea id="id_ticket_description" name="description" class="jd-ticket-textarea" rows="4" placeholder="Explain what happened, steps to reproduce, or invoice numbers..." required></textarea>
+                    </div>
+
+                    <div>
+                        <label for="id_ticket_attachment">Attachment (Optional, Max 10MB)</label>
+                        <input type="file" id="id_ticket_attachment" name="attachment" class="jd-ticket-input" accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.csv" style="padding: 5px;">
+                        <small class="text-muted d-block" style="font-size: 0.7rem; margin-top: -8px; margin-bottom: 12px;">
+                            Supported: JPG, PNG, WEBP, PDF
+                        </small>
+                    </div>
+
+                    <div id="jdTicketAlert" class="alert alert-danger py-2 small" style="display: none;"></div>
+
+                    <div class="d-flex gap-2 mt-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary text-light flex-grow-1" onclick="switchSupportTab('chat')">
+                            Cancel
+                        </button>
+                        <button type="submit" id="jdTicketSubmitBtn" class="btn btn-sm btn-gold fw-bold flex-grow-1">
+                            <i class="bi bi-send-check me-1"></i> Submit Ticket
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Ticket Success Box -->
+                <div id="jdTicketSuccessBox" class="text-center py-4" style="display: none;">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 58px; height: 58px; background: rgba(16, 185, 129, 0.15); border: 2px solid #10B981; color: #10B981; font-size: 28px;">
+                        <i class="bi bi-check-lg"></i>
+                    </div>
+                    <h6 class="fw-bold text-light mb-1">Ticket Raised Successfully!</h6>
+                    <p class="text-warning fw-semibold mb-2" id="jdSuccessTicketNumber" style="font-size: 1.05rem;">#TK-XXXX</p>
+                    <p class="small text-muted mb-3" id="jdSuccessMessage">Our support engineers have been assigned to your ticket.</p>
+                    <div class="d-flex flex-column gap-2">
+                        <a id="jdSuccessTicketLink" href="#" class="btn btn-sm btn-gold fw-bold">
+                            <i class="bi bi-box-arrow-up-right me-1"></i> View Ticket Status
+                        </a>
+                        <button type="button" class="btn btn-sm btn-outline-secondary text-light" onclick="resetTicketForm()">
+                            Ask Another Question
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    // Session state
+    var chatSessionId = sessionStorage.getItem('jd_support_session_id') || '';
+
+    // Widget toggle
+    var widget = document.getElementById('jdSupportWidget');
+    var launcher = document.getElementById('jdSupportLauncher');
+    var closeBtn = document.getElementById('jdCloseChatBtn');
+    var chatInput = document.getElementById('jdChatInput');
+    var stream = document.getElementById('jdChatStream');
+
+    function toggleChat() {
+        var isOpen = widget.classList.toggle('open');
+        if (isOpen) {
+            chatInput.focus();
+            scrollChatToBottom();
+        }
+    }
+
+    launcher.addEventListener('click', toggleChat);
+    closeBtn.addEventListener('click', toggleChat);
+
+    // Tab switching
+    window.switchSupportTab = function(tab) {
+        var tabChat = document.getElementById('jdTabChat');
+        var tabTicket = document.getElementById('jdTabTicket');
+        var viewChat = document.getElementById('jdViewChat');
+        var viewTicket = document.getElementById('jdViewTicket');
+
+        if (tab === 'chat') {
+            tabChat.classList.add('active');
+            tabTicket.classList.remove('active');
+            viewChat.style.display = 'flex';
+            viewTicket.style.display = 'none';
+            chatInput.focus();
+        } else {
+            tabTicket.classList.add('active');
+            tabChat.classList.remove('active');
+            viewChat.style.display = 'none';
+            viewTicket.style.display = 'flex';
+        }
+    };
+
+    function scrollChatToBottom() {
+        stream.scrollTop = stream.scrollHeight;
+    }
+
+    // Append message to UI
+    function appendMessage(text, role, options) {
+        var msg = document.createElement('div');
+        msg.className = 'jd-msg ' + (role === 'user' ? 'jd-msg-user' : 'jd-msg-bot');
+        
+        // Simple markdown formatting (bold, links, newlines)
+        var formatted = escapeHtml(text)
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n/g, '<br>');
+        
+        msg.innerHTML = formatted;
+
+        if (options && options.action_url && options.action_label) {
+            var actionDiv = document.createElement('div');
+            actionDiv.className = 'mt-2';
+            actionDiv.innerHTML = '<a href="' + options.action_url + '" class="btn btn-sm btn-outline-warning text-gold py-1 px-2" style="font-size: 0.75rem;"><i class="bi bi-arrow-right-circle me-1"></i> ' + escapeHtml(options.action_label) + '</a>';
+            msg.appendChild(actionDiv);
+        }
+
+        if (options && options.suggest_ticket) {
+            var ticketPrompt = document.createElement('div');
+            ticketPrompt.className = 'mt-2 pt-2 border-top border-secondary border-opacity-25';
+            ticketPrompt.innerHTML = '<button type="button" class="btn btn-sm btn-gold py-1 px-2 w-100" style="font-size: 0.76rem;" onclick="prefillTicketForm(\'' + escapeHtml(options.category || 'other') + '\', \'' + escapeHtml(options.query || '') + '\')"><i class="bi bi-ticket-detailed me-1"></i> Raise a Support Ticket for This</button>';
+            msg.appendChild(ticketPrompt);
+        }
+
+        stream.appendChild(msg);
+        scrollChatToBottom();
+    }
+
+    function showTypingIndicator() {
+        var indicator = document.createElement('div');
+        indicator.className = 'jd-msg jd-msg-bot';
+        indicator.id = 'jdTypingIndicator';
+        indicator.innerHTML = '<div class="jd-typing-indicator"><span></span><span></span><span></span></div>';
+        stream.appendChild(indicator);
+        scrollChatToBottom();
+    }
+
+    function removeTypingIndicator() {
+        var el = document.getElementById('jdTypingIndicator');
+        if (el) el.remove();
+    }
+
+    function escapeHtml(string) {
+        var entityMap = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        };
+        return String(string).replace(/[&<>"']/g, function(s) {
+            return entityMap[s];
+        });
+    }
+
+    function getCsrfToken() {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, 10) === ('csrftoken=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(10));
+                    break;
+                }
+            }
+        }
+        return cookieValue || document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    }
+
+    // Submit question
+    window.handleChatSubmit = function(e) {
+        e.preventDefault();
+        var text = chatInput.value.trim();
+        if (!text) return;
+
+        chatInput.value = '';
+        appendMessage(text, 'user');
+        showTypingIndicator();
+        document.getElementById('jdChatSendBtn').disabled = true;
+
+        fetch('{% url "support_customer:api_chat" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({
+                message: text,
+                session_id: chatSessionId
+            })
+        })
+        .then(function(res) {
+            return res.json();
+        })
+        .then(function(data) {
+            removeTypingIndicator();
+            document.getElementById('jdChatSendBtn').disabled = false;
+            if (data.session_id) {
+                chatSessionId = data.session_id;
+                sessionStorage.setItem('jd_support_session_id', chatSessionId);
+            }
+            if (data.success) {
+                appendMessage(data.reply, 'assistant', {
+                    suggest_ticket: data.suggest_ticket,
+                    category: data.suggested_category,
+                    query: text
+                });
+            } else {
+                appendMessage(data.error || 'Unable to process query right now. Please try again or raise a ticket.', 'assistant', {
+                    suggest_ticket: true
+                });
+            }
+        })
+        .catch(function(err) {
+            removeTypingIndicator();
+            document.getElementById('jdChatSendBtn').disabled = false;
+            appendMessage('Connection issue occurred. You can still reach our team directly by raising a ticket.', 'assistant', {
+                suggest_ticket: true
+            });
+        });
+    };
+
+    window.sendQuickPrompt = function(promptText) {
+        chatInput.value = promptText;
+        document.getElementById('jdChatForm').dispatchEvent(new Event('submit'));
+    };
+
+    window.prefillTicketForm = function(category, query) {
+        switchSupportTab('ticket');
+        if (category) {
+            var catSelect = document.getElementById('id_ticket_category');
+            if (catSelect) {
+                for (var i = 0; i < catSelect.options.length; i++) {
+                    if (catSelect.options[i].value === category) {
+                        catSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+        if (query) {
+            var subInput = document.getElementById('id_ticket_subject');
+            if (subInput && !subInput.value) {
+                subInput.value = query.length > 50 ? query.substring(0, 50) + '...' : query;
+            }
+            var descArea = document.getElementById('id_ticket_description');
+            if (descArea && !descArea.value) {
+                descArea.value = query;
+            }
+        }
+    };
+
+    // Submit Ticket
+    window.handleTicketSubmit = function(e) {
+        e.preventDefault();
+        var form = document.getElementById('jdInlineTicketForm');
+        var submitBtn = document.getElementById('jdTicketSubmitBtn');
+        var alertBox = document.getElementById('jdTicketAlert');
+
+        alertBox.style.display = 'none';
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Submitting...';
+
+        var formData = new FormData(form);
+        if (chatSessionId) {
+            formData.append('session_id', chatSessionId);
+        }
+
+        fetch('{% url "support_customer:api_create_ticket" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: formData
+        })
+        .then(function(res) {
+            return res.json();
+        })
+        .then(function(data) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-send-check me-1"></i> Submit Ticket';
+
+            if (data.success) {
+                form.style.display = 'none';
+                var successBox = document.getElementById('jdTicketSuccessBox');
+                document.getElementById('jdSuccessTicketNumber').innerText = '#' + data.ticket_number;
+                document.getElementById('jdSuccessMessage').innerText = data.message;
+                document.getElementById('jdSuccessTicketLink').href = data.detail_url;
+                successBox.style.display = 'block';
+
+                // Also notify in chat stream
+                appendMessage('Ticket #' + data.ticket_number + ' created. You can track updates under My Support Tickets.', 'assistant');
+            } else {
+                alertBox.innerText = data.error || 'Failed to submit ticket. Please check the fields.';
+                alertBox.style.display = 'block';
+            }
+        })
+        .catch(function(err) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-send-check me-1"></i> Submit Ticket';
+            alertBox.innerText = 'Network connection failed. Please try again.';
+            alertBox.style.display = 'block';
+        });
+    };
+
+    window.resetTicketForm = function() {
+        var form = document.getElementById('jdInlineTicketForm');
+        form.reset();
+        form.style.display = 'block';
+        document.getElementById('jdTicketSuccessBox').style.display = 'none';
+        switchSupportTab('chat');
+    };
+})();
+</script>

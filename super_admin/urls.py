@@ -35,6 +35,8 @@ urlpatterns = [
     path('tickets/new/', views.ticket_create_view, name='ticket_create'),
     path('tickets/<int:ticket_id>/', views.ticket_detail_view, name='ticket_detail'),
     path('tickets/<int:ticket_id>/update-status/', views.ticket_update_status_view, name='ticket_update_status'),
+    path('tickets/<int:ticket_id>/reply/', views.ticket_staff_reply_view, name='ticket_staff_reply'),
+    path('tickets/<int:ticket_id>/ai-summary/', views.ticket_ai_summary_view, name='ticket_ai_summary'),
 
     # Reports & Analytics
     path('reports/', views.reports_view, name='reports'),

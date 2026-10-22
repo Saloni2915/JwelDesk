@@ -870,7 +870,17 @@
                             </ul>
                         </div>
                     </li>
-                    <!-- 11. Get the App / APK Install Shortcut (Permanently visible in navigation) -->
+                    <!-- 11. Support & Help Desk -->
+                    <li class="nav-item" data-menu-key="support_tickets">
+                        <a class="nav-link nav-link-single {% if 'support' in request.path %}active{% endif %}" href="{% url 'support_customer:ticket_list' %}" title="JewelDesk AI Support &amp; Help Desk">
+                            <span class="sidebar-item-content">
+                                <i class="bi bi-headset sidebar-item-icon"></i>
+                                <span class="sidebar-item-title">{% if is_hindi %}सहायता एवं टिकट{% else %}Support &amp; Tickets{% endif %}</span>
+                            </span>
+                            <span class="badge bg-warning bg-opacity-25 text-warning ms-auto" style="font-size: 0.65rem; border: 1px solid rgba(236,200,106,0.3);"><i class="bi bi-robot me-1"></i>AI</span>
+                        </a>
+                    </li>
+                    <!-- 12. Get the App / APK Install Shortcut (Permanently visible in navigation) -->
                     {% if 'app_install' not in hidden_menus %}
                     <li class="nav-item pwa-install-item" id="pwaInstallNavItem" data-menu-key="app_install">
                         <a class="nav-link nav-link-single pwa-install-btn text-gold pwa-install-trigger" href="{% url 'download_apk' %}" id="pwaInstallBtn" role="button" title="Download JewelDesk Android APK or Install App">
@@ -1145,6 +1155,11 @@
 
     <!-- Progressive Web App (PWA) Offline Toast, Install Prompt & Service Worker -->
     {% include 'includes/pwa_scripts.html' %}
+
+    {% if user.is_authenticated %}
+    <!-- Floating AI Support Chatbot & Ticket Assistant Widget -->
+    {% include 'includes/support_chatbot.html' %}
+    {% endif %}
 
     {% block extra_js %}{% endblock %}
 </body>

@@ -22,14 +22,18 @@
         <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30">
             <i class="bi bi-check-circle-fill me-1"></i> {{ ticket.get_status_display }}
         </span>
-        {% else %}
+        {% elif ticket.status == 'waiting_customer' %}
         <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30">
+            <i class="bi bi-clock-history me-1"></i> Waiting for Customer
+        </span>
+        {% else %}
+        <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-30">
             {{ ticket.get_status_display }}
         </span>
         {% endif %}
     </div>
 
-    <div>
+    <div class="d-flex align-items-center gap-2">
         {% if ticket.tenant %}
         <a href="{% url 'super_admin:showroom_detail' ticket.tenant.id %}" class="btn btn-sm btn-outline-gold">
             <i class="bi bi-shop me-1"></i> View Showroom ({{ ticket.tenant.name }})
@@ -39,7 +43,7 @@
 </div>
 
 <div class="row g-4">
-    <!-- Left Column: Ticket Details & Description -->
+    <!-- Left Column: Details, Attachments & Conversation Thread -->
     <div class="col-12 col-lg-7 d-flex flex-column gap-4">
         <!-- Ticket Information Card -->
         <div class="sa-card mb-0">
@@ -59,6 +63,11 @@
                         <span class="badge bg-secondary bg-opacity-25 text-body border border-secondary border-opacity-25">
                             {{ ticket.get_category_display }}
                         </span>
+                        {% if ticket.ai_suggested_category and ticket.ai_suggested_category != ticket.category %}
+                        <span class="badge bg-warning bg-opacity-15 text-warning ms-1" title="AI Suggested">
+                            <i class="bi bi-robot me-1"></i>AI: {{ ticket.ai_suggested_category }}
+                        </span>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="col-sm-6">
@@ -68,7 +77,7 @@
                 <div class="col-sm-6">
                     <div class="sa-label small">Contact Phone / WhatsApp</div>
                     <div class="fw-semibold" style="color: var(--sa-gold);">
-                        <i class="bi bi-telephone-fill me-1 small"></i>{{ ticket.contact_phone }}
+                        <i class="bi bi-telephone-fill me-1 small"></i>{{ ticket.contact_phone|default:"Not provided" }}
                     </div>
                 </div>
                 <div class="col-sm-6">
@@ -103,17 +112,144 @@
             <h6 class="mb-2 fw-bold" style="color: var(--sa-gold); font-size: 0.95rem;">
                 {{ ticket.subject }}
             </h6>
-            <div class="sa-label small mb-2">Detailed Issue Description</div>
+            <div class="sa-label small mb-2">Original Customer Description</div>
             <div class="p-3 rounded-3" style="background: var(--sa-bg); border: 1px solid var(--sa-border); white-space: pre-wrap; font-size: 0.9rem; color: var(--sa-text); line-height: 1.6;">{{ ticket.description }}</div>
+
+            {% if ticket.attachment %}
+            <div class="mt-3 p-3 rounded-3 d-flex align-items-center justify-content-between" style="background: var(--sa-bg); border: 1px dashed var(--sa-border);">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-paperclip fs-5 text-warning"></i>
+                    <div>
+                        <div class="small fw-semibold" style="color: var(--sa-text);">Initial Attachment</div>
+                        <small class="text-muted">{{ ticket.attachment.name }}</small>
+                    </div>
+                </div>
+                <a href="{{ ticket.attachment.url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-gold">
+                    <i class="bi bi-download me-1"></i> View Attachment
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Conversation & Activity Thread -->
+        <div class="sa-card mb-0">
+            <h6 class="mb-3 fw-bold d-flex align-items-center justify-content-between" style="color: var(--sa-gold); font-size: 0.95rem;">
+                <span><i class="bi bi-chat-left-text me-1"></i> Conversation Thread &amp; Internal Notes</span>
+                <span class="badge bg-secondary bg-opacity-25 text-body small">{{ messages_list|length }} message(s)</span>
+            </h6>
+
+            {% if messages_list %}
+            <div class="d-flex flex-column gap-3 mb-4">
+                {% for msg in messages_list %}
+                <div class="p-3 rounded-3" style="{% if msg.is_internal %}background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35);{% elif msg.sender and msg.sender.is_superuser or msg.sender and msg.sender.is_staff %}background: var(--sa-bg); border: 1px solid var(--sa-gold); border-opacity: 0.3;{% else %}background: var(--sa-bg); border: 1px solid var(--sa-border);{% endif %}">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            {% if msg.is_internal %}
+                            <span class="badge bg-warning text-dark fw-bold">
+                                <i class="bi bi-lock-fill me-1"></i> Confidential - Internal Staff Note
+                            </span>
+                            {% elif msg.sender and msg.sender.is_superuser or msg.sender and msg.sender.is_staff %}
+                            <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-30">
+                                <i class="bi bi-shield-check me-1"></i> Staff Reply (Visible to Customer)
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary bg-opacity-25 text-body">
+                                <i class="bi bi-person me-1"></i> Customer Reply
+                            </span>
+                            {% endif %}
+                            <span class="fw-semibold small" style="color: var(--sa-text);">{{ msg.sender.get_full_name|default:msg.sender.username }}</span>
+                        </div>
+                        <small class="text-muted">{{ msg.created_at|date:"d M Y, h:i A" }}</small>
+                    </div>
+
+                    <div style="white-space: pre-wrap; font-size: 0.88rem; color: var(--sa-text); line-height: 1.6;">{{ msg.message }}</div>
+
+                    {% if msg.attachment %}
+                    <div class="mt-2 pt-2 border-top border-secondary border-opacity-25 d-flex align-items-center gap-2">
+                        <i class="bi bi-paperclip text-warning"></i>
+                        <a href="{{ msg.attachment.url }}" target="_blank" rel="noopener" class="small text-gold text-decoration-none">
+                            Download attachment: {{ msg.attachment.name }}
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4 text-muted small mb-3">
+                <i class="bi bi-chat-square-dots fs-3 d-block mb-2 text-warning opacity-50"></i>
+                No messages or staff replies in this thread yet.
+            </div>
+            {% endif %}
+
+            <!-- Staff Reply / Internal Note Form -->
+            <div class="p-3 rounded-3" style="background: var(--sa-bg); border: 1px solid var(--sa-border);">
+                <h6 class="fw-bold mb-3 small" style="color: var(--sa-gold);">
+                    <i class="bi bi-reply-fill"></i> Add Response or Internal Note
+                </h6>
+                <form action="{% url 'super_admin:ticket_staff_reply' ticket.id %}" method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <textarea name="message" rows="3" class="form-control sa-input" placeholder="Type message to showroom user, or enter private technical notes..." required></textarea>
+                    </div>
+
+                    <div class="row g-3 align-items-center justify-content-between">
+                        <div class="col-12 col-md-7">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="is_internal" id="id_is_internal">
+                                <label class="form-check-label small fw-semibold text-warning" for="id_is_internal">
+                                    <i class="bi bi-lock-fill me-1"></i> Internal Staff Note (Customer will NEVER see this)
+                                </label>
+                            </div>
+                            <input type="file" name="attachment" class="form-control form-control-sm sa-input" accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.csv">
+                        </div>
+                        <div class="col-12 col-md-auto text-end">
+                            <button type="submit" class="btn btn-sm btn-gold fw-bold px-3">
+                                <i class="bi bi-send-check me-1"></i> Post Message
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
-    <!-- Right Column: Resolution Notes & Update Controls -->
+    <!-- Right Column: Resolution Controls & AI Summaries -->
     <div class="col-12 col-lg-5 d-flex flex-column gap-4">
+        <!-- AI Assistant & Triage Card -->
+        <div class="sa-card mb-0">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h6 class="mb-0 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold); font-size: 0.95rem;">
+                    <i class="bi bi-robot"></i> AI Triage &amp; Conversation Summary
+                </h6>
+                <form action="{% url 'super_admin:ticket_ai_summary' ticket.id %}" method="POST" class="m-0">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-gold py-1 px-2" style="font-size: 0.75rem;" title="Analyze full thread with AI">
+                        <i class="bi bi-arrow-repeat me-1"></i> Refresh AI Summary
+                    </button>
+                </form>
+            </div>
+
+            <div class="p-3 rounded-3 mb-3" style="background: var(--sa-bg); border: 1px solid var(--sa-border);">
+                <div class="row g-2 small mb-2">
+                    <div class="col-6">
+                        <span class="text-muted d-block">Suggested Category:</span>
+                        <span class="fw-bold text-light">{{ ticket.ai_suggested_category|default:"Pending analysis"|title }}</span>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted d-block">Suggested Priority:</span>
+                        <span class="fw-bold text-light">{{ ticket.ai_suggested_priority|default:"Pending analysis"|upper }}</span>
+                    </div>
+                </div>
+                <div class="sa-label small mb-1">Executive Summary:</div>
+                <div style="font-size: 0.86rem; color: var(--sa-text-secondary); line-height: 1.5; white-space: pre-wrap;">{{ ticket.ai_summary|default:"No summary generated yet. Click 'Refresh AI Summary' above to generate an instant executive analysis." }}</div>
+            </div>
+        </div>
+
         <!-- Update Ticket Status Form -->
         <div class="sa-card mb-0">
             <h6 class="mb-3 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold); font-size: 0.95rem;">
-                <i class="bi bi-sliders"></i> Update Status & Assignee
+                <i class="bi bi-sliders"></i> Update Status &amp; Assignee
             </h6>
             <form action="{% url 'super_admin:ticket_update_status' ticket.id %}" method="POST">
                 {% csrf_token %}

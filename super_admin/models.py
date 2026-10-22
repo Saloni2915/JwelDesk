@@ -626,6 +626,7 @@ class PlatformSupportTicket(models.Model):
     STATUS_OPEN           = 'open'
     STATUS_IN_PROGRESS    = 'in_progress'
     STATUS_WAITING_CLIENT = 'waiting_client'
+    STATUS_WAITING_CUSTOMER = 'waiting_client'
     STATUS_RESOLVED       = 'resolved'
     STATUS_CLOSED         = 'closed'
 
@@ -637,8 +638,16 @@ class PlatformSupportTicket(models.Model):
         (STATUS_CLOSED,         'Closed'),
     ]
 
-    CATEGORY_TECH       = 'technical'
+    CATEGORY_ACCOUNT    = 'account'
     CATEGORY_BILLING    = 'billing'
+    CATEGORY_INVENTORY  = 'inventory'
+    CATEGORY_SALES      = 'sales'
+    CATEGORY_CUSTOMERS  = 'customers'
+    CATEGORY_REPORTS    = 'reports'
+    CATEGORY_COUPONS    = 'coupons'
+    CATEGORY_WHOLESALE  = 'wholesale'
+    CATEGORY_TECH       = 'technical'
+    CATEGORY_OTHER      = 'other'
     CATEGORY_FEATURE    = 'feature_request'
     CATEGORY_ONBOARDING = 'onboarding'
     CATEGORY_BUG        = 'bug'
@@ -646,8 +655,16 @@ class PlatformSupportTicket(models.Model):
     CATEGORY_GENERAL    = 'general'
 
     CATEGORY_CHOICES = [
-        (CATEGORY_TECH,       'Technical Issue'),
+        (CATEGORY_ACCOUNT,    'Login / Account'),
         (CATEGORY_BILLING,    'Billing & Subscription'),
+        (CATEGORY_INVENTORY,  'Inventory & Stock'),
+        (CATEGORY_SALES,      'Sales & Billing'),
+        (CATEGORY_CUSTOMERS,  'Customer Management'),
+        (CATEGORY_REPORTS,    'Reports & Analytics'),
+        (CATEGORY_COUPONS,    'Coupons & Promotions'),
+        (CATEGORY_WHOLESALE,  'Wholesale & Karigar'),
+        (CATEGORY_TECH,       'Technical Issue'),
+        (CATEGORY_OTHER,      'Other Inquiry'),
         (CATEGORY_FEATURE,    'Feature Request'),
         (CATEGORY_ONBOARDING, 'Onboarding / Training'),
         (CATEGORY_BUG,        'Bug Report'),
@@ -667,6 +684,14 @@ class PlatformSupportTicket(models.Model):
         blank=True,
         related_name='support_tickets',
         help_text="Showroom tenant reporting the issue (if registered)"
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_support_tickets',
+        help_text="User who raised the ticket"
     )
     contact_name = models.CharField(max_length=150)
     contact_email = models.EmailField(blank=True)
@@ -689,6 +714,12 @@ class PlatformSupportTicket(models.Model):
     )
     subject = models.CharField(max_length=255)
     description = models.TextField()
+    attachment = models.FileField(
+        upload_to='support_attachments/%Y/%m/',
+        null=True,
+        blank=True,
+        help_text="Optional issue screenshot or attachment"
+    )
     assigned_to = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -696,6 +727,9 @@ class PlatformSupportTicket(models.Model):
         blank=True,
         related_name='assigned_support_tickets'
     )
+    ai_suggested_category = models.CharField(max_length=50, blank=True)
+    ai_suggested_priority = models.CharField(max_length=20, blank=True)
+    ai_summary = models.TextField(blank=True, help_text="AI-generated concise summary for support team")
     resolution_notes = models.TextField(blank=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
@@ -718,6 +752,121 @@ class PlatformSupportTicket(models.Model):
             next_id = (last.id + 1) if last else random.randint(1001, 1999)
             self.ticket_number = f"TICK-{year}-{next_id:04d}"
         super().save(*args, **kwargs)
+
+
+class PlatformTicketMessage(models.Model):
+    """Threaded conversation message or internal staff note on a support ticket."""
+
+    SENDER_CUSTOMER = 'customer'
+    SENDER_STAFF    = 'staff'
+    SENDER_AI       = 'ai'
+    SENDER_SYSTEM   = 'system'
+
+    SENDER_CHOICES = [
+        (SENDER_CUSTOMER, 'Customer / Showroom'),
+        (SENDER_STAFF,    'Support Specialist'),
+        (SENDER_AI,       'AI Support Assistant'),
+        (SENDER_SYSTEM,   'System Notification'),
+    ]
+
+    ticket = models.ForeignKey(
+        PlatformSupportTicket,
+        on_delete=models.CASCADE,
+        related_name='messages'
+    )
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='support_ticket_messages'
+    )
+    sender_type = models.CharField(
+        max_length=20,
+        choices=SENDER_CHOICES,
+        default=SENDER_CUSTOMER
+    )
+    sender_name = models.CharField(max_length=150, blank=True)
+    message = models.TextField()
+    attachment = models.FileField(
+        upload_to='support_attachments/%Y/%m/',
+        null=True,
+        blank=True
+    )
+    is_internal = models.BooleanField(
+        default=False,
+        help_text="Internal note only visible to platform support staff, never to customer."
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = 'Ticket Message'
+        verbose_name_plural = 'Ticket Messages'
+
+    def __str__(self):
+        return f"{self.ticket.ticket_number} - {self.get_sender_type_display()}: {self.message[:40]}"
+
+
+class SupportChatSession(models.Model):
+    """AI Support Assistant conversation session for authenticated users."""
+
+    tenant = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='support_chat_sessions'
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='support_chat_sessions'
+    )
+    session_key = models.CharField(max_length=64, blank=True, db_index=True)
+    title = models.CharField(max_length=255, default='New Support Conversation')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at']
+        verbose_name = 'Support Chat Session'
+        verbose_name_plural = 'Support Chat Sessions'
+
+    def __str__(self):
+        return f"Chat #{self.id} - {self.user.username} ({self.updated_at.strftime('%d %b %H:%M')})"
+
+
+class SupportChatMessage(models.Model):
+    """Individual message within a SupportChatSession."""
+
+    ROLE_USER      = 'user'
+    ROLE_ASSISTANT = 'assistant'
+    ROLE_SYSTEM    = 'system'
+
+    ROLE_CHOICES = [
+        (ROLE_USER,      'User'),
+        (ROLE_ASSISTANT, 'AI Assistant'),
+        (ROLE_SYSTEM,    'System'),
+    ]
+
+    session = models.ForeignKey(
+        SupportChatSession,
+        on_delete=models.CASCADE,
+        related_name='messages'
+    )
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=ROLE_USER)
+    content = models.TextField()
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = 'Support Chat Message'
+        verbose_name_plural = 'Support Chat Messages'
+
+    def __str__(self):
+        return f"[{self.role}] {self.content[:40]}"
 
 
 # ============================================================================
