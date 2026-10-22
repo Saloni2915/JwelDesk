@@ -1132,6 +1132,63 @@ body.has-inventory-suite .sidebar {
     border: 2px dashed #999;
 }
 
+/* Isolated Jewellery Tag Print Rules */
+#jdTagPrintMount {
+    display: none;
+}
+
+@media print {
+    body.jd-printing-tag-only {
+        background: #ffffff !important;
+        color: #111111 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    body.jd-printing-tag-only > *:not(#jdTagPrintMount) {
+        display: none !important;
+    }
+
+    body.jd-printing-tag-only > #jdTagPrintMount {
+        display: block !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    body.jd-printing-tag-only .jd-jewel-tag-card {
+        display: block !important;
+        width: 82mm !important;
+        max-width: 100% !important;
+        background: #ffffff !important;
+        color: #111111 !important;
+        border: 1.5px solid #111111 !important;
+        border-radius: 6px !important;
+        padding: 12px 14px !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    body.jd-printing-tag-only .jd-jewel-tag-card * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    body.jd-printing-tag-only .badge.bg-dark {
+        background-color: #111111 !important;
+        color: #f59e0b !important;
+        border: 1px solid #111111 !important;
+    }
+
+    body.jd-printing-tag-only .badge.bg-success {
+        background-color: #198754 !important;
+        color: #ffffff !important;
+    }
+}
+
 /* --------------------------------------------------------------------------
    6. Form & Intake Styling (Item Form / Category Form / Stock Adjust)
    -------------------------------------------------------------------------- */
