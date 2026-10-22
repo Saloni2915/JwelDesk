@@ -109,6 +109,7 @@ INSTALLED_APPS = [
     'super_admin',
     'outstation',
     'wholesale',
+    'coupons',
 ]
 
 MIDDLEWARE = [

@@ -29,6 +29,18 @@ class Sale(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='sales')
     jewellery_item = models.ForeignKey(JewelleryItem, on_delete=models.PROTECT, related_name='sales')
     sale_price = models.DecimalField(max_digits=12, decimal_places=2)
+    original_price = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True,
+        help_text="Original catalogue/selling price before promotional coupon discount"
+    )
+    coupon_discount = models.DecimalField(
+        max_digits=12, decimal_places=2, default=Decimal('0.00'),
+        help_text="Promotional coupon discount amount deducted from original price"
+    )
+    applied_coupon_code = models.CharField(
+        max_length=60, blank=True,
+        help_text="Promotional coupon code applied to this sale"
+    )
     sale_date = models.DateTimeField(default=timezone.now)
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS, default='Cash')
     notes = models.TextField(blank=True)

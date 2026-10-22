@@ -830,45 +830,27 @@
             <div class="sa-nav-heading">Platform Administration</div>
             <a href="{% url 'super_admin:dashboard' %}" class="sa-nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
                 <i class="bi bi-speedometer2"></i>
-                <span>Overview</span>
+                <span>Dashboard</span>
             </a>
             <a href="{% url 'super_admin:showroom_list' %}" class="sa-nav-item {% if 'showroom' in request.resolver_match.url_name %}active{% endif %}">
                 <i class="bi bi-shop"></i>
-                <span>Business Accounts</span>
+                <span>Businesses</span>
+            </a>
+            <a href="{% url 'super_admin:subscriptions' %}" class="sa-nav-item {% if request.resolver_match.url_name == 'subscriptions' or 'subscription' in request.resolver_match.url_name %}active{% endif %}">
+                <i class="bi bi-credit-card-2-front"></i>
+                <span>Subscriptions &amp; Plans</span>
             </a>
             <a href="{% url 'super_admin:demo_list' %}" class="sa-nav-item {% if 'demo' in request.resolver_match.url_name %}active{% endif %}">
                 <i class="bi bi-calendar-event"></i>
-                <span>Demos & Leads</span>
-            </a>
-            <a href="{% url 'super_admin:subscriptions' %}" class="sa-nav-item {% if request.resolver_match.url_name == 'subscriptions' %}active{% endif %}">
-                <i class="bi bi-credit-card"></i>
-                <span>Subscriptions & Revenue</span>
+                <span>Demo Requests &amp; Leads</span>
             </a>
             <a href="{% url 'super_admin:ticket_list' %}" class="sa-nav-item {% if 'ticket' in request.resolver_match.url_name %}active{% endif %}">
                 <i class="bi bi-headset"></i>
-                <span>Support & Feedback</span>
+                <span>Support &amp; Feedback</span>
             </a>
-            <a href="{% url 'super_admin:reports' %}" class="sa-nav-item {% if 'report' in request.resolver_match.url_name %}active{% endif %}">
-                <i class="bi bi-graph-up-arrow"></i>
-                <span>Reports & Analytics</span>
-            </a>
-            <a href="{% url 'super_admin:proposal_list' %}" class="sa-nav-item {% if 'proposal' in request.resolver_match.url_name %}active{% endif %}">
-                <i class="bi bi-file-earmark-text"></i>
-                <span>Proposals & Quotes</span>
-            </a>
-            <a href="{% url 'super_admin:audit_logs' %}" class="sa-nav-item {% if request.resolver_match.url_name == 'audit_logs' %}active{% endif %}">
-                <i class="bi bi-journal-text"></i>
-                <span>Audit & Activity Logs</span>
-            </a>
-            <a href="{% url 'super_admin:settings' %}" class="sa-nav-item {% if request.resolver_match.url_name == 'settings' %}active{% endif %}">
+            <a href="{% url 'super_admin:settings' %}" class="sa-nav-item {% if request.resolver_match.url_name == 'settings' or 'audit_log' in request.resolver_match.url_name or 'coupon' in request.resolver_match.url_name %}active{% endif %}">
                 <i class="bi bi-sliders"></i>
                 <span>Platform Settings</span>
-            </a>
-
-            <div class="sa-nav-heading mt-3">Tenant Jump</div>
-            <a href="{% url 'dashboard' %}" class="sa-nav-item" title="Switch back to current showroom store">
-                <i class="bi bi-arrow-return-left"></i>
-                <span>Go to Storefront App</span>
             </a>
         </div>
 

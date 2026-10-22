@@ -10,6 +10,7 @@ urlpatterns = [
     path('inventory/add/', views.inventory_add, name='inventory_add'),
     path('inventory/<int:pk>/', views.inventory_detail, name='inventory_detail'),
     path('inventory/<int:pk>/edit/', views.inventory_edit, name='inventory_edit'),
+    path('inventory/<int:pk>/upload-photo/', views.inventory_upload_photo, name='inventory_upload_photo'),
     path('inventory/<int:pk>/delete/', views.inventory_delete, name='inventory_delete'),
 
     # AI Photo Studio routes

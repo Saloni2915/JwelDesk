@@ -47,5 +47,21 @@ urlpatterns = [
     path('proposals/<int:proposal_id>/pdf/', views.proposal_download_pdf_view, name='proposal_download_pdf'),
     path('proposals/share/<str:token>/', views.proposal_client_view, name='proposal_client_view'),
     path('proposals/share/<str:token>/pdf/', views.proposal_client_download_pdf_view, name='proposal_client_download_pdf'),
+
+    # Coupon Designer, Discount Templates & Print Management
+    path('coupons/', views.coupon_list_view, name='coupon_list'),
+    path('coupons/new/', views.coupon_create_view, name='coupon_create'),
+    path('coupons/<int:template_id>/edit/', views.coupon_edit_view, name='coupon_edit'),
+    path('coupons/<int:template_id>/duplicate/', views.coupon_duplicate_view, name='coupon_duplicate'),
+    path('coupons/<int:template_id>/archive/', views.coupon_archive_view, name='coupon_archive'),
+    path('coupons/<int:template_id>/delete/', views.coupon_delete_view, name='coupon_delete'),
+    path('coupons/<int:template_id>/print-test/', views.coupon_single_print_view, name='coupon_single_print'),
+    path('coupons/api/preview/', views.coupon_preview_api, name='coupon_preview_api'),
+    path('coupons/batches/', views.coupon_batch_list_view, name='coupon_batch_list'),
+    path('coupons/batches/new/', views.coupon_batch_create_view, name='coupon_batch_create'),
+    path('coupons/batches/<int:batch_id>/', views.coupon_batch_detail_view, name='coupon_batch_detail'),
+    path('coupons/batches/<int:batch_id>/print/', views.coupon_batch_print_view, name='coupon_batch_print'),
+    path('coupons/items/<int:item_id>/toggle/', views.coupon_batch_item_toggle_view, name='coupon_batch_item_toggle'),
+
     path('settings/', views.settings_view, name='settings'),
 ]

@@ -174,6 +174,11 @@ def calculate_invoice_breakdown(sale, include_gst: bool = True) -> Dict[str, Any
     if og and getattr(og, 'status', None) == 'Completed':
         old_gold_value = Decimal(str(og.final_value or '0.00')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
+    # Coupon discount if applied
+    coupon_discount = getattr(sale, 'coupon_discount', Decimal('0.00')) or Decimal('0.00')
+    applied_coupon_code = getattr(sale, 'applied_coupon_code', '') or ''
+    original_price = getattr(sale, 'original_price', None) or (sale_price + coupon_discount)
+
     return {
         'include_gst': include_gst,
         'title': 'TAX INVOICE' if include_gst else 'RETAIL INVOICE / CASH MEMO',
@@ -194,6 +199,9 @@ def calculate_invoice_breakdown(sale, include_gst: bool = True) -> Dict[str, Any
         'total_tax': total_tax,
         'round_off': round_off,
         'grand_total': sale_price,
+        'original_price': original_price,
+        'coupon_discount': coupon_discount,
+        'applied_coupon_code': applied_coupon_code,
         'old_gold_value': old_gold_value,
         'amount_in_words': amount_to_words_inr(sale_price),
     }

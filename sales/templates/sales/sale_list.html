@@ -13,7 +13,7 @@
     <!-- 1. Header & Actions -->
     <div class="jd-sb-header">
         <div class="jd-sb-title-wrap">
-            <h1><i class="bi bi-receipt text-warning me-2"></i>Sales &amp; Invoices</h1>
+            <h1><i class="bi bi-receipt jd-sb-icon-theme me-2"></i>Sales &amp; Invoices</h1>
             <p class="jd-sb-subtitle">List of all sales bills, invoices, and customer payments</p>
         </div>
         <div class="jd-sb-header-actions">
@@ -47,10 +47,10 @@
                 <div class="jd-sb-kpi-icon">
                     <i class="bi bi-graph-up-arrow"></i>
                 </div>
-                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">Lifetime</span>
+                <span class="badge jd-sb-badge-theme">Lifetime</span>
             </div>
             <div class="jd-sb-kpi-label">Lifetime Revenue</div>
-            <div class="jd-sb-kpi-val text-warning">₹{{ total_revenue_all|floatformat:2 }}</div>
+            <div class="jd-sb-kpi-val jd-sb-kpi-val-theme">₹{{ total_revenue_all|floatformat:2 }}</div>
             <div class="jd-sb-kpi-sub">Total sales revenue</div>
         </div>
 
@@ -70,13 +70,13 @@
         <!-- Terminal Status -->
         <div class="jd-sb-kpi-card">
             <div class="jd-sb-kpi-top">
-                <div class="jd-sb-kpi-icon icon-amber">
+                <div class="jd-sb-kpi-icon icon-blue">
                     <i class="bi bi-shield-check"></i>
                 </div>
-                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">Online</span>
+                <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25">Online</span>
             </div>
             <div class="jd-sb-kpi-label">Counter Status</div>
-            <div class="jd-sb-kpi-val text-warning">Counter #01</div>
+            <div class="jd-sb-kpi-val">Counter #01</div>
             <div class="jd-sb-kpi-sub">Active &amp; Ready</div>
         </div>
     </div>
@@ -103,7 +103,7 @@
                 </select>
             </div>
             <div class="col-lg-2 col-md-3 col-4 d-flex gap-1">
-                <button type="submit" class="btn btn-warning w-100 fw-bold" title="Apply Filter">
+                <button type="submit" class="btn jd-btn-gold w-100 fw-bold" title="Apply Filter">
                     <i class="bi bi-funnel"></i> Filter
                 </button>
                 <a href="{% url 'sale_list' %}" class="btn btn-outline-secondary" title="Clear Filters">
@@ -162,7 +162,7 @@
                         </td>
                         <td>
                             <span class="jd-badge-method">
-                                <i class="bi bi-credit-card me-1 text-warning"></i> {{ sale.payment_method }}
+                                <i class="bi bi-credit-card me-1 jd-sb-icon-theme"></i> {{ sale.payment_method }}
                             </span>
                         </td>
                         <td>
@@ -184,7 +184,7 @@
                             {{ sale.sale_date|date:"M d, Y h:i A" }}
                         </td>
                         <td class="text-end pe-3">
-                            <a href="{% url 'sale_detail' sale.id %}" class="btn btn-outline-warning btn-sm py-1 px-2 fw-semibold" title="View & Print Bill">
+                            <a href="{% url 'sale_detail' sale.id %}" class="btn jd-btn-outline-theme btn-sm py-1 px-2 fw-semibold" title="View & Print Bill">
                                 <i class="bi bi-receipt"></i> View Bill
                             </a>
                         </td>
@@ -192,7 +192,7 @@
                     {% empty %}
                     <tr>
                         <td colspan="8" class="text-center py-5 text-muted">
-                            <i class="bi bi-cart-x fs-2 text-warning d-block mb-2 opacity-75"></i>
+                            <i class="bi bi-cart-x fs-2 jd-sb-icon-theme d-block mb-2 opacity-75"></i>
                             <div class="fw-semibold text-light mb-1">No sales found</div>
                             <div class="small mb-3">Record your first sale using the New Sale button.</div>
                             <a href="{% url 'sale_add' %}" class="jd-btn-gold">

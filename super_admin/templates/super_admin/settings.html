@@ -1,12 +1,163 @@
 {% extends 'super_admin/base_super_admin.html' %}
 
-{% block title %}Platform Settings | Super Admin Portal{% endblock %}
-{% block page_title %}Platform Technical Settings{% endblock %}
+{% block title %}Platform Settings | JewelDesk Super Admin{% endblock %}
+{% block page_title %}Platform Settings{% endblock %}
 
 {% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <h4 class="fw-bold mb-1" style="color: var(--sa-gold); font-family: 'Cinzel', serif;">
+            Platform Settings & Configuration
+        </h4>
+        <p class="small text-muted mb-0">
+            Platform-level settings, SaaS subscription policies, security posture, and global template resources.
+        </p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25 px-3 py-2">
+            <i class="bi bi-shield-check me-1"></i> Platform Operator Mode
+        </span>
+    </div>
+</div>
+
 <div class="row g-4">
+    <!-- 1. SaaS Branding & Support Contact -->
     <div class="col-12 col-lg-6">
-        <div class="sa-card h-100">
+        <div class="sa-card h-100 p-4">
+            <h6 class="fw-bold mb-3 d-flex align-items-center gap-2" style="color: var(--sa-gold);">
+                <i class="bi bi-building"></i> JewelDesk Platform Branding & Contacts
+            </h6>
+            <p class="small text-muted mb-3">
+                Global identity and official escalation channels displayed to prospective clients and registered showrooms.
+            </p>
+            <div class="row g-2 small">
+                <div class="col-5 sa-label">Platform Name:</div>
+                <div class="col-7 fw-semibold" style="color: var(--sa-text);">{{ platform_name }}</div>
+
+                <div class="col-5 sa-label">Operating Entity:</div>
+                <div class="col-7" style="color: var(--sa-text);">{{ platform_company }}</div>
+
+                <div class="col-5 sa-label">Support Email:</div>
+                <div class="col-7 font-monospace" style="color: var(--sa-text);">{{ support_email }}</div>
+
+                <div class="col-5 sa-label">Support Helpline:</div>
+                <div class="col-7 font-monospace" style="color: var(--sa-text);">{{ support_phone }}</div>
+
+                <div class="col-5 sa-label">Website Domain:</div>
+                <div class="col-7 font-monospace" style="color: var(--sa-text);">{{ platform_website }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. SaaS Subscription Defaults -->
+    <div class="col-12 col-lg-6">
+        <div class="sa-card h-100 p-4">
+            <h6 class="fw-bold mb-3 d-flex align-items-center gap-2" style="color: var(--sa-gold);">
+                <i class="bi bi-credit-card-2-front"></i> Subscription & Onboarding Policies
+            </h6>
+            <p class="small text-muted mb-3">
+                Default SaaS parameters applied to newly registered jewellery showroom tenants.
+            </p>
+            <div class="row g-2 small">
+                <div class="col-5 sa-label">Default Trial Duration:</div>
+                <div class="col-7"><span class="badge bg-warning text-dark">{{ default_trial_days }} Days Free Trial</span></div>
+
+                <div class="col-5 sa-label">Default Onboarding Plan:</div>
+                <div class="col-7 fw-semibold" style="color: var(--sa-text);">{{ default_plan }}</div>
+
+                <div class="col-5 sa-label">Overdue Grace Period:</div>
+                <div class="col-7" style="color: var(--sa-text);">{{ grace_period_days }} Days prior to auto-suspension</div>
+
+                <div class="col-5 sa-label">Platform Currency:</div>
+                <div class="col-7 fw-semibold" style="color: var(--sa-text);">{{ platform_currency }}</div>
+
+                <div class="col-5 sa-label">Billing Channels:</div>
+                <div class="col-7" style="color: var(--sa-text-secondary);">UPI, Razorpay, Bank Transfer (NEFT/RTGS), Cheque</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Global Coupon Design Templates (Platform Resource) -->
+    <div class="col-12">
+        <div class="sa-card p-4">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+                <div>
+                    <h6 class="fw-bold mb-1 d-flex align-items-center gap-2" style="color: var(--sa-gold);">
+                        <i class="bi bi-palette"></i> Global Coupon Design Templates
+                    </h6>
+                    <div class="small text-muted">
+                        Platform-level design presets available for jewellery businesses to clone into their private marketing campaigns.
+                    </div>
+                </div>
+                <a href="{% url 'super_admin:coupon_list' %}" class="btn btn-sm btn-outline-warning">
+                    <i class="bi bi-sliders me-1"></i> Manage Global Templates
+                </a>
+            </div>
+
+            <div class="p-3 rounded mb-3" style="background: rgba(236, 200, 106, 0.08); border-left: 3px solid var(--sa-gold);">
+                <div class="d-flex align-items-start gap-2 small" style="color: var(--sa-text-secondary);">
+                    <i class="bi bi-info-circle-fill text-warning mt-1"></i>
+                    <div>
+                        <strong>Tenant Isolation Guarantee:</strong> Global coupon design templates are purely layout and branding presets (e.g. Royal Heritage Gold, Minimalist White, Festive Celebration). They do <strong>not</strong> contain individual shop customer records, batch print serials, or billing redemptions. Each showroom clones templates into their own private dashboard, where coupon codes and redemptions remain strictly isolated.
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 small">
+                <div class="col-12 col-md-4">
+                    <div class="p-3 rounded" style="background: var(--sa-surface); border: 1px solid var(--sa-border-subtle);">
+                        <div class="sa-label mb-1">Total Global Templates</div>
+                        <div class="fs-4 fw-bold" style="color: var(--sa-gold);">{{ global_coupon_templates_count }}</div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="p-3 rounded" style="background: var(--sa-surface); border: 1px solid var(--sa-border-subtle);">
+                        <div class="sa-label mb-1">Active Presets Available to Tenants</div>
+                        <div class="fs-4 fw-bold text-success">{{ global_active_templates_count }}</div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="p-3 rounded" style="background: var(--sa-surface); border: 1px solid var(--sa-border-subtle);">
+                        <div class="sa-label mb-1">Tenant Template Cloning</div>
+                        <div class="fs-4 fw-bold text-info"><i class="bi bi-copy me-1"></i> Enabled</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Security & Isolation Architecture -->
+    <div class="col-12 col-lg-6">
+        <div class="sa-card h-100 p-4">
+            <h6 class="fw-bold mb-3 d-flex align-items-center gap-2" style="color: var(--sa-gold);">
+                <i class="bi bi-shield-lock"></i> Platform Security & Multi-Tenancy
+            </h6>
+            <div class="row g-2 small">
+                <div class="col-5 sa-label">Tenant Isolation:</div>
+                <div class="col-7"><span class="badge bg-info bg-opacity-25 text-info">TenantMiddleware Strict Filter</span></div>
+
+                <div class="col-5 sa-label">Platform Audit Logs:</div>
+                <div class="col-7"><span class="badge bg-success bg-opacity-25 text-success">Append-Only Active</span></div>
+
+                <div class="col-5 sa-label">Super Admin Access:</div>
+                <div class="col-7"><span class="badge bg-success bg-opacity-25 text-success">Server-Side @super_admin_required</span></div>
+
+                <div class="col-5 sa-label">Session Impersonation:</div>
+                <div class="col-7" style="color: var(--sa-text-secondary);">Audit-tracked, explicit session termination</div>
+
+                <div class="col-5 sa-label">Audit Log History:</div>
+                <div class="col-7">
+                    <a href="{% url 'super_admin:audit_logs' %}" class="text-decoration-none" style="color: var(--sa-gold);">
+                        <i class="bi bi-journal-text me-1"></i> View Audit Trail
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. System Runtime & Database Engine -->
+    <div class="col-12 col-lg-6">
+        <div class="sa-card h-100 p-4">
             <h6 class="fw-bold mb-3 d-flex align-items-center gap-2" style="color: var(--sa-gold);">
                 <i class="bi bi-cpu"></i> System Runtime & Environment
             </h6>
@@ -17,7 +168,7 @@
                 <div class="col-5 sa-label">Django Version:</div>
                 <div class="col-7 font-monospace" style="color: var(--sa-text);">{{ django_version }}</div>
 
-                <div class="col-5 sa-label">Debug Mode (DEBUG):</div>
+                <div class="col-5 sa-label">Debug Mode:</div>
                 <div class="col-7">
                     {% if debug_mode %}
                     <span class="badge bg-warning text-dark">True (Local Dev)</span>
@@ -29,29 +180,14 @@
                 <div class="col-5 sa-label">Platform Timezone:</div>
                 <div class="col-7 font-monospace" style="color: var(--sa-text);">{{ time_zone }}</div>
 
-                <div class="col-5 sa-label">Media Storage Backend:</div>
-                <div class="col-7 font-monospace" style="color: var(--sa-text);">{{ media_storage }}</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-12 col-lg-6">
-        <div class="sa-card h-100">
-            <h6 class="fw-bold mb-3 d-flex align-items-center gap-2" style="color: var(--sa-gold);">
-                <i class="bi bi-database-check"></i> Database Connection Status
-            </h6>
-            <div class="row g-2 small">
                 <div class="col-5 sa-label">Database Engine:</div>
                 <div class="col-7 font-monospace" style="color: var(--sa-text);">{{ db_engine }}</div>
 
-                <div class="col-5 sa-label">Host (Masked):</div>
+                <div class="col-5 sa-label">DB Host (Masked):</div>
                 <div class="col-7 font-monospace" style="color: var(--sa-text);">{{ db_host_masked }}</div>
 
-                <div class="col-5 sa-label">Multi-Tenancy Mode:</div>
-                <div class="col-7"><span class="badge bg-info bg-opacity-25 text-info">Isolated Tenant Key</span></div>
-
-                <div class="col-5 sa-label">Audit Logging:</div>
-                <div class="col-7"><span class="badge bg-success bg-opacity-25 text-success">Append-Only Active</span></div>
+                <div class="col-5 sa-label">Media Storage:</div>
+                <div class="col-7 font-monospace" style="color: var(--sa-text);">{{ media_storage }}</div>
             </div>
         </div>
     </div>

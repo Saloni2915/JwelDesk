@@ -83,6 +83,15 @@ class JewelDeskLoginView(LoginView):
     template_name = 'accounts/login.html'
     redirect_authenticated_user = True
 
+    def get_success_url(self):
+        url = self.get_redirect_url()
+        if url:
+            return url
+        user = self.request.user
+        if user and user.is_authenticated and user.is_superuser:
+            return reverse('super_admin:dashboard')
+        return super().get_success_url()
+
 
 # Function alias so the URLconf entry ``views.login_view`` keeps working
 # without any URL changes.

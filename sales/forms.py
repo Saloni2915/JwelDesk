@@ -8,6 +8,17 @@ from customers.models import Customer
 
 
 class SaleForm(forms.ModelForm):
+    coupon_code = forms.CharField(
+        max_length=60,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control text-uppercase font-monospace',
+            'placeholder': 'Coupon / Promo Code (e.g. DIWALI2026)',
+            'autocomplete': 'off',
+            'id': 'posCouponCodeInput'
+        })
+    )
+
     class Meta:
         model = Sale
         fields = ['customer', 'jewellery_item', 'sale_price', 'payment_method', 'notes']
@@ -38,6 +49,8 @@ class SaleForm(forms.ModelForm):
             self.fields['jewellery_item'].queryset = item_qs.filter(
                 Q(status='Available') | Q(pk=self.instance.jewellery_item_id)
             ).select_related('category')
+            if getattr(self.instance, 'applied_coupon_code', None):
+                self.fields['coupon_code'].initial = self.instance.applied_coupon_code
         else:
             self.fields['jewellery_item'].queryset = item_qs.filter(
                 status='Available').select_related('category')
@@ -56,6 +69,24 @@ class SaleForm(forms.ModelForm):
             item = cleaned_data.get('jewellery_item')
             if item and item.tenant_id != self.tenant.id:
                 self.add_error('jewellery_item', 'Invalid jewellery item for this store.')
+
+            # Server-side validation of submitted coupon code
+            code_str = cleaned_data.get('coupon_code', '').strip()
+            if code_str:
+                from coupons.services import validate_coupon_for_sale
+                base_subtotal = item.selling_price if item else cleaned_data.get('sale_price') or Decimal('0.00')
+                val_res = validate_coupon_for_sale(
+                    tenant=self.tenant,
+                    coupon_code=code_str,
+                    customer=cust,
+                    item=item,
+                    subtotal=base_subtotal
+                )
+                if not val_res['valid']:
+                    self.add_error('coupon_code', val_res['message'])
+                else:
+                    self.validated_coupon_result = val_res
+
         return cleaned_data
 
 

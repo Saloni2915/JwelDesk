@@ -26,7 +26,7 @@
         </div>
     </div>
 
-    <form method="post" id="jewelleryItemForm" novalidate>
+    <form method="post" id="jewelleryItemForm" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
 
         {% if form.errors %}
@@ -106,12 +106,98 @@
                     </div>
                 </div>
 
-                <!-- 2. Authentication & BIS Hallmarking Card -->
+                <!-- 2. Product Photograph Card -->
+                <div class="jd-form-card">
+                    <div class="jd-form-card-header d-flex justify-content-between align-items-center">
+                        <h2>
+                            <i class="bi bi-camera-fill text-warning"></i>
+                            2. Product Photograph
+                        </h2>
+                        <span class="badge bg-secondary bg-opacity-25 text-warning border border-warning border-opacity-25 small px-2 py-1">
+                            <i class="bi bi-image me-1"></i>Showcase Photo
+                        </span>
+                    </div>
+                    <div class="jd-form-card-body">
+                        <!-- Hidden Django File Field -->
+                        {{ form.image }}
+                        {% if form.image.errors %}
+                        <div class="alert alert-danger py-2 small mb-3">
+                            <i class="bi bi-exclamation-circle-fill me-1"></i> {{ form.image.errors.0 }}
+                        </div>
+                        {% endif %}
+
+                        <!-- Existing photo if in Edit mode -->
+                        {% if is_edit and item.primary_image_url %}
+                        <div class="jd-current-photo-container mb-3" id="currentPhotoContainer">
+                            <div class="d-flex align-items-center gap-3 p-3 rounded" style="background: rgba(212, 175, 55, 0.06); border: 1px solid rgba(212, 175, 55, 0.25);">
+                                <div class="position-relative rounded overflow-hidden flex-shrink-0" style="width: 80px; height: 80px; background: #000; border: 1px solid var(--jd-inv-border);">
+                                    <img src="{{ item.primary_image_url }}" alt="{{ item.name }}" class="w-100 h-100 object-fit-cover" id="currentPhotoImg">
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="badge bg-warning text-dark font-monospace fw-bold" style="font-size: 0.7rem;">Current Showcase Photo</span>
+                                        <span class="text-muted small">Attached to item</span>
+                                    </div>
+                                    <p class="small text-muted mb-2">You can keep this photo, upload a new replacement below, or delete it.</p>
+                                    <div class="form-check form-check-inline m-0">
+                                        <input class="form-check-input" type="checkbox" name="remove_image" value="1" id="id_remove_image">
+                                        <label class="form-check-label text-danger small fw-semibold" for="id_remove_image">
+                                            <i class="bi bi-trash me-1"></i> Remove this photo on save
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Drag & Drop / Upload Area -->
+                        <div class="jd-photo-dropzone" id="photoDropzone">
+                            <div class="jd-dropzone-content text-center py-4 px-3" id="dropzonePrompt">
+                                <div class="mb-2">
+                                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 54px; height: 54px; background: rgba(212, 175, 55, 0.12); color: var(--jd-inv-gold); border: 1px solid rgba(212, 175, 55, 0.3);">
+                                        <i class="bi bi-cloud-arrow-up-fill fs-3"></i>
+                                    </span>
+                                </div>
+                                <h6 class="fw-bold text-light mb-1">Upload Product Photograph</h6>
+                                <p class="text-muted small mb-3">Drag and drop your jewellery photo here, or browse from computer / camera</p>
+                                <button type="button" class="btn btn-outline-warning btn-sm px-3 py-1 fw-semibold" id="browsePhotoBtn">
+                                    <i class="bi bi-folder2-open me-1"></i> Choose Photo
+                                </button>
+                                <div class="jd-field-help mt-2" style="font-size: 0.72rem;">
+                                    Supported: JPEG, PNG, WEBP (Max 10MB) &middot; Automatically displayed when item is opened
+                                </div>
+                            </div>
+
+                            <!-- Live JS Preview Container (shown once a file is selected) -->
+                            <div class="jd-preview-container d-none p-3 text-center" id="photoPreviewContainer">
+                                <div class="position-relative d-inline-block rounded overflow-hidden shadow-lg border" style="max-width: 260px; max-height: 220px; border-color: rgba(212, 175, 55, 0.4) !important;">
+                                    <img src="" id="photoPreviewImg" alt="Preview" class="w-100 h-100 object-fit-contain" style="background: #080808; max-height: 200px;">
+                                    <span class="position-absolute top-0 start-0 m-2 badge bg-success text-white" style="font-size: 0.65rem;">
+                                        <i class="bi bi-check2 me-1"></i> Ready to Upload
+                                    </span>
+                                </div>
+                                <div class="mt-2 text-light small fw-semibold font-monospace" id="photoFileName"></div>
+                                <div class="text-muted small" id="photoFileSize" style="font-size: 0.72rem;"></div>
+                                <div class="d-flex justify-content-center gap-2 mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-warning py-1 px-3" id="changePhotoBtn">
+                                        <i class="bi bi-arrow-repeat me-1"></i> Change
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger py-1 px-3" id="clearPhotoBtn">
+                                        <i class="bi bi-x-circle me-1"></i> Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- 3. Authentication & BIS Hallmarking Card -->
                 <div class="jd-form-card">
                     <div class="jd-form-card-header">
                         <h2>
                             <i class="bi bi-shield-lock-fill text-warning"></i>
-                            2. Hallmark &amp; HUID Details
+                            3. Hallmark &amp; HUID Details
                         </h2>
                     </div>
                     <div class="jd-form-card-body">
@@ -156,12 +242,12 @@
             <!-- RIGHT COLUMN: Weights, Pricing & Status -->
             <div class="col-lg-5">
 
-                <!-- 3. Precious Metal & Weight Assay Card -->
+                <!-- 4. Precious Metal & Weight Assay Card -->
                 <div class="jd-form-card">
                     <div class="jd-form-card-header">
                         <h2>
                             <i class="bi bi-speedometer2 text-warning"></i>
-                            3. Metal &amp; Weights
+                            4. Metal &amp; Weights
                         </h2>
                     </div>
                     <div class="jd-form-card-body">
@@ -209,12 +295,12 @@
                     </div>
                 </div>
 
-                <!-- 4. Pricing, Making Charges & Stock Status Card -->
+                <!-- 5. Pricing, Making Charges & Stock Status Card -->
                 <div class="jd-form-card">
                     <div class="jd-form-card-header">
                         <h2>
                             <i class="bi bi-currency-rupee text-warning"></i>
-                            4. Pricing &amp; Stock Status
+                            5. Pricing &amp; Stock Status
                         </h2>
                     </div>
                     <div class="jd-form-card-body">
@@ -328,12 +414,104 @@
         // Style raw inputs with luxury dark classes
         const inputs = document.querySelectorAll('#jewelleryItemForm input, #jewelleryItemForm select, #jewelleryItemForm textarea');
         inputs.forEach(el => {
+            if (el.type === 'file' || el.type === 'checkbox' || el.type === 'radio') return;
             if (el.tagName === 'SELECT') {
                 el.classList.add('jd-inv-select');
             } else {
                 el.classList.add('jd-inv-input');
             }
         });
+
+        // Photo upload & live preview logic
+        const fileInput = document.getElementById('id_jewellery_image');
+        const dropzone = document.getElementById('photoDropzone');
+        const dropzonePrompt = document.getElementById('dropzonePrompt');
+        const previewContainer = document.getElementById('photoPreviewContainer');
+        const previewImg = document.getElementById('photoPreviewImg');
+        const fileNameEl = document.getElementById('photoFileName');
+        const fileSizeEl = document.getElementById('photoFileSize');
+        const browseBtn = document.getElementById('browsePhotoBtn');
+        const changeBtn = document.getElementById('changePhotoBtn');
+        const clearBtn = document.getElementById('clearPhotoBtn');
+        const removeCheck = document.getElementById('id_remove_image');
+
+        if (browseBtn && fileInput) {
+            browseBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                fileInput.click();
+            });
+        }
+        if (changeBtn && fileInput) {
+            changeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                fileInput.click();
+            });
+        }
+        if (clearBtn && fileInput) {
+            clearBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                fileInput.value = '';
+                previewImg.src = '';
+                previewContainer.classList.add('d-none');
+                dropzonePrompt.classList.remove('d-none');
+            });
+        }
+
+        function handleFileSelection(file) {
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                alert('Please choose a valid image file (JPG, PNG, or WEBP).');
+                return;
+            }
+            if (file.size > 10 * 1024 * 1024) {
+                alert('Selected image exceeds 10 MB limit.');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                fileNameEl.textContent = file.name;
+                fileSizeEl.textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+                dropzonePrompt.classList.add('d-none');
+                previewContainer.classList.remove('d-none');
+                if (removeCheck) removeCheck.checked = false;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        if (fileInput) {
+            fileInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    handleFileSelection(this.files[0]);
+                }
+            });
+        }
+
+        if (dropzone) {
+            ['dragenter', 'dragover'].forEach(evtName => {
+                dropzone.addEventListener(evtName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.add('is-dragover');
+                });
+            });
+            ['dragleave', 'drop'].forEach(evtName => {
+                dropzone.addEventListener(evtName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.remove('is-dragover');
+                });
+            });
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.remove('is-dragover');
+                if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    fileInput.files = e.dataTransfer.files;
+                    handleFileSelection(e.dataTransfer.files[0]);
+                }
+            });
+        }
 
         // Real-time Net Weight Calculation (Net = Gross - Stone)
         const grossInput = document.querySelector('input[name="gross_weight"]');

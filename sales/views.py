@@ -178,8 +178,44 @@ def sale_add(request):
                     messages.error(request, f"Cannot complete sale: '{locked_item.name}' ({locked_item.item_code}) is already SOLD.")
                     return render(request, 'sales/sale_form.html', {'form': form, 'page_title': 'Create Sale'})
 
-                # Save sale
-                sale.save()
+                # Server-side coupon discount and atomic validation
+                coupon_code = form.cleaned_data.get('coupon_code', '').strip().upper()
+                original_item_price = locked_item.selling_price or sale.sale_price
+                sale.original_price = original_item_price
+
+                if coupon_code:
+                    from coupons.services import validate_coupon_for_sale, redeem_coupon_atomic
+                    val_res = validate_coupon_for_sale(
+                        tenant=request.tenant,
+                        coupon_code=coupon_code,
+                        customer=sale.customer,
+                        item=locked_item,
+                        subtotal=original_item_price
+                    )
+                    if not val_res['valid']:
+                        messages.error(request, f"Coupon redemption error: {val_res['message']}")
+                        return render(request, 'sales/sale_form.html', {'form': form, 'page_title': 'Create Sale'})
+
+                    discount_amt = val_res['discount_amount']
+                    sale.coupon_discount = discount_amt
+                    sale.applied_coupon_code = coupon_code
+                    sale.sale_price = max(Decimal('0.00'), original_item_price - discount_amt)
+                    sale.save()
+
+                    # Record atomic redemption record with row lock
+                    redeem_coupon_atomic(
+                        tenant=request.tenant,
+                        coupon_code=coupon_code,
+                        sale=sale,
+                        customer=sale.customer,
+                        subtotal=original_item_price,
+                        user=request.user
+                    )
+                else:
+                    sale.coupon_discount = Decimal('0.00')
+                    sale.applied_coupon_code = ''
+                    # Save sale
+                    sale.save()
 
                 # Reduce inventory: status/quantity and the stock movement are
                 # handled by the inventory stock service (single source of

@@ -1,3 +1,4 @@
+import os
 import datetime
 from decimal import Decimal, InvalidOperation
 
@@ -10,7 +11,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Q, Sum, Count, ProtectedError
 from django.http import HttpResponse
 from django.utils import timezone
-from .models import JewelleryItem, Category, StockMovement, MetalRate
+from .models import JewelleryItem, Category, StockMovement, MetalRate, JewelleryItemImage
 from .forms import JewelleryItemForm, CategoryForm, StockAdjustmentForm
 from . import stock
 from .import_utils import (
@@ -209,7 +210,7 @@ def dashboard(request):
 @login_required
 def inventory_list(request):
     """List all jewellery items with search, filters and stock summary."""
-    items = JewelleryItem.objects.filter(tenant=request.tenant).select_related('category')
+    items = JewelleryItem.objects.filter(tenant=request.tenant).select_related('category').prefetch_related('images')
     categories = Category.objects.filter(tenant=request.tenant)
 
     # Low-stock threshold: configurable per request (?threshold=) otherwise
@@ -379,13 +380,27 @@ def inventory_add(request):
             pass
 
     if request.method == 'POST':
-        form = JewelleryItemForm(request.POST, tenant=request.tenant)
+        form = JewelleryItemForm(request.POST, request.FILES, tenant=request.tenant)
         if form.is_valid():
             with transaction.atomic():
                 item = form.save(commit=False)
                 item.tenant = request.tenant
                 item.save()
                 form.save_m2m()
+
+                # Handle uploaded jewellery photo
+                uploaded_image = form.cleaned_data.get('image') or request.FILES.get('image')
+                if uploaded_image:
+                    JewelleryItemImage.objects.create(
+                        tenant=request.tenant,
+                        item=item,
+                        image=uploaded_image,
+                        is_primary=True,
+                        source_type=JewelleryItemImage.SOURCE_UPLOAD,
+                        caption=f"{item.name} Photograph",
+                        created_by=request.user if request.user.is_authenticated else None,
+                    )
+
                 # Opening stock is written to the movement history too, so the
                 # stock ledger starts from zero for every item.
                 stock.record_initial_stock(item, user=request.user)
@@ -407,7 +422,11 @@ def inventory_add(request):
 @login_required
 def inventory_detail(request, pk):
     """View details of a jewellery item, its stock position and other pieces of the same design."""
-    item = get_object_or_404(JewelleryItem.objects.select_related('category'), pk=pk, tenant=request.tenant)
+    item = get_object_or_404(
+        JewelleryItem.objects.select_related('category').prefetch_related('images'),
+        pk=pk,
+        tenant=request.tenant
+    )
     # Check if item has been sold
     sale = item.sales.select_related('customer').first() if hasattr(item, 'sales') else None
 
@@ -444,13 +463,32 @@ def inventory_edit(request, pk):
     """Edit an existing jewellery item."""
     item = get_object_or_404(JewelleryItem, pk=pk, tenant=request.tenant)
     if request.method == 'POST':
-        form = JewelleryItemForm(request.POST, instance=item, tenant=request.tenant)
+        form = JewelleryItemForm(request.POST, request.FILES, instance=item, tenant=request.tenant)
         if form.is_valid():
             old_qty = item.quantity or 0
             new_qty = form.cleaned_data.get('quantity')
             if new_qty is None:
                 new_qty = old_qty
             item = form.save()
+
+            # Handle photo deletion if requested
+            if request.POST.get('remove_image') == '1':
+                JewelleryItemImage.objects.filter(item=item, tenant=request.tenant).delete()
+
+            # Handle new photo upload
+            uploaded_image = form.cleaned_data.get('image') or request.FILES.get('image')
+            if uploaded_image:
+                JewelleryItemImage.objects.filter(item=item, tenant=request.tenant, is_primary=True).update(is_primary=False)
+                JewelleryItemImage.objects.create(
+                    tenant=request.tenant,
+                    item=item,
+                    image=uploaded_image,
+                    is_primary=True,
+                    source_type=JewelleryItemImage.SOURCE_UPLOAD,
+                    caption=f"{item.name} Photograph",
+                    created_by=request.user if request.user.is_authenticated else None,
+                )
+
             if old_qty != new_qty:
                 change = new_qty - old_qty
                 m_type = StockMovement.ADDITION if change > 0 else StockMovement.REDUCTION
@@ -478,6 +516,49 @@ def inventory_edit(request, pk):
         'is_edit': True,
     }
     return render(request, 'inventory/item_form.html', context)
+
+
+@login_required
+def inventory_upload_photo(request, pk):
+    """Quickly upload, replace or remove a photograph directly from the item detail page."""
+    item = get_object_or_404(JewelleryItem, pk=pk, tenant=request.tenant)
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'delete':
+            img_id = request.POST.get('image_id')
+            qs = JewelleryItemImage.objects.filter(item=item, tenant=request.tenant)
+            if img_id:
+                qs = qs.filter(pk=img_id)
+            qs.delete()
+            messages.success(request, f"Photograph removed for '{item.name}'.")
+        else:
+            photo = request.FILES.get('image')
+            if photo:
+                try:
+                    ext = os.path.splitext(getattr(photo, 'name', '') or '')[1].lower()
+                    if ext not in ('.jpg', '.jpeg', '.png', '.webp'):
+                        messages.error(request, f"Unsupported format '{ext}'. Allowed: JPG, PNG, WEBP.")
+                        return redirect('inventory_detail', pk=item.pk)
+                    if hasattr(photo, 'size') and photo.size > 10 * 1024 * 1024:
+                        messages.error(request, "Photograph size must not exceed 10 MB.")
+                        return redirect('inventory_detail', pk=item.pk)
+
+                    JewelleryItemImage.objects.filter(item=item, tenant=request.tenant, is_primary=True).update(is_primary=False)
+                    JewelleryItemImage.objects.create(
+                        tenant=request.tenant,
+                        item=item,
+                        image=photo,
+                        is_primary=True,
+                        source_type=JewelleryItemImage.SOURCE_UPLOAD,
+                        caption=request.POST.get('caption', '').strip()[:200] or f"{item.name} Photograph",
+                        created_by=request.user if request.user.is_authenticated else None,
+                    )
+                    messages.success(request, f"Photograph uploaded successfully for '{item.name}'.")
+                except Exception as e:
+                    messages.error(request, f"Failed to upload photograph: {e}")
+            else:
+                messages.warning(request, "Please choose a photo to upload.")
+    return redirect('inventory_detail', pk=item.pk)
 
 
 @login_required

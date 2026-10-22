@@ -1,0 +1,533 @@
+{% extends 'super_admin/base_super_admin.html' %}
+
+{% block title %}{% if is_edit %}Edit Coupon Template: {{ template.name }}{% else %}New Coupon Designer{% endif %} | Super Admin Portal{% endblock %}
+{% block page_title %}{% if is_edit %}Edit Coupon Template: {{ template.name }}{% else %}Coupon & Discount Voucher Designer{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+.editor-pane {
+    font-family: 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    background: #0d0b09 !important;
+    color: #e5e7eb !important;
+    border: 1px solid var(--sa-border) !important;
+    tab-size: 2;
+}
+.editor-pane:focus {
+    border-color: var(--sa-gold) !important;
+    box-shadow: 0 0 0 2px var(--sa-gold-subtle) !important;
+}
+.preview-iframe-wrapper {
+    background: #110e0c;
+    border: 1px solid var(--sa-border);
+    border-radius: 12px;
+    overflow: hidden;
+    height: 640px;
+    display: flex;
+    flex-direction: column;
+}
+.preview-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: #110e0c;
+}
+.placeholder-chip {
+    display: inline-block;
+    padding: 2px 8px;
+    margin: 2px;
+    font-size: 0.75rem;
+    font-family: monospace;
+    background: rgba(212, 175, 55, 0.12);
+    color: #d4af37;
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+.placeholder-chip:hover {
+    background: var(--sa-gold);
+    color: #000;
+    transform: translateY(-1px);
+}
+.nav-pills .nav-link.active {
+    background-color: var(--sa-gold);
+    color: #0f0d0b;
+    font-weight: 700;
+}
+.nav-pills .nav-link {
+    color: var(--sa-text);
+    border: 1px solid var(--sa-border);
+    margin-right: 6px;
+    font-size: 0.84rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Top Action Header -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div class="d-flex align-items-center gap-2">
+        <a href="{% url 'super_admin:coupon_list' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back to Templates
+        </a>
+        <span class="text-muted">|</span>
+        <span class="small text-muted">
+            {% if is_edit %}Last updated {{ template.updated_at|date:"d M Y, H:i" }}{% else %}Creating fresh voucher configuration{% endif %}
+        </span>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-sm btn-outline-warning" id="btnRefreshPreview">
+            <i class="bi bi-arrow-clockwise me-1"></i> Refresh Live Preview
+        </button>
+        {% if is_edit %}
+        <a href="{% url 'super_admin:coupon_single_print' template.id %}" target="_blank" class="btn btn-sm btn-outline-gold">
+            <i class="bi bi-printer me-1"></i> Print Sample
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<form method="post" id="couponForm" novalidate>
+    {% csrf_token %}
+
+    <div class="row g-4">
+        <!-- LEFT COLUMN: Settings & Code Editor -->
+        <div class="col-12 col-xl-7">
+            <!-- Mode Selector: Built-in vs Custom -->
+            <div class="sa-card mb-4">
+                <div class="sa-card-header p-3 border-bottom d-flex align-items-center justify-content-between" style="border-color: var(--sa-border) !important;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-magic text-warning"></i>
+                        <h6 class="fw-bold mb-0">Design Engine Mode</h6>
+                    </div>
+                </div>
+                <div class="sa-card-body p-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label sa-label small mb-1 fw-bold">Template Type</label>
+                            {{ form.template_type }}
+                            {% if form.template_type.errors %}<div class="text-danger small mt-1">{{ form.template_type.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6" id="wrapper_built_in_style">
+                            <label class="form-label sa-label small mb-1 fw-bold">Built-in Preset Style</label>
+                            {{ form.built_in_style }}
+                            {% if form.built_in_style.errors %}<div class="text-danger small mt-1">{{ form.built_in_style.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- General Details & Marketing Offer -->
+            <div class="sa-card mb-4">
+                <div class="sa-card-header p-3 border-bottom d-flex align-items-center justify-content-between" style="border-color: var(--sa-border) !important;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-tags text-warning"></i>
+                        <h6 class="fw-bold mb-0">Offer & Discount Configuration</h6>
+                    </div>
+                </div>
+                <div class="sa-card-body p-3">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label sa-label small mb-1 fw-bold">Template Name *</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label sa-label small mb-1 fw-bold">Sample Promo Code</label>
+                            {{ form.sample_coupon_code }}
+                            {% if form.sample_coupon_code.errors %}<div class="text-danger small mt-1">{{ form.sample_coupon_code.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label sa-label small mb-1 fw-bold">Offer Headline / Title *</label>
+                            {{ form.offer_title }}
+                            {% if form.offer_title.errors %}<div class="text-danger small mt-1">{{ form.offer_title.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label sa-label small mb-1 fw-bold">Discount Format</label>
+                            {{ form.discount_type }}
+                            {% if form.discount_type.errors %}<div class="text-danger small mt-1">{{ form.discount_type.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label sa-label small mb-1 fw-bold">Discount Value (e.g. 20 for 20% or 500 for ₹500)</label>
+                            {{ form.discount_value }}
+                            {% if form.discount_value.errors %}<div class="text-danger small mt-1">{{ form.discount_value.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label sa-label small mb-1">Business / Brand Name</label>
+                            {{ form.business_name }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label sa-label small mb-1">Eligible Categories</label>
+                            {{ form.applicable_categories }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label sa-label small mb-1">Valid From</label>
+                            {{ form.valid_from }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label sa-label small mb-1">Valid Until / Expiry Date</label>
+                            {{ form.valid_until }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label sa-label small mb-1">Minimum Purchase (₹)</label>
+                            {{ form.minimum_purchase }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label sa-label small mb-1">Maximum Discount Cap (₹ Optional)</label>
+                            {{ form.maximum_discount }}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label sa-label small mb-1">Terms & Conditions</label>
+                            {{ form.terms_and_conditions }}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label sa-label small mb-1">Internal Description / Campaign Notes</label>
+                            {{ form.description }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page Layout, Dimensions & Multi-Coupon Grid -->
+            <div class="sa-card mb-4">
+                <div class="sa-card-header p-3 border-bottom d-flex align-items-center justify-content-between" style="border-color: var(--sa-border) !important;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-aspect-ratio text-warning"></i>
+                        <h6 class="fw-bold mb-0">Page Dimensions & Print Grid (A4 Sheet Setup)</h6>
+                    </div>
+                </div>
+                <div class="sa-card-body p-3">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label sa-label small mb-1">Page Format</label>
+                            {{ form.page_size }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label sa-label small mb-1">Orientation</label>
+                            {{ form.orientation }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label sa-label small mb-1">Single Coupon Width (mm)</label>
+                            {{ form.coupon_width_mm }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label sa-label small mb-1">Single Coupon Height (mm)</label>
+                            {{ form.coupon_height_mm }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label sa-label small mb-1">Grid Columns (per row)</label>
+                            {{ form.grid_columns }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label sa-label small mb-1">Grid Rows (per column)</label>
+                            {{ form.grid_rows }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label sa-label small mb-1">Page Margin (mm)</label>
+                            {{ form.margin_mm }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label sa-label small mb-1">Coupon Gap / Spacing (mm)</label>
+                            {{ form.spacing_mm }}
+                        </div>
+                        <div class="col-md-4 d-flex flex-column justify-content-end">
+                            <div class="form-check mb-2">
+                                {{ form.show_barcode }}
+                                <label class="form-check-label small" for="id_show_barcode">Vector Barcode (Code 128)</label>
+                            </div>
+                            <div class="form-check">
+                                {{ form.show_qr_code }}
+                                <label class="form-check-label small" for="id_show_qr_code">Vector QR Code</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom HTML/CSS Code Editor (Visible in Custom mode or when tweaking preset) -->
+            <div class="sa-card mb-4" id="customEditorSection">
+                <div class="sa-card-header p-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2" style="border-color: var(--sa-border) !important;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-code-slash text-warning"></i>
+                        <h6 class="fw-bold mb-0">Custom HTML & CSS Code Editor</h6>
+                    </div>
+                    <span class="badge bg-danger bg-opacity-15 text-danger small">Untrusted Input Sanitized & Sandboxed</span>
+                </div>
+                <div class="sa-card-body p-3">
+                    <!-- Dynamic Placeholders Pallet -->
+                    <div class="mb-3 p-2 rounded" style="background: rgba(0, 0, 0, 0.25); border: 1px dashed var(--sa-border);">
+                        <div class="small fw-bold text-warning mb-1"><i class="bi bi-lightning-charge-fill"></i> Click to Insert Safe Placeholders:</div>
+                        <div class="d-flex flex-wrap">
+                            {% for ph in allowed_placeholders %}
+                            <span class="placeholder-chip" onclick="insertPlaceholder('&#123;&#123;{{ ph }}&#125;&#125;')" title="Insert &#123;&#123;{{ ph }}&#125;&#125;">&#123;&#123;{{ ph }}&#125;&#125;</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Editor Tabs: HTML vs CSS -->
+                    <ul class="nav nav-pills mb-3" id="editorTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="html-tab" data-bs-toggle="pill" data-bs-target="#tab-html" type="button" role="tab">
+                                <i class="bi bi-filetype-html me-1"></i> Coupon HTML Layout
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="css-tab" data-bs-toggle="pill" data-bs-target="#tab-css" type="button" role="tab">
+                                <i class="bi bi-filetype-css me-1"></i> Print-Friendly CSS
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="editorTabsContent">
+                        <div class="tab-pane fade show active" id="tab-html" role="tabpanel">
+                            <label class="form-label sa-label small mb-1">Coupon Body HTML</label>
+                            {{ form.custom_html }}
+                            {% if form.custom_html.errors %}<div class="text-danger small mt-1">{{ form.custom_html.errors.0 }}</div>{% endif %}
+                            <div class="form-text small text-muted">HTML is sanitized automatically. Dynamic placeholders like <code>&#123;&#123;coupon_code&#125;&#125;</code> and <code>&#123;&#123;barcode_svg&#125;&#125;</code> are safely injected.</div>
+                        </div>
+                        <div class="tab-pane fade" id="tab-css" role="tabpanel">
+                            <label class="form-label sa-label small mb-1">Custom CSS Styling</label>
+                            {{ form.custom_css }}
+                            {% if form.custom_css.errors %}<div class="text-danger small mt-1">{{ form.custom_css.errors.0 }}</div>{% endif %}
+                            <div class="form-text small text-muted">CSS expressions, javascript: URLs, and @import are safely stripped.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Palette Colors for Built-in Theme Styling -->
+            <div class="sa-card mb-4" id="colorsSection">
+                <div class="sa-card-header p-3 border-bottom d-flex align-items-center justify-content-between" style="border-color: var(--sa-border) !important;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-paint-bucket text-warning"></i>
+                        <h6 class="fw-bold mb-0">Preset Palette Accents</h6>
+                    </div>
+                </div>
+                <div class="sa-card-body p-3">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label sa-label small mb-1">Primary / Border Accent</label>
+                            <div class="d-flex align-items-center gap-2">
+                                {{ form.primary_color }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label sa-label small mb-1">Card Background</label>
+                            <div class="d-flex align-items-center gap-2">
+                                {{ form.background_color }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label sa-label small mb-1">Text Color</label>
+                            <div class="d-flex align-items-center gap-2">
+                                {{ form.text_color }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Action Footer -->
+            <div class="d-flex align-items-center justify-content-between gap-2 pt-2">
+                <a href="{% url 'super_admin:coupon_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="submit" name="submit_action" value="save" class="btn btn-gold px-4">
+                        <i class="bi bi-save me-1"></i> Save Design Template
+                    </button>
+                    <button type="submit" name="submit_action" value="save_and_batch" class="btn btn-outline-gold">
+                        <i class="bi bi-printer me-1"></i> Save & Generate Batch
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Live Sandboxed Preview -->
+        <div class="col-12 col-xl-5">
+            <div class="sticky-top" style="top: 85px; z-index: 10;">
+                <div class="sa-card">
+                    <div class="sa-card-header p-3 border-bottom d-flex align-items-center justify-content-between" style="border-color: var(--sa-border) !important;">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="spinner-grow spinner-grow-sm text-warning d-none" id="previewSpinner" role="status"></div>
+                            <i class="bi bi-eye-fill text-warning"></i>
+                            <h6 class="fw-bold mb-0">Live Sandboxed Preview</h6>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge" style="background: rgba(212, 175, 55, 0.15); color: #d4af37; font-size: 0.72rem;">100% Print DPI Scale</span>
+                        </div>
+                    </div>
+                    <div class="sa-card-body p-2">
+                        <div class="preview-iframe-wrapper">
+                            <!-- Secure sandboxed iframe: blocks scripts, external forms, and cookies -->
+                            <iframe id="previewIframe" class="preview-iframe" sandbox="allow-same-origin" src="about:blank"></iframe>
+                        </div>
+                    </div>
+                    <div class="sa-card-footer p-3 border-top text-muted small" style="border-color: var(--sa-border) !important; font-size: 0.78rem;">
+                        <i class="bi bi-shield-check text-success me-1"></i> Isolated sandbox prevents script execution. Updates live as you adjust coupon values or markup.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Built-in preset presets dictionary pre-loaded in javascript for instant responsive switching
+const PRESETS = {
+    'luxury_gold': {
+        primary: '#d4af37',
+        bg: '#160f09',
+        text: '#fef9ed',
+        width: 180,
+        height: 70
+    },
+    'minimal_white': {
+        primary: '#111827',
+        bg: '#ffffff',
+        text: '#111827',
+        width: 180,
+        height: 70
+    },
+    'bold_promo': {
+        primary: '#ff3344',
+        bg: '#0a0a0c',
+        text: '#ffffff',
+        width: 180,
+        height: 70
+    },
+    'compact_sheet': {
+        primary: '#b48516',
+        bg: '#1e1914',
+        text: '#fdfbf7',
+        width: 90,
+        height: 55
+    }
+};
+
+function insertPlaceholder(tag) {
+    const textarea = document.getElementById('id_custom_html');
+    if (!textarea) return;
+    const startPos = textarea.selectionStart;
+    const endPos = textarea.selectionEnd;
+    const val = textarea.value;
+    textarea.value = val.substring(0, startPos) + tag + val.substring(endPos, val.length);
+    textarea.selectionStart = textarea.selectionEnd = startPos + tag.length;
+    textarea.focus();
+    triggerLivePreview();
+}
+
+function updateModeVisibility() {
+    const ttype = document.getElementById('id_template_type').value;
+    const styleWrapper = document.getElementById('wrapper_built_in_style');
+    const editorSection = document.getElementById('customEditorSection');
+    
+    if (ttype === 'built_in') {
+        if (styleWrapper) styleWrapper.style.display = 'block';
+    } else {
+        if (styleWrapper) styleWrapper.style.display = 'none';
+        if (editorSection) editorSection.style.display = 'block';
+    }
+}
+
+let previewDebounceTimer = null;
+
+function triggerLivePreview() {
+    clearTimeout(previewDebounceTimer);
+    const spinner = document.getElementById('previewSpinner');
+    if (spinner) spinner.classList.remove('d-none');
+
+    previewDebounceTimer = setTimeout(() => {
+        fetchPreview();
+    }, 300);
+}
+
+function fetchPreview() {
+    const form = document.getElementById('couponForm');
+    const formData = new FormData(form);
+    const spinner = document.getElementById('previewSpinner');
+
+    fetch("{% url 'super_admin:coupon_preview_api' %}", {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.text())
+    .then(html => {
+        const iframe = document.getElementById('previewIframe');
+        if (iframe) {
+            iframe.srcdoc = html;
+        }
+    })
+    .catch(err => {
+        console.error("Preview render error:", err);
+    })
+    .finally(() => {
+        if (spinner) spinner.classList.add('d-none');
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    updateModeVisibility();
+
+    const ttypeSelect = document.getElementById('id_template_type');
+    if (ttypeSelect) {
+        ttypeSelect.addEventListener('change', () => {
+            updateModeVisibility();
+            triggerLivePreview();
+        });
+    }
+
+    const bstyleSelect = document.getElementById('id_built_in_style');
+    if (bstyleSelect) {
+        bstyleSelect.addEventListener('change', () => {
+            const val = bstyleSelect.value;
+            if (PRESETS[val]) {
+                const p = PRESETS[val];
+                const pColor = document.getElementById('id_primary_color');
+                const bColor = document.getElementById('id_background_color');
+                const tColor = document.getElementById('id_text_color');
+                const wInput = document.getElementById('id_coupon_width_mm');
+                const hInput = document.getElementById('id_coupon_height_mm');
+
+                if (pColor) pColor.value = p.primary;
+                if (bColor) bColor.value = p.bg;
+                if (tColor) tColor.value = p.text;
+                if (wInput) wInput.value = p.width;
+                if (hInput) hInput.value = p.height;
+            }
+            triggerLivePreview();
+        });
+    }
+
+    // Attach reactive input listeners to all form controls for instant preview
+    const inputs = document.querySelectorAll('#couponForm input, #couponForm select, #couponForm textarea');
+    inputs.forEach(input => {
+        input.addEventListener('input', triggerLivePreview);
+        input.addEventListener('change', triggerLivePreview);
+    });
+
+    const refreshBtn = document.getElementById('btnRefreshPreview');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', triggerLivePreview);
+    }
+
+    // Initial render
+    triggerLivePreview();
+});
+</script>
+{% endblock %}

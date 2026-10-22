@@ -1,0 +1,371 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ coupon.name }} — JewelDesk Coupons{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-3">
+
+    <!-- Header Navigation -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{% url 'coupons:coupon_list' %}" class="text-warning text-decoration-none small">
+                    <i class="bi bi-arrow-left"></i> All Coupons
+                </a>
+                <span class="text-muted">&bull;</span>
+                <span class="badge bg-secondary bg-opacity-25 text-light">{{ coupon.get_occasion_display }}</span>
+                {% if coupon.status == 'active' %}
+                <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25">Active</span>
+                {% elif coupon.status == 'paused' %}
+                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">Paused</span>
+                {% elif coupon.status == 'expired' %}
+                <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25">Expired</span>
+                {% elif coupon.status == 'archived' %}
+                <span class="badge bg-secondary bg-opacity-25 text-muted">Archived</span>
+                {% endif %}
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <h2 class="h3 fw-bold text-light mb-0">{{ coupon.name }}</h2>
+                <span class="badge bg-black text-warning border border-warning font-monospace fs-6 px-3 py-1">
+                    {{ coupon.code }}
+                </span>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'coupons:coupon_print' coupon.pk %}" class="btn btn-warning text-dark fw-bold d-inline-flex align-items-center gap-2" target="_blank">
+                <i class="bi bi-printer-fill"></i> Print Vouchers (A4 / Single)
+            </a>
+            <button type="button" class="btn btn-outline-warning d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#batchModal">
+                <i class="bi bi-qr-code"></i> Generate Unique Codes
+            </button>
+            <a href="{% url 'coupons:coupon_edit' coupon.pk %}" class="btn btn-outline-light d-inline-flex align-items-center gap-2">
+                <i class="bi bi-pencil"></i> Edit
+            </a>
+
+            {% if coupon.status == 'active' %}
+            <form method="post" action="{% url 'coupons:coupon_toggle_status' coupon.pk %}" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="paused">
+                <button type="submit" class="btn btn-outline-secondary" title="Pause offer">
+                    <i class="bi bi-pause-circle"></i> Pause
+                </button>
+            </form>
+            {% elif coupon.status == 'paused' %}
+            <form method="post" action="{% url 'coupons:coupon_toggle_status' coupon.pk %}" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="active">
+                <button type="submit" class="btn btn-outline-success" title="Activate offer">
+                    <i class="bi bi-play-circle"></i> Activate
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 4 KPI Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-body p-3">
+                    <div class="text-muted small text-uppercase fw-semibold mb-1">Times Redeemed</div>
+                    <div class="h3 fw-bold text-light mb-0">{{ coupon.times_redeemed }}</div>
+                    <div class="text-muted small mt-1">
+                        {% if coupon.max_uses_total %}Limit: {{ coupon.max_uses_total }} max{% else %}Unlimited capacity{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg-3">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-body p-3">
+                    <div class="text-muted small text-uppercase fw-semibold mb-1">Total Discount Given</div>
+                    <div class="h3 fw-bold text-warning mb-0">₹{{ total_discount_granted|floatformat:2 }}</div>
+                    <div class="text-muted small mt-1">Across {{ redemptions|length }} recorded sale{{ redemptions|length|pluralize }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg-3">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-body p-3">
+                    <div class="text-muted small text-uppercase fw-semibold mb-1">Linked Sales Volume</div>
+                    <div class="h3 fw-bold text-success mb-0">₹{{ total_linked_sales|floatformat:2 }}</div>
+                    <div class="text-muted small mt-1">Total billing generated</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg-3">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-body p-3">
+                    <div class="text-muted small text-uppercase fw-semibold mb-1">Unique Batch Codes</div>
+                    <div class="h3 fw-bold text-light mb-0">{{ total_codes }}</div>
+                    <div class="text-muted small mt-1">{{ remaining_codes }} unredeemed available</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Artwork Preview & Campaign Rules -->
+    <div class="row g-4 mb-4">
+        <!-- Coupon Card Artwork Preview -->
+        <div class="col-12 col-lg-7">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-header bg-dark border-secondary border-opacity-25 py-2.5 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold text-warning mb-0"><i class="bi bi-ticket-perforated me-2"></i>Coupon Voucher Artwork</h6>
+                    <a href="{% url 'coupons:coupon_print' coupon.pk %}" target="_blank" class="text-warning text-decoration-none small">
+                        <i class="bi bi-box-arrow-up-right me-1"></i> Print Preview
+                    </a>
+                </div>
+                <div class="card-body p-3 d-flex align-items-center justify-content-center" style="background: #0d0a07; min-height: 240px;">
+                    <div style="max-width: 580px; width: 100%;">
+                        {{ rendered_html|safe }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rules & Conditions -->
+        <div class="col-12 col-lg-5">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-header bg-dark border-secondary border-opacity-25 py-2.5">
+                    <h6 class="fw-bold text-warning mb-0"><i class="bi bi-sliders me-2"></i>Offer Rules &amp; Limits</h6>
+                </div>
+                <div class="card-body p-3">
+                    <ul class="list-group list-group-flush bg-transparent">
+                        <li class="list-group-item bg-transparent text-light px-0 py-2 d-flex justify-content-between">
+                            <span class="text-muted">Discount Offer:</span>
+                            <strong class="text-warning">{{ coupon.formatted_discount }}</strong>
+                        </li>
+                        <li class="list-group-item bg-transparent text-light px-0 py-2 d-flex justify-content-between">
+                            <span class="text-muted">Minimum Purchase:</span>
+                            <span>{% if coupon.min_purchase_amount > 0 %}₹{{ coupon.min_purchase_amount|floatformat:2 }}{% else %}No Minimum Spend{% endif %}</span>
+                        </li>
+                        {% if coupon.max_discount_amount %}
+                        <li class="list-group-item bg-transparent text-light px-0 py-2 d-flex justify-content-between">
+                            <span class="text-muted">Discount Ceiling Cap:</span>
+                            <span>₹{{ coupon.max_discount_amount|floatformat:2 }}</span>
+                        </li>
+                        {% endif %}
+                        <li class="list-group-item bg-transparent text-light px-0 py-2 d-flex justify-content-between">
+                            <span class="text-muted">Category Restriction:</span>
+                            <span>{{ coupon.applicable_category.name|default:"All Jewellery Categories" }}</span>
+                        </li>
+                        <li class="list-group-item bg-transparent text-light px-0 py-2 d-flex justify-content-between">
+                            <span class="text-muted">Customer Restriction:</span>
+                            <span>{{ coupon.specific_customer.name|default:"General Public / All Customers" }}</span>
+                        </li>
+                        <li class="list-group-item bg-transparent text-light px-0 py-2 d-flex justify-content-between">
+                            <span class="text-muted">Validity Window:</span>
+                            <span>
+                                {% if coupon.valid_from %}{{ coupon.valid_from|date:"d-M-Y" }}{% else %}Anytime{% endif %}
+                                &rarr;
+                                {% if coupon.valid_until %}{{ coupon.valid_until|date:"d-M-Y" }}{% else %}No Expiry{% endif %}
+                            </span>
+                        </li>
+                        <li class="list-group-item bg-transparent text-light px-0 py-2 d-flex justify-content-between">
+                            <span class="text-muted">Per-Customer Limit:</span>
+                            <span>{{ coupon.max_uses_per_customer }} use{{ coupon.max_uses_per_customer|pluralize }} per customer</span>
+                        </li>
+                    </ul>
+
+                    {% if coupon.terms_and_conditions %}
+                    <div class="mt-3 pt-2 border-top border-secondary border-opacity-25">
+                        <span class="text-muted small fw-semibold">Terms &amp; Conditions:</span>
+                        <div class="text-muted small mt-1" style="white-space: pre-line;">{{ coupon.terms_and_conditions }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Redemptions Log & Batch Codes Tabs -->
+    <div class="card bg-dark border-secondary border-opacity-25 shadow-sm">
+        <div class="card-header bg-dark border-secondary border-opacity-25 p-0">
+            <ul class="nav nav-tabs border-0" id="couponTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active bg-transparent text-light border-0 border-bottom border-warning border-3 px-4 py-3 fw-semibold" id="redemptions-tab" data-bs-toggle="tab" data-bs-target="#redemptions-pane" type="button" role="tab">
+                        <i class="bi bi-clock-history me-1"></i> Redemption Audit History ({{ redemptions|length }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link bg-transparent text-muted border-0 px-4 py-3 fw-semibold" id="codes-tab" data-bs-toggle="tab" data-bs-target="#codes-pane" type="button" role="tab">
+                        <i class="bi bi-qr-code me-1"></i> Generated Unique Voucher Codes ({{ total_codes }})
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="tab-content" id="couponTabsContent">
+
+                <!-- TAB 1: Redemptions Log -->
+                <div class="tab-pane fade show active" id="redemptions-pane" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover align-middle mb-0" style="font-size: 0.88rem;">
+                            <thead class="table-dark text-muted text-uppercase small">
+                                <tr>
+                                    <th class="ps-3">Date &amp; Time</th>
+                                    <th>Code Used</th>
+                                    <th>Customer</th>
+                                    <th>Sale Invoice</th>
+                                    <th>Bill Subtotal</th>
+                                    <th>Discount Granted</th>
+                                    <th>Final Total</th>
+                                    <th class="pe-3">Processed By</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in redemptions %}
+                                <tr>
+                                    <td class="ps-3">{{ r.redeemed_at|date:"d-M-Y H:i" }}</td>
+                                    <td><span class="badge bg-black text-warning border border-warning font-monospace">{{ r.coupon_code_used }}</span></td>
+                                    <td>{{ r.customer.name|default:"Walk-in Customer" }}</td>
+                                    <td>
+                                        <a href="{% url 'sale_detail' r.sale_id %}" class="text-warning text-decoration-none fw-semibold">
+                                            Sale #{{ r.sale_id }}
+                                        </a>
+                                    </td>
+                                    <td>₹{{ r.order_subtotal|floatformat:2 }}</td>
+                                    <td class="text-warning fw-bold">-₹{{ r.discount_amount|floatformat:2 }}</td>
+                                    <td class="text-success fw-bold">₹{{ r.final_total|floatformat:2 }}</td>
+                                    <td class="pe-3 text-muted small">{{ r.redeemed_by_user.get_full_name|default:r.redeemed_by_user.username|default:"Staff" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-4 text-muted">
+                                        No redemptions recorded for this coupon yet. When cashiers enter this code during counter checkout, redemptions will appear here automatically.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Generated Codes -->
+                <div class="tab-pane fade" id="codes-pane" role="tabpanel">
+                    <div class="p-3 bg-dark border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center">
+                        <span class="text-muted small">Unique serialized codes generated for print batches or distribution.</span>
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'coupons:coupon_print' coupon.pk %}?mode=unique" target="_blank" class="btn btn-sm btn-outline-warning">
+                                <i class="bi bi-printer me-1"></i> Print Unique Batch
+                            </a>
+                            <button type="button" class="btn btn-sm btn-warning text-dark fw-bold" data-bs-toggle="modal" data-bs-target="#batchModal">
+                                <i class="bi bi-plus-circle me-1"></i> Generate Codes
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-dark table-hover align-middle mb-0" style="font-size: 0.88rem;">
+                            <thead class="table-dark text-muted text-uppercase small sticky-top">
+                                <tr>
+                                    <th class="ps-3">Serial #</th>
+                                    <th>Voucher Code</th>
+                                    <th>Status</th>
+                                    <th>Redeemed At</th>
+                                    <th>Customer</th>
+                                    <th class="pe-3">Linked Bill</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in coupon.code_items.all %}
+                                <tr>
+                                    <td class="ps-3 text-muted">#{{ item.serial_number|stringformat:"04d" }}</td>
+                                    <td>
+                                        <span class="badge bg-black text-warning border border-secondary font-monospace px-2 py-1">
+                                            {{ item.code }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if item.is_redeemed %}
+                                        <span class="badge bg-secondary text-muted">Redeemed</span>
+                                        {% else %}
+                                        <span class="badge bg-success bg-opacity-25 text-success">Available</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ item.redeemed_at|date:"d-M-Y H:i"|default:"—" }}</td>
+                                    <td>{{ item.redeemed_by_customer.name|default:"—" }}</td>
+                                    <td class="pe-3">
+                                        {% if item.redeemed_in_sale %}
+                                        <a href="{% url 'sale_detail' item.redeemed_in_sale_id %}" class="text-warning text-decoration-none">
+                                            Sale #{{ item.redeemed_in_sale_id }}
+                                        </a>
+                                        {% else %}
+                                        —
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">
+                                        No unique codes generated yet. You can use the master coupon code <code>{{ coupon.code }}</code> directly or generate a batch of unique serialized codes.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal: Generate Batch Codes -->
+<div class="modal fade" id="batchModal" tabindex="-1" aria-labelledby="batchModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-warning fw-bold" id="batchModalLabel">
+                    <i class="bi bi-qr-code me-2"></i>Generate Unique Voucher Codes
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'coupons:coupon_generate_batch' coupon.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        Bulk-generate collision-resistant unique coupon codes for this campaign. Each code can be tracked and redeemed individually at the billing counter.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label text-warning small">Number of Vouchers to Generate</label>
+                        {{ batch_form.quantity }}
+                        <div class="form-text text-muted small">Between 1 and 500 per batch.</div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-warning small">Code Prefix</label>
+                            {{ batch_form.code_prefix }}
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-warning small">Random Characters Length</label>
+                            {{ batch_form.code_length }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-warning small">Starting Serial Number</label>
+                        {{ batch_form.serial_start }}
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning text-dark fw-bold">Generate Codes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Embedded Preview CSS -->
+<style>
+{{ rendered_css|safe }}
+</style>
+{% endblock %}

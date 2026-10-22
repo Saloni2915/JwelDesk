@@ -1,3 +1,4 @@
+import os
 from decimal import Decimal, ROUND_HALF_UP
 from django import forms
 from .models import JewelleryItem, Category, StockMovement
@@ -55,6 +56,15 @@ class JewelleryItemForm(forms.ModelForm):
         min_value=0,
         required=False,
         widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '1', 'placeholder': '1'}))
+    image = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(attrs={
+            'id': 'id_jewellery_image',
+            'class': 'd-none',
+            'accept': 'image/jpeg,image/png,image/webp,image/jpg',
+        }),
+        help_text="Upload a photograph of the jewellery item (JPEG, PNG, WEBP, max 10MB).",
+    )
 
     class Meta:
         model = JewelleryItem
@@ -205,6 +215,16 @@ class JewelleryItemForm(forms.ModelForm):
                 return self.instance.quantity
             return 1
         return max(0, qty)
+
+    def clean_image(self):
+        img = self.cleaned_data.get('image')
+        if img:
+            if hasattr(img, 'size') and img.size > 10 * 1024 * 1024:
+                raise forms.ValidationError("Photograph file size must not exceed 10 MB.")
+            ext = os.path.splitext(getattr(img, 'name', '') or '')[1].lower()
+            if ext and ext not in ('.jpg', '.jpeg', '.png', '.webp'):
+                raise forms.ValidationError(f"Unsupported image format '{ext}'. Allowed: JPG, PNG, WEBP.")
+        return img
 
     def clean(self):
         cleaned_data = super().clean()

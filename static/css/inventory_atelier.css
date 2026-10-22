@@ -1601,3 +1601,77 @@ body.has-inventory-suite .sidebar {
         border-radius: 10px;
     }
 }
+
+/* ==========================================================================
+   Jewellery Product Photograph & Showcase Gallery Styles
+   ========================================================================== */
+.jd-photo-dropzone {
+    border: 2px dashed var(--jd-inv-border, rgba(212, 175, 55, 0.3));
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    transition: all 0.25s ease-in-out;
+}
+
+.jd-photo-dropzone:hover,
+.jd-photo-dropzone.is-dragover {
+    border-color: var(--jd-inv-gold, #ECC86A) !important;
+    background: rgba(212, 175, 55, 0.05);
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.15);
+}
+
+.jd-showcase-photo-frame {
+    border-radius: 0;
+    overflow: hidden;
+    position: relative;
+    background: radial-gradient(circle at center, #1e1912 0%, #0c0a07 100%);
+    min-height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.jd-showcase-photo-img {
+    transition: transform 0.35s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.jd-showcase-photo-frame:hover .jd-showcase-photo-img {
+    transform: scale(1.03);
+}
+
+.jd-gallery-thumb {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.jd-gallery-thumb:hover {
+    transform: translateY(-2px);
+    border-color: var(--jd-inv-gold, #ECC86A) !important;
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
+}
+
+.jd-item-thumb-link {
+    display: inline-block;
+    transition: transform 0.15s ease;
+}
+
+.jd-item-thumb-link:hover {
+    transform: scale(1.08);
+}
+
+.jd-item-thumb-img {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    transition: border-color 0.2s ease;
+}
+
+.jd-item-thumb-img:hover {
+    border-color: var(--jd-inv-gold, #ECC86A) !important;
+}
+
+.jd-item-thumb-placeholder {
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.jd-item-thumb-link:hover .jd-item-thumb-placeholder {
+    background: rgba(212, 175, 55, 0.1) !important;
+    border-color: var(--jd-inv-gold, #ECC86A) !important;
+}
+

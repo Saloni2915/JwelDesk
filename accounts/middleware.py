@@ -44,8 +44,15 @@ class TenantMiddleware:
                         except Exception:
                             pass
                     elif user.is_superuser:
-                        # Superuser fallback: default to first active tenant if available
-                        request.tenant = Tenant.objects.filter(is_active=True).first()
+                        # Superuser resolution: bind tenant ONLY if actively in an authorized impersonation session
+                        impersonated_id = None
+                        if hasattr(request, 'session'):
+                            impersonated_id = request.session.get('impersonated_tenant_id')
+                        if impersonated_id:
+                            request.tenant = Tenant.objects.filter(pk=impersonated_id, is_active=True).first()
+                        else:
+                            # If superuser explicitly owns a test showroom, use that; otherwise None (platform operator)
+                            request.tenant = user.owned_tenants.filter(is_active=True).first()
             except Exception as e:
                 import logging
                 logging.getLogger(__name__).warning("TenantMiddleware resolution notice: %s", e)

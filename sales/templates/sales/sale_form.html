@@ -320,11 +320,39 @@
             <!-- RIGHT COLUMN (40%): Sticky Tax Invoice Summary & Payment Tender -->
             <div class="jd-pos-col-right">
 
+                <!-- SECTION D.5: Customer Coupon & Promo Code Redemption -->
+                <div class="jd-pos-card mb-3" style="background: rgba(212, 175, 55, 0.05); border: 1px dashed rgba(212, 175, 55, 0.35); border-radius: 8px;">
+                    <div class="jd-pos-card-header py-2 d-flex justify-content-between align-items-center">
+                        <h2 class="small mb-0" style="font-size: 0.9rem; font-weight: 700;">
+                            <i class="bi bi-tag-fill text-warning me-1"></i> Customer Coupon / Promo Code
+                        </h2>
+                        <span class="badge bg-black text-warning border border-warning" id="posCouponBadge" style="display:none; font-size: 0.72rem;"></span>
+                    </div>
+                    <div class="jd-pos-card-body p-2.5">
+                        <div class="input-group">
+                            <input type="text"
+                                   name="coupon_code"
+                                   id="posCouponCodeInput"
+                                   class="form-control text-uppercase font-monospace"
+                                   placeholder="e.g. DIWALI2026 or Scan QR"
+                                   value="{{ form.coupon_code.value|default:'' }}"
+                                   style="background: #14100c; color: #fff; border-color: rgba(212, 175, 55, 0.4); font-weight: 600; font-size: 0.9rem;">
+                            <button type="button" class="btn jd-btn-gold fw-bold px-3" id="btnApplyCoupon">
+                                Apply
+                            </button>
+                            <button type="button" class="btn btn-outline-danger" id="btnRemoveCoupon" style="display:none;" title="Remove Coupon">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+                        <div id="posCouponFeedback" class="small mt-1 px-1" style="display:none;"></div>
+                    </div>
+                </div>
+
                 <!-- SECTION E: Bill Summary -->
                 <div class="jd-pos-invoice-summary-card">
                     <div class="jd-pos-invoice-header">
                         <h2>Bill Summary</h2>
-                        <span class="jd-pos-pill-tag text-warning border-warning">Tax Invoice</span>
+                        <span class="jd-pos-pill-tag jd-sb-badge-theme">Tax Invoice</span>
                     </div>
 
                     <div class="jd-pos-invoice-ledger">
@@ -335,6 +363,10 @@
                         <div class="jd-pos-ledger-row is-deduction">
                             <span>Less Old Gold Exchange</span>
                             <span id="billOldGold">-₹0.00</span>
+                        </div>
+                        <div class="jd-pos-ledger-row is-deduction" id="billCouponRow" style="display:none;">
+                            <span>Less Coupon (<span id="billCouponCodeDisplay"></span>)</span>
+                            <span id="billCouponDiscount" style="color: #4ade80; font-weight: bold;">-₹0.00</span>
                         </div>
                         <div class="jd-pos-ledger-row is-taxable">
                             <span>Taxable Amount</span>
@@ -514,6 +546,18 @@
     var billGst = document.getElementById('billGst');
     var billRoundOff = document.getElementById('billRoundOff');
     var billGrandTotal = document.getElementById('billGrandTotal');
+
+    // Coupon elements
+    var couponCodeInput = document.getElementById('posCouponCodeInput');
+    var btnApplyCoupon = document.getElementById('btnApplyCoupon');
+    var btnRemoveCoupon = document.getElementById('btnRemoveCoupon');
+    var posCouponBadge = document.getElementById('posCouponBadge');
+    var posCouponFeedback = document.getElementById('posCouponFeedback');
+    var billCouponRow = document.getElementById('billCouponRow');
+    var billCouponCodeDisplay = document.getElementById('billCouponCodeDisplay');
+    var billCouponDiscount = document.getElementById('billCouponDiscount');
+    var currentCouponDiscount = 0;
+    var currentCouponCode = '';
 
     // Tender elements
     var tenderPrimary = document.getElementById('tenderPrimaryInput');
@@ -696,7 +740,8 @@
         }
 
         var oldGoldCredit = getOldGoldDeduction();
-        var taxable = Math.max(0, subtotal - oldGoldCredit);
+        var couponDiscount = currentCouponDiscount || 0;
+        var taxable = Math.max(0, subtotal - oldGoldCredit - couponDiscount);
         var cgst = taxable * 0.015;
         var sgst = taxable * 0.015;
         var totalGst = cgst + sgst;
@@ -706,6 +751,13 @@
 
         billSubtotal.textContent = formatInr(subtotal);
         billOldGold.textContent = '-' + formatInr(oldGoldCredit);
+        if (couponDiscount > 0) {
+            if (billCouponRow) billCouponRow.style.display = 'flex';
+            if (billCouponCodeDisplay) billCouponCodeDisplay.textContent = currentCouponCode;
+            if (billCouponDiscount) billCouponDiscount.textContent = '-' + formatInr(couponDiscount);
+        } else {
+            if (billCouponRow) billCouponRow.style.display = 'none';
+        }
         billTaxable.textContent = formatInr(taxable);
         billCgst.textContent = formatInr(cgst);
         billSgst.textContent = formatInr(sgst);
@@ -723,6 +775,85 @@
             tenderPrimary.value = grandTotal.toFixed(2);
         }
         updateTenderDue();
+    }
+
+    // Coupon Validation & AJAX handler
+    function setCouponFeedback(msg, type) {
+        if (!posCouponFeedback) return;
+        if (!msg) {
+            posCouponFeedback.style.display = 'none';
+            return;
+        }
+        posCouponFeedback.style.display = 'block';
+        posCouponFeedback.className = 'small mt-1 px-1 text-' + type;
+        posCouponFeedback.textContent = msg;
+    }
+
+    function applyCouponCode() {
+        var code = (couponCodeInput ? couponCodeInput.value : '').trim();
+        if (!code) {
+            setCouponFeedback('Please enter a coupon code.', 'warning');
+            return;
+        }
+        var subtotal = currentItem ? (currentItem.selling_price || 0) : 0;
+        var custId = custSelect ? custSelect.value : '';
+        var itemId = itemSelect ? itemSelect.value : '';
+
+        setCouponFeedback('Verifying coupon with server rules...', 'info');
+
+        var url = '/coupons/api/validate/?code=' + encodeURIComponent(code) +
+                  '&customer_id=' + encodeURIComponent(custId) +
+                  '&item_id=' + encodeURIComponent(itemId) +
+                  '&subtotal=' + encodeURIComponent(subtotal);
+
+        fetch(url)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.valid) {
+                currentCouponDiscount = data.discount_amount;
+                currentCouponCode = data.coupon_code;
+                setCouponFeedback(data.message, 'success');
+                if (posCouponBadge) {
+                    posCouponBadge.style.display = 'inline-block';
+                    posCouponBadge.textContent = data.coupon_name + ' (-' + data.discount_amount_formatted + ')';
+                }
+                if (btnRemoveCoupon) btnRemoveCoupon.style.display = 'inline-block';
+                recalculateBill();
+            } else {
+                currentCouponDiscount = 0;
+                currentCouponCode = '';
+                setCouponFeedback(data.message, 'danger');
+                if (posCouponBadge) posCouponBadge.style.display = 'none';
+                if (btnRemoveCoupon) btnRemoveCoupon.style.display = 'none';
+                recalculateBill();
+            }
+        })
+        .catch(function(err) {
+            setCouponFeedback('Unable to validate coupon at this time.', 'danger');
+        });
+    }
+
+    if (btnApplyCoupon) {
+        btnApplyCoupon.addEventListener('click', applyCouponCode);
+    }
+    if (couponCodeInput) {
+        couponCodeInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                applyCouponCode();
+            }
+        });
+    }
+    if (btnRemoveCoupon) {
+        btnRemoveCoupon.addEventListener('click', function() {
+            currentCouponDiscount = 0;
+            currentCouponCode = '';
+            if (couponCodeInput) couponCodeInput.value = '';
+            if (posCouponBadge) posCouponBadge.style.display = 'none';
+            btnRemoveCoupon.style.display = 'none';
+            setCouponFeedback('', '');
+            recalculateBill();
+        });
     }
 
     // Tender & Split Payment
@@ -755,6 +886,11 @@
 
     // Initial calculation on page load
     recalculateBill();
+
+    // Auto-apply if code pre-filled
+    if (couponCodeInput && couponCodeInput.value) {
+        applyCouponCode();
+    }
 })();
 </script>
 {% endblock %}

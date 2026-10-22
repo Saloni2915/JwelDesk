@@ -446,6 +446,11 @@ class JewelleryItem(models.Model):
             return None
 
     @property
+    def image_url(self):
+        """Convenience alias for primary_image_url."""
+        return self.primary_image_url
+
+    @property
     def safe_images(self):
         """Safely return all attached images for this piece, or an empty list if query fails."""
         try:

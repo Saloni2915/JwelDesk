@@ -35,13 +35,13 @@
     --jd-sb-card-header: var(--jd-card-header, #171D2A);
     --jd-sb-card-high: var(--jd-card-high, #1C2332);
     --jd-sb-card-highest: var(--jd-card-highest, #242D40);
-    --jd-sb-border: var(--jd-border, rgba(236, 200, 106, 0.22));
-    --jd-sb-border-strong: var(--jd-border-strong, rgba(236, 200, 106, 0.42));
-    --jd-sb-gold: var(--jd-gold, #ECC86A);
-    --jd-sb-gold-bright: var(--jd-gold-bright, #F5D77F);
-    --jd-sb-gold-dark: var(--jd-gold-dark, #B8860B);
-    --jd-sb-gold-glow: var(--jd-gold-glow, rgba(236, 200, 106, 0.16));
-    --jd-sb-ivory: var(--jd-ivory, #F1F5F9);
+    --jd-sb-border: var(--jd-border, rgba(148, 163, 184, 0.16));
+    --jd-sb-border-strong: var(--jd-border-strong, rgba(56, 189, 248, 0.35));
+    --jd-sb-gold: var(--jd-gold, #38BDF8);
+    --jd-sb-gold-bright: var(--jd-gold-bright, #7DD3FC);
+    --jd-sb-gold-dark: var(--jd-gold-dark, #0284C7);
+    --jd-sb-gold-glow: var(--jd-gold-glow, rgba(56, 189, 248, 0.16));
+    --jd-sb-ivory: var(--jd-ivory, #F8FAFC);
     --jd-sb-ivory-dim: var(--jd-ivory-dim, #94A3B8);
     --jd-sb-muted: var(--jd-muted, #64748B);
     --jd-sb-table-th: var(--jd-table-th, #151B28);
@@ -317,15 +317,21 @@ body.has-sales-suite .sidebar {
     align-items: center;
     justify-content: center;
     font-size: 1.25rem;
-    background: rgba(212, 175, 55, 0.15);
+    background: var(--jd-sb-gold-glow);
     color: var(--jd-sb-gold-bright);
-    border: 1px solid rgba(212, 175, 55, 0.3);
+    border: 1px solid var(--jd-sb-border-strong);
 }
 
 .jd-sb-kpi-icon.icon-green {
     background: rgba(34, 197, 94, 0.15);
     color: #4ADE80;
     border-color: rgba(34, 197, 94, 0.35);
+}
+
+.jd-sb-kpi-icon.icon-blue {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38BDF8;
+    border-color: rgba(56, 189, 248, 0.35);
 }
 
 .jd-sb-kpi-icon.icon-amber {
@@ -781,4 +787,81 @@ body.has-sales-suite .sidebar {
     .jd-sb-kpi-val {
         font-size: 1.05rem;
     }
+}
+
+/* --------------------------------------------------------------------------
+   Dynamic Theme Color Normalization for Sales & Old Gold Ledger
+   Ensures zero harsh Bootstrap canary yellow in Dark & Light Modes
+   -------------------------------------------------------------------------- */
+[data-theme="dark"] .jd-sb-canvas .text-warning,
+[data-theme="dark"] .jd-sb-canvas i.text-warning {
+    color: var(--jd-sb-gold) !important;
+}
+[data-theme="dark"] .jd-sb-canvas .border-warning {
+    border-color: var(--jd-sb-border-strong) !important;
+}
+[data-theme="dark"] .jd-sb-canvas .bg-warning {
+    background-color: var(--jd-sb-gold-glow) !important;
+}
+[data-theme="dark"] .jd-sb-canvas .btn-warning {
+    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%) !important;
+    border-color: #2563EB !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3) !important;
+}
+[data-theme="dark"] .jd-sb-canvas .btn-warning:hover {
+    background: linear-gradient(135deg, #60A5FA 0%, #1D4ED8 100%) !important;
+    border-color: #1D4ED8 !important;
+    color: #FFFFFF !important;
+}
+[data-theme="dark"] .jd-sb-canvas .btn-outline-warning {
+    border-color: rgba(56, 189, 248, 0.4) !important;
+    color: #38BDF8 !important;
+    background: transparent !important;
+}
+[data-theme="dark"] .jd-sb-canvas .btn-outline-warning:hover {
+    background: #38BDF8 !important;
+    color: #0A0D14 !important;
+    border-color: #38BDF8 !important;
+}
+
+[data-theme="gold"] .jd-sb-canvas .text-warning,
+[data-theme="gold"] .jd-sb-canvas i.text-warning {
+    color: var(--jd-sb-gold) !important;
+}
+[data-theme="gold"] .jd-sb-canvas .border-warning {
+    border-color: var(--jd-sb-border-strong) !important;
+}
+[data-theme="gold"] .jd-sb-canvas .bg-warning {
+    background-color: var(--jd-sb-gold-glow) !important;
+}
+[data-theme="gold"] .jd-sb-canvas .btn-warning {
+    background: linear-gradient(135deg, #F5D77F 0%, #D4AF37 40%, #B8860B 100%) !important;
+    border-color: #ECC86A !important;
+    color: #140D07 !important;
+}
+
+[data-theme="light"] .jd-sb-canvas .text-warning,
+[data-theme="light"] .jd-sb-canvas i.text-warning {
+    color: var(--jd-sb-gold) !important;
+}
+[data-theme="light"] .jd-sb-canvas .border-warning {
+    border-color: var(--jd-sb-border-strong) !important;
+}
+[data-theme="light"] .jd-sb-canvas .bg-warning {
+    background-color: var(--jd-sb-gold-glow) !important;
+}
+[data-theme="light"] .jd-sb-canvas .btn-warning {
+    background: #1E293B !important;
+    border-color: #1E293B !important;
+    color: #FFFFFF !important;
+}
+[data-theme="light"] .jd-sb-canvas .btn-outline-warning {
+    border-color: rgba(30, 41, 59, 0.35) !important;
+    color: #1E293B !important;
+    background: transparent !important;
+}
+[data-theme="light"] .jd-sb-canvas .btn-outline-warning:hover {
+    background: #1E293B !important;
+    color: #FFFFFF !important;
 }

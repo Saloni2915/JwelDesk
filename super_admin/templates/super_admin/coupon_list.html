@@ -1,0 +1,318 @@
+{% extends 'super_admin/base_super_admin.html' %}
+
+{% block title %}Coupon Designer & Print Management | Super Admin Portal{% endblock %}
+{% block page_title %}Coupon Designer, Discount Templates & Print Management{% endblock %}
+
+{% block content %}
+<!-- Notice Banner: Promotional Printing Notice -->
+<div class="alert alert-dark border border-warning border-opacity-25 rounded-3 d-flex align-items-center justify-content-between p-3 mb-4" style="background: rgba(212, 175, 55, 0.08);">
+    <div class="d-flex align-items-center gap-3">
+        <div class="rounded-circle d-flex align-items-center justify-content-center text-warning" style="width: 38px; height: 38px; background: rgba(212, 175, 55, 0.15); font-size: 1.25rem;">
+            <i class="bi bi-info-circle-fill"></i>
+        </div>
+        <div>
+            <div class="fw-bold text-warning small mb-0">Promotional Print Management System</div>
+            <div class="text-muted small">Coupon designs, serial numbers, and print batches generate luxury printed marketing collateral. Coupon redemption is tracked administratively and does not auto-alter POS checkout pricing.</div>
+        </div>
+    </div>
+    <div class="d-none d-md-flex align-items-center gap-2">
+        <a href="{% url 'super_admin:coupon_batch_list' %}" class="btn btn-sm btn-outline-warning">
+            <i class="bi bi-collection-fill me-1"></i> View Batches
+        </a>
+    </div>
+</div>
+
+<!-- Header Controls -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <p class="text-muted mb-0" style="font-size: 0.88rem;">
+            Create high-converting, royal jewellery discount vouchers, customize print-ready layouts, and manage bulk print runs.
+        </p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="{% url 'super_admin:coupon_batch_create' %}" class="btn btn-sm btn-outline-gold">
+            <i class="bi bi-printer me-1"></i> New Print Run
+        </a>
+        <div class="dropdown">
+            <button class="btn btn-sm btn-gold dropdown-toggle d-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-plus-lg"></i> Create New Coupon
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="background: var(--sa-card); border: 1px solid var(--sa-border) !important;">
+                <li><h6 class="dropdown-header text-uppercase small" style="color: var(--sa-gold); font-size: 0.72rem; letter-spacing: 0.05em;">Built-in Luxury Presets</h6></li>
+                <li><a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{% url 'super_admin:coupon_create' %}?preset=luxury_gold"><i class="bi bi-gem text-warning"></i> Royal Heritage Gold</a></li>
+                <li><a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{% url 'super_admin:coupon_create' %}?preset=minimal_white"><i class="bi bi-square text-light"></i> Minimalist Diamond White</a></li>
+                <li><a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{% url 'super_admin:coupon_create' %}?preset=bold_promo"><i class="bi bi-stars text-danger"></i> Bold Festive Celebration</a></li>
+                <li><a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{% url 'super_admin:coupon_create' %}?preset=compact_sheet"><i class="bi bi-grid-3x3-gap text-info"></i> Compact Multi-Sheet Voucher</a></li>
+                <li><hr class="dropdown-divider my-1" style="border-color: var(--sa-border);"></li>
+                <li><a class="dropdown-item py-2 d-flex align-items-center gap-2 fw-semibold" href="{% url 'super_admin:coupon_create' %}"><i class="bi bi-code-slash text-warning"></i> Custom HTML/CSS Designer</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- KPI Metrics Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="sa-metric-card">
+            <div class="sa-metric-icon">
+                <i class="bi bi-palette-fill"></i>
+            </div>
+            <div class="flex-grow-1 min-w-0">
+                <div class="sa-metric-val">{{ total_templates }}</div>
+                <div class="sa-metric-lbl">Total Designs</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="sa-metric-card">
+            <div class="sa-metric-icon" style="background: rgba(34, 197, 94, 0.12); color: #22c55e;">
+                <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <div class="flex-grow-1 min-w-0">
+                <div class="sa-metric-val text-success">{{ active_templates }}</div>
+                <div class="sa-metric-lbl">Active Templates</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="sa-metric-card">
+            <div class="sa-metric-icon" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b;">
+                <i class="bi bi-layers-fill"></i>
+            </div>
+            <div class="flex-grow-1 min-w-0">
+                <div class="sa-metric-val text-warning">{{ total_batches }}</div>
+                <div class="sa-metric-lbl">Print Batches</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="sa-metric-card">
+            <div class="sa-metric-icon" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8;">
+                <i class="bi bi-ticket-perforated"></i>
+            </div>
+            <div class="flex-grow-1 min-w-0">
+                <div class="sa-metric-val text-info">{{ total_coupons_generated }}</div>
+                <div class="sa-metric-lbl">Coupons Printed</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search & Filtering Toolbar -->
+<div class="sa-card mb-4">
+    <div class="sa-card-body p-3">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-12 col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-end-0 text-muted" style="border-color: var(--sa-border);">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" name="q" value="{{ q }}" class="form-control sa-input border-start-0" placeholder="Search template name, code, offer..." style="font-size: 0.88rem;">
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <select name="type" class="form-select sa-input" style="font-size: 0.88rem;">
+                    <option value="" {% if not selected_type %}selected{% endif %}>All Design Types</option>
+                    <option value="built_in" {% if selected_type == 'built_in' %}selected{% endif %}>Ready-Made Built-in</option>
+                    <option value="custom" {% if selected_type == 'custom' %}selected{% endif %}>Custom HTML/CSS</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <select name="status" class="form-select sa-input" style="font-size: 0.88rem;">
+                    <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Active Only</option>
+                    <option value="archived" {% if selected_status == 'archived' %}selected{% endif %}>Archived</option>
+                    <option value="all" {% if selected_status == 'all' %}selected{% endif %}>All Templates</option>
+                </select>
+            </div>
+            <div class="col-12 col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-gold btn-sm flex-grow-1">Filter</button>
+                {% if q or selected_type or selected_status != 'active' %}
+                <a href="{% url 'super_admin:coupon_list' %}" class="btn btn-outline-secondary btn-sm" title="Clear Filters"><i class="bi bi-x-lg"></i></a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Templates Grid -->
+<div class="row g-3 mb-4">
+    {% for tpl in page_obj %}
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="sa-card h-100 d-flex flex-column transition-all position-relative" style="border-radius: 12px; overflow: hidden; border: 1px solid var(--sa-border);">
+            <!-- Status Stripe -->
+            {% if tpl.is_archived %}
+            <div class="bg-secondary text-white text-center py-1 small fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.05em;">ARCHIVED TEMPLATE</div>
+            {% endif %}
+
+            <!-- Card Header -->
+            <div class="p-3 border-bottom d-flex align-items-start justify-content-between gap-2" style="border-color: var(--sa-border) !important;">
+                <div class="min-w-0">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        {% if tpl.template_type == 'built_in' %}
+                        <span class="badge" style="background: rgba(212, 175, 55, 0.15); color: #d4af37; border: 1px solid rgba(212, 175, 55, 0.3); font-size: 0.7rem;">PRESET</span>
+                        {% else %}
+                        <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.7rem;">CUSTOM HTML</span>
+                        {% endif %}
+                        <span class="text-muted small" style="font-size: 0.72rem;">{{ tpl.coupon_width_mm }}×{{ tpl.coupon_height_mm }}mm</span>
+                    </div>
+                    <h5 class="fw-bold mb-0 text-truncate" title="{{ tpl.name }}" style="font-size: 1rem; color: var(--sa-text);">{{ tpl.name }}</h5>
+                </div>
+                <div class="text-end flex-shrink-0">
+                    <span class="badge bg-success bg-opacity-20 text-success fw-bold px-2 py-1" style="font-size: 0.8rem;">
+                        {{ tpl.formatted_discount }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Mini Visual Layout Preview Box -->
+            <div class="p-3 text-center" style="background: rgba(0, 0, 0, 0.15); min-height: 120px; display: flex; align-items: center; justify-content: center;">
+                <div style="width: 100%; max-width: 260px; height: 90px; border-radius: 6px; border: 1.5px dashed {{ tpl.primary_color }}; background: {{ tpl.background_color }}; color: {{ tpl.text_color }}; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                    <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: {{ tpl.primary_color }}; font-weight: 700;">{{ tpl.business_name|truncatechars:24 }}</div>
+                    <div style="font-size: 0.82rem; font-weight: 700; margin: 2px 0;">{{ tpl.formatted_discount }}</div>
+                    <div style="font-family: monospace; font-size: 0.70rem; background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 3px; border: 1px dotted {{ tpl.primary_color }};">{{ tpl.sample_coupon_code }}</div>
+                </div>
+            </div>
+
+            <!-- Body Details -->
+            <div class="p-3 flex-grow-1" style="font-size: 0.82rem;">
+                <div class="text-muted text-truncate mb-2" title="{{ tpl.offer_title }}">
+                    <i class="bi bi-tag-fill me-1 text-warning"></i> {{ tpl.offer_title }}
+                </div>
+                <div class="d-flex align-items-center justify-content-between text-muted small pt-2 border-top" style="border-color: var(--sa-border) !important;">
+                    <span>Grid: {{ tpl.grid_columns }}×{{ tpl.grid_rows }} ({{ tpl.capacity_per_sheet }}/page)</span>
+                    <span>Updated {{ tpl.updated_at|date:"d M Y" }}</span>
+                </div>
+            </div>
+
+            <!-- Card Actions Footer -->
+            <div class="p-2 px-3 border-top d-flex align-items-center justify-content-between gap-1" style="background: var(--sa-surface); border-color: var(--sa-border) !important;">
+                <div class="d-flex align-items-center gap-1">
+                    <a href="{% url 'super_admin:coupon_single_print' tpl.id %}" target="_blank" class="btn btn-sm btn-outline-secondary p-1 px-2" title="Print Sample Voucher">
+                        <i class="bi bi-printer"></i>
+                    </a>
+                    <a href="{% url 'super_admin:coupon_edit' tpl.id %}" class="btn btn-sm btn-outline-secondary p-1 px-2" title="Edit Design">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <form method="post" action="{% url 'super_admin:coupon_duplicate' tpl.id %}" class="d-inline m-0">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-secondary p-1 px-2" title="Duplicate Template">
+                            <i class="bi bi-copy"></i>
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'super_admin:coupon_archive' tpl.id %}" class="d-inline m-0">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-secondary p-1 px-2" title="{% if tpl.is_archived %}Unarchive{% else %}Archive{% endif %}">
+                            <i class="bi {% if tpl.is_archived %}bi-arrow-counterclockwise{% else %}bi-archive{% endif %}"></i>
+                        </button>
+                    </form>
+                </div>
+                <div>
+                    <a href="{% url 'super_admin:coupon_batch_create' %}?template_id={{ tpl.id }}" class="btn btn-sm btn-gold p-1 px-2 fw-semibold">
+                        <i class="bi bi-collection me-1"></i> Print Batch
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="sa-card text-center p-5">
+            <div class="rounded-circle d-inline-flex align-items-center justify-content-center p-4 mb-3" style="background: rgba(212, 175, 55, 0.1); color: var(--sa-gold); font-size: 2.5rem;">
+                <i class="bi bi-ticket-perforated"></i>
+            </div>
+            <h4 class="fw-bold mb-2">No Coupon Templates Found</h4>
+            <p class="text-muted max-w-md mx-auto mb-4" style="font-size: 0.9rem;">
+                {% if q or selected_type or selected_status != 'active' %}
+                No design templates match your current filters. Try resetting search filters.
+                {% else %}
+                Start by creating your first luxury coupon design using our ready-made jewellery presets or custom HTML/CSS editor.
+                {% endif %}
+            </p>
+            <div class="d-flex justify-content-center gap-2">
+                {% if q or selected_type or selected_status != 'active' %}
+                <a href="{% url 'super_admin:coupon_list' %}" class="btn btn-outline-secondary btn-sm">Clear Filters</a>
+                {% endif %}
+                <a href="{% url 'super_admin:coupon_create' %}?preset=luxury_gold" class="btn btn-gold btn-sm">
+                    <i class="bi bi-plus-lg me-1"></i> Create Royal Gold Preset
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<div class="d-flex justify-content-center mb-4">
+    <nav>
+        <ul class="pagination pagination-sm mb-0">
+            {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">Previous</a></li>
+            {% endif %}
+            {% for p in page_obj.paginator.page_range %}
+            <li class="page-item {% if p == page_obj.number %}active{% endif %}">
+                <a class="page-link" href="?page={{ p }}{% if q %}&q={{ q }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">{{ p }}</a>
+            </li>
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">Next</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
+
+<!-- Recent Print Batches Table -->
+{% if recent_batches %}
+<div class="sa-card mb-4">
+    <div class="sa-card-header p-3 d-flex align-items-center justify-content-between border-bottom" style="border-color: var(--sa-border) !important;">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-clock-history text-warning"></i>
+            <h6 class="fw-bold mb-0">Recent Print Batches</h6>
+        </div>
+        <a href="{% url 'super_admin:coupon_batch_list' %}" class="small text-decoration-none" style="color: var(--sa-gold);">View All Batches <i class="bi bi-arrow-right"></i></a>
+    </div>
+    <div class="table-responsive">
+        <table class="table sa-table align-middle mb-0" style="font-size: 0.85rem;">
+            <thead>
+                <tr>
+                    <th>Batch ID</th>
+                    <th>Batch Name / Campaign</th>
+                    <th>Template</th>
+                    <th>Type</th>
+                    <th>Quantity</th>
+                    <th>Date Generated</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in recent_batches %}
+                <tr>
+                    <td class="font-monospace fw-bold text-warning">{{ b.batch_number }}</td>
+                    <td><div class="fw-semibold">{{ b.name }}</div></td>
+                    <td><span class="text-muted">{{ b.template.name }}</span></td>
+                    <td>
+                        {% if b.batch_type == 'unique_codes' %}
+                        <span class="badge bg-primary bg-opacity-15 text-primary">Unique Codes</span>
+                        {% else %}
+                        <span class="badge bg-secondary bg-opacity-20 text-body">Identical Promo</span>
+                        {% endif %}
+                    </td>
+                    <td><strong>{{ b.total_quantity }}</strong> vouchers ({{ b.sheet_count }} sheets)</td>
+                    <td class="text-muted">{{ b.created_at|date:"d M Y, H:i" }}</td>
+                    <td class="text-end">
+                        <a href="{% url 'super_admin:coupon_batch_print' b.id %}" target="_blank" class="btn btn-sm btn-outline-gold p-1 px-2" title="Print Layout">
+                            <i class="bi bi-printer"></i>
+                        </a>
+                        <a href="{% url 'super_admin:coupon_batch_detail' b.id %}" class="btn btn-sm btn-outline-secondary p-1 px-2" title="View Batch">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

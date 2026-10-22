@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Print Coupons - {{ batch.batch_number|default:template.name }} | JewelDesk</title>
+
+    <!-- Google Fonts for Luxury Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Montserrat:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+        /* ==========================================================================
+           1. Screen & Print Foundation Styles
+           ========================================================================== */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #110e0c;
+            color: #fef9ed;
+            font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* Screen Control Bar (Floating Header) */
+        .print-control-bar {
+            position: sticky;
+            top: 0;
+            z-index: 9999;
+            background: #1e1915;
+            border-bottom: 2px solid #d4af37;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+        }
+
+        .print-btn {
+            background: #d4af37;
+            color: #0f0d0b;
+            border: none;
+            font-weight: 700;
+            font-size: 0.95rem;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.15s ease;
+        }
+
+        .print-btn:hover {
+            background: #f5d77f;
+            transform: translateY(-1px);
+        }
+
+        .back-btn {
+            background: transparent;
+            color: #cbd5e1;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 0.85rem;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        .back-btn:hover {
+            border-color: #d4af37;
+            color: #d4af37;
+        }
+
+        .print-notice {
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: #ecc86a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Screen Preview Workspace */
+        .print-preview-workspace {
+            padding: 30px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        /* A4 Sheet Container */
+        .a4-sheet {
+            width: 210mm;
+            min-height: 297mm;
+            height: 297mm;
+            background: #ffffff;
+            color: #000000;
+            margin: 0 auto;
+            padding: {{ batch.margin_mm|default:template.margin_mm|default:8 }}mm;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            position: relative;
+            overflow: hidden;
+            page-break-after: always;
+            break-after: page;
+        }
+
+        .coupon-grid {
+            display: grid;
+            grid-template-columns: repeat({{ batch.grid_columns|default:template.grid_columns|default:1 }}, 1fr);
+            gap: {{ batch.spacing_mm|default:template.spacing_mm|default:6 }}mm;
+            width: 100%;
+            align-items: start;
+            justify-items: center;
+        }
+
+        .coupon-cell {
+            page-break-inside: avoid;
+            break-inside: avoid;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            position: relative;
+        }
+
+        /* Perforation / Scissor Cut Guides */
+        .cut-guide {
+            position: absolute;
+            left: -3mm;
+            right: -3mm;
+            bottom: -{{ batch.spacing_mm|default:template.spacing_mm|default:6|divisibleby:2 }}mm;
+            border-bottom: 1px dashed rgba(160, 160, 160, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 4px;
+            font-size: 9px;
+            color: #999;
+            pointer-events: none;
+        }
+
+        .sheet-footer-info {
+            position: absolute;
+            bottom: 4mm;
+            left: 8mm;
+            right: 8mm;
+            display: flex;
+            justify-content: space-between;
+            font-size: 8px;
+            color: #888888;
+            border-top: 1px solid #eeeeee;
+            padding-top: 2px;
+        }
+
+        /* ==========================================================================
+           2. Dedicated Native Browser Print Rules (@media print & @page)
+           ========================================================================== */
+        @page {
+            size: A4 {% if template.orientation == 'landscape' %}landscape{% else %}portrait{% endif %};
+            margin: 0;
+        }
+
+        @media print {
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+                color: #000000 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            /* Completely hide floating header and admin controls */
+            .no-print, .print-control-bar {
+                display: none !important;
+            }
+
+            .print-preview-workspace {
+                padding: 0 !important;
+                gap: 0 !important;
+            }
+
+            .a4-sheet {
+                margin: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                min-height: 297mm !important;
+                page-break-after: always !important;
+                break-after: page !important;
+            }
+
+            .coupon-cell {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Floating Screen Control Bar (Hidden when printed) -->
+    <div class="print-control-bar no-print">
+        <div style="display: flex; align-items: center; gap: 16px;">
+            {% if batch %}
+            <a href="{% url 'super_admin:coupon_batch_detail' batch.id %}" class="back-btn">
+                <i class="bi bi-arrow-left"></i> Back to Batch
+            </a>
+            {% else %}
+            <a href="{% url 'super_admin:coupon_list' %}" class="back-btn">
+                <i class="bi bi-arrow-left"></i> Back to Templates
+            </a>
+            {% endif %}
+            <div>
+                <strong style="color: #fef9ed; font-size: 0.95rem;">
+                    {% if batch %}{{ batch.batch_number }} - {{ batch.name }}{% else %}{{ template.name }} (Sample Voucher Test){% endif %}
+                </strong>
+                <div style="font-size: 0.76rem; color: #94a3b8;">
+                    {{ total_coupons }} voucher{{ total_coupons|pluralize }} &bull; {{ total_sheets }} A4 sheet{{ total_sheets|pluralize }}
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 14px;">
+            <div class="print-notice">
+                <i class="bi bi-info-circle-fill"></i>
+                <span>In print dialog, set Margins: <strong>None</strong> & Check <strong>"Background graphics"</strong></span>
+            </div>
+            <button type="button" class="print-btn" onclick="window.print()">
+                <i class="bi bi-printer-fill"></i> Print All Pages
+            </button>
+        </div>
+    </div>
+
+    <!-- Workspace of A4 Sheets -->
+    <div class="print-preview-workspace">
+        {% for sheet in sheets %}
+        <div class="a4-sheet">
+            <div class="coupon-grid">
+                {% for c in sheet.coupons %}
+                <div class="coupon-cell">
+                    {{ c.html|safe }}
+                    {% if not forloop.last %}
+                    <div class="cut-guide no-print">
+                        <i class="bi bi-scissors"></i> Cut along dotted line
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Page Number & Batch Watermark Footer -->
+            <div class="sheet-footer-info">
+                <span>JewelDesk Print Management &bull; {% if batch %}{{ batch.batch_number }}{% else %}TEST PRINT{% endif %}</span>
+                <span>Sheet {{ sheet.sheet_number }} of {{ total_sheets }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</body>
+</html>

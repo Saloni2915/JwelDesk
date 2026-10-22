@@ -32,12 +32,25 @@ from .models import (
     PlatformProposal,
     PlatformDemoLead,
     PlatformSupportTicket,
+    CouponDesignTemplate,
+    CouponPrintBatch,
+    CouponBatchItem,
 )
 from .forms import (
     PlatformDemoLeadForm,
     DemoMeetingScheduleForm,
     PublicDemoRequestForm,
     PlatformSupportTicketForm,
+    CouponDesignTemplateForm,
+    CouponPrintBatchForm,
+)
+from .coupon_engine import (
+    ALLOWED_PLACEHOLDERS,
+    generate_unique_batch_codes,
+    get_builtin_template_markup,
+    render_single_coupon_html,
+    sanitize_coupon_css,
+    sanitize_coupon_html,
 )
 
 User = get_user_model()
@@ -319,6 +332,11 @@ def showroom_list_view(request):
     if business_type in (Tenant.TYPE_RETAIL, Tenant.TYPE_WHOLESALE, Tenant.TYPE_BOTH):
         qs = qs.filter(business_type=business_type)
 
+    # Subscription plan filter
+    plan = request.GET.get('plan', 'all').strip().lower()
+    if plan in ('core', 'pro', 'enterprise', 'trial'):
+        qs = qs.filter(subscription__plan_name=plan)
+
     # Sorting
     sort = request.GET.get('sort', '-created_at')
     valid_sorts = {
@@ -341,6 +359,7 @@ def showroom_list_view(request):
         'q': q,
         'status': status,
         'business_type': business_type,
+        'plan': plan,
         'sort': sort,
         'total_filtered': paginator.count,
     }
@@ -349,7 +368,7 @@ def showroom_list_view(request):
 
 @super_admin_required
 def showroom_detail_view(request, tenant_id):
-    """Detailed view of a single showroom tenant, its owner, staff, and records."""
+    """Detailed view of a single showroom tenant, its owner, staff, and SaaS subscription."""
     tenant = get_object_or_404(
         Tenant.objects.select_related('owner', 'company_settings'),
         pk=tenant_id
@@ -360,31 +379,7 @@ def showroom_detail_view(request, tenant_id):
         .select_related('role', 'user')
         .order_by('employee_id')
     )
-
-    # Safe inventory & activity stats
-    try:
-        from inventory.models import JewelleryItem
-        inventory_count = JewelleryItem.objects.filter(tenant=tenant).count()
-    except Exception:
-        inventory_count = 0
-
-    try:
-        from sales.models import Sale
-        sales_count = Sale.objects.filter(tenant=tenant).count()
-    except Exception:
-        sales_count = 0
-
-    try:
-        from customers.models import Customer
-        customers_count = Customer.objects.filter(tenant=tenant).count()
-    except Exception:
-        customers_count = 0
-
-    try:
-        from karigar.models import Karigar
-        karigar_count = Karigar.objects.filter(tenant=tenant).count()
-    except Exception:
-        karigar_count = 0
+    employee_count = employees.count()
 
     # Subscription info
     ensure_all_tenant_subscriptions()
@@ -392,6 +387,9 @@ def showroom_detail_view(request, tenant_id):
         subscription = tenant.subscription
     except Exception:
         subscription = None
+
+    # Account tenure
+    account_age_days = (timezone.now() - tenant.created_at).days if tenant.created_at else 0
 
     # Linked demo leads
     try:
@@ -420,10 +418,8 @@ def showroom_detail_view(request, tenant_id):
     context = {
         'tenant': tenant,
         'employees': employees,
-        'inventory_count': inventory_count,
-        'sales_count': sales_count,
-        'customers_count': customers_count,
-        'karigar_count': karigar_count,
+        'employee_count': employee_count,
+        'account_age_days': account_age_days,
         'subscription': subscription,
         'linked_demos': linked_demos,
         'linked_tickets': linked_tickets,
@@ -513,13 +509,13 @@ def impersonate_start_view(request, tenant_id):
         messages.error(request, "The target user account is inactive or missing.")
         return redirect('super_admin:showroom_detail', tenant_id=tenant.id)
 
-    # Strict security barrier: never allow impersonating a superuser or staff admin
-    if target_user.is_superuser or target_user.is_staff:
+    # Strict security barrier: never allow impersonating a platform superuser
+    if target_user.is_superuser:
         logger.warning(
-            "Blocked attempt by %s to impersonate privileged user %s",
+            "Blocked attempt by %s to impersonate privileged superuser %s",
             request.user.username, target_user.username
         )
-        raise PermissionDenied("Impersonating a Super Admin or platform staff account is prohibited.")
+        raise PermissionDenied("Impersonating a Super Admin account is prohibited.")
 
     # Record impersonation start in immutable audit log
     audit_entry = PlatformAuditLog.objects.create(
@@ -1190,14 +1186,18 @@ def proposal_client_download_pdf_view(request, token):
 
 @super_admin_required
 def settings_view(request):
-    """Platform technical configuration and security status overview."""
+    """Platform configuration, SaaS subscription defaults, and technical runtime status."""
     import sys
     import django
     from django.conf import settings as dj_settings
+    from .models import CouponDesignTemplate
 
     db_engine = dj_settings.DATABASES['default'].get('ENGINE', '')
     db_host = dj_settings.DATABASES['default'].get('HOST', 'localhost')
     masked_db = db_host[:4] + "..." + db_host[-10:] if len(db_host) > 15 else db_host
+
+    total_templates = CouponDesignTemplate.objects.count()
+    active_templates = CouponDesignTemplate.objects.filter(is_archived=False).count()
 
     context = {
         'python_version': sys.version.split()[0],
@@ -1207,6 +1207,17 @@ def settings_view(request):
         'debug_mode': dj_settings.DEBUG,
         'time_zone': dj_settings.TIME_ZONE,
         'media_storage': getattr(dj_settings, 'DEFAULT_FILE_STORAGE', 'default_storage'),
+        'platform_name': 'JewelDesk SaaS Platform',
+        'platform_company': 'JewelDesk Technologies Pvt Ltd',
+        'support_email': 'support@jeweldesk.in',
+        'support_phone': '+91 98765 43210',
+        'platform_website': 'https://jeweldesk.in',
+        'default_trial_days': 14,
+        'default_plan': 'Core Showroom Standard Tier',
+        'grace_period_days': 7,
+        'platform_currency': 'INR (₹)',
+        'global_coupon_templates_count': total_templates,
+        'global_active_templates_count': active_templates,
     }
     return render(request, 'super_admin/settings.html', context)
 
@@ -1914,4 +1925,700 @@ def reports_export_csv_view(request, report_type):
         return HttpResponse("Unknown report type", status=400)
 
     return response
+
+
+# ============================================================================
+# 8. Coupon Designer, Discount Templates & Print Management Views
+# ============================================================================
+
+@super_admin_required
+def coupon_list_view(request):
+    """List coupon templates with search, filtering, and summary statistics."""
+    qs = CouponDesignTemplate.objects.all().select_related('created_by')
+
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(
+            Q(name__icontains=q) |
+            Q(description__icontains=q) |
+            Q(offer_title__icontains=q) |
+            Q(sample_coupon_code__icontains=q)
+        )
+
+    ttype = request.GET.get('type', '').strip()
+    if ttype in ['built_in', 'custom']:
+        qs = qs.filter(template_type=ttype)
+
+    status = request.GET.get('status', 'active').strip()
+    if status == 'archived':
+        qs = qs.filter(is_archived=True)
+    elif status == 'all':
+        pass
+    else:
+        qs = qs.filter(is_archived=False)
+
+    total_templates = CouponDesignTemplate.objects.count()
+    active_templates = CouponDesignTemplate.objects.filter(is_archived=False).count()
+    total_batches = CouponPrintBatch.objects.count()
+    total_coupons_generated = CouponBatchItem.objects.count()
+
+    recent_batches = CouponPrintBatch.objects.select_related('template').order_by('-created_at')[:6]
+
+    paginator = Paginator(qs, 12)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'q': q,
+        'selected_type': ttype,
+        'selected_status': status,
+        'total_templates': total_templates,
+        'active_templates': active_templates,
+        'total_batches': total_batches,
+        'total_coupons_generated': total_coupons_generated,
+        'recent_batches': recent_batches,
+    }
+    return render(request, 'super_admin/coupon_list.html', context)
+
+
+@super_admin_required
+def coupon_create_view(request):
+    """Create a new Coupon Design Template (Built-in preset or Custom HTML/CSS)."""
+    initial = {}
+    preset_style = request.GET.get('preset', '').strip()
+    if preset_style in [s[0] for s in CouponDesignTemplate.STYLE_CHOICES]:
+        preset_markup = get_builtin_template_markup(preset_style)
+        initial['built_in_style'] = preset_style
+        initial['custom_html'] = preset_markup['html']
+        initial['custom_css'] = preset_markup['css']
+
+    if request.method == 'POST':
+        form = CouponDesignTemplateForm(request.POST)
+        if form.is_valid():
+            template = form.save(commit=False)
+            template.created_by = request.user
+            template.save()
+
+            PlatformAuditLog.objects.create(
+                actor=request.user,
+                action=PlatformAuditLog.ACTION_COUPON_TEMPLATE_CREATE,
+                reason=f"Created coupon template: '{template.name}' ({template.get_template_type_display()})",
+                ip_address=get_client_ip(request),
+            )
+            messages.success(request, f"Coupon template '{template.name}' created successfully!")
+            action = request.POST.get('submit_action', 'save')
+            if action == 'save_and_batch':
+                return redirect(f"{reverse('super_admin:coupon_batch_create')}?template_id={template.id}")
+            return redirect('super_admin:coupon_list')
+        else:
+            messages.error(request, "Please correct the errors in the template form below.")
+    else:
+        form = CouponDesignTemplateForm(initial=initial)
+
+    context = {
+        'form': form,
+        'is_edit': False,
+        'allowed_placeholders': ALLOWED_PLACEHOLDERS,
+    }
+    return render(request, 'super_admin/coupon_form.html', context)
+
+
+@super_admin_required
+def coupon_edit_view(request, template_id):
+    """Edit an existing Coupon Design Template."""
+    template = get_object_or_404(CouponDesignTemplate, id=template_id)
+
+    if request.method == 'POST':
+        form = CouponDesignTemplateForm(request.POST, instance=template)
+        if form.is_valid():
+            form.save()
+            PlatformAuditLog.objects.create(
+                actor=request.user,
+                action=PlatformAuditLog.ACTION_COUPON_TEMPLATE_UPDATE,
+                reason=f"Updated coupon template: '{template.name}' (ID: {template.id})",
+                ip_address=get_client_ip(request),
+            )
+            messages.success(request, f"Coupon template '{template.name}' updated successfully.")
+            action = request.POST.get('submit_action', 'save')
+            if action == 'save_and_batch':
+                return redirect(f"{reverse('super_admin:coupon_batch_create')}?template_id={template.id}")
+            return redirect('super_admin:coupon_list')
+        else:
+            messages.error(request, "Please resolve form validation errors before saving.")
+    else:
+        form = CouponDesignTemplateForm(instance=template)
+
+    context = {
+        'form': form,
+        'template': template,
+        'is_edit': True,
+        'allowed_placeholders': ALLOWED_PLACEHOLDERS,
+    }
+    return render(request, 'super_admin/coupon_form.html', context)
+
+
+@super_admin_required
+@require_POST
+def coupon_duplicate_view(request, template_id):
+    """Duplicate an existing coupon template for quick customization."""
+    template = get_object_or_404(CouponDesignTemplate, id=template_id)
+
+    clone = CouponDesignTemplate.objects.create(
+        name=f"{template.name} (Copy)",
+        description=template.description,
+        template_type=template.template_type,
+        built_in_style=template.built_in_style,
+        discount_type=template.discount_type,
+        discount_value=template.discount_value,
+        offer_title=template.offer_title,
+        sample_coupon_code=template.sample_coupon_code,
+        business_name=template.business_name,
+        business_logo_url=template.business_logo_url,
+        valid_from=template.valid_from,
+        valid_until=template.valid_until,
+        minimum_purchase=template.minimum_purchase,
+        maximum_discount=template.maximum_discount,
+        applicable_categories=template.applicable_categories,
+        terms_and_conditions=template.terms_and_conditions,
+        show_barcode=template.show_barcode,
+        show_qr_code=template.show_qr_code,
+        primary_color=template.primary_color,
+        background_color=template.background_color,
+        text_color=template.text_color,
+        page_size=template.page_size,
+        orientation=template.orientation,
+        coupon_width_mm=template.coupon_width_mm,
+        coupon_height_mm=template.coupon_height_mm,
+        grid_columns=template.grid_columns,
+        grid_rows=template.grid_rows,
+        margin_mm=template.margin_mm,
+        spacing_mm=template.spacing_mm,
+        custom_html=template.custom_html,
+        custom_css=template.custom_css,
+        is_archived=False,
+        created_by=request.user,
+    )
+
+    PlatformAuditLog.objects.create(
+        actor=request.user,
+        action=PlatformAuditLog.ACTION_COUPON_TEMPLATE_CREATE,
+        reason=f"Duplicated coupon template from '{template.name}' to '{clone.name}'",
+        ip_address=get_client_ip(request),
+    )
+    messages.success(request, f"Duplicated template '{clone.name}'. You can now edit its design.")
+    return redirect('super_admin:coupon_edit', template_id=clone.id)
+
+
+@super_admin_required
+@require_POST
+def coupon_archive_view(request, template_id):
+    """Toggle the archive status of a coupon template."""
+    template = get_object_or_404(CouponDesignTemplate, id=template_id)
+    template.is_archived = not template.is_archived
+    template.save(update_fields=['is_archived', 'updated_at'])
+
+    state_str = "archived" if template.is_archived else "restored to active"
+    PlatformAuditLog.objects.create(
+        actor=request.user,
+        action=PlatformAuditLog.ACTION_COUPON_TEMPLATE_ARCHIVE,
+        reason=f"Template '{template.name}' was {state_str}.",
+        ip_address=get_client_ip(request),
+    )
+    messages.info(request, f"Template '{template.name}' has been {state_str}.")
+    return redirect('super_admin:coupon_list')
+
+
+@super_admin_required
+@require_POST
+def coupon_delete_view(request, template_id):
+    """Delete a template only if no print batches are linked."""
+    template = get_object_or_404(CouponDesignTemplate, id=template_id)
+    if template.print_batches.exists():
+        messages.error(request, f"Cannot delete '{template.name}' because {template.print_batches.count()} print batches are associated with it. Please archive it instead.")
+        return redirect('super_admin:coupon_list')
+
+    name = template.name
+    template.delete()
+    messages.success(request, f"Template '{name}' was permanently deleted.")
+    return redirect('super_admin:coupon_list')
+
+
+@super_admin_required
+def coupon_preview_api(request):
+    """Live Sandboxed Preview Endpoint.
+
+    Returns an isolated, sanitized HTML document rendered either from a saved template ID
+    or directly from real-time POST/GET form fields. Loaded via iframe sandbox for full isolation.
+    """
+    template_id = request.GET.get('template_id') or request.POST.get('template_id')
+    template = None
+    if template_id:
+        template = CouponDesignTemplate.objects.filter(id=template_id).first()
+
+    ttype = request.POST.get('template_type') or (template.template_type if template else CouponDesignTemplate.TYPE_BUILT_IN)
+    bstyle = request.POST.get('built_in_style') or (template.built_in_style if template else CouponDesignTemplate.STYLE_LUXURY_GOLD)
+    custom_html = request.POST.get('custom_html') if 'custom_html' in request.POST else (template.custom_html if template else '')
+    custom_css = request.POST.get('custom_css') if 'custom_css' in request.POST else (template.custom_css if template else '')
+
+    business_name = request.POST.get('business_name') or (template.business_name if template else 'JewelDesk Fine Atelier')
+    offer_title = request.POST.get('offer_title') or (template.offer_title if template else 'Privilege Jewellery Voucher')
+    sample_code = request.POST.get('sample_coupon_code') or (template.sample_coupon_code if template else 'SAMPLE-VIP20')
+    discount_type = request.POST.get('discount_type') or (template.discount_type if template else CouponDesignTemplate.DISCOUNT_PERCENTAGE)
+
+    raw_val = request.POST.get('discount_value')
+    if raw_val is not None and str(raw_val).strip() != '':
+        try:
+            discount_val = Decimal(str(raw_val))
+        except Exception:
+            discount_val = template.discount_value if template else Decimal('20.00')
+    else:
+        discount_val = template.discount_value if template else Decimal('20.00')
+
+    valid_until = request.POST.get('valid_until') or (template.valid_until.strftime('%d %b %Y') if template and template.valid_until else '31 Dec 2026')
+    valid_from = request.POST.get('valid_from') or (template.valid_from.strftime('%d %b %Y') if template and template.valid_from else '01 Jan 2026')
+    min_purchase = request.POST.get('minimum_purchase') or (str(template.minimum_purchase) if template else '10,000')
+    max_discount = request.POST.get('maximum_discount') or (str(template.maximum_discount) if template and template.maximum_discount else '')
+    categories = request.POST.get('applicable_categories') or (template.applicable_categories if template else 'Gold & Diamond Ornaments')
+    terms = request.POST.get('terms_and_conditions') or (template.terms_and_conditions if template else 'Original coupon must be surrendered at billing counter. Valid on all jewellery.')
+
+    show_barcode = (request.POST.get('show_barcode') in ['true', 'on', '1', True]) if 'show_barcode' in request.POST else (template.show_barcode if template else True)
+    show_qr = (request.POST.get('show_qr_code') in ['true', 'on', '1', True]) if 'show_qr_code' in request.POST else (template.show_qr_code if template else True)
+
+    p_color = request.POST.get('primary_color') or (template.primary_color if template else '#d4af37')
+    b_color = request.POST.get('background_color') or (template.background_color if template else '#160f09')
+    t_color = request.POST.get('text_color') or (template.text_color if template else '#fef9ed')
+
+    try:
+        w_mm = int(request.POST.get('coupon_width_mm') or (template.coupon_width_mm if template else 180))
+    except Exception:
+        w_mm = 180
+    try:
+        h_mm = int(request.POST.get('coupon_height_mm') or (template.coupon_height_mm if template else 70))
+    except Exception:
+        h_mm = 70
+
+    html_markup = render_single_coupon_html(
+        template_type=ttype,
+        built_in_style=bstyle,
+        custom_html=custom_html,
+        custom_css=custom_css,
+        coupon_code=sample_code,
+        discount_type=discount_type,
+        discount_value=discount_val,
+        offer_title=offer_title,
+        business_name=business_name,
+        valid_from=valid_from,
+        valid_until=valid_until,
+        minimum_purchase=min_purchase,
+        maximum_discount=max_discount,
+        applicable_categories=categories,
+        terms_and_conditions=terms,
+        serial_number=1,
+        show_barcode=show_barcode,
+        show_qr_code=show_qr,
+        primary_color=p_color,
+        background_color=b_color,
+        text_color=t_color,
+        coupon_width_mm=w_mm,
+        coupon_height_mm=h_mm,
+    )
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'json' in request.GET:
+        return JsonResponse({'status': 'ok', 'html': html_markup})
+
+    full_html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JewelDesk Coupon Sandbox Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Montserrat:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    * {{ box-sizing: border-box; }}
+    body {{
+      margin: 0;
+      padding: 24px;
+      background: #110e0c;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Montserrat', system-ui, sans-serif;
+    }}
+    .preview-canvas {{
+      background: #1e1915;
+      padding: 24px;
+      border-radius: 12px;
+      border: 1px solid rgba(212, 175, 55, 0.25);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }}
+    .preview-badge {{
+      margin-bottom: 14px;
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #d4af37;
+      background: rgba(212, 175, 55, 0.12);
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      border-radius: 999px;
+    }}
+  </style>
+</head>
+<body>
+  <div class="preview-canvas">
+    <div class="preview-badge">Live Print Scaling Preview ({w_mm}mm × {h_mm}mm)</div>
+    {html_markup}
+  </div>
+</body>
+</html>"""
+    response = HttpResponse(full_html, content_type='text/html; charset=utf-8')
+    response['X-Content-Type-Options'] = 'nosniff'
+    response['X-Frame-Options'] = 'SAMEORIGIN'
+    return response
+
+
+# ============================================================================
+# Coupon Print Batches & Multi-Coupon Layout Views
+# ============================================================================
+
+@super_admin_required
+def coupon_batch_list_view(request):
+    """List of all generated coupon print batches with status and export."""
+    qs = CouponPrintBatch.objects.select_related('template', 'created_by').prefetch_related('items')
+
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(
+            Q(batch_number__icontains=q) |
+            Q(name__icontains=q) |
+            Q(shared_code__icontains=q) |
+            Q(template__name__icontains=q)
+        )
+
+    template_id = request.GET.get('template_id')
+    if template_id:
+        qs = qs.filter(template_id=template_id)
+
+    paginator = Paginator(qs, 15)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    templates = CouponDesignTemplate.objects.filter(is_archived=False)
+
+    context = {
+        'page_obj': page_obj,
+        'q': q,
+        'selected_template_id': template_id,
+        'templates': templates,
+    }
+    return render(request, 'super_admin/coupon_batch_list.html', context)
+
+
+@super_admin_required
+def coupon_batch_create_view(request):
+    """Generate a single coupon or bulk print run with unique codes or identical artwork."""
+    template_id = request.GET.get('template_id')
+    selected_template = None
+    if template_id:
+        selected_template = CouponDesignTemplate.objects.filter(id=template_id, is_archived=False).first()
+
+    initial = {}
+    if selected_template:
+        initial = {
+            'template': selected_template.id,
+            'offer_title': selected_template.offer_title,
+            'discount_type': selected_template.discount_type,
+            'discount_value': selected_template.discount_value,
+            'valid_from': selected_template.valid_from,
+            'valid_until': selected_template.valid_until,
+            'business_name': selected_template.business_name,
+            'minimum_purchase': selected_template.minimum_purchase,
+            'maximum_discount': selected_template.maximum_discount,
+            'applicable_categories': selected_template.applicable_categories,
+            'terms_and_conditions': selected_template.terms_and_conditions,
+            'grid_columns': selected_template.grid_columns,
+            'grid_rows': selected_template.grid_rows,
+            'margin_mm': selected_template.margin_mm,
+            'spacing_mm': selected_template.spacing_mm,
+            'shared_code': selected_template.sample_coupon_code,
+        }
+
+    if request.method == 'POST':
+        form = CouponPrintBatchForm(request.POST)
+        if form.is_valid():
+            batch = form.save(commit=False)
+            batch.created_by = request.user
+
+            import random
+            year = timezone.localdate().year
+            last_batch = CouponPrintBatch.objects.order_by('-id').first()
+            next_id = (last_batch.id + 1) if last_batch else random.randint(100, 999)
+            batch.batch_number = f"BATCH-{year}-{next_id:04d}"
+
+            tpl = batch.template
+            if not batch.offer_title:
+                batch.offer_title = tpl.offer_title
+            if not batch.discount_type:
+                batch.discount_type = tpl.discount_type
+            if not batch.discount_value:
+                batch.discount_value = tpl.discount_value
+            if not batch.business_name:
+                batch.business_name = tpl.business_name
+            if not batch.terms_and_conditions:
+                batch.terms_and_conditions = tpl.terms_and_conditions
+
+            batch.save()
+
+            qty = batch.total_quantity
+            items_to_create = []
+
+            if batch.batch_type == CouponPrintBatch.BATCH_UNIQUE:
+                codes = generate_unique_batch_codes(
+                    batch_instance=batch,
+                    count=qty,
+                    prefix=batch.code_prefix or 'JD-',
+                    length=batch.code_length or 8
+                )
+                start_num = batch.serial_start if batch.include_serial_numbers else 1
+                for idx, code_str in enumerate(codes):
+                    items_to_create.append(CouponBatchItem(
+                        batch=batch,
+                        serial_number=start_num + idx,
+                        coupon_code=code_str,
+                    ))
+            else:
+                code_str = batch.shared_code or tpl.sample_coupon_code or 'PROMO'
+                start_num = batch.serial_start if batch.include_serial_numbers else 1
+                for idx in range(qty):
+                    items_to_create.append(CouponBatchItem(
+                        batch=batch,
+                        serial_number=start_num + idx,
+                        coupon_code=code_str,
+                    ))
+
+            CouponBatchItem.objects.bulk_create(items_to_create)
+
+            PlatformAuditLog.objects.create(
+                actor=request.user,
+                action=PlatformAuditLog.ACTION_COUPON_BATCH_GENERATE,
+                reason=f"Generated print batch {batch.batch_number} with {qty} coupons ({batch.get_batch_type_display()})",
+                ip_address=get_client_ip(request),
+            )
+            messages.success(request, f"Batch '{batch.batch_number}' ({qty} coupons) generated successfully! Ready for printing.")
+            return redirect('super_admin:coupon_batch_detail', batch_id=batch.id)
+        else:
+            messages.error(request, "Please review the batch settings below.")
+    else:
+        form = CouponPrintBatchForm(initial=initial)
+
+    context = {
+        'form': form,
+        'selected_template': selected_template,
+        'templates': CouponDesignTemplate.objects.filter(is_archived=False),
+    }
+    return render(request, 'super_admin/coupon_batch_create.html', context)
+
+
+@super_admin_required
+def coupon_batch_detail_view(request, batch_id):
+    """View coupon batch metadata, individual serial items, and export."""
+    batch = get_object_or_404(CouponPrintBatch.objects.select_related('template', 'created_by'), id=batch_id)
+
+    # Optional CSV export of batch codes
+    if request.GET.get('export') == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        now_str = timezone.now().strftime('%Y%m%d_%H%M')
+        response['Content-Disposition'] = f'attachment; filename="JewelDesk_Coupons_{batch.batch_number}_{now_str}.csv"'
+        writer = csv.writer(response)
+        writer.writerow([
+            'Batch Number',
+            'Serial Number',
+            'Coupon Code',
+            'Discount Value',
+            'Offer Title',
+            'Valid Until',
+            'Redeemed',
+            'Redeemed Date',
+            'Redemption Note',
+        ])
+        for itm in batch.items.all().order_by('serial_number'):
+            writer.writerow([
+                batch.batch_number,
+                f"#{itm.serial_number:04d}",
+                itm.coupon_code,
+                batch.formatted_discount,
+                batch.offer_title,
+                batch.valid_until.strftime('%Y-%m-%d') if batch.valid_until else 'N/A',
+                'Yes' if itm.is_redeemed else 'No',
+                itm.redeemed_at.strftime('%Y-%m-%d %H:%M') if itm.redeemed_at else '',
+                itm.redemption_note,
+            ])
+        return response
+
+    items_qs = batch.items.all().order_by('serial_number')
+
+    q = request.GET.get('q', '').strip()
+    if q:
+        items_qs = items_qs.filter(coupon_code__icontains=q)
+
+    redemption_filter = request.GET.get('redeemed', '').strip()
+    if redemption_filter == 'yes':
+        items_qs = items_qs.filter(is_redeemed=True)
+    elif redemption_filter == 'no':
+        items_qs = items_qs.filter(is_redeemed=False)
+
+    paginator = Paginator(items_qs, 50)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    redeemed_count = batch.items.filter(is_redeemed=True).count()
+    unredeemed_count = batch.total_quantity - redeemed_count
+
+    context = {
+        'batch': batch,
+        'page_obj': page_obj,
+        'q': q,
+        'redemption_filter': redemption_filter,
+        'redeemed_count': redeemed_count,
+        'unredeemed_count': unredeemed_count,
+    }
+    return render(request, 'super_admin/coupon_batch_detail.html', context)
+
+
+@super_admin_required
+@require_POST
+def coupon_batch_item_toggle_view(request, item_id):
+    """Toggle redemption status for a specific coupon voucher item."""
+    item = get_object_or_404(CouponBatchItem, id=item_id)
+    item.is_redeemed = not item.is_redeemed
+    if item.is_redeemed:
+        item.redeemed_at = timezone.now()
+        note = request.POST.get('redemption_note', '').strip()
+        item.redemption_note = note or f"Marked redeemed by {request.user.username}"
+    else:
+        item.redeemed_at = None
+        item.redemption_note = ''
+    item.save(update_fields=['is_redeemed', 'redeemed_at', 'redemption_note'])
+
+    state_str = "Redeemed" if item.is_redeemed else "Unredeemed"
+    messages.success(request, f"Coupon #{item.serial_number:04d} [{item.coupon_code}] marked as {state_str}.")
+    return redirect('super_admin:coupon_batch_detail', batch_id=item.batch.id)
+
+
+@super_admin_required
+def coupon_batch_print_view(request, batch_id):
+    """Dedicated Native Browser Print Layout for a batch of coupons.
+
+    Renders A4 multi-coupon sheets or single voucher pages using @page and @media print.
+    Excludes all admin navigation, sidebars, and buttons from print output.
+    """
+    batch = get_object_or_404(CouponPrintBatch.objects.select_related('template'), id=batch_id)
+    template = batch.template
+
+    items = list(batch.items.all().order_by('serial_number'))
+    capacity = max(1, batch.grid_columns * batch.grid_rows)
+
+    sheets = []
+    for i in range(0, len(items), capacity):
+        chunk = items[i:i + capacity]
+        rendered_coupons = []
+        for item in chunk:
+            coupon_html = render_single_coupon_html(
+                template_type=template.template_type,
+                built_in_style=template.built_in_style,
+                custom_html=template.custom_html,
+                custom_css=template.custom_css,
+                coupon_code=item.coupon_code,
+                discount_type=batch.discount_type,
+                discount_value=batch.discount_value,
+                offer_title=batch.offer_title,
+                business_name=batch.business_name,
+                valid_from=batch.valid_from.strftime('%d %b %Y') if batch.valid_from else '',
+                valid_until=batch.valid_until.strftime('%d %b %Y') if batch.valid_until else '',
+                minimum_purchase=f"{batch.minimum_purchase:,.0f}" if batch.minimum_purchase else '0',
+                maximum_discount=f"{batch.maximum_discount:,.0f}" if batch.maximum_discount else '',
+                applicable_categories=batch.applicable_categories,
+                terms_and_conditions=batch.terms_and_conditions,
+                serial_number=item.serial_number if batch.include_serial_numbers else None,
+                show_barcode=template.show_barcode,
+                show_qr_code=template.show_qr_code,
+                primary_color=template.primary_color,
+                background_color=template.background_color,
+                text_color=template.text_color,
+                coupon_width_mm=template.coupon_width_mm,
+                coupon_height_mm=template.coupon_height_mm,
+            )
+            rendered_coupons.append({
+                'item': item,
+                'html': coupon_html,
+            })
+        sheets.append({
+            'sheet_number': len(sheets) + 1,
+            'coupons': rendered_coupons,
+        })
+
+    context = {
+        'batch': batch,
+        'template': template,
+        'sheets': sheets,
+        'total_sheets': len(sheets),
+        'total_coupons': len(items),
+    }
+    return render(request, 'super_admin/coupon_batch_print.html', context)
+
+
+@super_admin_required
+def coupon_single_print_view(request, template_id):
+    """Direct single voucher print test preview for a template."""
+    template = get_object_or_404(CouponDesignTemplate, id=template_id)
+
+    coupon_html = render_single_coupon_html(
+        template_type=template.template_type,
+        built_in_style=template.built_in_style,
+        custom_html=template.custom_html,
+        custom_css=template.custom_css,
+        coupon_code=template.sample_coupon_code,
+        discount_type=template.discount_type,
+        discount_value=template.discount_value,
+        offer_title=template.offer_title,
+        business_name=template.business_name,
+        valid_from=template.valid_from.strftime('%d %b %Y') if template.valid_from else '',
+        valid_until=template.valid_until.strftime('%d %b %Y') if template.valid_until else '',
+        minimum_purchase=f"{template.minimum_purchase:,.0f}" if template.minimum_purchase else '0',
+        maximum_discount=f"{template.maximum_discount:,.0f}" if template.maximum_discount else '',
+        applicable_categories=template.applicable_categories,
+        terms_and_conditions=template.terms_and_conditions,
+        serial_number=1,
+        show_barcode=template.show_barcode,
+        show_qr_code=template.show_qr_code,
+        primary_color=template.primary_color,
+        background_color=template.background_color,
+        text_color=template.text_color,
+        coupon_width_mm=template.coupon_width_mm,
+        coupon_height_mm=template.coupon_height_mm,
+    )
+
+    sheet = {
+        'sheet_number': 1,
+        'coupons': [{'item': None, 'html': coupon_html}],
+    }
+
+    context = {
+        'template': template,
+        'sheets': [sheet],
+        'total_sheets': 1,
+        'total_coupons': 1,
+        'is_single_test': True,
+    }
+    return render(request, 'super_admin/coupon_batch_print.html', context)
+
 

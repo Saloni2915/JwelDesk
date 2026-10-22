@@ -1,0 +1,301 @@
+{% extends 'super_admin/base_super_admin.html' %}
+
+{% block title %}Configure Coupon Print Run | Super Admin Portal{% endblock %}
+{% block page_title %}Generate Coupon Print Batch{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div class="d-flex align-items-center gap-2">
+        <a href="{% url 'super_admin:coupon_batch_list' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back to Batches
+        </a>
+        <span class="text-muted">|</span>
+        <span class="small text-muted">Generate single coupon vouchers or multi-page A4 print batches</span>
+    </div>
+</div>
+
+<form method="post" id="batchForm" novalidate>
+    {% csrf_token %}
+
+    <div class="row g-4">
+        <div class="col-12 col-lg-8">
+            <!-- 1. Template Selection & Campaign Title -->
+            <div class="sa-card mb-4">
+                <div class="sa-card-header p-3 border-bottom d-flex align-items-center justify-content-between" style="border-color: var(--sa-border) !important;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-palette text-warning"></i>
+                        <h6 class="fw-bold mb-0">1. Master Design Template</h6>
+                    </div>
+                </div>
+                <div class="sa-card-body p-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label sa-label small mb-1 fw-bold">Select Template *</label>
+                            {{ form.template }}
+                            {% if form.template.errors %}<div class="text-danger small mt-1">{{ form.template.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label sa-label small mb-1 fw-bold">Print Run / Batch Name *</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Quantity & Unique Code Generation Strategy -->
+            <div class="sa-card mb-4">
+                <div class="sa-card-header p-3 border-bottom d-flex align-items-center justify-content-between" style="border-color: var(--sa-border) !important;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-lock text-warning"></i>
+                        <h6 class="fw-bold mb-0">2. Code Strategy & Quantity</h6>
+                    </div>
+                </div>
+                <div class="sa-card-body p-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label sa-label small mb-1 fw-bold">Coupon Code Strategy *</label>
+                            {{ form.batch_type }}
+                            {% if form.batch_type.errors %}<div class="text-danger small mt-1">{{ form.batch_type.errors.0 }}</div>{% endif %}
+                            <div class="form-text small text-muted">
+                                <strong>Unique Codes:</strong> Cryptographically random, collision-resistant codes for each voucher.<br>
+                                <strong>Identical Code:</strong> Single common promo code printed on all copies.
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label sa-label small mb-1 fw-bold">Total Vouchers to Generate *</label>
+                            {{ form.total_quantity }}
+                            {% if form.total_quantity.errors %}<div class="text-danger small mt-1">{{ form.total_quantity.errors.0 }}</div>{% endif %}
+                            <div class="form-text small text-muted">Set to 1 for a single coupon, or up to 500 for bulk showroom print sheets.</div>
+                        </div>
+
+                        <!-- Identical Code Field (shown when identical) -->
+                        <div class="col-md-6" id="fieldSharedCode">
+                            <label class="form-label sa-label small mb-1 fw-bold">Shared Promotional Code</label>
+                            {{ form.shared_code }}
+                            {% if form.shared_code.errors %}<div class="text-danger small mt-1">{{ form.shared_code.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <!-- Unique Code Options (shown when unique) -->
+                        <div class="col-md-3" id="fieldCodePrefix">
+                            <label class="form-label sa-label small mb-1 fw-bold">Code Prefix</label>
+                            {{ form.code_prefix }}
+                            {% if form.code_prefix.errors %}<div class="text-danger small mt-1">{{ form.code_prefix.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-3" id="fieldCodeLength">
+                            <label class="form-label sa-label small mb-1 fw-bold">Random Length</label>
+                            {{ form.code_length }}
+                            {% if form.code_length.errors %}<div class="text-danger small mt-1">{{ form.code_length.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <!-- Sequential Serial Numbers -->
+                        <div class="col-md-6 d-flex align-items-center">
+                            <div class="form-check pt-2">
+                                {{ form.include_serial_numbers }}
+                                <label class="form-check-label small fw-bold" for="id_include_serial_numbers">
+                                    Include Sequential Serial Numbers (e.g. #0001)
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6" id="fieldSerialStart">
+                            <label class="form-label sa-label small mb-1">Starting Serial Number</label>
+                            {{ form.serial_start }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Sheet Layout & Grid Overrides -->
+            <div class="sa-card mb-4">
+                <div class="sa-card-header p-3 border-bottom d-flex align-items-center justify-content-between" style="border-color: var(--sa-border) !important;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-grid text-warning"></i>
+                        <h6 class="fw-bold mb-0">3. Print Grid & Margin Overrides (A4 Sheet)</h6>
+                    </div>
+                </div>
+                <div class="sa-card-body p-3">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label sa-label small mb-1">Columns / Row</label>
+                            {{ form.grid_columns }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label sa-label small mb-1">Rows / Sheet</label>
+                            {{ form.grid_rows }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label sa-label small mb-1">Page Margin (mm)</label>
+                            {{ form.margin_mm }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label sa-label small mb-1">Coupon Gap (mm)</label>
+                            {{ form.spacing_mm }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Optional Campaign Data Overrides -->
+            <div class="sa-card mb-4">
+                <div class="sa-card-header p-3 border-bottom d-flex align-items-center justify-content-between" style="border-color: var(--sa-border) !important;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-pencil-square text-warning"></i>
+                        <h6 class="fw-bold mb-0">4. Campaign Text Overrides (Optional)</h6>
+                    </div>
+                    <span class="text-muted small">Inherits template defaults if left blank</span>
+                </div>
+                <div class="sa-card-body p-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label sa-label small mb-1">Offer Title</label>
+                            {{ form.offer_title }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label sa-label small mb-1">Discount Type</label>
+                            {{ form.discount_type }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label sa-label small mb-1">Discount Value</label>
+                            {{ form.discount_value }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label sa-label small mb-1">Valid From</label>
+                            {{ form.valid_from }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label sa-label small mb-1">Valid Until</label>
+                            {{ form.valid_until }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label sa-label small mb-1">Terms & Conditions</label>
+                            {{ form.terms_and_conditions }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label sa-label small mb-1">Printing Notes (Paper stock, tray, counter)</label>
+                            {{ form.notes }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit -->
+            <div class="d-flex align-items-center justify-content-between gap-2 pt-2 mb-5">
+                <a href="{% url 'super_admin:coupon_batch_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-gold px-4">
+                    <i class="bi bi-printer-fill me-1"></i> Generate & Open Print Layout
+                </button>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Batch Summary & Sheet Calculation Info -->
+        <div class="col-12 col-lg-4">
+            <div class="sticky-top" style="top: 85px;">
+                <div class="sa-card mb-4">
+                    <div class="sa-card-header p-3 border-bottom d-flex align-items-center justify-content-between" style="border-color: var(--sa-border) !important;">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-calculator text-warning"></i>
+                            <h6 class="fw-bold mb-0">Print Sheet Calculator</h6>
+                        </div>
+                    </div>
+                    <div class="sa-card-body p-3">
+                        <div class="p-3 rounded mb-3 text-center" style="background: rgba(212, 175, 55, 0.08); border: 1px solid rgba(212, 175, 55, 0.25);">
+                            <div class="text-muted small mb-1">ESTIMATED A4 SHEETS NEEDED</div>
+                            <div class="display-6 fw-bold text-warning" id="calcSheets">1</div>
+                            <div class="small text-muted mt-1" id="calcDetails">1 coupon on 1 sheet</div>
+                        </div>
+
+                        <ul class="list-unstyled small mb-0">
+                            <li class="d-flex justify-content-between py-1 border-bottom" style="border-color: var(--sa-border) !important;">
+                                <span class="text-muted">Paper Size:</span>
+                                <span class="fw-semibold">Standard A4 (210×297mm)</span>
+                            </li>
+                            <li class="d-flex justify-content-between py-1 border-bottom" style="border-color: var(--sa-border) !important;">
+                                <span class="text-muted">Grid Density:</span>
+                                <span class="fw-semibold" id="calcDensity">1 col × 3 rows (3/sheet)</span>
+                            </li>
+                            <li class="d-flex justify-content-between py-1 border-bottom" style="border-color: var(--sa-border) !important;">
+                                <span class="text-muted">Perforation Cut Guides:</span>
+                                <span class="fw-semibold text-success">Included</span>
+                            </li>
+                            <li class="d-flex justify-content-between py-1" style="border-color: var(--sa-border) !important;">
+                                <span class="text-muted">Collision Resistant:</span>
+                                <span class="fw-semibold text-success">Cryptographic Uniqueness</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="sa-card">
+                    <div class="sa-card-body p-3 text-muted small">
+                        <h6 class="fw-bold text-warning mb-2"><i class="bi bi-lightbulb-fill me-1"></i> Printing Tips</h6>
+                        <ul class="ps-3 mb-0">
+                            <li>In browser print dialog, set Margins to <strong>None</strong> or <strong>Default</strong>.</li>
+                            <li>Check <strong>"Background graphics"</strong> to ensure royal gold backgrounds and borders print richly.</li>
+                            <li>Use 180–300 GSM cardstock for luxury jewellery gift vouchers.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateBatchTypeUI() {
+    const btype = document.getElementById('id_batch_type').value;
+    const sharedCode = document.getElementById('fieldSharedCode');
+    const prefix = document.getElementById('fieldCodePrefix');
+    const length = document.getElementById('fieldCodeLength');
+
+    if (btype === 'unique_codes') {
+        if (sharedCode) sharedCode.style.display = 'none';
+        if (prefix) prefix.style.display = 'block';
+        if (length) length.style.display = 'block';
+    } else {
+        if (sharedCode) sharedCode.style.display = 'block';
+        if (prefix) prefix.style.display = 'none';
+        if (length) length.style.display = 'none';
+    }
+}
+
+function calculateSheets() {
+    const qtyInput = document.getElementById('id_total_quantity');
+    const colsInput = document.querySelector('input[name="grid_columns"]');
+    const rowsInput = document.querySelector('input[name="grid_rows"]');
+    
+    const qty = parseInt(qtyInput ? qtyInput.value : 1) || 1;
+    const cols = parseInt(colsInput ? colsInput.value : 1) || 1;
+    const rows = parseInt(rowsInput ? rowsInput.value : 3) || 3;
+
+    const perSheet = Math.max(1, cols * rows);
+    const totalSheets = Math.ceil(qty / perSheet);
+
+    const calcSheets = document.getElementById('calcSheets');
+    const calcDetails = document.getElementById('calcDetails');
+    const calcDensity = document.getElementById('calcDensity');
+
+    if (calcSheets) calcSheets.innerText = totalSheets;
+    if (calcDetails) calcDetails.innerText = `${qty} coupons (${perSheet} coupons per sheet)`;
+    if (calcDensity) calcDensity.innerText = `${cols} col × ${rows} rows (${perSheet}/sheet)`;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    updateBatchTypeUI();
+    calculateSheets();
+
+    const btype = document.getElementById('id_batch_type');
+    if (btype) btype.addEventListener('change', updateBatchTypeUI);
+
+    const qty = document.getElementById('id_total_quantity');
+    if (qty) qty.addEventListener('input', calculateSheets);
+
+    const cols = document.querySelector('input[name="grid_columns"]');
+    if (cols) cols.addEventListener('input', calculateSheets);
+
+    const rows = document.querySelector('input[name="grid_rows"]');
+    if (rows) rows.addEventListener('input', calculateSheets);
+});
+</script>
+{% endblock %}

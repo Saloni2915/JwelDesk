@@ -2200,3 +2200,197 @@ class JewelleryItemOptionalChargesTests(TestCase):
         self.assertEqual(item.making_charge, Decimal('0.00'))
 
 
+class JewelleryItemPhotoTests(TestCase):
+    """Test suite verifying end-to-end jewellery photograph upload, display, and management."""
+
+    def setUp(self):
+        from PIL import Image
+        from accounts.models import Tenant
+
+        self.user = User.objects.create_user(username='photo_tester', password='password123')
+        self.tenant = Tenant.objects.create(name="Photo Test Showroom", owner=self.user, slug="photo-test", is_active=True)
+        if hasattr(self.user, 'profile'):
+            self.user.profile.tenant = self.tenant
+            self.user.profile.save()
+
+        self.category = Category.objects.create(name='Rings', description='Gold Rings', tenant=self.tenant)
+
+    def _generate_test_image(self, name='ring.jpg', fmt='JPEG'):
+        from io import BytesIO
+        from PIL import Image
+
+        buf = BytesIO()
+        img = Image.new('RGB', (60, 60), color=(212, 175, 55))
+        img.save(buf, format=fmt)
+        buf.seek(0)
+        return SimpleUploadedFile(name, buf.read(), content_type=f'image/{fmt.lower()}')
+
+    def test_add_jewellery_item_with_photo_upload(self):
+        """Uploading a photo during inventory_add stores JewelleryItemImage and sets it as primary."""
+        self.client.login(username='photo_tester', password='password123')
+        test_img = self._generate_test_image('solitaire.jpg', 'JPEG')
+
+        post_data = {
+            'tag_number': 'JWL-PHOTO-01',
+            'item_code': 'RING-PHOTO-01',
+            'name': 'Solitaire Diamond Ring',
+            'category': str(self.category.id),
+            'metal_type': 'Gold',
+            'purity': '22K',
+            'gross_weight': '4.500',
+            'net_weight': '4.000',
+            'stone_weight': '0.500',
+            'selling_price': '45000.00',
+            'quantity': '1',
+            'status': 'Available',
+            'image': test_img,
+        }
+
+        response = self.client.post(reverse('inventory_add'), post_data)
+        self.assertRedirects(response, reverse('inventory_list'))
+
+        item = JewelleryItem.objects.get(item_code='RING-PHOTO-01', tenant=self.tenant)
+        self.assertIsNotNone(item.primary_image)
+        self.assertTrue(item.primary_image.is_primary)
+        self.assertTrue(bool(item.primary_image_url))
+        self.assertEqual(item.image_url, item.primary_image_url)
+
+    def test_item_detail_view_displays_photo(self):
+        """When an item has a photo, inventory_detail displays the photo showcase."""
+        self.client.login(username='photo_tester', password='password123')
+        item = JewelleryItem.objects.create(
+            tenant=self.tenant,
+            item_code='RING-SHOW-01',
+            name='Royal Emerald Ring',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('5.000'),
+            net_weight=Decimal('4.500'),
+            selling_price=Decimal('55000.00'),
+            quantity=1,
+            status='Available',
+        )
+
+        from inventory.models import JewelleryItemImage
+        test_img = self._generate_test_image('emerald.png', 'PNG')
+        img_obj = JewelleryItemImage.objects.create(
+            tenant=self.tenant,
+            item=item,
+            image=test_img,
+            is_primary=True,
+        )
+
+        response = self.client.get(reverse('inventory_detail', kwargs={'pk': item.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, img_obj.image.url)
+        self.assertContains(response, 'Product Photograph')
+        self.assertContains(response, 'photoZoomModal')
+
+    def test_item_list_view_displays_thumbnail(self):
+        """The stock table in inventory_list renders the item photo thumbnail."""
+        self.client.login(username='photo_tester', password='password123')
+        item = JewelleryItem.objects.create(
+            tenant=self.tenant,
+            item_code='RING-THUMB-01',
+            name='Bridal Gold Choker',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('25.000'),
+            net_weight=Decimal('25.000'),
+            selling_price=Decimal('180000.00'),
+            quantity=1,
+            status='Available',
+        )
+
+        from inventory.models import JewelleryItemImage
+        test_img = self._generate_test_image('choker.jpg', 'JPEG')
+        img_obj = JewelleryItemImage.objects.create(
+            tenant=self.tenant,
+            item=item,
+            image=test_img,
+            is_primary=True,
+        )
+
+        response = self.client.get(reverse('inventory_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, img_obj.image.url)
+
+    def test_quick_upload_photo_view(self):
+        """inventory_upload_photo adds a photo directly from detail page."""
+        self.client.login(username='photo_tester', password='password123')
+        item = JewelleryItem.objects.create(
+            tenant=self.tenant,
+            item_code='RING-QUICK-01',
+            name='Platinum Band',
+            category=self.category,
+            metal_type='Platinum',
+            purity='950',
+            gross_weight=Decimal('6.000'),
+            net_weight=Decimal('6.000'),
+            selling_price=Decimal('70000.00'),
+            quantity=1,
+            status='Available',
+        )
+
+        test_img = self._generate_test_image('band.webp', 'WEBP')
+        post_data = {
+            'image': test_img,
+            'caption': 'Front View of Band',
+        }
+        res = self.client.post(reverse('inventory_upload_photo', kwargs={'pk': item.pk}), post_data)
+        self.assertRedirects(res, reverse('inventory_detail', kwargs={'pk': item.pk}))
+
+        item.refresh_from_db()
+        self.assertIsNotNone(item.primary_image)
+        self.assertEqual(item.primary_image.caption, 'Front View of Band')
+
+    def test_edit_item_remove_photo(self):
+        """Checking remove_image='1' in inventory_edit removes the photo."""
+        self.client.login(username='photo_tester', password='password123')
+        item = JewelleryItem.objects.create(
+            tenant=self.tenant,
+            item_code='RING-REM-01',
+            name='Rose Gold Bangle',
+            category=self.category,
+            metal_type='Gold',
+            purity='18K',
+            gross_weight=Decimal('12.000'),
+            net_weight=Decimal('12.000'),
+            selling_price=Decimal('90000.00'),
+            quantity=1,
+            status='Available',
+        )
+
+        from inventory.models import JewelleryItemImage
+        test_img = self._generate_test_image('bangle.jpg', 'JPEG')
+        JewelleryItemImage.objects.create(
+            tenant=self.tenant,
+            item=item,
+            image=test_img,
+            is_primary=True,
+        )
+
+        self.assertEqual(item.images.count(), 1)
+
+        edit_data = {
+            'item_code': item.item_code,
+            'name': item.name,
+            'category': str(self.category.id),
+            'metal_type': item.metal_type,
+            'purity': item.purity,
+            'gross_weight': str(item.gross_weight),
+            'net_weight': str(item.net_weight),
+            'selling_price': str(item.selling_price),
+            'quantity': '1',
+            'status': 'Available',
+            'remove_image': '1',
+        }
+        res = self.client.post(reverse('inventory_edit', kwargs={'pk': item.pk}), edit_data)
+        self.assertRedirects(res, reverse('inventory_detail', kwargs={'pk': item.pk}))
+
+        self.assertEqual(item.images.count(), 0)
+
+
+

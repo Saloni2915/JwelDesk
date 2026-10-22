@@ -1,0 +1,221 @@
+{% extends 'super_admin/base_super_admin.html' %}
+
+{% block title %}Batch Details: {{ batch.batch_number }} | Super Admin Portal{% endblock %}
+{% block page_title %}Coupon Print Batch: {{ batch.batch_number }}{% endblock %}
+
+{% block content %}
+<!-- Notice Banner -->
+<div class="alert alert-dark border border-warning border-opacity-25 rounded-3 d-flex align-items-center justify-content-between p-3 mb-4" style="background: rgba(212, 175, 55, 0.08);">
+    <div class="d-flex align-items-center gap-3">
+        <div class="rounded-circle d-flex align-items-center justify-content-center text-warning" style="width: 38px; height: 38px; background: rgba(212, 175, 55, 0.15); font-size: 1.25rem;">
+            <i class="bi bi-printer-fill"></i>
+        </div>
+        <div>
+            <div class="fw-bold text-warning small mb-0">Print-Ready Batch & Code Registry</div>
+            <div class="text-muted small">Generated on {{ batch.created_at|date:"d M Y, H:i" }}. All unique codes are collision-resistant and stored in the database registry.</div>
+        </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="{% url 'super_admin:coupon_batch_print' batch.id %}" target="_blank" class="btn btn-sm btn-gold">
+            <i class="bi bi-printer me-1"></i> Open Print Layout
+        </a>
+        <a href="?export=csv" class="btn btn-sm btn-outline-secondary text-body">
+            <i class="bi bi-download me-1"></i> Export CSV
+        </a>
+    </div>
+</div>
+
+<!-- Batch Metadata Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="sa-metric-card">
+            <div class="sa-metric-icon">
+                <i class="bi bi-ticket-detailed-fill"></i>
+            </div>
+            <div class="flex-grow-1 min-w-0">
+                <div class="sa-metric-val">{{ batch.total_quantity }}</div>
+                <div class="sa-metric-lbl">Total Coupons</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="sa-metric-card">
+            <div class="sa-metric-icon" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b;">
+                <i class="bi bi-file-earmark-break-fill"></i>
+            </div>
+            <div class="flex-grow-1 min-w-0">
+                <div class="sa-metric-val text-warning">{{ batch.sheet_count }}</div>
+                <div class="sa-metric-lbl">A4 Sheets ({{ batch.grid_columns }}×{{ batch.grid_rows }})</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="sa-metric-card">
+            <div class="sa-metric-icon" style="background: rgba(34, 197, 94, 0.12); color: #22c55e;">
+                <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <div class="flex-grow-1 min-w-0">
+                <div class="sa-metric-val text-success">{{ unredeemed_count }}</div>
+                <div class="sa-metric-lbl">Unclaimed / Active</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="sa-metric-card">
+            <div class="sa-metric-icon" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8;">
+                <i class="bi bi-bag-check-fill"></i>
+            </div>
+            <div class="flex-grow-1 min-w-0">
+                <div class="sa-metric-val text-info">{{ redeemed_count }}</div>
+                <div class="sa-metric-lbl">Redeemed at Counter</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Batch Info Panel -->
+<div class="sa-card mb-4">
+    <div class="sa-card-header p-3 border-bottom d-flex align-items-center justify-content-between" style="border-color: var(--sa-border) !important;">
+        <h6 class="fw-bold mb-0">Campaign Snapshot Specifications</h6>
+        <span class="badge" style="background: rgba(212, 175, 55, 0.15); color: #d4af37;">{{ batch.get_batch_type_display }}</span>
+    </div>
+    <div class="sa-card-body p-3">
+        <div class="row g-3" style="font-size: 0.85rem;">
+            <div class="col-md-4">
+                <span class="text-muted d-block small">Campaign / Batch Title</span>
+                <span class="fw-bold">{{ batch.name }}</span>
+            </div>
+            <div class="col-md-4">
+                <span class="text-muted d-block small">Design Template</span>
+                <a href="{% url 'super_admin:coupon_edit' batch.template.id %}" class="fw-semibold text-warning text-decoration-none">
+                    {{ batch.template.name }} <i class="bi bi-box-arrow-up-right small"></i>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <span class="text-muted d-block small">Promotional Value</span>
+                <span class="badge bg-success bg-opacity-20 text-success fw-bold px-2 py-1">{{ batch.formatted_discount }}</span>
+            </div>
+
+            <div class="col-md-4">
+                <span class="text-muted d-block small">Offer Headline</span>
+                <span>{{ batch.offer_title }}</span>
+            </div>
+            <div class="col-md-4">
+                <span class="text-muted d-block small">Validity Period</span>
+                <span>{{ batch.valid_from|date:"d M Y"|default:"Immediate" }} &ndash; {{ batch.valid_until|date:"d M Y"|default:"No Expiration" }}</span>
+            </div>
+            <div class="col-md-4">
+                <span class="text-muted d-block small">Minimum Purchase</span>
+                <span>₹{{ batch.minimum_purchase|floatformat:0 }}</span>
+            </div>
+
+            {% if batch.notes %}
+            <div class="col-12 border-top pt-2" style="border-color: var(--sa-border) !important;">
+                <span class="text-muted d-block small">Operator Notes</span>
+                <span class="text-muted fst-italic">{{ batch.notes }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Coupons Serial Item Registry -->
+<div class="sa-card mb-4">
+    <div class="sa-card-header p-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2" style="border-color: var(--sa-border) !important;">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-list-ol text-warning"></i>
+            <h6 class="fw-bold mb-0">Generated Coupon Registry ({{ batch.total_quantity }} Items)</h6>
+        </div>
+        <form method="get" class="d-flex align-items-center gap-2 m-0">
+            <input type="text" name="q" value="{{ q }}" class="form-control sa-input form-control-sm" placeholder="Filter code..." style="width: 150px;">
+            <select name="redeemed" class="form-select sa-input form-select-sm" style="width: 130px;">
+                <option value="">All Status</option>
+                <option value="no" {% if redemption_filter == 'no' %}selected{% endif %}>Unclaimed</option>
+                <option value="yes" {% if redemption_filter == 'yes' %}selected{% endif %}>Redeemed</option>
+            </select>
+            <button type="submit" class="btn btn-sm btn-gold">Filter</button>
+        </form>
+    </div>
+    <div class="table-responsive">
+        <table class="table sa-table align-middle mb-0" style="font-size: 0.85rem;">
+            <thead>
+                <tr>
+                    <th>Serial #</th>
+                    <th>Coupon Code</th>
+                    <th>Status</th>
+                    <th>Claim / Redemption Details</th>
+                    <th>Created</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in page_obj %}
+                <tr>
+                    <td class="font-monospace text-muted fw-bold">#{{ item.serial_number|stringformat:"04d" }}</td>
+                    <td class="font-monospace fw-bold fs-6 text-warning">{{ item.coupon_code }}</td>
+                    <td>
+                        {% if item.is_redeemed %}
+                        <span class="badge bg-danger bg-opacity-15 text-danger fw-bold">
+                            <i class="bi bi-check-circle-fill me-1"></i> Redeemed
+                        </span>
+                        {% else %}
+                        <span class="badge bg-success bg-opacity-15 text-success fw-bold">
+                            <i class="bi bi-circle me-1"></i> Active
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.is_redeemed %}
+                        <div class="small fw-semibold">{{ item.redeemed_at|date:"d M Y, H:i" }}</div>
+                        <div class="text-muted small">{{ item.redemption_note|default:"Redeemed at counter" }}</div>
+                        {% else %}
+                        <span class="text-muted small fst-italic">Available for customer use</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-muted small">{{ item.created_at|date:"d M Y" }}</td>
+                    <td class="text-end">
+                        <form method="post" action="{% url 'super_admin:coupon_batch_item_toggle' item.id %}" class="d-inline m-0">
+                            {% csrf_token %}
+                            {% if item.is_redeemed %}
+                            <button type="submit" class="btn btn-sm btn-outline-secondary p-1 px-2" title="Mark as Unredeemed">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i> Unredeem
+                            </button>
+                            {% else %}
+                            <button type="submit" class="btn btn-sm btn-outline-success p-1 px-2" title="Mark Redeemed">
+                                <i class="bi bi-check-lg me-1"></i> Mark Claimed
+                            </button>
+                            {% endif %}
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-muted">No coupon vouchers match your filter.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<div class="d-flex justify-content-center mb-4">
+    <nav>
+        <ul class="pagination pagination-sm mb-0">
+            {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if redemption_filter %}&redeemed={{ redemption_filter }}{% endif %}">Previous</a></li>
+            {% endif %}
+            {% for p in page_obj.paginator.page_range %}
+            <li class="page-item {% if p == page_obj.number %}active{% endif %}">
+                <a class="page-link" href="?page={{ p }}{% if q %}&q={{ q }}{% endif %}{% if redemption_filter %}&redeemed={{ redemption_filter }}{% endif %}">{{ p }}</a>
+            </li>
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if redemption_filter %}&redeemed={{ redemption_filter }}{% endif %}">Next</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
+{% endblock %}

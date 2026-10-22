@@ -64,7 +64,7 @@ def test_data_fixture():
     user, _ = User.objects.get_or_create(username=TEST_USERNAME)
     user.set_password(TEST_PASSWORD)
     user.email = 'selenium_qa@jeweldesk.local'
-    user.is_staff = True
+    user.is_staff = False
     user.save()
 
     tenant, _ = Tenant.objects.get_or_create(

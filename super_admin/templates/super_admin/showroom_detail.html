@@ -43,49 +43,51 @@
     </div>
 </div>
 
-<!-- Showroom Metrics Grid -->
+<!-- Platform Business Account Metrics Grid -->
 <div class="row g-3 mb-4">
     <div class="col-6 col-md-3">
         <div class="sa-metric-card">
-            <div class="sa-metric-icon" style="background: rgba(197, 160, 89, 0.15); color: var(--sa-gold);">
-                <i class="bi bi-gem"></i>
+            <div class="sa-metric-icon" style="background: rgba(236, 200, 106, 0.15); color: var(--sa-gold);">
+                <i class="bi bi-award-fill"></i>
             </div>
             <div>
-                <div class="sa-metric-val">{{ inventory_count }}</div>
-                <div class="sa-metric-lbl">Stock Items</div>
+                <div class="sa-metric-val" style="font-size: 1.35rem;">{{ subscription.get_plan_name_display|default:"Core Plan" }}</div>
+                <div class="sa-metric-lbl">Subscription Plan</div>
             </div>
         </div>
     </div>
     <div class="col-6 col-md-3">
         <div class="sa-metric-card">
             <div class="sa-metric-icon" style="background: rgba(25, 135, 84, 0.15); color: #75b798;">
-                <i class="bi bi-cash-stack"></i>
+                <i class="bi bi-shield-check"></i>
             </div>
             <div>
-                <div class="sa-metric-val">{{ sales_count }}</div>
-                <div class="sa-metric-lbl">Sales Records</div>
+                <div class="sa-metric-val" style="font-size: 1.35rem;">
+                    {% if tenant.is_active %}<span class="text-success">Active</span>{% else %}<span class="text-danger">Suspended</span>{% endif %}
+                </div>
+                <div class="sa-metric-lbl">Account Status</div>
             </div>
         </div>
     </div>
     <div class="col-6 col-md-3">
         <div class="sa-metric-card">
             <div class="sa-metric-icon" style="background: rgba(13, 202, 240, 0.15); color: #6edff6;">
-                <i class="bi bi-people"></i>
+                <i class="bi bi-people-fill"></i>
             </div>
             <div>
-                <div class="sa-metric-val">{{ customers_count }}</div>
-                <div class="sa-metric-lbl">Customers</div>
+                <div class="sa-metric-val">{{ employee_count }}</div>
+                <div class="sa-metric-lbl">Team Members</div>
             </div>
         </div>
     </div>
     <div class="col-6 col-md-3">
         <div class="sa-metric-card">
-            <div class="sa-metric-icon" style="background: rgba(253, 126, 20, 0.15); color: #fd7e14;">
-                <i class="bi bi-hammer"></i>
+            <div class="sa-metric-icon" style="background: rgba(148, 163, 184, 0.15); color: var(--sa-text-secondary);">
+                <i class="bi bi-calendar-check"></i>
             </div>
             <div>
-                <div class="sa-metric-val">{{ karigar_count }}</div>
-                <div class="sa-metric-lbl">Karigars</div>
+                <div class="sa-metric-val" style="font-size: 1.15rem;">{{ tenant.created_at|date:"M Y" }}</div>
+                <div class="sa-metric-lbl">Client Since ({{ account_age_days }}d)</div>
             </div>
         </div>
     </div>

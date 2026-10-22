@@ -13,7 +13,7 @@
     <!-- 1. Header & Quick Actions -->
     <div class="jd-sb-header">
         <div class="jd-sb-title-wrap">
-            <h1><i class="bi bi-coin text-warning me-2"></i>Old Gold Transactions</h1>
+            <h1><i class="bi bi-coin jd-sb-icon-theme me-2"></i>Old Gold Transactions</h1>
             <p class="jd-sb-subtitle">Record of customer old gold exchanges and cash buybacks</p>
         </div>
         <div class="jd-sb-header-actions">
@@ -34,10 +34,10 @@
                 <div class="jd-sb-kpi-icon">
                     <i class="bi bi-coin"></i>
                 </div>
-                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">Acquired</span>
+                <span class="badge jd-sb-badge-theme">Acquired</span>
             </div>
             <div class="jd-sb-kpi-label">Total Old Gold Value</div>
-            <div class="jd-sb-kpi-val text-warning">₹{{ total_val_all|floatformat:2 }}</div>
+            <div class="jd-sb-kpi-val jd-sb-kpi-val-theme">₹{{ total_val_all|floatformat:2 }}</div>
             <div class="jd-sb-kpi-sub">Total credit &amp; payout value</div>
         </div>
 
@@ -73,10 +73,10 @@
                 <div class="jd-sb-kpi-icon icon-amber">
                     <i class="bi bi-shield-shaded"></i>
                 </div>
-                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">Metal Stock</span>
+                <span class="badge jd-sb-badge-theme">Metal Stock</span>
             </div>
             <div class="jd-sb-kpi-label">Net Old Gold Weight</div>
-            <div class="jd-sb-kpi-val text-warning">{{ total_net_wt_all|floatformat:3 }} g</div>
+            <div class="jd-sb-kpi-val jd-sb-kpi-val-theme">{{ total_net_wt_all|floatformat:3 }} g</div>
             <div class="jd-sb-kpi-sub">Total old gold received</div>
         </div>
     </div>
@@ -111,7 +111,7 @@
                 </select>
             </div>
             <div class="col-lg-2 col-md-2 col-12 d-flex gap-1">
-                <button type="submit" class="btn btn-warning w-100 fw-bold" title="Filter Transactions">
+                <button type="submit" class="btn jd-btn-gold w-100 fw-bold" title="Filter Transactions">
                     <i class="bi bi-funnel"></i> Filter
                 </button>
                 <a href="{% url 'old_gold_list' %}" class="btn btn-outline-secondary" title="Clear Filters">
@@ -173,14 +173,14 @@
                         <td>
                             <div class="text-light">{{ tx.item_description }}</div>
                             <div class="text-muted small">
-                                <span class="text-warning fw-semibold">{{ tx.purity }}</span>
+                                <span class="jd-sb-link-gold fw-semibold">{{ tx.purity }}</span>
                                 {% if tx.metal_type %} ({{ tx.metal_type }}){% endif %}
                             </div>
                         </td>
                         <td class="text-light font-monospace" style="font-size: 0.84rem;">
                             {{ tx.gross_weight|floatformat:3 }} g
                         </td>
-                        <td class="fw-bold text-warning font-monospace" style="font-size: 0.86rem;">
+                        <td class="fw-bold jd-sb-kpi-val-theme font-monospace" style="font-size: 0.86rem;">
                             {{ tx.net_weight|floatformat:3 }} g
                         </td>
                         <td class="fw-bold text-light" style="font-variant-numeric: tabular-nums;">
@@ -188,7 +188,7 @@
                         </td>
                         <td>
                             {% if tx.new_sale %}
-                            <a href="{% url 'sale_detail' tx.new_sale.id %}" class="text-warning small text-decoration-none">
+                            <a href="{% url 'sale_detail' tx.new_sale.id %}" class="jd-sb-link-gold small text-decoration-none">
                                 <i class="bi bi-link-45deg"></i> Sale #{{ tx.new_sale.id }}
                             </a>
                             <div class="text-muted small">{{ tx.new_sale.jewellery_item.name|truncatechars:20 }}</div>
@@ -206,7 +206,7 @@
                             {% endif %}
                         </td>
                         <td class="text-end pe-3">
-                            <a href="{% url 'old_gold_detail' tx.id %}" class="btn btn-outline-warning btn-sm py-1 px-2 fw-semibold" title="View Voucher">
+                            <a href="{% url 'old_gold_detail' tx.id %}" class="btn jd-btn-outline-theme btn-sm py-1 px-2 fw-semibold" title="View Voucher">
                                 <i class="bi bi-file-earmark-text"></i> Voucher
                             </a>
                         </td>
@@ -214,7 +214,7 @@
                     {% empty %}
                     <tr>
                         <td colspan="10" class="text-center py-5 text-muted">
-                            <i class="bi bi-coin fs-2 text-warning d-block mb-2 opacity-75"></i>
+                            <i class="bi bi-coin fs-2 jd-sb-icon-theme d-block mb-2 opacity-75"></i>
                             <div class="fw-semibold text-light mb-1">No scrap gold transactions recorded</div>
                             <div class="small mb-3">Record customer scrap gold intake through Exchange or Buyback.</div>
                             <div class="d-flex justify-content-center gap-2">

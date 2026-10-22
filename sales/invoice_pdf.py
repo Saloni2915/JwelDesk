@@ -469,6 +469,11 @@ def build_invoice_pdf(sale, include_gst: bool = True) -> bytes:
     if og and getattr(og, 'status', None) == 'Completed':
         calc_row(f'Old Gold Credit (#{og.transaction_number})', f"- Rs. {og.final_value:,.2f}", text_color=BRAND_GOLD)
 
+    # Promotional Coupon Discount Line Item
+    if getattr(sale, 'coupon_discount', None) and sale.coupon_discount > Decimal('0.00'):
+        c_code = getattr(sale, 'applied_coupon_code', '') or 'PROMO'
+        calc_row(f"Coupon ({c_code})", f"- Rs. {sale.coupon_discount:,.2f}", bold=True, text_color=colors.HexColor('#166534'))
+
     if breakdown['round_off'] != Decimal('0.00'):
         sign = '+' if breakdown['round_off'] > 0 else ''
         calc_row('Round Off (+/-)', f"{sign}Rs. {breakdown['round_off']:,.2f}")

@@ -22,7 +22,7 @@
             padding: 1.5rem;
         }
         .error-card {
-            max-width: 520px;
+            max-width: 540px;
             width: 100%;
             background: rgba(34, 28, 16, 0.95);
             border: 1px solid rgba(245, 206, 107, 0.25);
@@ -53,14 +53,14 @@
             color: #D4C5B0;
             font-size: 0.95rem;
             line-height: 1.6;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
         .btn-gold {
             background: linear-gradient(135deg, #ECC86A 0%, #D4AF37 100%);
             color: #141009;
             font-weight: 700;
             border: none;
-            padding: 0.65rem 1.5rem;
+            padding: 0.65rem 1.35rem;
             border-radius: 8px;
             text-decoration: none;
             display: inline-flex;
@@ -73,6 +73,23 @@
             color: #141009;
             transform: translateY(-1px);
         }
+        .btn-outline-gold {
+            border: 1px solid #ECC86A;
+            color: #ECC86A;
+            background: transparent;
+            font-weight: 600;
+            padding: 0.65rem 1.35rem;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+        }
+        .btn-outline-gold:hover {
+            background: rgba(236, 200, 106, 0.15);
+            color: #F5D77F;
+        }
     </style>
 </head>
 <body>
@@ -81,12 +98,38 @@
             <i class="bi bi-shield-lock"></i>
         </div>
         <h1 class="error-title">Access Restricted (403)</h1>
+        
+        {% if exception %}
+        <p class="error-desc text-warning bg-dark bg-opacity-50 p-2 rounded border border-warning border-opacity-25 small mb-3">
+            <i class="bi bi-info-circle me-1"></i> {{ exception }}
+        </p>
+        {% else %}
         <p class="error-desc">
             You do not have permission to access this page. Please contact your shop owner or manager.
         </p>
-        <a href="/" class="btn btn-gold">
-            <i class="bi bi-speedometer2"></i> Back to Dashboard
-        </a>
+        {% endif %}
+
+        <div class="d-flex flex-wrap align-items-center justify-content-center gap-2 mt-3">
+            {% if request.session.impersonator_id or is_impersonating %}
+            <form method="post" action="{% url 'super_admin:impersonate_exit' %}" class="d-inline m-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-gold">
+                    <i class="bi bi-box-arrow-left"></i> Exit Impersonation & Return to Super Admin
+                </button>
+            </form>
+            {% elif user.is_superuser %}
+            <a href="{% url 'super_admin:dashboard' %}" class="btn btn-gold">
+                <i class="bi bi-shield-lock-fill"></i> Super Admin Dashboard
+            </a>
+            <a href="{% url 'dashboard' %}" class="btn btn-outline-gold">
+                <i class="bi bi-speedometer2"></i> Shop Dashboard
+            </a>
+            {% else %}
+            <a href="{% url 'dashboard' %}" class="btn btn-gold">
+                <i class="bi bi-speedometer2"></i> Back to Dashboard
+            </a>
+            {% endif %}
+        </div>
     </div>
 </body>
 </html>

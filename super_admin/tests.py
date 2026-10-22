@@ -273,6 +273,20 @@ class CustomerImpersonationSecurityTests(TestCase):
         response = self.client.post(url, {'reason': 'Attempting unauthorized admin impersonation'})
         self.assertEqual(response.status_code, 403)
 
+    def test_can_impersonate_showroom_owner_even_if_staff_flag_was_set(self):
+        """A showroom customer who is not a superuser can be impersonated by super admin."""
+        self.client.force_login(self.super_admin)
+        self.customer_user.is_staff = True
+        self.customer_user.is_superuser = False
+        self.customer_user.save()
+        self.tenant.owner = self.customer_user
+        self.tenant.save()
+
+        url = reverse('super_admin:impersonate_start', kwargs={'tenant_id': self.tenant.id})
+        response = self.client.post(url, {'reason': 'Legitimate support investigation'})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('dashboard'))
+
     def test_cannot_impersonate_suspended_tenant(self):
         """Impersonation of a deactivated showroom must be refused."""
         self.client.force_login(self.super_admin)
@@ -766,5 +780,143 @@ class SuperAdminReportsAndAnalyticsTests(TestCase):
         self.client.force_login(self.super_admin)
         res = self.client.get(reverse('super_admin:reports_export_csv', kwargs={'report_type': 'nonexistent'}))
         self.assertEqual(res.status_code, 400)
+
+
+class SuperAdminPlatformArchitectureTests(TestCase):
+    """Verify architectural boundaries: Super Admin manages SaaS platform; businesses manage shop operations."""
+
+    def setUp(self):
+        self.super_admin = User.objects.create_superuser(
+            username='arch_superadmin',
+            email='arch_superadmin@jeweldesk.test',
+            password='AdminPassword123!'
+        )
+        self.shop_owner = User.objects.create_user(
+            username='arch_shopowner',
+            email='shopowner@kalyanjewels.test',
+            password='ShopPassword123!'
+        )
+        self.tenant_core = Tenant.objects.create(
+            name='Kalyan Jewels Core',
+            slug='kalyan-jewels-core',
+            owner=self.shop_owner,
+            is_active=True
+        )
+        from super_admin.models import TenantSubscription
+        TenantSubscription.objects.create(
+            tenant=self.tenant_core,
+            plan_name='core',
+            status='active',
+            price=19999.00
+        )
+
+        self.shop_owner_pro = User.objects.create_user(
+            username='arch_shopowner_pro',
+            email='shopowner_pro@tanishq.test',
+            password='ShopPassword123!'
+        )
+        self.tenant_pro = Tenant.objects.create(
+            name='Tanishq Atelier Pro',
+            slug='tanishq-atelier-pro',
+            owner=self.shop_owner_pro,
+            is_active=True
+        )
+        TenantSubscription.objects.create(
+            tenant=self.tenant_pro,
+            plan_name='pro',
+            status='active',
+            price=39999.00
+        )
+        self.client = Client()
+
+    def test_super_admin_login_redirects_to_super_admin_dashboard(self):
+        """Platform Superuser login must redirect to /super-admin/, not an individual shop dashboard."""
+        response = self.client.post(reverse('accounts:login'), {
+            'username': 'arch_superadmin',
+            'password': 'AdminPassword123!'
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('super_admin:dashboard'))
+
+    def test_shop_owner_login_redirects_to_shop_dashboard(self):
+        """Showroom owner login redirects to standard business dashboard."""
+        response = self.client.post(reverse('accounts:login'), {
+            'username': 'arch_shopowner',
+            'password': 'ShopPassword123!'
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('dashboard'))
+
+    def test_tenant_middleware_does_not_leak_customer_tenant_to_super_admin(self):
+        """A platform superuser without an impersonation session should have request.tenant=None."""
+        from django.test import RequestFactory
+        from accounts.middleware import TenantMiddleware
+
+        rf = RequestFactory()
+        request = rf.get(reverse('super_admin:dashboard'))
+        request.user = self.super_admin
+        request.session = {}
+
+        middleware = TenantMiddleware(lambda r: r)
+        middleware(request)
+
+        self.assertIsNone(request.tenant)
+
+    def test_super_admin_sidebar_contains_only_platform_modules(self):
+        """Super Admin sidebar must only display platform modules, never shop-level operational features."""
+        self.client.force_login(self.super_admin)
+        res = self.client.get(reverse('super_admin:dashboard'))
+        self.assertEqual(res.status_code, 200)
+
+        # Platform modules that MUST be present:
+        self.assertContains(res, "Dashboard")
+        self.assertContains(res, "Businesses")
+        self.assertContains(res, "Subscriptions &amp; Plans")
+        self.assertContains(res, "Demo Requests &amp; Leads")
+        self.assertContains(res, "Support &amp; Feedback")
+        self.assertContains(res, "Platform Settings")
+
+        # Misplaced shop modules that must NOT be present in Super Admin sidebar:
+        self.assertNotContains(res, "Go to Storefront App")
+        self.assertNotContains(res, "Promotions &amp; Marketing")
+        self.assertNotContains(res, "Inventory Management")
+        self.assertNotContains(res, "Jewellery Inventory")
+        self.assertNotContains(res, "Karigar Workshop")
+        self.assertNotContains(res, "POS Billing")
+
+    def test_showroom_list_filter_by_subscription_plan(self):
+        """Showroom list view allows filtering by subscription plan."""
+        self.client.force_login(self.super_admin)
+        res = self.client.get(reverse('super_admin:showroom_list') + '?plan=pro')
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "Tanishq Atelier Pro")
+        self.assertNotContains(res, "Kalyan Jewels Core")
+
+    def test_showroom_detail_displays_platform_account_metrics(self):
+        """Showroom detail displays SaaS subscription and account information, not shop inventory/sales."""
+        self.client.force_login(self.super_admin)
+        res = self.client.get(reverse('super_admin:showroom_detail', kwargs={'tenant_id': self.tenant_core.id}))
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "Subscription Plan")
+        self.assertContains(res, "Account Status")
+        self.assertContains(res, "Core Showroom Standard Tier")
+        self.assertContains(res, "Tenant Admin & Plan")
+
+        # Must not display individual jewellery operational counters
+        self.assertNotContains(res, "Jewellery Stock Items")
+        self.assertNotContains(res, "Sales Records Count")
+        self.assertNotContains(res, "Active Karigars")
+
+    def test_platform_settings_displays_saas_policies_and_branding(self):
+        """Platform Settings view renders JewelDesk branding, subscription policies, and global template info."""
+        self.client.force_login(self.super_admin)
+        res = self.client.get(reverse('super_admin:settings'))
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "JewelDesk Platform Branding & Contacts")
+        self.assertContains(res, "Subscription & Onboarding Policies")
+        self.assertContains(res, "Global Coupon Design Templates")
+        self.assertContains(res, "Tenant Isolation Guarantee")
+        self.assertContains(res, "Platform Security & Multi-Tenancy")
+
 
 

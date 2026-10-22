@@ -7,12 +7,12 @@
 <div class="sa-card mb-4">
     <form method="get" class="row g-2 align-items-center">
         <!-- Search bar -->
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-md-3">
             <div class="input-group">
                 <span class="input-group-text bg-transparent border-secondary text-muted">
                     <i class="bi bi-search"></i>
                 </span>
-                <input type="text" name="q" value="{{ q }}" class="form-control sa-input" placeholder="Search showroom, slug, owner, email...">
+                <input type="text" name="q" value="{{ q }}" class="form-control sa-input" placeholder="Search showroom, slug, owner...">
             </div>
         </div>
 
@@ -23,6 +23,17 @@
                 <option value="retail" {% if business_type == 'RETAIL' %}selected{% endif %}>Retail Showroom</option>
                 <option value="wholesale" {% if business_type == 'WHOLESALE' %}selected{% endif %}>Wholesaler / Supplier</option>
                 <option value="both" {% if business_type == 'BOTH' %}selected{% endif %}>Retail & Wholesale</option>
+            </select>
+        </div>
+
+        <!-- Subscription Plan filter -->
+        <div class="col-6 col-md-2">
+            <select name="plan" class="form-select sa-input" onchange="this.form.submit()">
+                <option value="all" {% if plan == 'all' or not plan %}selected{% endif %}>All Plans</option>
+                <option value="core" {% if plan == 'core' %}selected{% endif %}>Core Plan</option>
+                <option value="pro" {% if plan == 'pro' %}selected{% endif %}>Pro Plan</option>
+                <option value="enterprise" {% if plan == 'enterprise' %}selected{% endif %}>Enterprise</option>
+                <option value="trial" {% if plan == 'trial' %}selected{% endif %}>Trial</option>
             </select>
         </div>
 
@@ -47,9 +58,9 @@
         </div>
 
         <!-- Submit & Clear -->
-        <div class="col-6 col-md-2 d-flex gap-2">
-            <button type="submit" class="btn btn-gold flex-grow-1">Filter</button>
-            {% if q or status != 'all' or sort != '-created_at' or business_type != 'ALL' %}
+        <div class="col-12 col-md-1 d-flex gap-2">
+            <button type="submit" class="btn btn-gold w-100">Filter</button>
+            {% if q or status != 'all' or sort != '-created_at' or business_type != 'ALL' or plan != 'all' %}
             <a href="{% url 'super_admin:showroom_list' %}" class="btn btn-outline-secondary" title="Reset filters">
                 <i class="bi bi-x-lg"></i>
             </a>

@@ -5,6 +5,8 @@ Data models for the JewelDesk Super Admin Platform.
 Provides append-only audit logging for platform-level actions and customer impersonation.
 """
 
+from decimal import Decimal
+
 from django.conf import settings
 from django.db import models
 
@@ -30,6 +32,10 @@ class PlatformAuditLog(models.Model):
     ACTION_TICKET_RESOLVE      = 'TICKET_RESOLVE'
     ACTION_SUBSCRIPTION_UPDATE = 'SUBSCRIPTION_UPDATE'
     ACTION_PAYMENT_RECORD      = 'PAYMENT_RECORD'
+    ACTION_COUPON_TEMPLATE_CREATE  = 'COUPON_TEMPLATE_CREATE'
+    ACTION_COUPON_TEMPLATE_UPDATE  = 'COUPON_TEMPLATE_UPDATE'
+    ACTION_COUPON_TEMPLATE_ARCHIVE = 'COUPON_TEMPLATE_ARCHIVE'
+    ACTION_COUPON_BATCH_GENERATE   = 'COUPON_BATCH_GENERATE'
 
     ACTION_CHOICES = [
         (ACTION_IMPERSONATION_START, 'Started Customer Impersonation'),
@@ -46,6 +52,10 @@ class PlatformAuditLog(models.Model):
         (ACTION_TICKET_RESOLVE,      'Resolved Support Ticket'),
         (ACTION_SUBSCRIPTION_UPDATE, 'Updated Tenant Subscription'),
         (ACTION_PAYMENT_RECORD,      'Recorded Subscription Payment'),
+        (ACTION_COUPON_TEMPLATE_CREATE,  'Created Coupon Design Template'),
+        (ACTION_COUPON_TEMPLATE_UPDATE,  'Updated Coupon Design Template'),
+        (ACTION_COUPON_TEMPLATE_ARCHIVE, 'Archived/Unarchived Coupon Template'),
+        (ACTION_COUPON_BATCH_GENERATE,   'Generated Coupon Print Batch'),
     ]
 
     actor = models.ForeignKey(
@@ -708,4 +718,405 @@ class PlatformSupportTicket(models.Model):
             next_id = (last.id + 1) if last else random.randint(1001, 1999)
             self.ticket_number = f"TICK-{year}-{next_id:04d}"
         super().save(*args, **kwargs)
+
+
+# ============================================================================
+# 6. Coupon Designer, Discount Templates & Print Management
+# ============================================================================
+
+class CouponDesignTemplate(models.Model):
+    """Reusable coupon design template supporting both built-in luxury presets and custom HTML/CSS."""
+
+    TYPE_BUILT_IN = 'built_in'
+    TYPE_CUSTOM   = 'custom'
+
+    TYPE_CHOICES = [
+        (TYPE_BUILT_IN, 'Ready-Made Built-in Template'),
+        (TYPE_CUSTOM,   'Custom HTML / CSS Designer'),
+    ]
+
+    STYLE_LUXURY_GOLD   = 'luxury_gold'
+    STYLE_MINIMAL_WHITE = 'minimal_white'
+    STYLE_BOLD_PROMO    = 'bold_promo'
+    STYLE_COMPACT_SHEET = 'compact_sheet'
+
+    STYLE_CHOICES = [
+        (STYLE_LUXURY_GOLD,   'Royal Heritage Gold (Dark Luxury)'),
+        (STYLE_MINIMAL_WHITE, 'Minimalist Diamond White (Boutique Voucher)'),
+        (STYLE_BOLD_PROMO,    'Bold Festive Celebration (High Contrast)'),
+        (STYLE_COMPACT_SHEET, 'Compact Multi-Voucher Sheet (Perforated)'),
+    ]
+
+    DISCOUNT_PERCENTAGE = 'percentage'
+    DISCOUNT_FIXED      = 'fixed'
+
+    DISCOUNT_CHOICES = [
+        (DISCOUNT_PERCENTAGE, 'Percentage Discount (%)'),
+        (DISCOUNT_FIXED,      'Fixed Cash Discount (₹)'),
+    ]
+
+    PAGE_SIZE_A4     = 'a4'
+    PAGE_SIZE_SINGLE = 'single'
+
+    PAGE_SIZE_CHOICES = [
+        (PAGE_SIZE_A4,     'A4 Multi-Coupon Sheet'),
+        (PAGE_SIZE_SINGLE, 'Single Voucher per Page'),
+    ]
+
+    ORIENTATION_PORTRAIT  = 'portrait'
+    ORIENTATION_LANDSCAPE = 'landscape'
+
+    ORIENTATION_CHOICES = [
+        (ORIENTATION_PORTRAIT,  'Portrait'),
+        (ORIENTATION_LANDSCAPE, 'Landscape'),
+    ]
+
+    name = models.CharField(
+        max_length=150,
+        help_text="Descriptive template name (e.g. 'Diwali Gold Jewellery 20% Off')"
+    )
+    description = models.TextField(
+        blank=True,
+        help_text="Internal notes or marketing campaign purpose."
+    )
+    template_type = models.CharField(
+        max_length=20,
+        choices=TYPE_CHOICES,
+        default=TYPE_BUILT_IN,
+        db_index=True
+    )
+    built_in_style = models.CharField(
+        max_length=30,
+        choices=STYLE_CHOICES,
+        default=STYLE_LUXURY_GOLD
+    )
+    discount_type = models.CharField(
+        max_length=20,
+        choices=DISCOUNT_CHOICES,
+        default=DISCOUNT_PERCENTAGE
+    )
+    discount_value = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('20.00'),
+        help_text="Discount percentage (e.g. 20.00 for 20%) or cash value in ₹ (e.g. 1000.00)"
+    )
+    offer_title = models.CharField(
+        max_length=150,
+        default="Exclusive Jewellery Privilege Voucher",
+        help_text="Headline displayed prominently on the coupon."
+    )
+    sample_coupon_code = models.CharField(
+        max_length=50,
+        default="ROYAL-GOLD20",
+        help_text="Default/sample promo code used in template previews."
+    )
+    business_name = models.CharField(
+        max_length=150,
+        default="JewelDesk Fine Atelier",
+        help_text="Business or showroom brand name."
+    )
+    business_logo_url = models.URLField(
+        blank=True,
+        help_text="Optional absolute URL to showroom brand insignia image."
+    )
+    valid_from = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Optional campaign start date."
+    )
+    valid_until = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Expiration date displayed on the coupon."
+    )
+    minimum_purchase = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('10000.00'),
+        help_text="Minimum invoice purchase amount in ₹ to redeem."
+    )
+    maximum_discount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Optional maximum discount cap in ₹ for percentage offers."
+    )
+    applicable_categories = models.CharField(
+        max_length=200,
+        default="Gold, Diamond & Polki Jewellery",
+        blank=True,
+        help_text="Eligible product categories."
+    )
+    terms_and_conditions = models.TextField(
+        default="1. Valid on select gold, diamond, and silver ornament purchases.\n"
+                "2. Cannot be combined with raw bullion bar rates or ongoing offers.\n"
+                "3. One voucher per customer transaction. Original voucher required at billing.",
+        blank=True
+    )
+    show_barcode = models.BooleanField(
+        default=True,
+        help_text="Render vector Code 128 barcode badge."
+    )
+    show_qr_code = models.BooleanField(
+        default=True,
+        help_text="Render QR code verification badge."
+    )
+    primary_color = models.CharField(
+        max_length=30,
+        default="#d4af37",
+        help_text="Primary accent/border color (hex, e.g. #d4af37 for gold)"
+    )
+    background_color = models.CharField(
+        max_length=30,
+        default="#160f09",
+        help_text="Card background color (hex, e.g. #160f09 for dark velvet)"
+    )
+    text_color = models.CharField(
+        max_length=30,
+        default="#fef9ed",
+        help_text="Primary text color"
+    )
+
+    # Physical Page Dimensions & Multi-Coupon Grid Settings
+    page_size = models.CharField(
+        max_length=20,
+        choices=PAGE_SIZE_CHOICES,
+        default=PAGE_SIZE_A4
+    )
+    orientation = models.CharField(
+        max_length=20,
+        choices=ORIENTATION_CHOICES,
+        default=ORIENTATION_PORTRAIT
+    )
+    coupon_width_mm = models.PositiveIntegerField(
+        default=180,
+        help_text="Coupon width in millimeters"
+    )
+    coupon_height_mm = models.PositiveIntegerField(
+        default=70,
+        help_text="Coupon height in millimeters"
+    )
+    grid_columns = models.PositiveIntegerField(
+        default=1,
+        help_text="Coupons per row on sheet layout (e.g. 1 or 2)"
+    )
+    grid_rows = models.PositiveIntegerField(
+        default=3,
+        help_text="Coupons per column on sheet layout (e.g. 3 or 4)"
+    )
+    margin_mm = models.PositiveIntegerField(
+        default=8,
+        help_text="Page margin in millimeters"
+    )
+    spacing_mm = models.PositiveIntegerField(
+        default=6,
+        help_text="Spacing between coupons in millimeters"
+    )
+
+    # Custom Code Editor Fields
+    custom_html = models.TextField(
+        blank=True,
+        help_text="Custom HTML layout with dynamic placeholders: {{coupon_code}}, {{discount_value}}, etc."
+    )
+    custom_css = models.TextField(
+        blank=True,
+        help_text="Custom print-friendly CSS rules."
+    )
+
+    is_archived = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="Archived templates are hidden from active selection."
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_coupon_templates'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        db_index=True
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    class Meta:
+        ordering = ['-updated_at', '-created_at']
+        verbose_name = 'Coupon Design Template'
+        verbose_name_plural = 'Coupon Design Templates'
+
+    def __str__(self):
+        type_lbl = self.get_template_type_display()
+        return f"{self.name} [{type_lbl}]"
+
+    @property
+    def formatted_discount(self):
+        if self.discount_type == self.DISCOUNT_PERCENTAGE:
+            val = int(self.discount_value) if self.discount_value % 1 == 0 else self.discount_value
+            return f"{val}% OFF"
+        val = int(self.discount_value) if self.discount_value % 1 == 0 else self.discount_value
+        return f"₹{val:,.0f} OFF" if isinstance(val, (int, float, Decimal)) and val % 1 == 0 else f"₹{val} OFF"
+
+    @property
+    def capacity_per_sheet(self):
+        return max(1, self.grid_columns * self.grid_rows)
+
+
+class CouponPrintBatch(models.Model):
+    """A generated print run of coupons with either identical or unique collision-resistant codes."""
+
+    BATCH_IDENTICAL = 'identical'
+    BATCH_UNIQUE    = 'unique_codes'
+
+    BATCH_TYPE_CHOICES = [
+        (BATCH_IDENTICAL, 'Identical Promotional Artwork (Single Shared Code)'),
+        (BATCH_UNIQUE,    'Individual Unique Voucher Codes'),
+    ]
+
+    batch_number = models.CharField(
+        max_length=40,
+        unique=True,
+        db_index=True,
+        help_text="Unique batch identifier (e.g. BATCH-2026-001)"
+    )
+    template = models.ForeignKey(
+        CouponDesignTemplate,
+        on_delete=models.CASCADE,
+        related_name='print_batches'
+    )
+    name = models.CharField(
+        max_length=150,
+        help_text="Title or campaign descriptor for this print run."
+    )
+    batch_type = models.CharField(
+        max_length=30,
+        choices=BATCH_TYPE_CHOICES,
+        default=BATCH_UNIQUE
+    )
+    total_quantity = models.PositiveIntegerField(
+        default=1,
+        help_text="Number of coupon vouchers to generate and print."
+    )
+    shared_code = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Single common promo code if using identical artwork (e.g. 'DIWALI2026')"
+    )
+    code_prefix = models.CharField(
+        max_length=20,
+        default='JD-',
+        help_text="Prefix for unique code generation (e.g. 'GOLD-', 'VIP-')"
+    )
+    code_length = models.PositiveIntegerField(
+        default=8,
+        help_text="Length of random characters in unique code."
+    )
+    include_serial_numbers = models.BooleanField(
+        default=True,
+        help_text="Include sequential serial numbering (e.g. #0001, #0002)"
+    )
+    serial_start = models.PositiveIntegerField(
+        default=1,
+        help_text="Starting sequential serial number."
+    )
+
+    # Immutably captured campaign snapshot fields
+    offer_title = models.CharField(max_length=150)
+    discount_type = models.CharField(max_length=20)
+    discount_value = models.DecimalField(max_digits=10, decimal_places=2)
+    valid_from = models.DateField(null=True, blank=True)
+    valid_until = models.DateField(null=True, blank=True)
+    business_name = models.CharField(max_length=150)
+    minimum_purchase = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    maximum_discount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    applicable_categories = models.CharField(max_length=200, blank=True)
+    terms_and_conditions = models.TextField(blank=True)
+
+    grid_columns = models.PositiveIntegerField(default=1)
+    grid_rows = models.PositiveIntegerField(default=3)
+    margin_mm = models.PositiveIntegerField(default=8)
+    spacing_mm = models.PositiveIntegerField(default=6)
+
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_coupon_batches'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        db_index=True
+    )
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Coupon Print Batch'
+        verbose_name_plural = 'Coupon Print Batches'
+
+    def __str__(self):
+        return f"{self.batch_number} - {self.name} ({self.total_quantity} coupons)"
+
+    @property
+    def formatted_discount(self):
+        if self.discount_type == CouponDesignTemplate.DISCOUNT_PERCENTAGE:
+            val = int(self.discount_value) if self.discount_value % 1 == 0 else self.discount_value
+            return f"{val}% OFF"
+        val = int(self.discount_value) if self.discount_value % 1 == 0 else self.discount_value
+        return f"₹{val:,.0f} OFF" if isinstance(val, (int, float, Decimal)) and val % 1 == 0 else f"₹{val} OFF"
+
+    @property
+    def sheet_count(self):
+        per_sheet = max(1, self.grid_columns * self.grid_rows)
+        import math
+        return math.ceil(self.total_quantity / per_sheet)
+
+
+class CouponBatchItem(models.Model):
+    """An individual coupon instance in a print batch with its unique code and serial number."""
+
+    batch = models.ForeignKey(
+        CouponPrintBatch,
+        on_delete=models.CASCADE,
+        related_name='items'
+    )
+    serial_number = models.PositiveIntegerField()
+    coupon_code = models.CharField(
+        max_length=60,
+        db_index=True,
+        help_text="Promo code printed on the coupon (identical or unique)."
+    )
+    is_redeemed = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="Promotional redemption tracker."
+    )
+    redeemed_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+    redemption_note = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Optional POS invoice or counter reference when claimed."
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    class Meta:
+        ordering = ['batch', 'serial_number']
+        unique_together = [['batch', 'serial_number']]
+        verbose_name = 'Coupon Batch Item'
+        verbose_name_plural = 'Coupon Batch Items'
+
+    def __str__(self):
+        return f"#{self.serial_number:04d} [{self.coupon_code}] - {self.batch.batch_number}"
+
 

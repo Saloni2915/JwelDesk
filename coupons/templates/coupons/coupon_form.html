@@ -1,0 +1,433 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} — JewelDesk{% endblock %}
+
+{% block extra_css %}
+<style>
+.jd-designer-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+@media (min-width: 992px) {
+    .jd-designer-grid {
+        grid-template-columns: 1.15fr 0.85fr;
+        align-items: start;
+    }
+}
+.jd-preview-sticky {
+    position: sticky;
+    top: 80px;
+}
+.jd-preview-canvas {
+    background: #0b0806;
+    border: 1px dashed rgba(212, 175, 55, 0.35);
+    border-radius: 8px;
+    padding: 20px;
+    min-height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+    overflow: auto;
+}
+.jd-placeholder-pill {
+    cursor: pointer;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.76rem;
+    padding: 2px 6px;
+    color: #e5c76b;
+    transition: all 0.15s ease;
+    display: inline-block;
+    margin: 2px;
+}
+.jd-placeholder-pill:hover {
+    background: rgba(212, 175, 55, 0.25);
+    border-color: #d4af37;
+    color: #ffffff;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-3">
+
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{% url 'coupons:coupon_list' %}" class="text-warning text-decoration-none small">
+                    <i class="bi bi-arrow-left"></i> Back to Coupons
+                </a>
+                <span class="text-muted">&bull;</span>
+                <span class="text-muted small">Showroom: <strong>{{ business_name }}</strong></span>
+            </div>
+            <h2 class="h3 fw-bold text-light mb-0">{{ page_title }}</h2>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a href="{% url 'coupons:coupon_list' %}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="button" class="btn btn-warning text-dark fw-bold px-4" id="btnSubmitTop" onclick="document.getElementById('couponForm').submit();">
+                <i class="bi bi-save me-1"></i> Save Coupon Campaign
+            </button>
+        </div>
+    </div>
+
+    <!-- Form & Live Preview Grid -->
+    <form method="post" id="couponForm" novalidate>
+        {% csrf_token %}
+
+        {% if form.errors %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <h6 class="alert-heading fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-2"></i>Please correct the following errors:</h6>
+            <ul class="mb-0 small ps-3">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                    <li><strong>{{ field|title }}:</strong> {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+
+        <div class="jd-designer-grid">
+
+            <!-- LEFT COLUMN: Form Controls & Design Settings -->
+            <div class="d-flex flex-column gap-3">
+
+                <!-- 1. Campaign Basics Card -->
+                <div class="card bg-dark border-secondary border-opacity-25 shadow-sm">
+                    <div class="card-header bg-dark border-secondary border-opacity-25 py-2.5">
+                        <h6 class="fw-bold text-warning mb-0"><i class="bi bi-megaphone me-2"></i>1. Campaign Information</h6>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-8">
+                                <label class="form-label text-light small fw-semibold">Campaign / Offer Name <span class="text-danger">*</span></label>
+                                {{ form.name }}
+                                <div class="form-text text-muted small">e.g. Diwali Dhamaka 15% Off Gold or Bridal Season Privilege Voucher</div>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label text-light small fw-semibold">Promo Code <span class="text-danger">*</span></label>
+                                {{ form.code }}
+                                <div class="form-text text-muted small">Cashier enters or scans this code</div>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label text-light small fw-semibold">Occasion</label>
+                                {{ form.occasion }}
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label text-light small fw-semibold">Campaign Status</label>
+                                {{ form.status }}
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label text-light small fw-semibold">Internal Notes / Description</label>
+                                {{ form.description }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Discount Rules & Eligibility Card -->
+                <div class="card bg-dark border-secondary border-opacity-25 shadow-sm">
+                    <div class="card-header bg-dark border-secondary border-opacity-25 py-2.5">
+                        <h6 class="fw-bold text-warning mb-0"><i class="bi bi-calculator me-2"></i>2. Discount &amp; Eligibility Conditions</h6>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label text-light small fw-semibold">Discount Type</label>
+                                {{ form.discount_type }}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label text-light small fw-semibold">Discount Value (% or ₹)</label>
+                                {{ form.discount_value }}
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label text-light small fw-semibold">Maximum Discount Cap (₹)</label>
+                                {{ form.max_discount_amount }}
+                                <div class="form-text text-muted small">Optional ceiling cap for percentage discounts</div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label text-light small fw-semibold">Minimum Purchase Requirement (₹)</label>
+                                {{ form.min_purchase_amount }}
+                                <div class="form-text text-muted small">0 for no minimum purchase spend</div>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label text-light small fw-semibold">Applicable Category (Optional)</label>
+                                {{ form.applicable_category }}
+                                <div class="form-text text-muted small">Leave empty to apply to all jewellery categories</div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label text-light small fw-semibold">Specific Customer (Optional)</label>
+                                {{ form.specific_customer }}
+                                <div class="form-text text-muted small">Restrict to a VIP or specific customer only</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Validity & Redemption Limits Card -->
+                <div class="card bg-dark border-secondary border-opacity-25 shadow-sm">
+                    <div class="card-header bg-dark border-secondary border-opacity-25 py-2.5">
+                        <h6 class="fw-bold text-warning mb-0"><i class="bi bi-clock-history me-2"></i>3. Validity &amp; Usage Limits</h6>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label text-light small fw-semibold">Valid From (Start Date)</label>
+                                {{ form.valid_from }}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label text-light small fw-semibold">Valid Until (Expiry Date)</label>
+                                {{ form.valid_until }}
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <div class="form-check form-switch pt-4">
+                                    {{ form.is_single_use }}
+                                    <label class="form-check-label text-light small fw-semibold" for="{{ form.is_single_use.id_for_label }}">
+                                        Single-Use Coupon
+                                    </label>
+                                </div>
+                                <div class="form-text text-muted small">Can only be redeemed once overall</div>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label text-light small fw-semibold">Total Uses Cap</label>
+                                {{ form.max_uses_total }}
+                                <div class="form-text text-muted small">Leave blank for unlimited</div>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label text-light small fw-semibold">Uses per Customer</label>
+                                {{ form.max_uses_per_customer }}
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label text-light small fw-semibold">Terms &amp; Conditions</label>
+                                {{ form.terms_and_conditions }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Coupon Designer & Visual Appearance Card -->
+                <div class="card bg-dark border-secondary border-opacity-25 shadow-sm">
+                    <div class="card-header bg-dark border-secondary border-opacity-25 py-2.5 d-flex justify-content-between align-items-center">
+                        <h6 class="fw-bold text-warning mb-0"><i class="bi bi-palette me-2"></i>4. Coupon Design &amp; Layout</h6>
+                        <span class="badge bg-secondary bg-opacity-25 text-light small">Live Sync</span>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label text-light small fw-semibold">Design Mode</label>
+                                {{ form.design_source }}
+                            </div>
+                            <div class="col-12 col-md-6" id="presetSelectWrap">
+                                <label class="form-label text-light small fw-semibold">Ready-Made Luxury Preset</label>
+                                {{ form.preset_style }}
+                            </div>
+                        </div>
+
+                        <!-- Placeholder Tag Bar -->
+                        <div class="mb-3 p-2 rounded bg-black border border-secondary border-opacity-25">
+                            <div class="text-muted small mb-1 fw-semibold"><i class="bi bi-code-slash me-1"></i> Click to copy dynamic placeholders:</div>
+                            <div class="d-flex flex-wrap gap-1">
+                                <span class="jd-placeholder-pill" onclick="copyTag(this)">&#123;&#123;business_name&#125;&#125;</span>
+                                <span class="jd-placeholder-pill" onclick="copyTag(this)">&#123;&#123;business_logo&#125;&#125;</span>
+                                <span class="jd-placeholder-pill" onclick="copyTag(this)">&#123;&#123;coupon_code&#125;&#125;</span>
+                                <span class="jd-placeholder-pill" onclick="copyTag(this)">&#123;&#123;discount_value&#125;&#125;</span>
+                                <span class="jd-placeholder-pill" onclick="copyTag(this)">&#123;&#123;minimum_purchase&#125;&#125;</span>
+                                <span class="jd-placeholder-pill" onclick="copyTag(this)">&#123;&#123;valid_until&#125;&#125;</span>
+                                <span class="jd-placeholder-pill" onclick="copyTag(this)">&#123;&#123;terms_and_conditions&#125;&#125;</span>
+                                <span class="jd-placeholder-pill" onclick="copyTag(this)">&#123;&#123;barcode_svg&#125;&#125;</span>
+                                <span class="jd-placeholder-pill" onclick="copyTag(this)">&#123;&#123;qr_svg&#125;&#125;</span>
+                                <span class="jd-placeholder-pill" onclick="copyTag(this)">&#123;&#123;serial_number&#125;&#125;</span>
+                            </div>
+                        </div>
+
+                        <!-- HTML & CSS Editors -->
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label text-light small fw-semibold">Custom HTML Structure</label>
+                                {{ form.custom_html }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label text-light small fw-semibold">Custom CSS Styling</label>
+                                {{ form.custom_css }}
+                            </div>
+                        </div>
+
+                        <!-- Print Dimensions & Sheet Grid Settings -->
+                        <h6 class="text-warning small fw-bold mt-4 mb-2"><i class="bi bi-grid-3x3 me-1"></i> A4 Print Sheet &amp; Physical Dimensions</h6>
+                        <div class="row g-3">
+                            <div class="col-6 col-md-3">
+                                <label class="form-label text-light small">Page Format</label>
+                                {{ form.page_size }}
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label text-light small">Orientation</label>
+                                {{ form.orientation }}
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label text-light small">Columns / Sheet</label>
+                                {{ form.grid_columns }}
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label text-light small">Rows / Sheet</label>
+                                {{ form.grid_rows }}
+                            </div>
+
+                            <div class="col-6 col-md-3">
+                                <label class="form-label text-light small">Voucher Width (mm)</label>
+                                {{ form.coupon_width_mm }}
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label text-light small">Voucher Height (mm)</label>
+                                {{ form.coupon_height_mm }}
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label text-light small">Margin (mm)</label>
+                                {{ form.margin_mm }}
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label text-light small">Spacing (mm)</label>
+                                {{ form.spacing_mm }}
+                            </div>
+
+                            <div class="col-6">
+                                <div class="form-check form-switch pt-2">
+                                    {{ form.show_barcode }}
+                                    <label class="form-check-label text-light small" for="{{ form.show_barcode.id_for_label }}">
+                                        Render Vector Code 128 Barcode
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check form-switch pt-2">
+                                    {{ form.show_qr_code }}
+                                    <label class="form-check-label text-light small" for="{{ form.show_qr_code.id_for_label }}">
+                                        Render Vector Verification QR Code
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Submit Button Bar -->
+                <div class="d-flex justify-content-end gap-2 my-3">
+                    <a href="{% url 'coupons:coupon_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-warning text-dark fw-bold px-4">
+                        <i class="bi bi-save me-1"></i> Save Coupon Campaign
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: Real-Time Live Preview -->
+            <div class="jd-preview-sticky">
+                <div class="card bg-dark border-secondary border-opacity-25 shadow-lg">
+                    <div class="card-header bg-dark border-secondary border-opacity-25 py-2.5 d-flex justify-content-between align-items-center">
+                        <h6 class="fw-bold text-warning mb-0">
+                            <i class="bi bi-eye-fill me-2"></i>Live Sandboxed Preview
+                        </h6>
+                        <button type="button" class="btn btn-sm btn-outline-warning" id="btnRefreshPreview" onclick="refreshLivePreview();" title="Refresh Preview">
+                            <i class="bi bi-arrow-repeat"></i> Update
+                        </button>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="jd-preview-canvas" id="previewContainer">
+                            <div class="text-center text-muted small py-4" id="previewLoading">
+                                <div class="spinner-border spinner-border-sm text-warning mb-2" role="status"></div>
+                                <div>Rendering coupon preview...</div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-secondary border-opacity-25 text-muted small">
+                            <span><i class="bi bi-shield-check text-success me-1"></i> Sandboxed &amp; Sanitized</span>
+                            <span id="previewDimensionsInfo">180mm &times; 70mm</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </form>
+</div>
+
+<!-- Dynamic Preview Stylesheet Tag -->
+<style id="dynamicPreviewStyles"></style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function copyTag(el) {
+    const text = el.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        const original = el.innerText;
+        el.innerText = 'Copied!';
+        el.style.background = '#28a745';
+        el.style.color = '#fff';
+        setTimeout(() => {
+            el.innerText = original;
+            el.style.background = '';
+            el.style.color = '';
+        }, 1000);
+    });
+}
+
+function refreshLivePreview() {
+    const form = document.getElementById('couponForm');
+    const formData = new FormData(form);
+
+    fetch("{% url 'coupons:coupon_preview_api' %}", {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('previewContainer').innerHTML = data.rendered_html;
+            document.getElementById('dynamicPreviewStyles').innerHTML = data.rendered_css;
+        }
+    })
+    .catch(err => {
+        console.error('Preview error:', err);
+    });
+}
+
+// Initial preview and debounce inputs
+document.addEventListener('DOMContentLoaded', function() {
+    refreshLivePreview();
+
+    const inputs = ['id_name', 'id_code', 'id_discount_type', 'id_discount_value', 'id_min_purchase_amount', 'id_valid_until', 'id_terms_and_conditions', 'id_design_source', 'id_preset_style', 'id_custom_html', 'id_custom_css'];
+
+    let timeout = null;
+    inputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', () => {
+                clearTimeout(timeout);
+                timeout = setTimeout(refreshLivePreview, 400);
+            });
+            el.addEventListener('change', refreshLivePreview);
+        }
+    });
+});
+</script>
+{% endblock %}

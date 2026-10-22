@@ -3,7 +3,7 @@
  * Production-ready Progressive Web App worker for jewellery retail management.
  */
 
-const CACHE_VERSION = 'jeweldesk-v2.3.6';
+const CACHE_VERSION = 'jeweldesk-v2.4.0';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -17,6 +17,9 @@ const PRECACHE_ASSETS = [
   '/static/css/landing.css',
   '/static/icons/icon-192x192.png',
   '/static/icons/icon-512x512.png',
+  '/static/icons/icon-maskable-192x192.png',
+  '/static/icons/icon-maskable-512x512.png',
+  '/static/icons/apple-touch-icon.png',
   '/static/icons/favicon-32x32.png',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css',
   'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css',

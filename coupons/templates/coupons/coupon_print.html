@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Print Vouchers — {{ coupon.name }} ({{ coupon.code }})</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        /* Base Reset */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #525659;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #1a1a1a;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        /* Floating Top Print Bar (Screen only) */
+        .jd-print-toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 56px;
+            background: #202124;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            z-index: 9999;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .jd-print-toolbar .title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .jd-print-toolbar .actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .jd-btn {
+            background: #d4af37;
+            color: #120c08;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            transition: all 0.15s ease;
+        }
+        .jd-btn:hover {
+            background: #e5c76b;
+        }
+        .jd-btn-secondary {
+            background: rgba(255,255,255,0.12);
+            color: #ffffff;
+        }
+        .jd-btn-secondary:hover {
+            background: rgba(255,255,255,0.22);
+        }
+
+        /* Physical Page Wrapper */
+        .jd-print-container {
+            margin: 70px auto 40px auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        /* A4 Page Dimensions (210mm x 297mm) */
+        .jd-sheet-page {
+            width: 210mm;
+            min-height: 297mm;
+            height: 297mm;
+            background: #ffffff;
+            padding: {{ coupon.margin_mm }}mm;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.35);
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Grid Layout */
+        .jd-sheet-grid {
+            display: grid;
+            grid-template-columns: repeat({{ coupon.grid_columns }}, 1fr);
+            grid-template-rows: repeat({{ coupon.grid_rows }}, 1fr);
+            gap: {{ coupon.spacing_mm }}mm;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Voucher Cell Container with Cut Guides */
+        .jd-voucher-cell {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        /* Scissor Cut Line Guides */
+        .jd-cut-guide {
+            position: absolute;
+            border: 1px dashed rgba(180, 180, 180, 0.7);
+            top: -{{ coupon.spacing_mm|default:4 }}mm;
+            bottom: -{{ coupon.spacing_mm|default:4 }}mm;
+            left: -{{ coupon.spacing_mm|default:4 }}mm;
+            right: -{{ coupon.spacing_mm|default:4 }}mm;
+            pointer-events: none;
+        }
+
+        /* PRINT MEDIA QUERIES */
+        @media print {
+            body {
+                background: none;
+                margin: 0;
+                padding: 0;
+            }
+            .jd-print-toolbar {
+                display: none !important;
+            }
+            .jd-print-container {
+                margin: 0;
+                gap: 0;
+            }
+            .jd-sheet-page {
+                box-shadow: none;
+                margin: 0;
+                padding: {{ coupon.margin_mm }}mm;
+                page-break-after: always;
+                break-after: page;
+            }
+            .jd-sheet-page:last-child {
+                page-break-after: auto;
+                break-after: auto;
+            }
+            @page {
+                size: A4 {% if coupon.orientation == 'landscape' %}landscape{% else %}portrait{% endif %};
+                margin: 0;
+            }
+        }
+
+        /* User / Preset Coupon CSS */
+        {{ custom_css|safe }}
+    </style>
+</head>
+<body>
+
+    <!-- Screen Print Toolbar -->
+    <header class="jd-print-toolbar">
+        <div class="title">
+            <i class="bi bi-tag-fill text-warning"></i>
+            <span>{{ coupon.name }} &bull; Code: <strong>{{ coupon.code }}</strong> ({{ total_coupons }} voucher{{ total_coupons|pluralize }}, {{ total_sheets }} page{{ total_sheets|pluralize }})</span>
+        </div>
+        <div class="actions">
+            <button type="button" class="jd-btn" onclick="window.print();">
+                <i class="bi bi-printer-fill"></i> Print Now
+            </button>
+            <a href="{% url 'coupons:coupon_detail' coupon.pk %}" class="jd-btn jd-btn-secondary">
+                <i class="bi bi-x-lg"></i> Close
+            </a>
+        </div>
+    </header>
+
+    <!-- Pages Container -->
+    <main class="jd-print-container">
+        {% for sheet in sheets %}
+        <section class="jd-sheet-page" aria-label="Print Sheet {{ forloop.counter }}">
+            <div class="jd-sheet-grid">
+                {% for card_html in sheet %}
+                <div class="jd-voucher-cell">
+                    {{ card_html|safe }}
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endfor %}
+    </main>
+
+</body>
+</html>

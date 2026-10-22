@@ -1,0 +1,354 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Customer Coupons & Promotional Offers — JewelDesk{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-3">
+
+    <!-- Top Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2 py-1">
+                    <i class="bi bi-tag-fill me-1"></i> Marketing &amp; Sales Promotion
+                </span>
+                <span class="badge bg-secondary bg-opacity-25 text-light px-2 py-1">
+                    {{ total_campaigns }} Total Campaign{{ total_campaigns|pluralize }}
+                </span>
+            </div>
+            <h2 class="h3 fw-bold text-light mb-1">Customer Coupons &amp; Offers</h2>
+            <p class="text-muted small mb-0">Create, design, print, and redeem exclusive promotional vouchers for your jewellery showroom.</p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-outline-warning d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#clonePlatformModal">
+                <i class="bi bi-copy"></i> Copy Platform Preset
+            </button>
+            <a href="{% url 'coupons:coupon_reports' %}" class="btn btn-outline-light d-inline-flex align-items-center gap-2">
+                <i class="bi bi-graph-up-arrow"></i> Campaign Reports
+            </a>
+            <a href="{% url 'coupons:coupon_create' %}" class="btn btn-warning text-dark fw-bold d-inline-flex align-items-center gap-2 shadow-sm">
+                <i class="bi bi-plus-circle-fill"></i> New Coupon / Offer
+            </a>
+        </div>
+    </div>
+
+    <!-- 4 KPI Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-muted small text-uppercase fw-semibold">Active Offers</span>
+                        <div class="rounded-circle bg-success bg-opacity-20 text-success p-2 d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </div>
+                    </div>
+                    <div class="h3 fw-bold text-light mb-0">{{ active_campaigns }}</div>
+                    <div class="text-muted small mt-1">Live &amp; redeemable at counter</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg-3">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-muted small text-uppercase fw-semibold">Total Campaigns</span>
+                        <div class="rounded-circle bg-warning bg-opacity-20 text-warning p-2 d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+                            <i class="bi bi-megaphone-fill"></i>
+                        </div>
+                    </div>
+                    <div class="h3 fw-bold text-light mb-0">{{ total_campaigns }}</div>
+                    <div class="text-muted small mt-1">Diwali, Bridal, Loyalty &amp; General</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg-3">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-muted small text-uppercase fw-semibold">Total Redemptions</span>
+                        <div class="rounded-circle bg-info bg-opacity-20 text-info p-2 d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+                            <i class="bi bi-patch-check-fill"></i>
+                        </div>
+                    </div>
+                    <div class="h3 fw-bold text-light mb-0">{{ total_redemptions }}</div>
+                    <div class="text-muted small mt-1">Completed bills with discounts</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg-3">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-muted small text-uppercase fw-semibold">Discount Granted</span>
+                        <div class="rounded-circle bg-primary bg-opacity-20 text-primary p-2 d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+                            <i class="bi bi-currency-rupee"></i>
+                        </div>
+                    </div>
+                    <div class="h3 fw-bold text-warning mb-0">₹{{ total_discount_granted|floatformat:2 }}</div>
+                    <div class="text-muted small mt-1">Customer promotional savings</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div class="card bg-dark border-secondary border-opacity-25 mb-4 shadow-sm">
+        <div class="card-body p-3">
+            <form method="get" class="row g-2 align-items-center">
+                <div class="col-12 col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-dark border-secondary text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" name="q" class="form-control bg-dark border-secondary text-light" placeholder="Search campaign name or promo code..." value="{{ q }}">
+                    </div>
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <select name="status" class="form-select bg-dark border-secondary text-light">
+                        <option value="">All Statuses</option>
+                        {% for val, lbl in status_choices %}
+                        <option value="{{ val }}" {% if selected_status == val %}selected{% endif %}>{{ lbl }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <select name="occasion" class="form-select bg-dark border-secondary text-light">
+                        <option value="">All Occasions</option>
+                        {% for val, lbl in occasion_choices %}
+                        <option value="{{ val }}" {% if selected_occasion == val %}selected{% endif %}>{{ lbl }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-warning w-100 fw-semibold">Filter</button>
+                    {% if q or selected_status or selected_occasion %}
+                    <a href="{% url 'coupons:coupon_list' %}" class="btn btn-outline-secondary" title="Clear Filters"><i class="bi bi-x-lg"></i></a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Campaigns Table -->
+    <div class="card bg-dark border-secondary border-opacity-25 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                <thead class="table-dark text-muted text-uppercase small" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <tr>
+                        <th class="ps-3">Campaign &amp; Code</th>
+                        <th>Occasion</th>
+                        <th>Discount Rule</th>
+                        <th>Validity Window</th>
+                        <th>Usage / Limit</th>
+                        <th>Status</th>
+                        <th class="text-end pe-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in coupons %}
+                    <tr>
+                        <td class="ps-3 py-3">
+                            <div class="fw-bold text-light mb-1">
+                                <a href="{% url 'coupons:coupon_detail' c.pk %}" class="text-light text-decoration-none hover-warning">
+                                    {{ c.name }}
+                                </a>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-black text-warning border border-warning border-opacity-25 font-monospace px-2 py-0.5">
+                                    {{ c.code }}
+                                </span>
+                                {% if c.is_single_use %}
+                                <span class="badge bg-danger bg-opacity-25 text-danger px-1.5 py-0.5 small">Single-Use</span>
+                                {% endif %}
+                                {% if c.codes_count > 0 %}
+                                <span class="text-muted small" title="Unique batch codes generated">
+                                    <i class="bi bi-qr-code"></i> {{ c.codes_count }} unique codes
+                                </span>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <td>
+                            <span class="badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-25">
+                                {{ c.get_occasion_display }}
+                            </span>
+                        </td>
+
+                        <td>
+                            <div class="fw-bold text-warning">{{ c.formatted_discount }}</div>
+                            <div class="text-muted small">
+                                {% if c.min_purchase_amount > 0 %}Min: ₹{{ c.min_purchase_amount|floatformat:0 }}{% else %}No min spend{% endif %}
+                                {% if c.max_discount_amount %}&bull; Cap: ₹{{ c.max_discount_amount|floatformat:0 }}{% endif %}
+                            </div>
+                        </td>
+
+                        <td>
+                            <div class="small text-light">
+                                {% if c.valid_from %}From: {{ c.valid_from|date:"d-M-Y" }}<br>{% endif %}
+                                {% if c.valid_until %}Until: <strong>{{ c.valid_until|date:"d-M-Y" }}</strong>{% else %}<span class="text-success">No Expiration</span>{% endif %}
+                            </div>
+                        </td>
+
+                        <td>
+                            <div class="fw-semibold text-light">{{ c.times_redeemed }} used</div>
+                            <div class="text-muted small">
+                                {% if c.max_uses_total %}of {{ c.max_uses_total }} max{% else %}Unlimited{% endif %}
+                            </div>
+                        </td>
+
+                        <td>
+                            {% if c.status == 'active' %}
+                            <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25 px-2 py-1">Active</span>
+                            {% elif c.status == 'paused' %}
+                            <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25 px-2 py-1">Paused</span>
+                            {% elif c.status == 'expired' %}
+                            <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25 px-2 py-1">Expired</span>
+                            {% elif c.status == 'archived' %}
+                            <span class="badge bg-secondary bg-opacity-25 text-muted px-2 py-1">Archived</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-end pe-3">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'coupons:coupon_print' c.pk %}" class="btn btn-outline-warning" title="Print Vouchers / A4 Sheets" target="_blank">
+                                    <i class="bi bi-printer"></i>
+                                </a>
+                                <a href="{% url 'coupons:coupon_detail' c.pk %}" class="btn btn-outline-light" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'coupons:coupon_edit' c.pk %}" class="btn btn-outline-light" title="Edit Offer">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+
+                                <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span class="visually-hidden">Toggle Dropdown</span>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end bg-dark border-secondary">
+                                    <li>
+                                        <form method="post" action="{% url 'coupons:coupon_duplicate' c.pk %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item text-light">
+                                                <i class="bi bi-copy me-2"></i> Duplicate Campaign
+                                            </button>
+                                        </form>
+                                    </li>
+                                    <li><hr class="dropdown-divider border-secondary"></li>
+                                    {% if c.status == 'active' %}
+                                    <li>
+                                        <form method="post" action="{% url 'coupons:coupon_toggle_status' c.pk %}">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="status" value="paused">
+                                            <button type="submit" class="dropdown-item text-warning">
+                                                <i class="bi bi-pause-circle me-2"></i> Pause Campaign
+                                            </button>
+                                        </form>
+                                    </li>
+                                    {% elif c.status == 'paused' %}
+                                    <li>
+                                        <form method="post" action="{% url 'coupons:coupon_toggle_status' c.pk %}">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="status" value="active">
+                                            <button type="submit" class="dropdown-item text-success">
+                                                <i class="bi bi-play-circle me-2"></i> Activate Campaign
+                                            </button>
+                                        </form>
+                                    </li>
+                                    {% endif %}
+                                    {% if c.status != 'archived' %}
+                                    <li>
+                                        <form method="post" action="{% url 'coupons:coupon_toggle_status' c.pk %}" onsubmit="return confirm('Archive this campaign?');">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="status" value="archived">
+                                            <button type="submit" class="dropdown-item text-danger">
+                                                <i class="bi bi-archive me-2"></i> Archive Offer
+                                            </button>
+                                        </form>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <div class="text-muted mb-3">
+                                <i class="bi bi-tags display-4 opacity-50"></i>
+                            </div>
+                            <h5 class="text-light">No coupons or offers found</h5>
+                            <p class="text-muted small">Create your first jewellery campaign for Diwali, Dhanteras, or customer loyalty rewards.</p>
+                            <a href="{% url 'coupons:coupon_create' %}" class="btn btn-warning text-dark fw-bold btn-sm mt-2">
+                                <i class="bi bi-plus-circle-fill me-1"></i> Create Your First Coupon
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <div class="card-footer bg-dark border-secondary border-opacity-25 py-3">
+            <nav>
+                <ul class="pagination pagination-sm justify-content-center m-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link bg-dark border-secondary text-light" href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">&laquo;</a></li>
+                    {% endif %}
+                    {% for p in page_obj.paginator.page_range %}
+                    <li class="page-item {% if p == page_obj.number %}active{% endif %}">
+                        <a class="page-link {% if p == page_obj.number %}bg-warning border-warning text-dark fw-bold{% else %}bg-dark border-secondary text-light{% endif %}" href="?page={{ p }}{% if q %}&q={{ q }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">{{ p }}</a>
+                    </li>
+                    {% endfor %}
+                    {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link bg-dark border-secondary text-light" href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">&raquo;</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Modal: Clone Platform Template -->
+<div class="modal fade" id="clonePlatformModal" tabindex="-1" aria-labelledby="clonePlatformModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-warning fw-bold" id="clonePlatformModalLabel">
+                    <i class="bi bi-copy me-2"></i>Copy Platform Preset Template
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'coupons:coupon_clone_platform' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        Select a professional platform template designed by Super Admin to copy into your business library. Changes you make will be private to your showroom and will not affect platform defaults.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label text-warning small">Platform Preset Template</label>
+                        {{ clone_form.platform_template }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-warning small">Your Custom Promo Code</label>
+                        {{ clone_form.new_coupon_code }}
+                        <div class="form-text text-muted small">e.g. DIWALI2026, GOLDVIP, WEDDING10</div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning text-dark fw-bold">Copy to My Library</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
