@@ -98,11 +98,13 @@ class CustomerSupportChatAPITests(TestCase):
 
         self.client_anon = Client()
 
-    def test_unauthenticated_chat_access_prohibited(self):
+    def test_unauthenticated_chat_allowed_for_visitors(self):
         url = reverse('support_customer:api_chat')
-        res = self.client_anon.post(url, {'message': 'Hello'}, content_type='application/json')
-        # Redirected to login
-        self.assertEqual(res.status_code, 302)
+        res = self.client_anon.post(url, {'message': 'Hello, what does JewelDesk do?'}, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data['success'])
+        self.assertTrue(len(data['reply']) > 10)
 
     def test_authenticated_chat_query_success(self):
         url = reverse('support_customer:api_chat')

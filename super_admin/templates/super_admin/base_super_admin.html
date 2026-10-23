@@ -913,6 +913,16 @@
                     </ul>
                 </div>
 
+                <!-- Support Tickets & AI Assistant in Super Admin Header -->
+                <button type="button" class="btn btn-sm d-inline-flex align-items-center gap-1"
+                        onclick="if(window.jdOpenSupportWidget){window.jdOpenSupportWidget();}else{var l=document.getElementById('jdSupportLauncher'); if(l) l.click();}"
+                        title="Open AI Assistant & Support Chatbot"
+                        style="background: var(--sa-gold-subtle); border: 1px solid var(--sa-gold); color: var(--sa-gold); font-weight: 600;">
+                    <i class="bi bi-robot"></i> AI Assistant
+                </button>
+                <a href="{% url 'super_admin:ticket_list' %}" class="btn btn-sm d-inline-flex align-items-center gap-1" title="Platform Support Tickets" style="background: var(--sa-card); border: 1px solid var(--sa-border); color: var(--sa-text); font-weight: 600;">
+                    <i class="bi bi-headset" style="color: var(--sa-gold);"></i> Support Tickets
+                </a>
                 <a href="{% url 'admin:index' %}" class="btn btn-sm" target="_blank" title="Open Django native administration" style="background: var(--sa-card); border: 1px solid var(--sa-border); color: var(--sa-text); font-weight: 600;">
                     <i class="bi bi-database me-1" style="color: var(--sa-gold);"></i> Django Admin
                 </a>
@@ -975,6 +985,9 @@
             updateSaThemeLabel(current);
         })();
     </script>
+    <!-- Floating AI Support Chatbot & Ticket Assistant Widget -->
+    {% include 'includes/support_chatbot.html' %}
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

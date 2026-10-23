@@ -59,6 +59,32 @@
             <!-- Right Top Corner: Language Switcher + User Profile + Logout -->
             <div class="ms-auto d-flex align-items-center gap-2 flex-shrink-0">
 
+                <!-- Raise Ticket & AI Assistant Quick Action Buttons in Top Navbar (Visible on all pages) -->
+                <div class="d-inline-flex align-items-center gap-1">
+                    <button type="button" class="btn btn-warning btn-sm d-inline-flex align-items-center gap-1 fw-bold py-1 px-2 text-dark shadow-sm"
+                            style="border-radius: 9999px; font-size: 0.8rem; background: linear-gradient(135deg, #ECC86A 0%, #D4AF37 100%); border: none;"
+                            onclick="if(window.jdOpenSupportWidget){window.jdOpenSupportWidget('ticket');}else{var l=document.getElementById('jdSupportLauncher'); if(l) l.click();}"
+                            title="Raise a Support Ticket / सहायता टिकट दर्ज करें">
+                        <i class="bi bi-plus-circle-fill"></i>
+                        <span class="d-none d-sm-inline">{% if is_hindi %}टिकट बनाएं{% else %}Raise Ticket{% endif %}</span>
+                    </button>
+
+                    <button type="button" class="btn btn-outline-warning btn-sm d-inline-flex align-items-center gap-1 text-gold py-1 px-2"
+                            style="border-radius: 9999px; font-size: 0.8rem; background: rgba(236, 200, 106, 0.08); border-color: rgba(236, 200, 106, 0.35);"
+                            onclick="if(window.jdOpenSupportWidget){window.jdOpenSupportWidget('chat');}else{var l=document.getElementById('jdSupportLauncher'); if(l) l.click();}"
+                            title="JewelDesk AI Assistant Bot / एआई चैटबॉट">
+                        <i class="bi bi-robot text-warning"></i>
+                        <span class="d-none d-md-inline fw-semibold">{% if is_hindi %}एआई बोट{% else %}AI Assistant{% endif %}</span>
+                    </button>
+
+                    <a href="{% url 'support_customer:ticket_list' %}" class="btn btn-outline-secondary btn-sm d-none d-lg-inline-flex align-items-center gap-1 text-light py-1 px-2"
+                       style="border-radius: 9999px; font-size: 0.8rem; background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.2);"
+                       title="All My Tickets / मेरे सभी टिकट">
+                        <i class="bi bi-ticket-perforated"></i>
+                        <span>{% if is_hindi %}सभी टिकट{% else %}My Tickets{% endif %}</span>
+                    </a>
+                </div>
+
                 <!-- Language Switcher Dropdown in Navbar -->
                 <div class="dropdown d-inline-block">
                     <button class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1 dropdown-toggle text-light py-1 px-2"
@@ -1156,10 +1182,8 @@
     <!-- Progressive Web App (PWA) Offline Toast, Install Prompt & Service Worker -->
     {% include 'includes/pwa_scripts.html' %}
 
-    {% if user.is_authenticated %}
-    <!-- Floating AI Support Chatbot & Ticket Assistant Widget -->
+    <!-- Floating AI Support Chatbot & Ticket Assistant Widget (Always active on all pages) -->
     {% include 'includes/support_chatbot.html' %}
-    {% endif %}
 
     {% block extra_js %}{% endblock %}
 </body>

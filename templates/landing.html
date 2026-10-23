@@ -107,6 +107,9 @@
 
                 <!-- Auth Action Buttons (Desktop) -->
                 <div class="jd-nav-actions">
+                    <button type="button" class="jd-btn jd-btn-ghost jd-btn-sm" onclick="if(window.jdOpenSupportWidget){window.jdOpenSupportWidget();}else{var l=document.getElementById('jdSupportLauncher');if(l)l.click();}" title="AI Support Assistant &amp; Raise Ticket">
+                        <i class="bi bi-robot text-warning" aria-hidden="true"></i> AI Help
+                    </button>
                     <a href="{% url 'download_brochure' %}" class="jd-btn jd-btn-ghost jd-btn-sm" title="Download Product Brochure (PDF)">
                         <i class="bi bi-file-earmark-pdf text-warning" aria-hidden="true"></i> Brochure
                     </a>
@@ -145,6 +148,7 @@
                     <a href="#why-jeweldesk" class="jd-mobile-link"><span>Why JewelDesk</span> <i class="bi bi-chevron-right text-muted"></i></a>
                     <a href="#contact" class="jd-mobile-link"><span>Contact</span> <i class="bi bi-chevron-right text-muted"></i></a>
                     <a href="{% url 'download_brochure' %}" class="jd-mobile-link text-warning"><span><i class="bi bi-file-earmark-pdf-fill me-2"></i>Download Brochure (PDF)</span> <i class="bi bi-download"></i></a>
+                    <a href="javascript:void(0)" onclick="if(window.jdOpenSupportWidget){window.jdOpenSupportWidget();}else{var l=document.getElementById('jdSupportLauncher');if(l)l.click();}" class="jd-mobile-link text-warning"><span><i class="bi bi-robot me-2"></i>AI Support &amp; Help Desk</span> <i class="bi bi-chevron-right"></i></a>
                     <a href="#faq" class="jd-mobile-link"><span>FAQ</span> <i class="bi bi-chevron-right text-muted"></i></a>
                 </div>
                 <div class="jd-mobile-drawer__actions">
@@ -1462,5 +1466,8 @@
 
     <!-- PWA Service Worker & Mobile Installation Handling -->
     {% include 'includes/pwa_scripts.html' %}
+
+    <!-- Floating AI Support Chatbot & Ticket Assistant Widget (Available on landing page) -->
+    {% include 'includes/support_chatbot.html' %}
 </body>
 </html>

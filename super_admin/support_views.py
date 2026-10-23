@@ -12,6 +12,7 @@ Includes:
 
 import json
 import logging
+import uuid
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST, require_GET
@@ -234,11 +235,10 @@ def customer_ticket_create_view(request):
 # 2. AI Support Chatbot API Endpoints
 # ==============================================================================
 
-@login_required
 @require_POST
 def api_support_chat(request):
     """
-    Handle natural-language customer queries to the JewelDesk AI Assistant.
+    Handle natural-language customer queries to the JewelDesk AI Assistant across all pages.
     Provides grounded responses, tracks session history, and suggests ticket creation when appropriate.
     """
     try:
@@ -259,48 +259,51 @@ def api_support_chat(request):
     if len(query) > 2000:
         query = query[:2000]
 
-    tenant = _get_active_tenant(request)
+    user = request.user if request.user.is_authenticated else None
+    tenant = _get_active_tenant(request) if user else None
 
-    # Resolve or create chat session
+    # Resolve or create chat session for authenticated users
     chat_session = None
-    if session_id:
-        chat_session = SupportChatSession.objects.filter(session_key=session_id, user=request.user).first()
-    
-    if not chat_session:
-        import uuid
-        generated_key = session_id or str(uuid.uuid4())
-        chat_session = SupportChatSession.objects.create(
-            user=request.user,
-            tenant=tenant,
-            session_key=generated_key
+    history = []
+    if user:
+        if session_id:
+            chat_session = SupportChatSession.objects.filter(session_key=session_id, user=user).first()
+        
+        if not chat_session:
+            generated_key = session_id or str(uuid.uuid4())
+            chat_session = SupportChatSession.objects.create(
+                user=user,
+                tenant=tenant,
+                session_key=generated_key
+            )
+
+        # Retrieve last 6 messages from this session for context
+        recent_messages = list(
+            chat_session.messages.order_by('-created_at')[:6]
+        )
+        recent_messages.reverse()
+        history = [
+            {'role': m.role, 'content': m.content}
+            for m in recent_messages
+        ]
+
+        # Save user message
+        SupportChatMessage.objects.create(
+            session=chat_session,
+            role='user',
+            content=query
         )
 
-    # Retrieve last 6 messages from this session for context
-    recent_messages = list(
-        chat_session.messages.order_by('-created_at')[:6]
-    )
-    recent_messages.reverse()
-    history = [
-        {'role': m.role, 'content': m.content}
-        for m in recent_messages
-    ]
-
-    # Save user message
-    SupportChatMessage.objects.create(
-        session=chat_session,
-        role='user',
-        content=query
-    )
-
     # Generate grounded response
-    answer = generate_grounded_answer(query, conversation_history=history)
+    answer = generate_grounded_answer(query, conversation_history=history, user=user, tenant=tenant)
 
-    # Save assistant reply
-    SupportChatMessage.objects.create(
-        session=chat_session,
-        role='assistant',
-        content=answer
-    )
+    # Save assistant reply if session exists
+    if chat_session:
+        SupportChatMessage.objects.create(
+            session=chat_session,
+            role='assistant',
+            content=answer
+        )
 
     # Detect if user asks to raise a ticket or complaint
     suggest_ticket = False
@@ -314,7 +317,7 @@ def api_support_chat(request):
 
     return JsonResponse({
         'success': True,
-        'session_id': str(chat_session.session_key),
+        'session_id': str(chat_session.session_key) if chat_session else (session_id or str(uuid.uuid4())),
         'reply': answer,
         'suggest_ticket': suggest_ticket,
         'suggested_category': cat_sug,
@@ -322,13 +325,12 @@ def api_support_chat(request):
     })
 
 
-@login_required
 @require_POST
 def api_create_ticket(request):
     """
     Direct API endpoint for creating a support ticket from the floating chat widget
-    or interactive modal.
-    Supports file attachments (multipart/form-data) and auto-associates with user/tenant.
+    or interactive modal across all pages.
+    Supports file attachments (multipart/form-data) and auto-associates with user/tenant if logged in.
     """
     subject = request.POST.get('subject', '').strip()
     category = request.POST.get('category', 'other').strip()
@@ -349,7 +351,13 @@ def api_create_ticket(request):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
-    tenant = _get_active_tenant(request)
+    user = request.user if request.user.is_authenticated else None
+    tenant = _get_active_tenant(request) if user else None
+
+    # Contact details: auto-fill from user if authenticated, or take from form inputs
+    contact_name = (user.get_full_name() or user.username) if user else (request.POST.get('contact_name', '').strip() or 'Website Visitor')
+    contact_email = (user.email or '') if user else (request.POST.get('contact_email', '').strip() or '')
+    contact_phone = (getattr(user, 'phone_number', '') or getattr(tenant, 'phone', '') or '') if user else (request.POST.get('contact_phone', '').strip() or '')
 
     # Normalize category & priority
     valid_categories = dict(PlatformSupportTicket.CATEGORY_CHOICES).keys()
@@ -365,10 +373,10 @@ def api_create_ticket(request):
 
     ticket = PlatformSupportTicket.objects.create(
         tenant=tenant,
-        created_by=request.user,
-        contact_name=request.user.get_full_name() or request.user.username,
-        contact_email=request.user.email or '',
-        contact_phone=getattr(request.user, 'phone_number', '') or getattr(tenant, 'phone', '') or '',
+        created_by=user,
+        contact_name=contact_name,
+        contact_email=contact_email,
+        contact_phone=contact_phone,
         category=category,
         priority=priority,
         status=PlatformSupportTicket.STATUS_OPEN,
@@ -380,8 +388,8 @@ def api_create_ticket(request):
     )
 
     # Link ticket context to chat session if provided
-    if session_id:
-        chat_session = SupportChatSession.objects.filter(session_key=session_id, user=request.user).first()
+    if session_id and user:
+        chat_session = SupportChatSession.objects.filter(session_key=session_id, user=user).first()
         if chat_session:
             messages_text = "\n".join([f"{m.role}: {m.content}" for m in chat_session.messages.order_by('created_at')])
             if messages_text:
@@ -390,10 +398,10 @@ def api_create_ticket(request):
 
     # Audit log
     PlatformAuditLog.objects.create(
-        actor=request.user,
+        actor=user,
         action='TICKET_CREATE',
         target_tenant=tenant,
-        reason=f"Customer created ticket #{ticket.ticket_number} via AI Assistant: {ticket.subject}",
+        reason=f"{'Customer' if user else 'Website Visitor'} created ticket #{ticket.ticket_number} via AI Assistant: {ticket.subject}",
         ip_address=request.META.get('REMOTE_ADDR', '')[:45],
         user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]
     )

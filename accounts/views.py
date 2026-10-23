@@ -10,9 +10,12 @@ from django.contrib.auth.views import (
 )
 from django.db import IntegrityError, transaction
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse, reverse_lazy
+import logging
+
+logger = logging.getLogger(__name__)
 
 from .forms import (
     CompanySettingsForm,
@@ -45,7 +48,11 @@ class JewelDeskPasswordResetView(PasswordResetView):
 
     def form_valid(self, form):
         self.extra_email_context = self.get_extra_email_context()
-        return super().form_valid(form)
+        try:
+            return super().form_valid(form)
+        except Exception as exc:
+            logger.exception("Password reset email delivery failed: %s", exc)
+            return HttpResponseRedirect(self.get_success_url())
 
 
 class JewelDeskPasswordResetDoneView(PasswordResetDoneView):

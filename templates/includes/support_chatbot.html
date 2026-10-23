@@ -6,7 +6,7 @@
     position: fixed;
     bottom: 24px;
     right: 24px;
-    z-index: 1045;
+    z-index: 99999 !important;
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 }
 
@@ -370,9 +370,11 @@
                 </div>
             </div>
             <div class="d-flex align-items-center gap-1">
+                {% if user.is_authenticated %}
                 <a href="{% url 'support_customer:ticket_list' %}" class="btn btn-sm btn-outline-warning text-gold py-1 px-2" style="font-size: 0.72rem; border-color: rgba(236,200,106,0.35);" title="View My Support Tickets">
                     <i class="bi bi-ticket-perforated me-1"></i> My Tickets
                 </a>
+                {% endif %}
                 <button type="button" class="btn btn-sm btn-link text-muted p-1" id="jdCloseChatBtn" title="Close" aria-label="Close chat">
                     <i class="bi bi-x-lg text-light fs-6"></i>
                 </button>
@@ -437,6 +439,18 @@
 
                 <form id="jdInlineTicketForm" onsubmit="handleTicketSubmit(event)" enctype="multipart/form-data">
                     {% csrf_token %}
+                    {% if not user.is_authenticated %}
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label for="id_ticket_guest_name">Your Name *</label>
+                            <input type="text" id="id_ticket_guest_name" name="contact_name" class="jd-ticket-input" placeholder="e.g. Ramesh Soni" required>
+                        </div>
+                        <div class="col-6">
+                            <label for="id_ticket_guest_email">Contact Email / Phone *</label>
+                            <input type="text" id="id_ticket_guest_email" name="contact_email" class="jd-ticket-input" placeholder="email or mobile" required>
+                        </div>
+                    </div>
+                    {% endif %}
                     <div>
                         <label for="id_ticket_subject">Subject *</label>
                         <input type="text" id="id_ticket_subject" name="subject" class="jd-ticket-input" placeholder="e.g. Sales invoice printing issue" required maxlength="200">
@@ -534,6 +548,22 @@
             scrollChatToBottom();
         }
     }
+
+    window.jdOpenSupportWidget = function(tab) {
+        if (!widget.classList.contains('open')) {
+            widget.classList.add('open');
+        }
+        if (tab && typeof window.switchSupportTab === 'function') {
+            window.switchSupportTab(tab);
+        } else {
+            chatInput.focus();
+            scrollChatToBottom();
+        }
+    };
+
+    window.jdCloseSupportWidget = function() {
+        widget.classList.remove('open');
+    };
 
     launcher.addEventListener('click', toggleChat);
     closeBtn.addEventListener('click', toggleChat);

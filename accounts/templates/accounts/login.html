@@ -456,6 +456,13 @@
                 </a>
 
                 <div class="jd-header-actions">
+                    <button type="button" class="btn btn-outline-warning btn-sm d-inline-flex align-items-center gap-1 text-gold py-1 px-3"
+                            style="border-radius: 9999px; font-size: 0.82rem; background: rgba(245, 206, 107, 0.08); border-color: rgba(245, 206, 107, 0.35); color: #ECC86A;"
+                            onclick="if(window.jdOpenSupportWidget){window.jdOpenSupportWidget();}else{var l=document.getElementById('jdSupportLauncher');if(l)l.click();}"
+                            title="Help &amp; AI Support / सहायता">
+                        <i class="bi bi-headset text-warning"></i>
+                        <span>Help &amp; Support</span>
+                    </button>
                     <div class="jd-trust-badge d-none d-sm-inline-flex">
                         <i class="bi bi-shield-check text-warning me-1" aria-hidden="true"></i>
                         <span>ISO 27001 Certified & BIS Hallmark Ready</span>
@@ -727,5 +734,8 @@
 
     <!-- Progressive Web App (PWA) Scripts & Offline Handling -->
     {% include 'includes/pwa_scripts.html' %}
+
+    <!-- Floating AI Support Chatbot & Ticket Assistant Widget (Available on login page) -->
+    {% include 'includes/support_chatbot.html' %}
 </body>
 </html>

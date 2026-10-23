@@ -17,6 +17,22 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load environment variables from .env file if present
+_env_path = BASE_DIR / '.env'
+if _env_path.exists():
+    try:
+        with open(_env_path, 'r', encoding='utf-8') as _ef:
+            for _line in _ef:
+                _sline = _line.strip()
+                if _sline and not _sline.startswith('#') and '=' in _sline:
+                    _k, _v = _sline.split('=', 1)
+                    _k = _k.strip()
+                    _v = _v.strip().strip('\'"')
+                    if _k and _k not in os.environ:
+                        os.environ[_k] = _v
+    except Exception:
+        pass
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
@@ -433,17 +449,10 @@ LOGOUT_REDIRECT_URL = 'accounts:login'
 # Email Configuration
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 #
-# By default, emails are written to the console during local development and testing
-# when SMTP environment variables are not set.
-# For production email delivery, set the following environment variables:
-#   EMAIL_HOST            - SMTP host (e.g., smtp.sendgrid.net, smtp.gmail.com)
-#   EMAIL_PORT            - SMTP port (e.g., 587 for TLS, 465 for SSL, default: 587)
-#   EMAIL_HOST_USER       - SMTP username / API key identity
-#   EMAIL_HOST_PASSWORD   - SMTP password / API secret key
-#   EMAIL_USE_TLS         - True/False (default: True when port != 465)
-#   EMAIL_USE_SSL         - True/False (default: True when port == 465)
-#   DEFAULT_FROM_EMAIL    - Sender email address (e.g., 'JewelDesk <no-reply@jeweldesk.com>')
-#   EMAIL_BACKEND         - Optional override for custom email backend
+# Primary delivery: Resend REST API (fast, reliable on Vercel/serverless environments)
+# Fallback options: Standard SMTP or Console backend for local development.
+
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
 
 _email_host = os.environ.get('EMAIL_HOST', '')
 _email_port = int(os.environ.get(
@@ -465,15 +474,18 @@ if _use_tls_env is not None:
 else:
     _email_use_tls = not _email_use_ssl
 
+# Default sender: If using Resend without a custom verified domain, onboarding@resend.dev is required
 DEFAULT_FROM_EMAIL = os.environ.get(
     'DEFAULT_FROM_EMAIL',
-    os.environ.get('SERVER_EMAIL', 'JewelDesk <no-reply@jeweldesk.com>')
+    os.environ.get('SERVER_EMAIL', 'JewelDesk <onboarding@resend.dev>')
 )
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 _custom_email_backend = os.environ.get('EMAIL_BACKEND')
 if _custom_email_backend:
     _active_email_backend = _custom_email_backend
+elif RESEND_API_KEY:
+    _active_email_backend = 'config.resend_backend.ResendEmailBackend'
 elif _email_host:
     _active_email_backend = 'django.core.mail.backends.smtp.EmailBackend'
 else:
@@ -489,6 +501,10 @@ if _active_email_backend == 'django.core.mail.backends.smtp.EmailBackend':
         'password': _email_password,
         'use_tls': _email_use_tls,
         'use_ssl': _email_use_ssl,
+    }
+elif _active_email_backend == 'config.resend_backend.ResendEmailBackend':
+    _mailer_options = {
+        'api_key': RESEND_API_KEY,
     }
 
 MAILERS = {
