@@ -29,25 +29,25 @@ class EmailOrUsernameModelBackend(ModelBackend):
             return None
 
         try:
-            user = (
+            candidates = list(
                 UserModel.objects
                 .filter(
                     Q(username__iexact=identifier) |
                     Q(email__iexact=identifier) |
                     Q(first_name__iexact=identifier)
                 )
-                .order_by('id')
-                .first()
+                .order_by('-id')
             )
         except Exception:
             return None
 
-        if user is None:
+        if not candidates:
             # Mitigate timing differences by running default hasher once
             UserModel().set_password(password)
             return None
 
-        if user.check_password(password) and self.user_can_authenticate(user):
-            return user
+        for user in candidates:
+            if user.check_password(password) and self.user_can_authenticate(user):
+                return user
 
         return None
