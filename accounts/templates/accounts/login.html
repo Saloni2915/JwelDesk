@@ -62,6 +62,15 @@
             --danger: #ef4444;
         }
         *, *::before, *::after { box-sizing: border-box; }
+        /* Prevent browser autofill from turning inputs bright blue/white */
+        .jd-input-field:-webkit-autofill,
+        .jd-input-field:-webkit-autofill:hover, 
+        .jd-input-field:-webkit-autofill:focus,
+        .jd-input-field:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 1000px #1a140b inset !important;
+            -webkit-text-fill-color: #fef9ed !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
         body.jd-login-page {
             margin: 0;
             padding: 0;
@@ -616,7 +625,7 @@
                                 </div>
                                 {% endif %}
 
-                                <form method="post" novalidate id="jd-login-form">
+                                <form method="post" novalidate id="jd-login-form" autocomplete="off">
                                     {% csrf_token %}
                                     {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
 
@@ -629,7 +638,7 @@
                                                    id="id_username"
                                                    class="jd-input-field"
                                                    placeholder="Enter your username or email"
-                                                   autocomplete="username"
+                                                   autocomplete="off"
                                                    autocapitalize="none"
                                                    autocorrect="off"
                                                    spellcheck="false"
@@ -651,7 +660,7 @@
                                                    id="id_password"
                                                    class="jd-input-field jd-input-field--password"
                                                    placeholder="Enter your password"
-                                                   autocomplete="current-password"
+                                                   autocomplete="new-password"
                                                    required
                                                    {% if form.errors %}aria-invalid="true" aria-describedby="jd-login-error"{% endif %}>
                                             <button type="button"
