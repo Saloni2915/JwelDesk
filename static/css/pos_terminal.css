@@ -446,7 +446,7 @@ body.has-pos-terminal .sidebar {
     border: 1px solid var(--jd-pos-border) !important;
     border-radius: 0.5rem;
     color: var(--jd-pos-ivory) !important;
-    padding: 0.65rem 1rem 0.65rem 2.5rem;
+    padding: 0.65rem 2.5rem 0.65rem 2.5rem;
     font-size: 0.88rem;
     font-family: var(--jd-pos-font-body);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -459,6 +459,103 @@ body.has-pos-terminal .sidebar {
     background: var(--jd-pos-input-bg) !important;
     color: var(--jd-pos-ivory) !important;
     outline: none;
+}
+
+.jd-pos-search-clear-btn {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: var(--jd-pos-muted);
+    font-size: 1.15rem;
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: color 0.15s ease, transform 0.15s ease;
+    z-index: 5;
+    line-height: 1;
+}
+
+.jd-pos-search-clear-btn:hover {
+    color: #ef4444;
+    transform: translateY(-50%) scale(1.15);
+}
+
+.jd-pos-autocomplete-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--jd-pos-card, #20160E);
+    border: 1px solid var(--jd-pos-border, rgba(212, 175, 55, 0.3));
+    border-radius: 0.5rem;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65);
+    max-height: 280px;
+    overflow-y: auto;
+    z-index: 1050;
+}
+
+.jd-pos-autocomplete-item {
+    padding: 0.65rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: background 0.15s ease;
+    color: var(--jd-pos-ivory);
+}
+
+.jd-pos-autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.jd-pos-autocomplete-item:hover,
+.jd-pos-autocomplete-item.active {
+    background: rgba(212, 175, 55, 0.16);
+}
+
+.jd-pos-autocomplete-item .cust-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.jd-pos-autocomplete-item .cust-name {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--jd-pos-ivory);
+}
+
+.jd-pos-autocomplete-item .cust-phone {
+    font-size: 0.78rem;
+    color: var(--jd-pos-muted);
+}
+
+.jd-pos-autocomplete-item .cust-due {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--jd-pos-gold);
+    text-align: right;
+}
+
+.jd-pos-autocomplete-empty {
+    padding: 1.25rem;
+    text-align: center;
+    color: var(--jd-pos-muted);
+    font-size: 0.85rem;
+}
+
+.jd-pos-btn-remove-cust {
+    padding: 0.28rem 0.65rem;
+    font-size: 0.75rem;
+    border-radius: 0.35rem;
+    white-space: nowrap;
 }
 
 /* Customer Card Details */

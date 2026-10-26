@@ -110,6 +110,10 @@
                                    class="jd-pos-input"
                                    placeholder="Search customer by Mobile, Name, or City..."
                                    autocomplete="off">
+                            <button type="button" id="clearCustomerBtn" class="jd-pos-search-clear-btn d-none" title="Clear customer">
+                                <i class="bi bi-x-circle-fill"></i>
+                            </button>
+                            <div id="customerDropdown" class="jd-pos-autocomplete-menu d-none"></div>
                         </div>
 
                         <!-- Native Select (Hidden but bound to Django Form) -->
@@ -132,18 +136,23 @@
                                     <span class="jd-pos-tier-badge" id="custCardTier">Customer</span>
                                 </div>
                                 <div class="jd-pos-customer-meta" id="custCardMeta">
-                                    Mobile: <span id="custCardMobile">—</span> &middot; Outstanding: <span class="text-warning" id="custCardDue">₹0</span>
+                                    Mobile: <span id="custCardMobile">—</span> &middot; Outstanding: <span class="text-warning" id="custCardDue">₹0.00</span>
                                 </div>
                             </div>
-                            <div class="jd-pos-customer-stats">
-                                <div>
-                                    <div class="jd-pos-stat-label">Past Purchases</div>
-                                    <div class="jd-pos-stat-val" id="custCardCount">0 bills</div>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="jd-pos-customer-stats">
+                                    <div>
+                                        <div class="jd-pos-stat-label">Past Purchases</div>
+                                        <div class="jd-pos-stat-val" id="custCardCount">0 bills</div>
+                                    </div>
+                                    <div>
+                                        <div class="jd-pos-stat-label">Outstanding Due</div>
+                                        <div class="jd-pos-stat-val" id="custCardDueLarge">₹0.00</div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <div class="jd-pos-stat-label">Outstanding Due</div>
-                                    <div class="jd-pos-stat-val" id="custCardDueLarge">₹0.00</div>
-                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger jd-pos-btn-remove-cust d-none" id="btnRemoveCustomer" title="Clear selected customer">
+                                    <i class="bi bi-x-circle me-1"></i>Clear
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -521,77 +530,154 @@
     var custCardDue = document.getElementById('custCardDue');
     var custCardCount = document.getElementById('custCardCount');
     var custCardDueLarge = document.getElementById('custCardDueLarge');
+    var clearCustBtn = document.getElementById('clearCustomerBtn');
+    var custDropdown = document.getElementById('customerDropdown');
+    var btnRemoveCust = document.getElementById('btnRemoveCustomer');
 
-    // Item Card elements
-    var itemCardTitle = document.getElementById('itemCardTitle');
-    var itemCardTag = document.getElementById('itemCardTag');
-    var itemCardHuid = document.getElementById('itemCardHuid');
-    var itemCardHallmark = document.getElementById('itemCardHallmark');
-    var specPurity = document.getElementById('specPurity');
-    var specGross = document.getElementById('specGross');
-    var specNet = document.getElementById('specNet');
-    var specStone = document.getElementById('specStone');
-    var goldCalcVal = document.getElementById('goldCalcVal');
-    var makingCalcVal = document.getElementById('makingCalcVal');
-    var stoneCalcVal = document.getElementById('stoneCalcVal');
-    var itemTotalVal = document.getElementById('itemTotalVal');
-    var itemThumbBox = document.getElementById('itemThumbBox');
-
-    // Bill elements
-    var billSubtotal = document.getElementById('billSubtotal');
-    var billOldGold = document.getElementById('billOldGold');
-    var billTaxable = document.getElementById('billTaxable');
-    var billCgst = document.getElementById('billCgst');
-    var billSgst = document.getElementById('billSgst');
-    var billGst = document.getElementById('billGst');
-    var billRoundOff = document.getElementById('billRoundOff');
-    var billGrandTotal = document.getElementById('billGrandTotal');
-
-    // Coupon elements
-    var couponCodeInput = document.getElementById('posCouponCodeInput');
-    var btnApplyCoupon = document.getElementById('btnApplyCoupon');
-    var btnRemoveCoupon = document.getElementById('btnRemoveCoupon');
-    var posCouponBadge = document.getElementById('posCouponBadge');
-    var posCouponFeedback = document.getElementById('posCouponFeedback');
-    var billCouponRow = document.getElementById('billCouponRow');
-    var billCouponCodeDisplay = document.getElementById('billCouponCodeDisplay');
-    var billCouponDiscount = document.getElementById('billCouponDiscount');
-    var currentCouponDiscount = 0;
-    var currentCouponCode = '';
-
-    // Tender elements
-    var tenderPrimary = document.getElementById('tenderPrimaryInput');
-    var tenderSecondary = document.getElementById('tenderSecondaryInput');
-    var tenderDueVal = document.getElementById('tenderDueVal');
-
-    // Old Gold inputs
-    var ogGross = document.getElementById('ogGross');
-    var ogLoss = document.getElementById('ogLoss');
-    var ogRate = document.getElementById('ogRate');
-    var ogNetVal = document.getElementById('ogNetVal');
-    var exchangeDeductionBadge = document.getElementById('exchangeDeductionBadge');
-
-    function formatInr(val) {
-        return '₹' + Number(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
     }
 
     // Customer selection handler
     function updateCustomerView(custId) {
         var cust = customers.find(function(c) { return c.id == custId; });
         if (cust) {
-            custCardName.textContent = cust.name;
-            custCardMobile.textContent = cust.mobile || 'No mobile';
-            custCardDue.textContent = formatInr(cust.outstanding);
-            custCardDueLarge.textContent = formatInr(cust.outstanding);
-            custCardCount.textContent = (cust.purchases_count || 0) + ' bill' + ((cust.purchases_count || 0) === 1 ? '' : 's');
-            custSearch.value = cust.name + ' (' + (cust.mobile || '') + ')';
+            if (custSelect) custSelect.value = cust.id;
+            if (custCardName) custCardName.textContent = cust.name;
+            if (custCardMobile) custCardMobile.textContent = cust.mobile || 'No mobile';
+            if (custCardDue) custCardDue.textContent = formatInr(cust.outstanding);
+            if (custCardDueLarge) custCardDueLarge.textContent = formatInr(cust.outstanding);
+            if (custCardCount) custCardCount.textContent = (cust.purchases_count || 0) + ' bill' + ((cust.purchases_count || 0) === 1 ? '' : 's');
+            if (custSearch) custSearch.value = cust.name + (cust.mobile ? ' (' + cust.mobile + ')' : '');
+            if (clearCustBtn) clearCustBtn.classList.remove('d-none');
+            if (btnRemoveCust) btnRemoveCust.classList.remove('d-none');
         } else {
-            custCardName.textContent = 'Select a Customer';
-            custCardMobile.textContent = '—';
-            custCardDue.textContent = '₹0.00';
-            custCardDueLarge.textContent = '₹0.00';
-            custCardCount.textContent = '0 bills';
+            if (custSelect) custSelect.value = '';
+            if (custCardName) custCardName.textContent = 'Select a Customer';
+            if (custCardMobile) custCardMobile.textContent = '—';
+            if (custCardDue) custCardDue.textContent = '₹0.00';
+            if (custCardDueLarge) custCardDueLarge.textContent = '₹0.00';
+            if (custCardCount) custCardCount.textContent = '0 bills';
+            if (custSearch) custSearch.value = '';
+            if (clearCustBtn) clearCustBtn.classList.add('d-none');
+            if (btnRemoveCust) btnRemoveCust.classList.add('d-none');
         }
+    }
+
+    function clearCustomerSelection() {
+        updateCustomerView(null);
+        if (custDropdown) custDropdown.classList.add('d-none');
+    }
+
+    if (clearCustBtn) {
+        clearCustBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            clearCustomerSelection();
+            if (custSearch) custSearch.focus();
+        });
+    }
+
+    if (btnRemoveCust) {
+        btnRemoveCust.addEventListener('click', function(e) {
+            e.stopPropagation();
+            clearCustomerSelection();
+            if (custSearch) custSearch.focus();
+        });
+    }
+
+    function renderCustomerDropdown(query) {
+        if (!custDropdown) return;
+        var q = (query || '').toLowerCase().trim();
+        var matches = [];
+        if (!q) {
+            matches = customers.slice(0, 10);
+        } else {
+            matches = customers.filter(function(c) {
+                return (c.name && c.name.toLowerCase().includes(q)) ||
+                       (c.mobile && c.mobile.includes(q)) ||
+                       (c.address && c.address.toLowerCase().includes(q));
+            });
+        }
+
+        if (matches.length === 0) {
+            custDropdown.innerHTML = '<div class="jd-pos-autocomplete-empty">' +
+                '<i class="bi bi-search me-1"></i> No customer found.' +
+                '<div class="mt-2"><a href="{% url "customer_add" %}" target="_blank" class="btn btn-sm btn-outline-warning py-1 px-3">+ Add New Customer</a></div>' +
+                '</div>';
+            custDropdown.classList.remove('d-none');
+            return;
+        }
+
+        var html = '';
+        matches.forEach(function(c) {
+            var mob = c.mobile || 'No mobile';
+            html += '<div class="jd-pos-autocomplete-item" data-id="' + c.id + '">' +
+                '<div class="cust-main">' +
+                    '<span class="cust-name">' + escapeHtml(c.name) + '</span>' +
+                    '<span class="cust-phone"><i class="bi bi-telephone me-1"></i>' + escapeHtml(mob) + (c.address ? ' &middot; ' + escapeHtml(c.address) : '') + '</span>' +
+                '</div>' +
+                '<div class="cust-due">' +
+                    '<div>' + formatInr(c.outstanding) + '</div>' +
+                    '<small class="text-secondary opacity-75">' + (c.purchases_count || 0) + ' bill' + ((c.purchases_count || 0) === 1 ? '' : 's') + '</small>' +
+                '</div>' +
+            '</div>';
+        });
+        custDropdown.innerHTML = html;
+        custDropdown.classList.remove('d-none');
+
+        var itemsEl = custDropdown.querySelectorAll('.jd-pos-autocomplete-item');
+        itemsEl.forEach(function(item) {
+            item.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                var cid = this.getAttribute('data-id');
+                updateCustomerView(cid);
+                custDropdown.classList.add('d-none');
+            });
+        });
+    }
+
+    if (custSearch) {
+        custSearch.addEventListener('input', function() {
+            var val = this.value;
+            if (clearCustBtn) {
+                if (val.trim().length > 0) clearCustBtn.classList.remove('d-none');
+                else if (!custSelect || !custSelect.value) clearCustBtn.classList.add('d-none');
+            }
+            if (val.trim() === '') {
+                if (custSelect && custSelect.value) {
+                    custSelect.value = '';
+                    if (custCardName) custCardName.textContent = 'Select a Customer';
+                    if (custCardMobile) custCardMobile.textContent = '—';
+                    if (custCardDue) custCardDue.textContent = '₹0.00';
+                    if (custCardDueLarge) custCardDueLarge.textContent = '₹0.00';
+                    if (custCardCount) custCardCount.textContent = '0 bills';
+                    if (clearCustBtn) clearCustBtn.classList.add('d-none');
+                    if (btnRemoveCust) btnRemoveCust.classList.add('d-none');
+                }
+            }
+            renderCustomerDropdown(val);
+        });
+
+        custSearch.addEventListener('focus', function() {
+            renderCustomerDropdown(this.value);
+        });
+
+        custSearch.addEventListener('blur', function() {
+            setTimeout(function() {
+                if (custDropdown) custDropdown.classList.add('d-none');
+            }, 200);
+        });
+
+        custSearch.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                if (custDropdown) custDropdown.classList.add('d-none');
+            }
+        });
     }
 
     if (custSelect) {
@@ -600,26 +686,9 @@
         });
         if (custSelect.value) {
             updateCustomerView(custSelect.value);
-        } else if (customers.length > 0) {
-            custSelect.value = customers[0].id;
-            updateCustomerView(customers[0].id);
+        } else {
+            updateCustomerView('');
         }
-    }
-
-    // Customer search typing autocomplete / filter
-    if (custSearch) {
-        custSearch.addEventListener('input', function() {
-            var q = this.value.toLowerCase().trim();
-            if (!q) return;
-            var match = customers.find(function(c) {
-                return (c.name && c.name.toLowerCase().includes(q)) ||
-                       (c.mobile && c.mobile.includes(q));
-            });
-            if (match && custSelect) {
-                custSelect.value = match.id;
-                updateCustomerView(match.id);
-            }
-        });
     }
 
     // Item selection handler
@@ -680,9 +749,8 @@
         });
         if (itemSelect.value) {
             updateItemView(itemSelect.value);
-        } else if (items.length > 0) {
-            itemSelect.value = items[0].id;
-            updateItemView(items[0].id);
+        } else {
+            updateItemView('');
         }
     }
 
