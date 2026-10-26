@@ -8,6 +8,104 @@
     right: 24px;
     z-index: 99999 !important;
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+
+    /* Theme defaults: Gold / Dark Roast Theme */
+    --jd-chat-bg: #1a1712;
+    --jd-chat-header-bg: linear-gradient(180deg, #241e17 0%, #1a1712 100%);
+    --jd-chat-border: rgba(236, 200, 106, 0.3);
+    --jd-chat-border-light: rgba(236, 200, 106, 0.15);
+    --jd-chat-text: #FAF4EA;
+    --jd-chat-text-muted: #a89f91;
+    --jd-chat-gold: #ECC86A;
+    --jd-chat-gold-hover: #D4AF37;
+    --jd-chat-gold-bg: rgba(236, 200, 106, 0.15);
+    --jd-chat-gold-border: rgba(236, 200, 106, 0.3);
+    --jd-chat-tab-bg: #141009;
+    --jd-chat-tab-active: rgba(236, 200, 106, 0.15);
+    --jd-chat-msg-bot-bg: #241e17;
+    --jd-chat-msg-bot-border: rgba(236, 200, 106, 0.2);
+    --jd-chat-msg-bot-text: #FAF4EA;
+    --jd-chat-msg-user-bg: linear-gradient(135deg, #ECC86A, #D4AF37);
+    --jd-chat-msg-user-text: #141009;
+    --jd-chat-chips-bg: #18140e;
+    --jd-chat-chip-bg: rgba(255, 255, 255, 0.05);
+    --jd-chat-chip-border: rgba(236, 200, 106, 0.25);
+    --jd-chat-chip-text: #FAF4EA;
+    --jd-chat-input-bar-bg: #141009;
+    --jd-chat-input-bg: #241e17;
+    --jd-chat-input-border: rgba(236, 200, 106, 0.25);
+    --jd-chat-input-text: #FAF4EA;
+    --jd-chat-close-bg: rgba(255, 255, 255, 0.12);
+    --jd-chat-close-border: rgba(236, 200, 106, 0.4);
+    --jd-chat-close-color: #ECC86A;
+    --jd-chat-shadow: 0 20px 50px rgba(0, 0, 0, 0.65), 0 0 35px rgba(212, 175, 55, 0.15);
+}
+
+/* Light Theme (Showroom / Royal Alabaster & Warm Gold) */
+[data-theme="light"] #jdSupportWidget,
+html:not([data-theme="dark"]):not([data-theme="gold"]) #jdSupportWidget {
+    --jd-chat-bg: #FFFFFF;
+    --jd-chat-header-bg: linear-gradient(180deg, #FDFCF9 0%, #F5EFE6 100%);
+    --jd-chat-border: #E2D7C5;
+    --jd-chat-border-light: #ECE3D4;
+    --jd-chat-text: #1E1B15;
+    --jd-chat-text-muted: #6B6255;
+    --jd-chat-gold: #B48516;
+    --jd-chat-gold-hover: #966C0C;
+    --jd-chat-gold-bg: rgba(180, 133, 22, 0.12);
+    --jd-chat-gold-border: rgba(180, 133, 22, 0.35);
+    --jd-chat-tab-bg: #ECE5DA;
+    --jd-chat-tab-active: #FFFFFF;
+    --jd-chat-msg-bot-bg: #F7F3EC;
+    --jd-chat-msg-bot-border: #E8DDCE;
+    --jd-chat-msg-bot-text: #1E1B15;
+    --jd-chat-msg-user-bg: linear-gradient(135deg, #D4AF37, #B48516);
+    --jd-chat-msg-user-text: #FFFFFF;
+    --jd-chat-chips-bg: #FAF7F2;
+    --jd-chat-chip-bg: #FFFFFF;
+    --jd-chat-chip-border: #DCD0BD;
+    --jd-chat-chip-text: #2D2518;
+    --jd-chat-input-bar-bg: #F5EFE4;
+    --jd-chat-input-bg: #FFFFFF;
+    --jd-chat-input-border: #D8CCB7;
+    --jd-chat-input-text: #1E1B15;
+    --jd-chat-close-bg: #E7DECE;
+    --jd-chat-close-border: #CBB99E;
+    --jd-chat-close-color: #382E1E;
+    --jd-chat-shadow: 0 16px 45px rgba(28, 22, 12, 0.16), 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Dark Theme (Obsidian Midnight / Deep Navy) */
+[data-theme="dark"] #jdSupportWidget {
+    --jd-chat-bg: #121620;
+    --jd-chat-header-bg: linear-gradient(180deg, #171D2A 0%, #121620 100%);
+    --jd-chat-border: rgba(56, 189, 248, 0.25);
+    --jd-chat-border-light: rgba(148, 163, 184, 0.16);
+    --jd-chat-text: #F8FAFC;
+    --jd-chat-text-muted: #94A3B8;
+    --jd-chat-gold: #38BDF8;
+    --jd-chat-gold-hover: #7DD3FC;
+    --jd-chat-gold-bg: rgba(56, 189, 248, 0.16);
+    --jd-chat-gold-border: rgba(56, 189, 248, 0.35);
+    --jd-chat-tab-bg: #0A0D14;
+    --jd-chat-tab-active: #171D2A;
+    --jd-chat-msg-bot-bg: #171D2A;
+    --jd-chat-msg-bot-border: rgba(56, 189, 248, 0.2);
+    --jd-chat-msg-bot-text: #F8FAFC;
+    --jd-chat-msg-user-bg: linear-gradient(135deg, #0284C7, #2563EB);
+    --jd-chat-msg-user-text: #FFFFFF;
+    --jd-chat-chips-bg: #0E121A;
+    --jd-chat-chip-bg: #171D2A;
+    --jd-chat-chip-border: rgba(148, 163, 184, 0.25);
+    --jd-chat-chip-text: #F8FAFC;
+    --jd-chat-input-bar-bg: #0A0D14;
+    --jd-chat-input-bg: #171D2A;
+    --jd-chat-input-border: rgba(148, 163, 184, 0.25);
+    --jd-chat-input-text: #F8FAFC;
+    --jd-chat-close-bg: rgba(255, 255, 255, 0.1);
+    --jd-chat-close-border: rgba(148, 163, 184, 0.25);
+    --jd-chat-close-color: #F8FAFC;
+    --jd-chat-shadow: 0 20px 50px rgba(0, 0, 0, 0.75), 0 0 35px rgba(56, 189, 248, 0.12);
 }
 
 #jdSupportLauncher {
@@ -54,10 +152,10 @@
     max-width: calc(100vw - 32px);
     height: 600px;
     max-height: calc(100vh - 110px);
-    background: #1a1712;
-    border: 1px solid rgba(236, 200, 106, 0.3);
+    background: var(--jd-chat-bg);
+    border: 1px solid var(--jd-chat-border);
     border-radius: 20px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65), 0 0 35px rgba(212, 175, 55, 0.15);
+    box-shadow: var(--jd-chat-shadow);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -75,16 +173,16 @@
 
 #jdSupportWidget.open #jdSupportLauncher {
     transform: rotate(90deg);
-    background: #241e17;
-    color: #ECC86A;
-    border-color: rgba(236, 200, 106, 0.4);
+    background: var(--jd-chat-bg);
+    color: var(--jd-chat-gold);
+    border-color: var(--jd-chat-border);
 }
 
 /* Panel Header */
 .jd-chat-header {
-    background: linear-gradient(180deg, #241e17 0%, #1a1712 100%);
+    background: var(--jd-chat-header-bg);
     padding: 14px 16px;
-    border-bottom: 1px solid rgba(236, 200, 106, 0.2);
+    border-bottom: 1px solid var(--jd-chat-border-light);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -110,7 +208,7 @@
 .jd-chat-title {
     font-size: 0.95rem;
     font-weight: 700;
-    color: #FAF4EA;
+    color: var(--jd-chat-text);
     line-height: 1.2;
 }
 .jd-chat-subtitle {
@@ -131,9 +229,9 @@
 /* Mode Tabs */
 .jd-mode-tabs {
     display: flex;
-    background: #141009;
+    background: var(--jd-chat-tab-bg);
     padding: 4px;
-    border-bottom: 1px solid rgba(236, 200, 106, 0.15);
+    border-bottom: 1px solid var(--jd-chat-border-light);
     flex-shrink: 0;
 }
 .jd-mode-tab {
@@ -142,7 +240,7 @@
     padding: 7px 10px;
     font-size: 0.8rem;
     font-weight: 600;
-    color: #a89f91;
+    color: var(--jd-chat-text-muted);
     background: transparent;
     border: none;
     border-radius: 8px;
@@ -154,12 +252,13 @@
     gap: 6px;
 }
 .jd-mode-tab:hover {
-    color: #FAF4EA;
+    color: var(--jd-chat-text);
 }
 .jd-mode-tab.active {
-    background: rgba(236, 200, 106, 0.15);
-    color: #ECC86A;
-    border: 1px solid rgba(236, 200, 106, 0.3);
+    background: var(--jd-chat-tab-active);
+    color: var(--jd-chat-gold);
+    border: 1px solid var(--jd-chat-gold-border);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 /* Body Areas */
@@ -168,6 +267,7 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    background: var(--jd-chat-bg);
 }
 
 /* Messages Stream */
@@ -178,6 +278,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    background: var(--jd-chat-bg);
 }
 
 .jd-msg {
@@ -190,30 +291,31 @@
 }
 .jd-msg-bot {
     align-self: flex-start;
-    background: #241e17;
-    color: #FAF4EA;
-    border: 1px solid rgba(236, 200, 106, 0.2);
+    background: var(--jd-chat-msg-bot-bg);
+    color: var(--jd-chat-msg-bot-text);
+    border: 1px solid var(--jd-chat-msg-bot-border);
     border-top-left-radius: 4px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 .jd-msg-bot a.jd-msg-link {
-    color: #ECC86A;
+    color: var(--jd-chat-gold);
     font-weight: 600;
     text-decoration: underline;
 }
 .jd-msg-user {
     align-self: flex-end;
-    background: linear-gradient(135deg, #ECC86A, #D4AF37);
-    color: #141009;
+    background: var(--jd-chat-msg-user-bg);
+    color: var(--jd-chat-msg-user-text);
     font-weight: 500;
     border-top-right-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
 }
 
 /* Quick Question Chips */
 .jd-quick-chips {
     padding: 10px 16px;
-    background: #18140e;
-    border-top: 1px solid rgba(236, 200, 106, 0.1);
+    background: var(--jd-chat-chips-bg);
+    border-top: 1px solid var(--jd-chat-border-light);
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
@@ -223,24 +325,24 @@
     font-size: 0.73rem;
     padding: 5px 9px;
     border-radius: 20px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(236, 200, 106, 0.25);
-    color: #FAF4EA;
+    background: var(--jd-chat-chip-bg);
+    border: 1px solid var(--jd-chat-chip-border);
+    color: var(--jd-chat-chip-text);
     cursor: pointer;
     transition: all 0.2s ease;
     white-space: nowrap;
 }
 .jd-chip-btn:hover {
-    background: rgba(236, 200, 106, 0.2);
-    color: #ECC86A;
-    border-color: #ECC86A;
+    background: var(--jd-chat-gold-bg);
+    color: var(--jd-chat-gold);
+    border-color: var(--jd-chat-gold);
 }
 
 /* Chat Input Bar */
 .jd-chat-input-bar {
     padding: 12px 14px;
-    background: #141009;
-    border-top: 1px solid rgba(236, 200, 106, 0.2);
+    background: var(--jd-chat-input-bar-bg);
+    border-top: 1px solid var(--jd-chat-border-light);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -248,23 +350,27 @@
 }
 .jd-chat-input {
     flex: 1;
-    background: #241e17;
-    border: 1px solid rgba(236, 200, 106, 0.25);
+    background: var(--jd-chat-input-bg);
+    border: 1px solid var(--jd-chat-input-border);
     border-radius: 12px;
     padding: 8px 12px;
     font-size: 0.85rem;
-    color: #FAF4EA;
+    color: var(--jd-chat-input-text);
     outline: none;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.jd-chat-input::placeholder {
+    color: var(--jd-chat-text-muted);
 }
 .jd-chat-input:focus {
-    border-color: #ECC86A;
+    border-color: var(--jd-chat-gold);
+    box-shadow: 0 0 0 2px var(--jd-chat-gold-bg);
 }
 .jd-send-btn {
     width: 38px;
     height: 38px;
     border-radius: 10px;
-    background: #ECC86A;
+    background: var(--jd-chat-gold);
     color: #141009;
     border: none;
     display: flex;
@@ -275,8 +381,12 @@
     transition: all 0.2s ease;
     flex-shrink: 0;
 }
+[data-theme="light"] .jd-send-btn,
+html:not([data-theme="dark"]):not([data-theme="gold"]) .jd-send-btn {
+    color: #FFFFFF;
+}
 .jd-send-btn:hover:not(:disabled) {
-    background: #D4AF37;
+    background: var(--jd-chat-gold-hover);
     transform: scale(1.05);
 }
 .jd-send-btn:disabled {
@@ -289,27 +399,105 @@
     padding: 16px;
     overflow-y: auto;
     flex: 1;
+    background: var(--jd-chat-bg);
 }
+.jd-ticket-header-title {
+    color: var(--jd-chat-text);
+    font-size: 0.92rem;
+}
+.jd-ticket-header-subtitle {
+    font-size: 0.75rem;
+    color: var(--jd-chat-text-muted);
+}
+.jd-bot-welcome-title {
+    color: var(--jd-chat-gold);
+}
+.jd-bot-welcome-subtitle {
+    font-size: 0.75rem;
+    color: var(--jd-chat-text-muted);
+}
+.jd-btn-cancel-ticket {
+    border: 1px solid var(--jd-chat-border);
+    color: var(--jd-chat-text);
+    background: transparent;
+    transition: all 0.2s ease;
+}
+.jd-btn-cancel-ticket:hover {
+    background: var(--jd-chat-border-light);
+    color: var(--jd-chat-text);
+}
+.jd-ticket-success-title {
+    color: var(--jd-chat-text);
+}
+
 .jd-ticket-form-container label {
     font-size: 0.78rem;
     font-weight: 600;
-    color: #ECC86A;
+    color: var(--jd-chat-gold);
     margin-bottom: 4px;
     display: block;
 }
 .jd-ticket-input, .jd-ticket-select, .jd-ticket-textarea {
     width: 100%;
-    background: #241e17;
-    border: 1px solid rgba(236, 200, 106, 0.25);
+    background: var(--jd-chat-input-bg);
+    border: 1px solid var(--jd-chat-input-border);
     border-radius: 8px;
     padding: 8px 10px;
-    color: #FAF4EA;
+    color: var(--jd-chat-input-text);
     font-size: 0.83rem;
     outline: none;
     margin-bottom: 12px;
 }
 .jd-ticket-input:focus, .jd-ticket-select:focus, .jd-ticket-textarea:focus {
-    border-color: #ECC86A;
+    border-color: var(--jd-chat-gold);
+    box-shadow: 0 0 0 2px var(--jd-chat-gold-bg);
+}
+
+/* Close & Header Buttons */
+.jd-chat-header-btn {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--jd-chat-gold-border);
+    background: var(--jd-chat-gold-bg);
+    color: var(--jd-chat-gold);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+.jd-chat-header-btn:hover {
+    background: var(--jd-chat-gold);
+    border-color: var(--jd-chat-gold);
+    color: #FFFFFF;
+}
+
+.jd-chat-close-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--jd-chat-close-bg);
+    border: 1px solid var(--jd-chat-close-border);
+    color: var(--jd-chat-close-color);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 0;
+    margin-left: 6px;
+    flex-shrink: 0;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+.jd-chat-close-btn:hover {
+    background: #EF4444 !important;
+    border-color: #EF4444 !important;
+    color: #FFFFFF !important;
+    transform: scale(1.1) rotate(90deg);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
 }
 
 /* Typing Indicator Animation */
@@ -323,7 +511,7 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #ECC86A;
+    background: var(--jd-chat-gold);
     animation: jdTypingBounce 1.4s infinite ease-in-out both;
 }
 .jd-typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
@@ -371,12 +559,12 @@
             </div>
             <div class="d-flex align-items-center gap-1">
                 {% if user.is_authenticated %}
-                <a href="{% url 'support_customer:ticket_list' %}" class="btn btn-sm btn-outline-warning text-gold py-1 px-2" style="font-size: 0.72rem; border-color: rgba(236,200,106,0.35);" title="View My Support Tickets">
+                <a href="{% url 'support_customer:ticket_list' %}" class="jd-chat-header-btn" title="View My Support Tickets">
                     <i class="bi bi-ticket-perforated me-1"></i> My Tickets
                 </a>
                 {% endif %}
-                <button type="button" class="btn btn-sm btn-link text-muted p-1" id="jdCloseChatBtn" title="Close" aria-label="Close chat">
-                    <i class="bi bi-x-lg text-light fs-6"></i>
+                <button type="button" class="jd-chat-close-btn" id="jdCloseChatBtn" title="Close JewelDesk Assistant" aria-label="Close chat">
+                    <i class="bi bi-x-lg"></i>
                 </button>
             </div>
         </div>
@@ -397,11 +585,11 @@
             <div class="jd-chat-stream" id="jdChatStream">
                 <!-- Welcome Bot Message -->
                 <div class="jd-msg jd-msg-bot">
-                    <div class="fw-bold mb-1" style="color: #ECC86A;">
+                    <div class="fw-bold mb-1 jd-bot-welcome-title">
                         <i class="bi bi-stars me-1"></i> Welcome to JewelDesk Support!
                     </div>
                     Namaste! I am your AI assistant for JewelDesk. Ask me anything about billing, jewellery stock, gold rates, coupons, or reports.
-                    <div class="mt-2 text-muted" style="font-size: 0.75rem;">
+                    <div class="mt-2 jd-bot-welcome-subtitle">
                         If you need personalized staff resolution, tap <strong>Raise a Ticket</strong> anytime!
                     </div>
                 </div>
@@ -429,10 +617,10 @@
         <div id="jdViewTicket" class="jd-panel-view" style="display: none;">
             <div class="jd-ticket-form-container">
                 <div class="mb-3">
-                    <h6 class="fw-bold mb-1" style="color: #FAF4EA; font-size: 0.92rem;">
+                    <h6 class="fw-bold mb-1 jd-ticket-header-title">
                         <i class="bi bi-ticket-detailed text-warning me-1"></i> Submit a Support Ticket
                     </h6>
-                    <small class="text-muted" style="font-size: 0.75rem;">
+                    <small class="jd-ticket-header-subtitle">
                         Our specialist engineers will review and resolve your request.
                     </small>
                 </div>
@@ -460,7 +648,7 @@
                         <div class="col-7">
                             <label for="id_ticket_category">Category *</label>
                             <select id="id_ticket_category" name="category" class="jd-ticket-select" required>
-                                <option value="sales">Sales &amp; POS Billing</option>
+                                <option value="sales">Sales &amp; Invoicing</option>
                                 <option value="inventory">Inventory &amp; Stock</option>
                                 <option value="account">Login &amp; Account</option>
                                 <option value="billing">Subscription / Billing</option>
@@ -498,7 +686,7 @@
                     <div id="jdTicketAlert" class="alert alert-danger py-2 small" style="display: none;"></div>
 
                     <div class="d-flex gap-2 mt-2">
-                        <button type="button" class="btn btn-sm btn-outline-secondary text-light flex-grow-1" onclick="switchSupportTab('chat')">
+                        <button type="button" class="btn btn-sm jd-btn-cancel-ticket flex-grow-1" onclick="switchSupportTab('chat')">
                             Cancel
                         </button>
                         <button type="submit" id="jdTicketSubmitBtn" class="btn btn-sm btn-gold fw-bold flex-grow-1">
@@ -512,14 +700,14 @@
                     <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 58px; height: 58px; background: rgba(16, 185, 129, 0.15); border: 2px solid #10B981; color: #10B981; font-size: 28px;">
                         <i class="bi bi-check-lg"></i>
                     </div>
-                    <h6 class="fw-bold text-light mb-1">Ticket Raised Successfully!</h6>
+                    <h6 class="fw-bold jd-ticket-success-title mb-1">Ticket Raised Successfully!</h6>
                     <p class="text-warning fw-semibold mb-2" id="jdSuccessTicketNumber" style="font-size: 1.05rem;">#TK-XXXX</p>
                     <p class="small text-muted mb-3" id="jdSuccessMessage">Our support engineers have been assigned to your ticket.</p>
                     <div class="d-flex flex-column gap-2">
                         <a id="jdSuccessTicketLink" href="#" class="btn btn-sm btn-gold fw-bold">
                             <i class="bi bi-box-arrow-up-right me-1"></i> View Ticket Status
                         </a>
-                        <button type="button" class="btn btn-sm btn-outline-secondary text-light" onclick="resetTicketForm()">
+                        <button type="button" class="btn btn-sm jd-btn-cancel-ticket" onclick="resetTicketForm()">
                             Ask Another Question
                         </button>
                     </div>

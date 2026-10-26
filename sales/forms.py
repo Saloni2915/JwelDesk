@@ -40,6 +40,10 @@ class SaleForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.tenant:
             self.fields['customer'].queryset = Customer.objects.filter(tenant=self.tenant)
+        self.fields['customer'].empty_label = "- Select a Customer -"
+        self.fields['customer'].label_from_instance = (
+            lambda c: f"{c.name} ({c.mobile})" if getattr(c, 'mobile', None) else f"{c.name}"
+        )
         # Only show items that are Available
         item_qs = JewelleryItem.objects.all()
         if self.tenant:
