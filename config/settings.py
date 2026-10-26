@@ -188,7 +188,7 @@ if _database_url:
     #   conn_health_checks=True safely verifies connection vitality before query execution.
     # - DISABLE_SERVER_SIDE_CURSORS is set to True (PgBouncer in transaction mode does not support PostgreSQL named cursors)
     # - SSL is required for remote database connections
-    conn_max_age_val = int(os.environ.get('CONN_MAX_AGE', '60'))
+    conn_max_age_val = int(os.environ.get('CONN_MAX_AGE', '300'))
     ssl_required = 'localhost' not in _database_url and '127.0.0.1' not in _database_url
 
     try:
@@ -227,10 +227,11 @@ if _database_url:
     # 1. Transaction mode does not support server-side cursors
     DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = True
 
-    # 2. Enforce SSL require for remote PostgreSQL hosts
+    # 2. Enforce SSL require for remote PostgreSQL hosts and optimized socket timeouts
     if ssl_required:
         options = DATABASES['default'].setdefault('OPTIONS', {})
         options.setdefault('sslmode', 'require')
+        options.setdefault('connect_timeout', 10)
 
 elif os.environ.get('VERCEL'):
     # Ephemeral fallback for Vercel if DATABASE_URL is not yet configured.
@@ -414,8 +415,8 @@ else:
         },
     }
 
-# Cache headers for static assets: 1 day on production/Vercel CDN, 0 in local development
-WHITENOISE_MAX_AGE = int(os.environ.get('WHITENOISE_MAX_AGE', '86400' if not DEBUG else '0'))
+# Cache headers for static assets: 1 year on production/Vercel CDN, 0 in local development
+WHITENOISE_MAX_AGE = int(os.environ.get('WHITENOISE_MAX_AGE', '31536000' if not DEBUG else '0'))
 
 # In-memory cache for process-level caching of singletons, metal prices & query results
 CACHES = {

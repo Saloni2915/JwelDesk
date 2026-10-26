@@ -260,18 +260,35 @@ def sale_add(request):
             'image_url': '',
         })
 
-    customers_qs = form.fields['customer'].queryset
+    from django.db.models import Count, Sum, DecimalField
+    from django.db.models.functions import Coalesce
+
+    # High performance customer batch serialization (2 total SQL queries instead of 4 * N queries)
+    customers_qs = form.fields['customer'].queryset.annotate(
+        _sales_count=Count('sales', distinct=True),
+        _sales_total=Coalesce(Sum('sales__sale_price'), Decimal('0.00'), output_field=DecimalField()),
+    )
+    payments_by_cust = dict(
+        Payment.objects.filter(sale__tenant=request.tenant)
+        .values('sale__customer_id')
+        .annotate(paid_total=Coalesce(Sum('amount'), Decimal('0.00'), output_field=DecimalField()))
+        .values_list('sale__customer_id', 'paid_total')
+    )
+
     customers_data = []
     for c in customers_qs:
+        sales_amt = float(c._sales_total or 0)
+        paid_amt = float(payments_by_cust.get(c.id, 0) or 0)
+        due_amt = max(0.0, sales_amt - paid_amt)
         customers_data.append({
             'id': c.id,
             'name': c.name,
             'mobile': c.mobile or '',
             'email': getattr(c, 'email', '') or '',
             'address': getattr(c, 'address', '') or '',
-            'outstanding': float(c.outstanding_amount or 0),
-            'purchases_count': c.total_purchases_count,
-            'purchases_amount': float(c.total_purchases_amount or 0),
+            'outstanding': due_amt,
+            'purchases_count': c._sales_count or 0,
+            'purchases_amount': sales_amt,
         })
 
     last_sale = Sale.objects.filter(tenant=request.tenant).order_by('-id').first()

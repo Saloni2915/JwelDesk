@@ -30,19 +30,38 @@ class TenantMiddleware:
         if user and user.is_authenticated:
             try:
                 # 1. Active employee profile with tenant
-                emp = getattr(user, 'employee_profile', None)
+                emp = getattr(user, '_cached_employee_profile', None)
+                if emp is None and not getattr(user, '_checked_employee_profile', False):
+                    try:
+                        emp = user.employee_profile
+                    except Exception:
+                        emp = None
+                    user._cached_employee_profile = emp
+                    user._checked_employee_profile = True
+
                 if emp and getattr(emp, 'tenant_id', None) and emp.status == 'Active' and getattr(emp.tenant, 'is_active', False):
                     request.tenant = emp.tenant
                 else:
                     # 2. Owned tenant
-                    owned = user.owned_tenants.filter(is_active=True).first()
+                    owned = getattr(user, '_cached_owned_tenant', None)
+                    if owned is None:
+                        owned = user.owned_tenants.filter(is_active=True).first()
+                        user._cached_owned_tenant = owned
+
                     if owned:
                         request.tenant = owned
-                        try:
-                            from team.models import Employee
-                            Employee.ensure_tenant_admin(owned, user)
-                        except Exception:
-                            pass
+                        # Only run ensure_tenant_admin once per session / 24h to avoid 15+ redundant DB queries on every click
+                        if hasattr(request, 'session') and not request.session.get('tenant_admin_ensured'):
+                            from django.core.cache import cache
+                            cache_key = f'tenant_admin_ensured:{owned.id}:{user.id}'
+                            if not cache.get(cache_key):
+                                try:
+                                    from team.models import Employee
+                                    Employee.ensure_tenant_admin(owned, user)
+                                    cache.set(cache_key, True, timeout=86400)
+                                except Exception:
+                                    pass
+                            request.session['tenant_admin_ensured'] = True
                     elif user.is_superuser:
                         # Superuser resolution: bind tenant ONLY if actively in an authorized impersonation session
                         impersonated_id = None
