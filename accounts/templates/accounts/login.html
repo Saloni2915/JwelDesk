@@ -625,7 +625,7 @@
                                 </div>
                                 {% endif %}
 
-                                <form method="post" novalidate id="jd-login-form" autocomplete="off">
+                                <form method="post" novalidate id="jd-login-form" autocomplete="on">
                                     {% csrf_token %}
                                     {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
 
@@ -638,7 +638,7 @@
                                                    id="id_username"
                                                    class="jd-input-field"
                                                    placeholder="Enter your username or email"
-                                                   autocomplete="off"
+                                                   autocomplete="username"
                                                    autocapitalize="none"
                                                    autocorrect="off"
                                                    spellcheck="false"
@@ -660,7 +660,7 @@
                                                    id="id_password"
                                                    class="jd-input-field jd-input-field--password"
                                                    placeholder="Enter your password"
-                                                   autocomplete="new-password"
+                                                   autocomplete="current-password"
                                                    required
                                                    {% if form.errors %}aria-invalid="true" aria-describedby="jd-login-error"{% endif %}>
                                             <button type="button"
