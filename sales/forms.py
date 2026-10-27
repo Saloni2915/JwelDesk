@@ -26,7 +26,7 @@ class SaleForm(forms.ModelForm):
             'customer': forms.Select(attrs={'class': 'form-select'}),
             'jewellery_item': forms.Select(attrs={'class': 'form-select'}),
             'sale_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}),
-            'payment_method': forms.Select(attrs={'class': 'form-select'}),
+            'payment_method': forms.Select(attrs={'class': 'form-select jd-pos-select', 'id': 'id_payment_method'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Optional sale notes or bill reference...'}),
         }
         error_messages = {

@@ -253,7 +253,9 @@ def test_jeweldesk_sales_workflow(test_data_fixture, driver):
     wait.until(EC.visibility_of_element_located((By.ID, "jdPosForm")))
     assert "/sales/add/" in driver.current_url
 
-    # Type customer name into the fast search autocomplete box
+    # Open searchable customer dropdown and type customer name
+    if driver.find_elements(By.ID, "custSelectTrigger"):
+        safe_click(driver, By.ID, "custSelectTrigger")
     safe_type(driver, By.ID, "customerSearchInput", TEST_CUSTOMER_NAME)
     time.sleep(1)  # Allow POS client-side engine to match and bind selection
 

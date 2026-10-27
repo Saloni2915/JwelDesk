@@ -655,6 +655,207 @@ body.has-pos-terminal .sidebar {
     color: #78350F !important;
 }
 
+/* ==========================================================================
+   Searchable Customer Dropdown Component (Select with Integrated Search)
+   ========================================================================== */
+.jd-pos-custom-select-trigger {
+    width: 100%;
+    min-height: 44px;
+    background-color: var(--jd-pos-input-bg) !important;
+    color: var(--jd-pos-ivory) !important;
+    border: 1px solid var(--jd-pos-border) !important;
+    border-radius: 0.5rem;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.88rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.jd-pos-custom-select-trigger:focus,
+.jd-pos-custom-select-trigger.active {
+    border-color: var(--jd-pos-gold) !important;
+    box-shadow: 0 0 0 3px var(--jd-pos-gold-glow) !important;
+    outline: none;
+}
+
+.jd-pos-custom-select-trigger .jd-pos-select-display-wrap {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.jd-pos-custom-select-trigger .jd-pos-select-display {
+    font-weight: 500;
+    color: var(--jd-pos-ivory);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.jd-pos-custom-select-trigger .jd-pos-select-display.is-placeholder {
+    color: var(--jd-pos-muted);
+}
+
+.jd-pos-custom-select-arrow {
+    color: var(--jd-pos-gold);
+    font-size: 0.85rem;
+    transition: transform 0.2s ease;
+}
+
+.jd-pos-custom-select-trigger.active .jd-pos-custom-select-arrow {
+    transform: rotate(180deg);
+}
+
+.jd-pos-trigger-clear-btn {
+    background: transparent;
+    border: none;
+    color: var(--jd-pos-muted);
+    font-size: 0.92rem;
+    padding: 0 0.25rem;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.jd-pos-trigger-clear-btn:hover {
+    color: #ef4444;
+}
+
+/* Custom Dropdown Menu with Search Option inside */
+.jd-pos-custom-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 1050;
+    background: var(--jd-pos-card, #20160E);
+    border: 1.5px solid var(--jd-pos-gold, #ECC86A);
+    border-radius: 0.65rem;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(236, 200, 106, 0.2);
+    overflow: hidden;
+    animation: jdDropdownFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes jdDropdownFadeIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.jd-pos-dropdown-search-wrap {
+    position: relative;
+    padding: 0.65rem 0.75rem;
+    background: rgba(0, 0, 0, 0.3);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+}
+
+.jd-pos-dropdown-search-icon {
+    position: absolute;
+    left: 1.35rem;
+    color: var(--jd-pos-gold);
+    font-size: 0.9rem;
+    pointer-events: none;
+}
+
+.jd-pos-dropdown-search-input {
+    width: 100%;
+    background: var(--jd-pos-input-bg, #14100A);
+    border: 1px solid var(--jd-pos-border, rgba(212, 175, 55, 0.3));
+    border-radius: 0.45rem;
+    color: var(--jd-pos-ivory);
+    padding: 0.5rem 2rem 0.5rem 2.25rem;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.jd-pos-dropdown-search-input:focus {
+    border-color: var(--jd-pos-gold);
+    box-shadow: 0 0 0 2px var(--jd-pos-gold-glow);
+}
+
+.jd-pos-search-input-clear {
+    position: absolute;
+    right: 1.35rem;
+    background: transparent;
+    border: none;
+    color: var(--jd-pos-muted);
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+}
+
+.jd-pos-search-input-clear:hover {
+    color: #ef4444;
+}
+
+.jd-pos-custom-dropdown-list {
+    max-height: 260px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.jd-pos-autocomplete-item.is-selected {
+    background: rgba(236, 200, 106, 0.12);
+}
+
+/* Light theme overrides for Searchable Customer Dropdown */
+[data-theme="light"] .jd-pos-custom-select-trigger {
+    background-color: #FFFFFF !important;
+    color: #0F172A !important;
+    border-color: #CBD5E1 !important;
+}
+
+[data-theme="light"] .jd-pos-custom-select-trigger .jd-pos-select-display {
+    color: #0F172A;
+}
+
+[data-theme="light"] .jd-pos-custom-select-trigger .jd-pos-select-display.is-placeholder {
+    color: #94A3B8;
+}
+
+[data-theme="light"] .jd-pos-custom-select-trigger:focus,
+[data-theme="light"] .jd-pos-custom-select-trigger.active {
+    border-color: #B48516 !important;
+    box-shadow: 0 0 0 3px rgba(180, 133, 22, 0.15) !important;
+}
+
+[data-theme="light"] .jd-pos-custom-dropdown-menu {
+    background: #FFFFFF !important;
+    border: 1.5px solid #C5A059 !important;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16) !important;
+}
+
+[data-theme="light"] .jd-pos-dropdown-search-wrap {
+    background: #F8FAFC !important;
+    border-bottom: 1px solid #E2E8F0 !important;
+}
+
+[data-theme="light"] .jd-pos-dropdown-search-input {
+    background: #FFFFFF !important;
+    border-color: #CBD5E1 !important;
+    color: #0F172A !important;
+}
+
+[data-theme="light"] .jd-pos-dropdown-search-input:focus {
+    border-color: #B48516 !important;
+    box-shadow: 0 0 0 2px rgba(180, 133, 22, 0.15) !important;
+}
+
+[data-theme="light"] .jd-pos-autocomplete-item.is-selected {
+    background: #FEF3C7 !important;
+}
+
 .jd-pos-btn-remove-cust {
     padding: 0.28rem 0.65rem;
     font-size: 0.75rem;
@@ -1135,6 +1336,10 @@ body.has-pos-terminal .sidebar {
 }
 
 .jd-pos-method-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
     background: var(--jd-pos-tile-bg) !important;
     border: 1px solid var(--jd-pos-border) !important;
     color: var(--jd-pos-ivory) !important;
@@ -1152,6 +1357,12 @@ body.has-pos-terminal .sidebar {
     background: var(--jd-pos-card-highest) !important;
     border-color: var(--jd-pos-gold) !important;
     color: var(--jd-pos-gold-bright) !important;
+    transform: translateY(-1px);
+}
+
+.jd-pos-method-btn:focus-visible {
+    outline: 2px solid var(--jd-pos-gold);
+    outline-offset: 1px;
 }
 
 .jd-pos-method-btn.active {
@@ -1160,6 +1371,33 @@ body.has-pos-terminal .sidebar {
     color: #150E07 !important;
     font-weight: 800 !important;
     box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3) !important;
+}
+
+/* Light mode overrides for payment method buttons */
+[data-theme="light"] .jd-pos-method-btn {
+    background: #F8FAFC !important;
+    border: 1px solid #CBD5E1 !important;
+    color: #334155 !important;
+}
+
+[data-theme="light"] .jd-pos-method-btn:hover {
+    background: #FEF3C7 !important;
+    border-color: #D97706 !important;
+    color: #92400E !important;
+}
+
+[data-theme="light"] .jd-pos-method-btn.active {
+    background: linear-gradient(135deg, #FDE68A 0%, #F59E0B 100%) !important;
+    border-color: #D97706 !important;
+    color: #78350F !important;
+    font-weight: 800 !important;
+    box-shadow: 0 3px 10px rgba(217, 119, 6, 0.25) !important;
+}
+
+@media (max-width: 576px) {
+    .jd-pos-methods-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
 /* Split Tender Inputs */
@@ -1561,4 +1799,244 @@ body.has-pos-terminal .sidebar {
 
 [data-theme="light"] .jd-pos-canvas .text-secondary {
     color: var(--jd-pos-muted) !important;
+}
+
+/* ==========================================================================
+   10. POS Counter Thermal Slip (80mm / 3-inch) & Print Isolation
+   ========================================================================== */
+
+/* Screen styling: Hidden on screen by default */
+#posThermalSlipWrapper {
+    display: none;
+}
+
+/* Modal thermal slip preview on screen */
+.pos-thermal-slip-preview-card {
+    background: #FFFFFF;
+    color: #111111;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 11px;
+    line-height: 1.35;
+    padding: 1rem 0.85rem;
+    border-radius: 4px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    border: 1px dashed #CCCCCC;
+}
+
+.pos-thermal-slip {
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 11px;
+    line-height: 1.35;
+    color: #111111;
+}
+
+.pts-store-name {
+    font-size: 14px;
+    font-weight: 800;
+    margin: 0 0 2px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #000000;
+}
+
+.pts-tagline {
+    font-size: 8.5px;
+    font-weight: 600;
+    margin-bottom: 2px;
+    color: #444444;
+}
+
+.pts-contact {
+    font-size: 9.5px;
+    line-height: 1.25;
+    color: #333333;
+}
+
+.pts-badge-hallmark {
+    font-size: 9px;
+    font-weight: 700;
+    margin-top: 3px;
+    color: #111111;
+}
+
+.pts-divider-double {
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin: 3px 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-align: center;
+    color: #000000;
+}
+
+.pts-divider-dashed {
+    font-weight: 600;
+    letter-spacing: -1px;
+    margin: 3px 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-align: center;
+    color: #333333;
+}
+
+.pts-slip-title {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin: 2px 0;
+    color: #000000;
+}
+
+.pts-meta-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    margin-bottom: 1px;
+    color: #222222;
+}
+
+.pts-section-title {
+    font-size: 10px;
+    font-weight: 800;
+    margin-bottom: 2px;
+    color: #000000;
+}
+
+.pts-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10.5px;
+    margin-bottom: 1.5px;
+    color: #111111;
+}
+
+.pts-item-title {
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+    color: #000000;
+}
+
+.pts-item-submeta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9.5px;
+    margin-bottom: 1px;
+    color: #333333;
+}
+
+.pts-grand-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 800;
+    padding: 2px 0;
+    color: #000000;
+}
+
+.pts-terms {
+    font-size: 8.5px;
+    line-height: 1.25;
+    margin: 4px 0;
+    color: #444444;
+}
+
+.pts-thanks {
+    font-size: 10.5px;
+    font-weight: 800;
+    margin-top: 2px;
+    color: #000000;
+}
+
+.pts-software {
+    font-size: 8px;
+    color: #666666;
+    margin-top: 1px;
+}
+
+/* ==========================================================================
+   PRINT MEDIA RULES: Strictly isolates Thermal Slip
+   ========================================================================== */
+@media print {
+    @page {
+        size: 80mm auto;
+        margin: 2mm;
+    }
+
+    html, body {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Hide entire standard application UI during print */
+    .top-navbar,
+    .navbar,
+    .sidebar,
+    #sidebar,
+    .sidebar-backdrop,
+    .sidebar-user-header,
+    .jd-pos-topbar,
+    #jdPosForm,
+    .jd-pos-actions-wrap,
+    .modal-backdrop,
+    .modal,
+    footer,
+    #jdSupportLauncher,
+    #jdSupportWidget,
+    .d-print-none {
+        display: none !important;
+    }
+
+    /* Reset container wrappers */
+    #wrapper,
+    .main-content,
+    #page-content,
+    .jd-pos-canvas {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Reveal ONLY the POS Thermal Slip */
+    #posThermalSlipWrapper {
+        display: block !important;
+        visibility: visible !important;
+        position: relative !important;
+        width: 76mm !important;
+        max-width: 80mm !important;
+        margin: 0 auto !important;
+        padding: 2mm 1mm !important;
+        background: #FFFFFF !important;
+        color: #000000 !important;
+        box-sizing: border-box !important;
+        font-family: 'Courier New', Courier, monospace !important;
+        font-size: 11px !important;
+        line-height: 1.35 !important;
+    }
+
+    #posThermalSlipWrapper * {
+        visibility: visible !important;
+        color: #000000 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
 }

@@ -102,26 +102,49 @@
                         </a>
                     </div>
                     <div class="jd-pos-card-body">
-                        <!-- Search & Fast Selector -->
-                        <div class="jd-pos-search-wrap" id="custSearchWrap">
-                            <i class="bi bi-search"></i>
-                            <input type="text"
-                                   id="customerSearchInput"
-                                   class="jd-pos-input"
-                                   placeholder="Search customer by Mobile, Name, or City..."
-                                   autocomplete="off">
-                            <button type="button" id="clearCustomerBtn" class="jd-pos-search-clear-btn d-none" title="Clear customer">
-                                <i class="bi bi-x-circle-fill"></i>
-                            </button>
-                            <div id="customerDropdown" class="jd-pos-autocomplete-menu d-none"></div>
-                        </div>
-
-                        <!-- Customer Select Dropdown -->
-                        <div class="mb-3">
+                        <!-- Customer Select Dropdown with Integrated Search Option -->
+                        <div class="mb-3 position-relative" id="custSearchableSelectWrap">
                             <label for="{{ form.customer.id_for_label }}" class="form-label text-secondary small">
                                 Select Customer <span class="text-danger">*</span>
                             </label>
-                            {{ form.customer }}
+
+                            <!-- Hidden native select for standard Django form submission & validation -->
+                            <div class="visually-hidden">
+                                {{ form.customer }}
+                            </div>
+
+                            <!-- Custom Select Trigger Box -->
+                            <div class="jd-pos-custom-select-trigger" id="custSelectTrigger" tabindex="0" role="combobox" aria-expanded="false" aria-haspopup="listbox">
+                                <div class="jd-pos-select-display-wrap">
+                                    <i class="bi bi-person text-warning me-2"></i>
+                                    <span id="custSelectDisplay" class="jd-pos-select-display is-placeholder">- Select a Customer -</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <button type="button" id="clearCustomerBtn" class="jd-pos-trigger-clear-btn d-none" title="Clear customer selection" tabindex="-1">
+                                        <i class="bi bi-x-circle-fill"></i>
+                                    </button>
+                                    <i class="bi bi-chevron-down jd-pos-custom-select-arrow" id="custSelectArrow"></i>
+                                </div>
+                            </div>
+
+                            <!-- Dropdown Menu with Search Option inside -->
+                            <div id="customerDropdownMenu" class="jd-pos-custom-dropdown-menu d-none" role="listbox">
+                                <div class="jd-pos-dropdown-search-wrap">
+                                    <i class="bi bi-search jd-pos-dropdown-search-icon"></i>
+                                    <input type="text"
+                                           id="customerSearchInput"
+                                           class="jd-pos-dropdown-search-input"
+                                           placeholder="Search customer by Name, Mobile, or City..."
+                                           autocomplete="off">
+                                    <button type="button" id="clearSearchInputBtn" class="jd-pos-search-input-clear d-none" title="Clear search text">
+                                        <i class="bi bi-x-circle-fill"></i>
+                                    </button>
+                                </div>
+                                <div id="customerDropdownList" class="jd-pos-custom-dropdown-list">
+                                    <!-- Dynamic customer list rendered here -->
+                                </div>
+                            </div>
+
                             {% if form.customer.errors %}
                             <div class="jd-pos-field-error">
                                 <i class="bi bi-exclamation-circle-fill me-1"></i>
@@ -271,37 +294,55 @@
                 </div>
 
                 <!-- SECTION C: Old Gold Exchange & Adjustment (Collapsible) -->
-                <div class="jd-pos-card">
-                    <div class="jd-pos-card-header">
-                        <label class="jd-pos-exchange-toggle-wrap w-100 m-0" for="exchange_toggle">
+                <div class="jd-pos-card" id="oldGoldExchangeCard">
+                    <div class="jd-pos-card-header" id="exchangeHeader" style="cursor: pointer; user-select: none;">
+                        <div class="jd-pos-exchange-toggle-wrap w-100 m-0 d-flex justify-content-between align-items-center">
                             <span class="d-flex align-items-center gap-2">
                                 <input type="checkbox" id="exchange_toggle" class="jd-pos-exchange-checkbox">
-                                <span class="fw-bold" style="color: var(--jd-pos-ivory);"><i class="bi bi-arrow-repeat text-warning me-1"></i> Exchange Old Gold</span>
+                                <label for="exchange_toggle" class="fw-bold m-0" style="color: var(--jd-pos-ivory); cursor: pointer;">
+                                    <i class="bi bi-arrow-repeat text-warning me-1"></i> Exchange Old Gold
+                                </label>
                             </span>
                             <span class="text-danger fw-bold font-monospace" id="exchangeDeductionBadge">0.00 Deduction</span>
-                        </label>
+                        </div>
                     </div>
-                    <div class="jd-pos-card-body d-none" id="exchangePanelBody">
-                        <div class="jd-pos-exchange-grid">
-                            <div>
+                    <div class="jd-pos-card-body" id="exchangePanelBody" style="display: none;">
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-4 col-12">
                                 <label class="jd-pos-spec-label">Scrap Description</label>
-                                <input type="text" id="ogDesc" class="jd-pos-input py-1 px-2" value="18K Scrap Gold" placeholder="Item description">
+                                <input type="text" id="ogDesc" name="old_gold_description" class="jd-pos-input py-1 px-2" value="Old Scrap Gold" placeholder="e.g. Old 22K Bangle / Chain">
                             </div>
-                            <div>
-                                <label class="jd-pos-spec-label">Gross Weight (g)</label>
-                                <input type="number" step="0.001" id="ogGross" class="jd-pos-input py-1 px-2" value="0.000">
+                            <div class="col-md-2 col-6">
+                                <label class="jd-pos-spec-label">Purity</label>
+                                <select id="ogPurity" class="form-select py-1 px-2" style="font-size: 0.85rem;">
+                                    <option value="24K">24K Gold</option>
+                                    <option value="22K" selected>22K Gold (91.6%)</option>
+                                    <option value="18K">18K Gold (75.0%)</option>
+                                    <option value="14K">14K Gold (58.5%)</option>
+                                    <option value="Silver">Silver</option>
+                                </select>
                             </div>
-                            <div>
-                                <label class="jd-pos-spec-label">Melt / Dross Loss (g)</label>
-                                <input type="number" step="0.001" id="ogLoss" class="jd-pos-input py-1 px-2" value="0.000">
+                            <div class="col-md-2 col-6">
+                                <label class="jd-pos-spec-label">Gross Wt (g)</label>
+                                <input type="number" step="0.001" id="ogGross" name="old_gold_gross_weight" class="jd-pos-input py-1 px-2 font-monospace" value="0.000">
                             </div>
-                            <div>
+                            <div class="col-md-2 col-6">
+                                <label class="jd-pos-spec-label">Loss / Waste (g)</label>
+                                <input type="number" step="0.001" id="ogLoss" name="old_gold_melting_loss" class="jd-pos-input py-1 px-2 font-monospace" value="0.000">
+                            </div>
+                            <div class="col-md-2 col-6">
                                 <label class="jd-pos-spec-label">Rate / g (₹)</label>
-                                <input type="number" step="0.01" id="ogRate" class="jd-pos-input py-1 px-2" value="5000.00">
+                                <input type="number" step="0.01" id="ogRate" name="old_gold_rate" class="jd-pos-input py-1 px-2 font-monospace" value="6100.00">
                             </div>
-                            <div>
-                                <label class="jd-pos-spec-label">Exchange Credit</label>
-                                <div class="deduction-val pt-1 fs-6" id="ogNetVal">-₹0.00</div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center pt-2 mt-2 border-top border-secondary border-opacity-25">
+                            <div class="small text-secondary">
+                                Net Exchange Weight: <strong class="text-warning font-monospace" id="ogNetWeight">0.000g</strong>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="small text-secondary">Exchange Credit:</span>
+                                <span class="text-danger fw-bold fs-6 font-monospace" id="ogNetVal">-₹0.00</span>
                             </div>
                         </div>
                     </div>
@@ -427,26 +468,48 @@
                     </div>
                     <div class="jd-pos-card-body">
 
-                        <!-- Payment Method Buttons (Selectable Pills) -->
-                        <div class="jd-pos-methods-grid">
-                            <button type="button" class="jd-pos-method-btn active" data-method="Cash">Cash</button>
-                            <button type="button" class="jd-pos-method-btn" data-method="UPI">UPI QR</button>
-                            <button type="button" class="jd-pos-method-btn" data-method="Card">Card</button>
-                            <button type="button" class="jd-pos-method-btn" data-method="Bank Transfer">Bank</button>
-                            <button type="button" class="jd-pos-method-btn" data-method="Exchange">Khata</button>
+                        <!-- Select Payment Mode Dropdown -->
+                        <div class="mb-3">
+                            <label for="{{ form.payment_method.id_for_label }}" class="jd-pos-spec-label mb-1 d-flex align-items-center justify-content-between">
+                                <span>Select Payment Mode <span class="text-danger">*</span></span>
+                                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50 px-2 py-1" id="activeMethodBadge">
+                                    <i class="bi bi-cash me-1"></i> Cash
+                                </span>
+                            </label>
+                            {{ form.payment_method }}
+                            {% if form.payment_method.errors %}
+                            <div class="jd-pos-field-error">
+                                <i class="bi bi-exclamation-circle-fill me-1"></i>
+                                {% for err in form.payment_method.errors %}{{ err }}{% endfor %}
+                            </div>
+                            {% endif %}
                         </div>
 
-                        <!-- Native Form Select (Hidden, kept synced) -->
-                        <div class="d-none">
-                            {{ form.payment_method }}
+                        <!-- Quick Payment Method Buttons (Selectable Pills) -->
+                        <div class="jd-pos-methods-grid" id="posMethodButtonsGrid">
+                            <button type="button" class="jd-pos-method-btn active" data-method="Cash" onclick="setPosPaymentMethod('Cash')">
+                                <i class="bi bi-cash me-1"></i> Cash
+                            </button>
+                            <button type="button" class="jd-pos-method-btn" data-method="UPI" onclick="setPosPaymentMethod('UPI')">
+                                <i class="bi bi-qr-code me-1"></i> UPI QR
+                            </button>
+                            <button type="button" class="jd-pos-method-btn" data-method="Card" onclick="setPosPaymentMethod('Card')">
+                                <i class="bi bi-credit-card me-1"></i> Card
+                            </button>
+                            <button type="button" class="jd-pos-method-btn" data-method="Bank Transfer" onclick="setPosPaymentMethod('Bank Transfer')">
+                                <i class="bi bi-bank me-1"></i> Bank
+                            </button>
+                            <button type="button" class="jd-pos-method-btn" data-method="Exchange" onclick="setPosPaymentMethod('Exchange')">
+                                <i class="bi bi-journal-text me-1"></i> Khata
+                            </button>
                         </div>
 
                         <!-- Split Tender Inputs -->
                         <div>
                             <div class="jd-pos-tender-row">
-                                <span class="jd-pos-tender-label">
-                                    <i class="bi bi-cash-stack text-warning"></i>
-                                    <span>Amount Paid</span>
+                                <span class="jd-pos-tender-label" id="tenderPrimaryLabel">
+                                    <i class="bi bi-cash-stack text-warning" id="tenderPrimaryIcon"></i>
+                                    <span id="tenderPrimaryText">Amount Paid</span>
                                 </span>
                                 <input type="number" step="0.01" class="jd-pos-tender-input" id="tenderPrimaryInput" placeholder="0.00">
                             </div>
@@ -480,7 +543,7 @@
                             <i class="bi bi-whatsapp text-success"></i>
                             <span>WhatsApp Bill</span>
                         </button>
-                        <button type="button" class="jd-pos-btn-action-tile" onclick="window.print()">
+                        <button type="button" class="jd-pos-btn-action-tile" id="btnThermalSlip" onclick="printThermalSlip()" title="Print Compact 80mm POS Thermal Slip">
                             <i class="bi bi-printer"></i>
                             <span>Thermal Slip</span>
                         </button>
@@ -495,6 +558,215 @@
 
         </div>
     </form>
+
+    <!-- SECTION H: Dedicated POS Thermal Receipt Slip (Isolated for Print) -->
+    <div id="posThermalSlipWrapper" class="pos-thermal-slip-wrapper" aria-hidden="true">
+        <div class="pos-thermal-slip">
+            <!-- 1. Shop Header -->
+            <div class="pts-header text-center">
+                <h2 class="pts-store-name">{{ request.tenant.name|default:company.name|default:"JEWELDESK SHOWROOM" }}</h2>
+                <div class="pts-tagline">GOLD &bull; DIAMOND &bull; SILVER JEWELLERY</div>
+                <div class="pts-contact">
+                    {% if company.address %}{{ company.address }}<br>{% else %}Main Gold Market, Zaveri Bazaar<br>{% endif %}
+                    Phone: <span id="ptsPhone">{{ company.phone|default:"+91 9829861477" }}</span>
+                    {% if company.gstin %} &bull; GSTIN: <span id="ptsGstin">{{ company.gstin }}</span>{% endif %}
+                </div>
+                <div class="pts-badge-hallmark">*** BIS 916 &amp; HUID CERTIFIED ***</div>
+            </div>
+
+            <div class="pts-divider-double">================================</div>
+
+            <!-- 2. Memo Title & Meta -->
+            <div class="pts-slip-title text-center">ESTIMATED SALE MEMO / THERMAL SLIP</div>
+            <div class="pts-meta-grid">
+                <div class="pts-meta-row">
+                    <span>Slip: <strong id="ptsInvoiceNo">{{ draft_invoice_number }}</strong></span>
+                    <span>Date: <span id="ptsDate">--/--/----</span></span>
+                </div>
+                <div class="pts-meta-row">
+                    <span>Time: <span id="ptsTime">--:--</span></span>
+                    <span>Counter: <span id="ptsCounter">#01 ({{ cashier_name }})</span></span>
+                </div>
+            </div>
+
+            <div class="pts-divider-dashed">--------------------------------</div>
+
+            <!-- 3. Customer Info -->
+            <div class="pts-section-title">CUSTOMER DETAILS:</div>
+            <div class="pts-cust-box">
+                <div class="pts-row">
+                    <span>Name:</span>
+                    <strong id="ptsCustName">Walk-in Customer</strong>
+                </div>
+                <div class="pts-row">
+                    <span>Mobile:</span>
+                    <strong id="ptsCustPhone">--</strong>
+                </div>
+            </div>
+
+            <div class="pts-divider-dashed">--------------------------------</div>
+
+            <!-- 4. Item Details -->
+            <div class="pts-section-title">ITEM DETAILS:</div>
+            <div class="pts-item-box">
+                <div class="pts-item-title" id="ptsItemName">Jewellery Item</div>
+                <div class="pts-item-submeta">
+                    <span>Tag: <strong id="ptsItemTag">TAG-0000</strong></span>
+                    <span>HUID: <strong id="ptsItemHuid">IN STOCK</strong></span>
+                </div>
+                <div class="pts-item-submeta">
+                    <span>Purity: <strong id="ptsItemPurity">Gold 22k</strong></span>
+                    <span>Net Wt: <strong id="ptsItemNet">0.000g</strong></span>
+                </div>
+                <div class="pts-item-submeta">
+                    <span>Gross Wt: <strong id="ptsItemGross">0.000g</strong></span>
+                    <span>Stone: <strong id="ptsItemStone">0.000g</strong></span>
+                </div>
+            </div>
+
+            <!-- Financial Breakdown Lines -->
+            <div class="pts-charges-box mt-1">
+                <div class="pts-row">
+                    <span>Metal Value:</span>
+                    <span id="ptsMetalVal">₹0.00</span>
+                </div>
+                <div class="pts-row">
+                    <span>Making Charges:</span>
+                    <span id="ptsMakingVal">₹0.00</span>
+                </div>
+                <div class="pts-row">
+                    <span>Stone Charges:</span>
+                    <span id="ptsStoneVal">₹0.00</span>
+                </div>
+                <div class="pts-row">
+                    <span>Hallmarking:</span>
+                    <span id="ptsHallmarkVal">₹45.00</span>
+                </div>
+            </div>
+
+            <!-- 5. Old Gold Exchange (Conditional) -->
+            <div id="ptsOldGoldSection" style="display: none;">
+                <div class="pts-divider-dashed">--------------------------------</div>
+                <div class="pts-section-title">OLD GOLD EXCHANGE:</div>
+                <div class="pts-row">
+                    <span>Gross / Net Wt:</span>
+                    <span id="ptsOldGoldWeights">0.000g / 0.000g</span>
+                </div>
+                <div class="pts-row">
+                    <span>Rate / Melting Loss:</span>
+                    <span id="ptsOldGoldRate">₹0.00 / 0.000g</span>
+                </div>
+                <div class="pts-row fw-bold text-danger">
+                    <span>Exchange Credit:</span>
+                    <span id="ptsOldGoldCredit">-₹0.00</span>
+                </div>
+            </div>
+
+            <!-- 6. Coupon Discount (Conditional) -->
+            <div id="ptsCouponSection" style="display: none;">
+                <div class="pts-divider-dashed">--------------------------------</div>
+                <div class="pts-row">
+                    <span>Coupon (<span id="ptsCouponCode">CODE</span>):</span>
+                    <span id="ptsCouponDiscount">-₹0.00</span>
+                </div>
+            </div>
+
+            <div class="pts-divider-dashed">--------------------------------</div>
+
+            <!-- 7. Summary & Taxes -->
+            <div class="pts-totals-box">
+                <div class="pts-row">
+                    <span>Subtotal Items:</span>
+                    <span id="ptsSubtotal">₹0.00</span>
+                </div>
+                <div class="pts-row">
+                    <span>Taxable Amount:</span>
+                    <span id="ptsTaxable">₹0.00</span>
+                </div>
+                <div class="pts-row">
+                    <span>CGST (1.5%):</span>
+                    <span id="ptsCgst">₹0.00</span>
+                </div>
+                <div class="pts-row">
+                    <span>SGST (1.5%):</span>
+                    <span id="ptsSgst">₹0.00</span>
+                </div>
+                <div class="pts-row">
+                    <span>Total GST (3.0%):</span>
+                    <span id="ptsGst">₹0.00</span>
+                </div>
+                <div class="pts-row">
+                    <span>Round Off:</span>
+                    <span id="ptsRoundOff">₹0.00</span>
+                </div>
+            </div>
+
+            <div class="pts-divider-double">================================</div>
+
+            <!-- 8. Grand Total -->
+            <div class="pts-grand-total-row">
+                <span>FINAL NET AMOUNT:</span>
+                <strong id="ptsGrandTotal">₹0.00</strong>
+            </div>
+
+            <div class="pts-divider-double">================================</div>
+
+            <!-- 9. Payment Details -->
+            <div class="pts-payment-box">
+                <div class="pts-row">
+                    <span>Payment Mode:</span>
+                    <strong id="ptsPaymentMode">Cash</strong>
+                </div>
+                <div class="pts-row">
+                    <span>Amount Paid:</span>
+                    <strong id="ptsAmountPaid">₹0.00</strong>
+                </div>
+                <div class="pts-row">
+                    <span>Pending Due:</span>
+                    <strong id="ptsBalanceDue">₹0.00</strong>
+                </div>
+            </div>
+
+            <div class="pts-divider-dashed">--------------------------------</div>
+
+            <!-- 10. Terms & Footer -->
+            <div class="pts-terms">
+                <div>&bull; Goods once sold will be exchanged strictly as per showroom terms within 7 days.</div>
+                <div>&bull; Gold purity &amp; weight certified per BIS Hallmarking rules.</div>
+                <div>&bull; Computer generated POS counter thermal slip.</div>
+            </div>
+
+            <div class="pts-divider-double">================================</div>
+
+            <div class="pts-footer text-center">
+                <div class="pts-thanks">*** THANK YOU! VISIT AGAIN ***</div>
+                <div class="pts-software">JewelDesk POS &bull; Counter Terminal</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thermal Slip On-Screen Modal Preview -->
+    <div class="modal fade d-print-none" id="thermalSlipModal" tabindex="-1" aria-labelledby="thermalSlipModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
+            <div class="modal-content shadow-lg border-0" style="background: #18140E; border: 1px solid rgba(212, 175, 55, 0.35) !important;">
+                <div class="modal-header py-2 px-3 border-secondary border-opacity-25" style="background: #20170F;">
+                    <h6 class="modal-title text-warning fw-bold fs-6 d-flex align-items-center gap-2" id="thermalSlipModalLabel">
+                        <i class="bi bi-receipt-cutoff"></i> Thermal Slip Preview (80mm)
+                    </h6>
+                    <button type="button" class="btn-close btn-close-white btn-sm" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-3" style="background: #FDFBF7; color: #111; max-height: 75vh; overflow-y: auto;">
+                    <div id="modalThermalSlipPreview" class="pos-thermal-slip-preview-card"></div>
+                </div>
+                <div class="modal-footer py-2 px-3 border-secondary border-opacity-25 justify-content-between" style="background: #20170F;">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-sm btn-warning text-dark fw-bold d-flex align-items-center gap-1" onclick="window.print()">
+                        <i class="bi bi-printer-fill"></i> Print Slip
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </div>
 
@@ -517,35 +789,94 @@
         customers = {{ customers_json|safe }};
     } catch(e) { customers = []; }
 
-    // Elements
+    // Helper: Indian Currency Formatter (Safe against null/NaN)
+    function formatInr(val) {
+        var num = parseFloat(val) || 0;
+        return '₹' + num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // 1. Customer Elements
     var custSelect = document.getElementById('{{ form.customer.id_for_label }}');
+    var custSelectTrigger = document.getElementById('custSelectTrigger');
+    var custSelectDisplay = document.getElementById('custSelectDisplay');
+    var custSelectArrow = document.getElementById('custSelectArrow');
+    var custDropdownMenu = document.getElementById('customerDropdownMenu');
+    var custDropdownList = document.getElementById('customerDropdownList');
     var custSearch = document.getElementById('customerSearchInput');
-    var itemSelect = document.getElementById('{{ form.jewellery_item.id_for_label }}');
-    var itemScanInput = document.getElementById('itemScanInput');
-    var priceInput = document.getElementById('{{ form.sale_price.id_for_label }}');
-    var methodSelect = document.getElementById('{{ form.payment_method.id_for_label }}');
-    var exchangeToggle = document.getElementById('exchange_toggle');
-    var exchangePanel = document.getElementById('exchangePanelBody');
-
-    // Live metal rate
-    var goldRate = {% if metal_prices.gold_price_per_gram %}{{ metal_prices.gold_price_per_gram }}{% else %}6650.00{% endif %};
-
-    // Customer Card elements
+    var clearCustBtn = document.getElementById('clearCustomerBtn');
+    var clearSearchInputBtn = document.getElementById('clearSearchInputBtn');
+    var custSearchWrap = document.getElementById('custSearchableSelectWrap');
     var custCardName = document.getElementById('custCardName');
     var custCardMobile = document.getElementById('custCardMobile');
     var custCardDue = document.getElementById('custCardDue');
     var custCardCount = document.getElementById('custCardCount');
     var custCardDueLarge = document.getElementById('custCardDueLarge');
-    var clearCustBtn = document.getElementById('clearCustomerBtn');
-    var custDropdown = document.getElementById('customerDropdown');
-    var custSearchWrap = document.getElementById('custSearchWrap');
     var btnRemoveCust = document.getElementById('btnRemoveCustomer');
 
-    // Item Search elements
+    // 2. Jewellery Item Elements
+    var itemSelect = document.getElementById('{{ form.jewellery_item.id_for_label }}');
     var itemScanBox = document.getElementById('itemScanBox');
+    var itemScanInput = document.getElementById('itemScanInput');
     var itemDropdown = document.getElementById('itemDropdown');
     var clearItemBtn = document.getElementById('clearItemScanBtn');
     var focusScanBtn = document.getElementById('focusScanBtn');
+    var itemCardTitle = document.getElementById('itemCardTitle');
+    var itemCardTag = document.getElementById('itemCardTag');
+    var itemCardHuid = document.getElementById('itemCardHuid');
+    var specPurity = document.getElementById('specPurity');
+    var specGross = document.getElementById('specGross');
+    var specNet = document.getElementById('specNet');
+    var specStone = document.getElementById('specStone');
+    var goldCalcVal = document.getElementById('goldCalcVal');
+    var makingCalcVal = document.getElementById('makingCalcVal');
+    var stoneCalcVal = document.getElementById('stoneCalcVal');
+    var itemTotalVal = document.getElementById('itemTotalVal');
+    var itemThumbBox = document.getElementById('itemThumbBox');
+
+    // 3. Old Gold Exchange Elements
+    var exchangeToggle = document.getElementById('exchange_toggle');
+    var exchangePanel = document.getElementById('exchangePanelBody');
+    var exchangeHeader = document.getElementById('exchangeHeader');
+    var exchangeDeductionBadge = document.getElementById('exchangeDeductionBadge');
+    var ogDesc = document.getElementById('ogDesc');
+    var ogPurity = document.getElementById('ogPurity');
+    var ogGross = document.getElementById('ogGross');
+    var ogLoss = document.getElementById('ogLoss');
+    var ogRate = document.getElementById('ogRate');
+    var ogNetWeight = document.getElementById('ogNetWeight');
+    var ogNetVal = document.getElementById('ogNetVal');
+
+    // 4. Form & Payment Tender Elements
+    var priceInput = document.getElementById('{{ form.sale_price.id_for_label }}');
+    var methodSelect = document.getElementById('{{ form.payment_method.id_for_label }}');
+    var tenderPrimary = document.getElementById('tenderPrimaryInput');
+    var tenderSecondary = document.getElementById('tenderSecondaryInput');
+    var tenderDueVal = document.getElementById('tenderDueVal');
+
+    // 5. Bill Summary Elements
+    var billSubtotal = document.getElementById('billSubtotal');
+    var billOldGold = document.getElementById('billOldGold');
+    var billCouponRow = document.getElementById('billCouponRow');
+    var billCouponCodeDisplay = document.getElementById('billCouponCodeDisplay');
+    var billCouponDiscount = document.getElementById('billCouponDiscount');
+    var billTaxable = document.getElementById('billTaxable');
+    var billCgst = document.getElementById('billCgst');
+    var billSgst = document.getElementById('billSgst');
+    var billGst = document.getElementById('billGst');
+    var billRoundOff = document.getElementById('billRoundOff');
+    var billGrandTotal = document.getElementById('billGrandTotal');
+
+    // 6. Coupon Elements
+    var couponCodeInput = document.getElementById('posCouponCodeInput');
+    var btnApplyCoupon = document.getElementById('btnApplyCoupon');
+    var btnRemoveCoupon = document.getElementById('btnRemoveCoupon');
+    var posCouponBadge = document.getElementById('posCouponBadge');
+    var posCouponFeedback = document.getElementById('posCouponFeedback');
+    var currentCouponDiscount = 0;
+    var currentCouponCode = '';
+
+    // Live metal rate
+    var goldRate = {% if metal_prices.gold_price_per_gram %}{{ metal_prices.gold_price_per_gram }}{% else %}6650.00{% endif %};
 
     // Fallback: Populate customers list from select options if needed
     if (custSelect && custSelect.options) {
@@ -619,27 +950,74 @@
         }
     }
 
+    // Customer Dropdown Open / Close / Toggle Handlers
+    function openCustomerDropdown() {
+        if (!custDropdownMenu) return;
+        custDropdownMenu.classList.remove('d-none');
+        if (custSelectTrigger) {
+            custSelectTrigger.classList.add('active');
+            custSelectTrigger.setAttribute('aria-expanded', 'true');
+        }
+        if (custSearch) {
+            custSearch.value = '';
+            if (clearSearchInputBtn) clearSearchInputBtn.classList.add('d-none');
+            renderCustomerDropdown('');
+            setTimeout(function() {
+                custSearch.focus();
+            }, 60);
+        }
+    }
+
+    function closeCustomerDropdown() {
+        if (!custDropdownMenu) return;
+        custDropdownMenu.classList.add('d-none');
+        if (custSelectTrigger) {
+            custSelectTrigger.classList.remove('active');
+            custSelectTrigger.setAttribute('aria-expanded', 'false');
+        }
+    }
+
+    function toggleCustomerDropdown() {
+        if (!custDropdownMenu) return;
+        if (custDropdownMenu.classList.contains('d-none')) {
+            openCustomerDropdown();
+        } else {
+            closeCustomerDropdown();
+        }
+    }
+
     // Customer selection handler
     function updateCustomerView(custId) {
         var cust = customers.find(function(c) { return c.id == custId; });
         if (cust) {
-            if (custSelect) custSelect.value = cust.id;
+            if (custSelect && custSelect.value != cust.id) {
+                custSelect.value = cust.id;
+            }
+            if (custSelectDisplay) {
+                var dispText = cust.name + (cust.mobile ? ' (' + cust.mobile + ')' : '');
+                custSelectDisplay.textContent = dispText;
+                custSelectDisplay.classList.remove('is-placeholder');
+            }
             if (custCardName) custCardName.textContent = cust.name;
             if (custCardMobile) custCardMobile.textContent = cust.mobile || 'No mobile';
             if (custCardDue) custCardDue.textContent = formatInr(cust.outstanding);
             if (custCardDueLarge) custCardDueLarge.textContent = formatInr(cust.outstanding);
             if (custCardCount) custCardCount.textContent = (cust.purchases_count || 0) + ' bill' + ((cust.purchases_count || 0) === 1 ? '' : 's');
-            if (custSearch) custSearch.value = cust.name + (cust.mobile ? ' (' + cust.mobile + ')' : '');
             if (clearCustBtn) clearCustBtn.classList.remove('d-none');
             if (btnRemoveCust) btnRemoveCust.classList.remove('d-none');
         } else {
-            if (custSelect) custSelect.value = '';
+            if (custSelect && custSelect.value !== '') {
+                custSelect.value = '';
+            }
+            if (custSelectDisplay) {
+                custSelectDisplay.textContent = '- Select a Customer -';
+                custSelectDisplay.classList.add('is-placeholder');
+            }
             if (custCardName) custCardName.textContent = 'Select a Customer';
             if (custCardMobile) custCardMobile.textContent = '—';
             if (custCardDue) custCardDue.textContent = '₹0.00';
             if (custCardDueLarge) custCardDueLarge.textContent = '₹0.00';
             if (custCardCount) custCardCount.textContent = '0 bills';
-            if (custSearch) custSearch.value = '';
             if (clearCustBtn) clearCustBtn.classList.add('d-none');
             if (btnRemoveCust) btnRemoveCust.classList.add('d-none');
         }
@@ -647,17 +1025,28 @@
 
     function clearCustomerSelection() {
         updateCustomerView(null);
-        if (custDropdown) custDropdown.classList.add('d-none');
+        closeCustomerDropdown();
+    }
+
+    if (custSelectTrigger) {
+        custSelectTrigger.addEventListener('click', function(e) {
+            if (e.target.closest('#clearCustomerBtn')) return;
+            toggleCustomerDropdown();
+        });
+
+        custSelectTrigger.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                openCustomerDropdown();
+            }
+        });
     }
 
     if (clearCustBtn) {
         clearCustBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             clearCustomerSelection();
-            if (custSearch) {
-                custSearch.focus();
-                renderCustomerDropdown('');
-            }
+            if (custSelectTrigger) custSelectTrigger.focus();
         });
     }
 
@@ -665,9 +1054,18 @@
         btnRemoveCust.addEventListener('click', function(e) {
             e.stopPropagation();
             clearCustomerSelection();
+            if (custSelectTrigger) custSelectTrigger.focus();
+        });
+    }
+
+    if (clearSearchInputBtn) {
+        clearSearchInputBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
             if (custSearch) {
-                custSearch.focus();
+                custSearch.value = '';
+                clearSearchInputBtn.classList.add('d-none');
                 renderCustomerDropdown('');
+                custSearch.focus();
             }
         });
     }
@@ -675,20 +1073,14 @@
     var activeCustIdx = -1;
 
     function renderCustomerDropdown(query) {
-        if (!custDropdown) return;
+        if (!custDropdownList) return;
         activeCustIdx = -1;
         var q = (query || '').toLowerCase().trim();
-
-        // If currently displaying selected customer full label, show all on focus
-        var selectedCust = custSelect && custSelect.value ? customers.find(function(c) { return c.id == custSelect.value; }) : null;
-        if (selectedCust && custSearch && custSearch.value.trim() === (selectedCust.name + (selectedCust.mobile ? ' (' + selectedCust.mobile + ')' : '')).trim()) {
-            q = '';
-        }
-
         var digits = q.replace(/\D/g, '');
         var matches = [];
+
         if (!q) {
-            matches = customers.slice(0, 10);
+            matches = customers.slice(0, 50);
         } else {
             matches = customers.filter(function(c) {
                 var nameMatch = c.name && c.name.toLowerCase().includes(q);
@@ -706,36 +1098,31 @@
         if (matches.length === 1 && q.length >= 2) {
             var single = matches[0];
             if (custSelect && custSelect.value != single.id) {
-                if (custSelect) custSelect.value = single.id;
-                if (custCardName) custCardName.textContent = single.name;
-                if (custCardMobile) custCardMobile.textContent = single.mobile || 'No mobile';
-                if (custCardDue) custCardDue.textContent = formatInr(single.outstanding);
-                if (custCardDueLarge) custCardDueLarge.textContent = formatInr(single.outstanding);
-                if (custCardCount) custCardCount.textContent = (single.purchases_count || 0) + ' bill' + ((single.purchases_count || 0) === 1 ? '' : 's');
-                if (clearCustBtn) clearCustBtn.classList.remove('d-none');
-                if (btnRemoveCust) btnRemoveCust.classList.remove('d-none');
+                updateCustomerView(single.id);
             }
         }
 
         if (matches.length === 0) {
-            custDropdown.innerHTML = '<div class="jd-pos-autocomplete-empty">' +
+            custDropdownList.innerHTML = '<div class="jd-pos-autocomplete-empty">' +
                 '<i class="bi bi-search me-1 text-warning"></i> No customer found for "' + escapeHtml(q) + '".' +
                 '<div class="mt-2"><a href="{% url "customer_add" %}" target="_blank" class="btn btn-sm btn-outline-warning py-1 px-3">+ Add New Customer</a></div>' +
                 '</div>';
-            custDropdown.classList.remove('d-none');
             return;
         }
 
         var html = '';
+        var currentSelectedId = custSelect ? custSelect.value : null;
+
         matches.forEach(function(c, idx) {
             var mob = c.mobile || 'No mobile';
             var highlightedName = highlightQuery(c.name, q);
             var highlightedMob = highlightQuery(mob, q);
             var highlightedAddr = c.address ? ' &middot; ' + highlightQuery(c.address, q) : '';
+            var isSelected = currentSelectedId && currentSelectedId == c.id;
 
-            html += '<div class="jd-pos-autocomplete-item" data-id="' + c.id + '" data-index="' + idx + '">' +
+            html += '<div class="jd-pos-autocomplete-item' + (isSelected ? ' is-selected' : '') + '" data-id="' + c.id + '" data-index="' + idx + '" role="option">' +
                 '<div class="cust-main">' +
-                    '<span class="cust-name"><i class="bi bi-person me-1 text-warning"></i>' + highlightedName + '</span>' +
+                    '<span class="cust-name"><i class="bi bi-person me-1 text-warning"></i>' + highlightedName + (isSelected ? ' <i class="bi bi-check-circle-fill text-success ms-1 small"></i>' : '') + '</span>' +
                     '<span class="cust-phone"><i class="bi bi-telephone me-1"></i>' + highlightedMob + highlightedAddr + '</span>' +
                 '</div>' +
                 '<div class="cust-due">' +
@@ -744,16 +1131,16 @@
                 '</div>' +
             '</div>';
         });
-        custDropdown.innerHTML = html;
-        custDropdown.classList.remove('d-none');
 
-        var itemsEl = custDropdown.querySelectorAll('.jd-pos-autocomplete-item');
+        custDropdownList.innerHTML = html;
+
+        var itemsEl = custDropdownList.querySelectorAll('.jd-pos-autocomplete-item');
         itemsEl.forEach(function(item) {
             item.addEventListener('mousedown', function(e) {
                 e.preventDefault();
                 var cid = this.getAttribute('data-id');
                 updateCustomerView(cid);
-                custDropdown.classList.add('d-none');
+                closeCustomerDropdown();
             });
         });
     }
@@ -761,36 +1148,22 @@
     if (custSearch) {
         custSearch.addEventListener('input', function() {
             var val = this.value;
-            if (clearCustBtn) {
-                if (val.trim().length > 0) clearCustBtn.classList.remove('d-none');
-                else if (!custSelect || !custSelect.value) clearCustBtn.classList.add('d-none');
-            }
-            if (val.trim() === '') {
-                if (custSelect && custSelect.value) {
-                    clearCustomerSelection();
-                }
+            if (clearSearchInputBtn) {
+                if (val.trim().length > 0) clearSearchInputBtn.classList.remove('d-none');
+                else clearSearchInputBtn.classList.add('d-none');
             }
             renderCustomerDropdown(val);
         });
 
-        custSearch.addEventListener('focus', function() {
-            renderCustomerDropdown(this.value);
-        });
-
-        custSearch.addEventListener('click', function() {
-            renderCustomerDropdown(this.value);
-        });
-
         custSearch.addEventListener('keydown', function(e) {
-            if (!custDropdown || custDropdown.classList.contains('d-none')) {
-                if (e.key === 'ArrowDown') {
-                    renderCustomerDropdown(this.value);
-                    e.preventDefault();
+            var itemsEl = custDropdownList ? custDropdownList.querySelectorAll('.jd-pos-autocomplete-item') : [];
+            if (itemsEl.length === 0) {
+                if (e.key === 'Escape') {
+                    closeCustomerDropdown();
+                    if (custSelectTrigger) custSelectTrigger.focus();
                 }
                 return;
             }
-            var itemsEl = custDropdown.querySelectorAll('.jd-pos-autocomplete-item');
-            if (itemsEl.length === 0) return;
 
             if (e.key === 'ArrowDown') {
                 e.preventDefault();
@@ -819,14 +1192,15 @@
                 if (activeCustIdx >= 0 && itemsEl[activeCustIdx]) {
                     var cid = itemsEl[activeCustIdx].getAttribute('data-id');
                     updateCustomerView(cid);
-                    custDropdown.classList.add('d-none');
+                    closeCustomerDropdown();
                 } else if (itemsEl.length > 0) {
                     var firstCid = itemsEl[0].getAttribute('data-id');
                     updateCustomerView(firstCid);
-                    custDropdown.classList.add('d-none');
+                    closeCustomerDropdown();
                 }
             } else if (e.key === 'Escape') {
-                custDropdown.classList.add('d-none');
+                closeCustomerDropdown();
+                if (custSelectTrigger) custSelectTrigger.focus();
             }
         });
     }
@@ -834,7 +1208,7 @@
     // Dismiss customer dropdown when clicking outside
     document.addEventListener('click', function(e) {
         if (custSearchWrap && !custSearchWrap.contains(e.target)) {
-            if (custDropdown) custDropdown.classList.add('d-none');
+            closeCustomerDropdown();
         }
         if (itemScanBox && !itemScanBox.contains(e.target)) {
             if (itemDropdown) itemDropdown.classList.add('d-none');
@@ -1106,24 +1480,69 @@
 
     // Old Gold Calculation
     function getOldGoldDeduction() {
-        if (!exchangeToggle || !exchangeToggle.checked) return 0;
-        var gross = parseFloat(ogGross.value) || 0;
-        var loss = parseFloat(ogLoss.value) || 0;
-        var rate = parseFloat(ogRate.value) || 0;
+        if (!exchangeToggle || !exchangeToggle.checked) {
+            if (exchangeDeductionBadge) exchangeDeductionBadge.textContent = '0.00 Deduction';
+            if (ogNetVal) ogNetVal.textContent = '-₹0.00';
+            if (ogNetWeight) ogNetWeight.textContent = '0.000g';
+            return 0;
+        }
+        var gross = parseFloat(ogGross ? ogGross.value : 0) || 0;
+        var loss = parseFloat(ogLoss ? ogLoss.value : 0) || 0;
+        var rate = parseFloat(ogRate ? ogRate.value : 0) || 0;
         var net = Math.max(0, gross - loss);
         var credit = net * rate;
-        ogNetVal.textContent = '-' + formatInr(credit);
-        exchangeDeductionBadge.textContent = '-' + formatInr(credit) + ' Deduction';
+
+        if (ogNetWeight) {
+            ogNetWeight.textContent = net.toFixed(3) + 'g';
+        }
+        if (ogNetVal) {
+            ogNetVal.textContent = '-' + formatInr(credit);
+        }
+        if (exchangeDeductionBadge) {
+            exchangeDeductionBadge.textContent = (credit > 0 ? '-' + formatInr(credit) : '0.00') + ' Deduction';
+        }
         return credit;
+    }
+
+    function setExchangePanelState(isExpanded) {
+        if (!exchangePanel) return;
+        if (isExpanded) {
+            exchangePanel.classList.remove('d-none');
+            exchangePanel.style.display = 'block';
+            getOldGoldDeduction();
+        } else {
+            exchangePanel.classList.add('d-none');
+            exchangePanel.style.display = 'none';
+            if (exchangeDeductionBadge) exchangeDeductionBadge.textContent = '0.00 Deduction';
+        }
+        recalculateBill();
     }
 
     if (exchangeToggle) {
         exchangeToggle.addEventListener('change', function() {
-            if (this.checked) {
-                exchangePanel.classList.remove('d-none');
-            } else {
-                exchangePanel.classList.add('d-none');
-                exchangeDeductionBadge.textContent = '0.00 Deduction';
+            setExchangePanelState(this.checked);
+        });
+    }
+
+    if (exchangeHeader) {
+        exchangeHeader.addEventListener('click', function(e) {
+            if (e.target === exchangeToggle || (e.target && e.target.closest('input')) || (e.target && e.target.closest('select'))) return;
+            if (exchangeToggle) {
+                exchangeToggle.checked = !exchangeToggle.checked;
+                setExchangePanelState(exchangeToggle.checked);
+            }
+        });
+    }
+
+    if (ogPurity) {
+        ogPurity.addEventListener('change', function() {
+            var p = this.value;
+            if (ogRate) {
+                if (p === '24K') ogRate.value = (goldRate * 1.0).toFixed(2);
+                else if (p === '22K') ogRate.value = (goldRate * 0.916).toFixed(2);
+                else if (p === '18K') ogRate.value = (goldRate * 0.750).toFixed(2);
+                else if (p === '14K') ogRate.value = (goldRate * 0.585).toFixed(2);
+                else if (p === 'Silver') ogRate.value = '80.00';
             }
             recalculateBill();
         });
@@ -1132,6 +1551,10 @@
     [ogGross, ogLoss, ogRate].forEach(function(el) {
         if (el) el.addEventListener('input', recalculateBill);
     });
+
+    if (exchangeToggle && exchangeToggle.checked) {
+        setExchangePanelState(true);
+    }
 
     // Bill Grand Total Calculation
     function recalculateBill() {
@@ -1150,8 +1573,8 @@
         var grandTotal = Math.round(rawTotal);
         var roundOff = grandTotal - rawTotal;
 
-        billSubtotal.textContent = formatInr(subtotal);
-        billOldGold.textContent = '-' + formatInr(oldGoldCredit);
+        if (billSubtotal) billSubtotal.textContent = formatInr(subtotal);
+        if (billOldGold) billOldGold.textContent = '-' + formatInr(oldGoldCredit);
         if (couponDiscount > 0) {
             if (billCouponRow) billCouponRow.style.display = 'flex';
             if (billCouponCodeDisplay) billCouponCodeDisplay.textContent = currentCouponCode;
@@ -1159,12 +1582,12 @@
         } else {
             if (billCouponRow) billCouponRow.style.display = 'none';
         }
-        billTaxable.textContent = formatInr(taxable);
-        billCgst.textContent = formatInr(cgst);
-        billSgst.textContent = formatInr(sgst);
-        billGst.textContent = formatInr(totalGst);
-        billRoundOff.textContent = (roundOff >= 0 ? '+' : '') + formatInr(roundOff);
-        billGrandTotal.textContent = formatInr(grandTotal);
+        if (billTaxable) billTaxable.textContent = formatInr(taxable);
+        if (billCgst) billCgst.textContent = formatInr(cgst);
+        if (billSgst) billSgst.textContent = formatInr(sgst);
+        if (billGst) billGst.textContent = formatInr(totalGst);
+        if (billRoundOff) billRoundOff.textContent = (roundOff >= 0 ? '+' : '') + formatInr(roundOff);
+        if (billGrandTotal) billGrandTotal.textContent = formatInr(grandTotal);
 
         // Keep form.sale_price synced
         if (priceInput) {
@@ -1272,18 +1695,223 @@
     if (tenderPrimary) tenderPrimary.addEventListener('input', updateTenderDue);
     if (tenderSecondary) tenderSecondary.addEventListener('input', updateTenderDue);
 
-    // Payment Method Pills Switcher
-    var methodBtns = document.querySelectorAll('.jd-pos-method-btn');
-    methodBtns.forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            methodBtns.forEach(function(b) { b.classList.remove('active'); });
-            this.classList.add('active');
-            var method = this.getAttribute('data-method');
-            if (methodSelect) {
-                methodSelect.value = method;
+    // Payment Method Switcher (Two-Way Binding)
+    window.setPosPaymentMethod = function(method) {
+        if (!method) method = 'Cash';
+        if (methodSelect && methodSelect.value !== method) {
+            methodSelect.value = method;
+        }
+
+        // Update button active states
+        var allMethodBtns = document.querySelectorAll('.jd-pos-method-btn');
+        allMethodBtns.forEach(function(btn) {
+            if (btn.getAttribute('data-method') === method) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
             }
         });
+
+        // Update badge and tender labels
+        var badge = document.getElementById('activeMethodBadge');
+        var methodMeta = {
+            'Cash': { icon: 'bi-cash', label: 'Cash', tenderText: 'Cash Amount Paid' },
+            'UPI': { icon: 'bi-qr-code', label: 'UPI QR', tenderText: 'UPI QR Amount Paid' },
+            'Card': { icon: 'bi-credit-card', label: 'Card', tenderText: 'Card Amount Paid' },
+            'Bank Transfer': { icon: 'bi-bank', label: 'Bank', tenderText: 'Bank Amount Paid' },
+            'Exchange': { icon: 'bi-journal-text', label: 'Khata', tenderText: 'Khata / Exchange Amount' }
+        };
+        var meta = methodMeta[method] || { icon: 'bi-wallet2', label: method, tenderText: method + ' Amount Paid' };
+
+        if (badge) {
+            badge.innerHTML = '<i class="bi ' + meta.icon + ' me-1"></i> ' + escapeHtml(meta.label);
+        }
+
+        var tenderText = document.getElementById('tenderPrimaryText');
+        var tenderIcon = document.getElementById('tenderPrimaryIcon');
+        if (tenderText) {
+            tenderText.textContent = meta.tenderText;
+        }
+        if (tenderIcon) {
+            tenderIcon.className = 'bi ' + meta.icon + ' text-warning';
+        }
+    };
+
+    if (methodSelect) {
+        methodSelect.addEventListener('change', function() {
+            window.setPosPaymentMethod(this.value);
+        });
+    }
+
+    var methodBtns = document.querySelectorAll('.jd-pos-method-btn');
+    methodBtns.forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var method = this.getAttribute('data-method');
+            window.setPosPaymentMethod(method);
+        });
     });
+
+    // Initialize payment mode on load
+    window.setPosPaymentMethod((methodSelect && methodSelect.value) ? methodSelect.value : 'Cash');
+
+    // =========================================================================
+    // POS Thermal Receipt Slip Generation & Print Isolation
+    // =========================================================================
+    function updateThermalSlipContent() {
+        // 1. Current Date & Time
+        var now = new Date();
+        var dateStr = now.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        var timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+        var elDate = document.getElementById('ptsDate');
+        var elTime = document.getElementById('ptsTime');
+        if (elDate) elDate.textContent = dateStr;
+        if (elTime) elTime.textContent = timeStr;
+
+        // 2. Customer Info
+        var custName = (custCardName && custCardName.textContent.trim() !== 'Select a Customer') ? custCardName.textContent.trim() : 'Walk-in Customer';
+        var custPhone = (custCardMobile && custCardMobile.textContent.trim() !== '—') ? custCardMobile.textContent.trim() : 'Not provided';
+        var elCustName = document.getElementById('ptsCustName');
+        var elCustPhone = document.getElementById('ptsCustPhone');
+        if (elCustName) elCustName.textContent = custName;
+        if (elCustPhone) elCustPhone.textContent = custPhone;
+
+        // 3. Jewellery Item Info
+        var itemName = (itemCardTitle && itemCardTitle.textContent.trim() !== 'Choose an item to inspect details') ? itemCardTitle.textContent.trim() : 'Jewellery Item';
+        var itemTag = itemCardTag ? itemCardTag.textContent.trim() : 'TAG-0000';
+        var itemHuid = itemCardHuid ? itemCardHuid.textContent.trim() : 'IN STOCK';
+        var purity = specPurity ? specPurity.textContent.trim() : 'Gold 22k';
+        var gross = specGross ? specGross.textContent.trim() : '0.000g';
+        var net = specNet ? specNet.textContent.trim() : '0.000g';
+        var stone = specStone ? specStone.textContent.trim() : '0.000g';
+
+        var elItemName = document.getElementById('ptsItemName');
+        var elItemTag = document.getElementById('ptsItemTag');
+        var elItemHuid = document.getElementById('ptsItemHuid');
+        var elItemPurity = document.getElementById('ptsItemPurity');
+        var elItemGross = document.getElementById('ptsItemGross');
+        var elItemNet = document.getElementById('ptsItemNet');
+        var elItemStone = document.getElementById('ptsItemStone');
+
+        if (elItemName) elItemName.textContent = itemName;
+        if (elItemTag) elItemTag.textContent = itemTag;
+        if (elItemHuid) elItemHuid.textContent = itemHuid;
+        if (elItemPurity) elItemPurity.textContent = purity;
+        if (elItemGross) elItemGross.textContent = gross;
+        if (elItemNet) elItemNet.textContent = net;
+        if (elItemStone) elItemStone.textContent = stone;
+
+        // 4. Financial Calculations
+        var metalVal = goldCalcVal ? goldCalcVal.textContent.trim() : '₹0.00';
+        var makingVal = makingCalcVal ? makingCalcVal.textContent.trim() : '₹0.00';
+        var stoneVal = stoneCalcVal ? stoneCalcVal.textContent.trim() : '₹0.00';
+
+        var elMetalVal = document.getElementById('ptsMetalVal');
+        var elMakingVal = document.getElementById('ptsMakingVal');
+        var elStoneVal = document.getElementById('ptsStoneVal');
+        if (elMetalVal) elMetalVal.textContent = metalVal;
+        if (elMakingVal) elMakingVal.textContent = makingVal;
+        if (elStoneVal) elStoneVal.textContent = stoneVal;
+
+        // 5. Old Gold Exchange
+        var ogSection = document.getElementById('ptsOldGoldSection');
+        if (ogSection) {
+            if (exchangeToggle && exchangeToggle.checked) {
+                ogSection.style.display = 'block';
+                var elOgWeights = document.getElementById('ptsOldGoldWeights');
+                var elOgRate = document.getElementById('ptsOldGoldRate');
+                var elOgCredit = document.getElementById('ptsOldGoldCredit');
+                var g = ogGross ? ogGross.value : '0.000';
+                var l = ogLoss ? ogLoss.value : '0.000';
+                var r = ogRate ? ogRate.value : '0.00';
+                var cred = ogNetVal ? ogNetVal.textContent.trim() : '-₹0.00';
+                if (elOgWeights) elOgWeights.textContent = g + 'g / ' + (ogNetWeight ? ogNetWeight.textContent.trim() : '0.000g');
+                if (elOgRate) elOgRate.textContent = '₹' + r + '/g (Melting Loss: ' + l + 'g)';
+                if (elOgCredit) elOgCredit.textContent = cred;
+            } else {
+                ogSection.style.display = 'none';
+            }
+        }
+
+        // 6. Coupon Discount
+        var couponSection = document.getElementById('ptsCouponSection');
+        if (couponSection) {
+            if (currentCouponDiscount > 0) {
+                couponSection.style.display = 'block';
+                var elCouponCode = document.getElementById('ptsCouponCode');
+                var elCouponDiscount = document.getElementById('ptsCouponDiscount');
+                if (elCouponCode) elCouponCode.textContent = currentCouponCode;
+                if (elCouponDiscount) elCouponDiscount.textContent = '-' + formatInr(currentCouponDiscount);
+            } else {
+                couponSection.style.display = 'none';
+            }
+        }
+
+        // 7. Taxes & Grand Total
+        var elSubtotal = document.getElementById('ptsSubtotal');
+        var elTaxable = document.getElementById('ptsTaxable');
+        var elCgst = document.getElementById('ptsCgst');
+        var elSgst = document.getElementById('ptsSgst');
+        var elGst = document.getElementById('ptsGst');
+        var elRoundOff = document.getElementById('ptsRoundOff');
+        var elGrandTotal = document.getElementById('ptsGrandTotal');
+
+        if (elSubtotal) elSubtotal.textContent = billSubtotal ? billSubtotal.textContent.trim() : '₹0.00';
+        if (elTaxable) elTaxable.textContent = billTaxable ? billTaxable.textContent.trim() : '₹0.00';
+        if (elCgst) elCgst.textContent = billCgst ? billCgst.textContent.trim() : '₹0.00';
+        if (elSgst) elSgst.textContent = billSgst ? billSgst.textContent.trim() : '₹0.00';
+        if (elGst) elGst.textContent = billGst ? billGst.textContent.trim() : '₹0.00';
+        if (elRoundOff) elRoundOff.textContent = billRoundOff ? billRoundOff.textContent.trim() : '₹0.00';
+        if (elGrandTotal) elGrandTotal.textContent = billGrandTotal ? billGrandTotal.textContent.trim() : '₹0.00';
+
+        // 8. Payment Details
+        var activeMethod = methodSelect ? methodSelect.value : 'Cash';
+        var paidPrimary = tenderPrimary ? (parseFloat(tenderPrimary.value) || 0) : 0;
+        var paidSec = tenderSecondary ? (parseFloat(tenderSecondary.value) || 0) : 0;
+        var totalPaid = paidPrimary + paidSec;
+        var dueAmt = tenderDueVal ? tenderDueVal.textContent.trim() : '₹0.00';
+
+        var elPaymentMode = document.getElementById('ptsPaymentMode');
+        var elAmountPaid = document.getElementById('ptsAmountPaid');
+        var elBalanceDue = document.getElementById('ptsBalanceDue');
+
+        if (elPaymentMode) elPaymentMode.textContent = activeMethod + (paidSec > 0 ? ' + Split' : '');
+        if (elAmountPaid) elAmountPaid.textContent = formatInr(totalPaid);
+        if (elBalanceDue) elBalanceDue.textContent = dueAmt;
+
+        // Also copy into on-screen modal preview
+        var slipContent = document.querySelector('#posThermalSlipWrapper .pos-thermal-slip');
+        var modalPreview = document.getElementById('modalThermalSlipPreview');
+        if (slipContent && modalPreview) {
+            modalPreview.innerHTML = slipContent.innerHTML;
+        }
+    }
+
+    window.updateThermalSlipContent = updateThermalSlipContent;
+
+    window.printThermalSlip = function() {
+        updateThermalSlipContent();
+        window.print();
+    };
+
+    window.openThermalSlipModal = function() {
+        updateThermalSlipContent();
+        var modalEl = document.getElementById('thermalSlipModal');
+        if (modalEl && window.bootstrap && window.bootstrap.Modal) {
+            var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+        } else {
+            window.print();
+        }
+    };
+
+    // Auto-sync thermal slip content whenever bill recalculates
+    var origRecalculateBill = recalculateBill;
+    recalculateBill = function() {
+        origRecalculateBill();
+        try { updateThermalSlipContent(); } catch(e) {}
+    };
 
     // Initial calculation on page load
     recalculateBill();
