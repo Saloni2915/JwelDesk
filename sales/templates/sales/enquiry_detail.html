@@ -38,7 +38,7 @@
                 {% endif %}
             </div>
             <h1 class="jd-title">Enquiry #{{ enquiry.id }}: <span class="text-gold">{{ enquiry.interested_item }}</span></h1>
-            <p class="jd-subtitle">Customer: <strong class="text-white">{{ enquiry.customer.name }}</strong> &bull; Logged {{ enquiry.created_at|date:"M d, Y" }}</p>
+            <p class="jd-subtitle">Customer: <strong class="jd-customer-name">{{ enquiry.customer.name }}</strong> &bull; Logged {{ enquiry.created_at|date:"M d, Y" }}</p>
         </div>
         <div class="d-flex align-items-center gap-2">
             <a href="{% url 'sale_add' %}?customer={{ enquiry.customer.id }}" class="jd-btn-gold">
@@ -64,7 +64,7 @@
                     <div class="col-sm-6">
                         <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06);">
                             <span class="text-muted small d-block">Customer</span>
-                            <a href="{% url 'customer_detail' enquiry.customer.id %}" class="fs-6 fw-bold text-white text-decoration-none mt-1 d-block">
+                            <a href="{% url 'customer_detail' enquiry.customer.id %}" class="fs-6 fw-bold jd-customer-name text-decoration-none mt-1 d-block">
                                 {{ enquiry.customer.name }}
                             </a>
                         </div>

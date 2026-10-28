@@ -52,8 +52,11 @@
                             <div class="col-md-6">
                                 <label class="jd-field-label">Mobile Number <span class="text-danger">*</span></label>
                                 {{ form.mobile }}
+                                <div id="mobileClientError" class="text-danger small mt-1 d-none">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i><span id="mobileClientErrorText"></span>
+                                </div>
                                 {% if form.mobile.errors %}
-                                <div class="text-danger small mt-1">{{ form.mobile.errors.0 }}</div>
+                                <div class="text-danger small mt-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>{{ form.mobile.errors.0 }}</div>
                                 {% endif %}
                                 <div class="jd-field-help">10-digit mobile number for WhatsApp bills.</div>
                             </div>
@@ -109,6 +112,80 @@
                 el.classList.add('jd-input');
             }
         });
+
+        // 10-digit Mobile Number Validation
+        const mobileInput = document.getElementById('{{ form.mobile.id_for_label }}') || document.querySelector('input[name="mobile"]');
+        const mobileError = document.getElementById('mobileClientError');
+        const mobileErrorText = document.getElementById('mobileClientErrorText');
+        const custForm = document.getElementById('customerForm');
+
+        if (mobileInput) {
+            mobileInput.setAttribute('maxlength', '10');
+            mobileInput.setAttribute('inputmode', 'numeric');
+            mobileInput.setAttribute('autocomplete', 'tel');
+
+            function showError(msg) {
+                if (mobileError && mobileErrorText) {
+                    mobileErrorText.textContent = msg;
+                    mobileError.classList.remove('d-none');
+                }
+                mobileInput.style.borderColor = '#ef4444';
+            }
+
+            function clearError() {
+                if (mobileError) {
+                    mobileError.classList.add('d-none');
+                }
+                mobileInput.style.borderColor = '';
+            }
+
+            function validateMobile(showImmediate = true) {
+                const digits = mobileInput.value.replace(/[^0-9]/g, '');
+                if (digits !== mobileInput.value) {
+                    mobileInput.value = digits;
+                }
+                if (digits.length === 0) {
+                    if (showImmediate) {
+                        showError('Mobile number is required (10 digits).');
+                        return false;
+                    }
+                    clearError();
+                    return true;
+                }
+                if (digits.length < 10) {
+                    if (showImmediate) {
+                        showError(`Mobile number must be exactly 10 digits (${digits.length}/10 entered).`);
+                    }
+                    return false;
+                }
+                clearError();
+                return true;
+            }
+
+            mobileInput.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
+                if (mobileError && !mobileError.classList.contains('d-none')) {
+                    validateMobile(true);
+                }
+            });
+
+            mobileInput.addEventListener('blur', function() {
+                if (this.value.length > 0 && this.value.length < 10) {
+                    validateMobile(true);
+                }
+            });
+
+            if (custForm) {
+                custForm.addEventListener('submit', function(e) {
+                    if (!validateMobile(true)) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        mobileInput.focus();
+                        return false;
+                    }
+                });
+            }
+        }
     });
 </script>
 {% endblock %}

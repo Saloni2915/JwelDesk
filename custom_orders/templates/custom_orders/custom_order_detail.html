@@ -14,7 +14,7 @@
                 {% include 'custom_orders/includes/status_badge.html' with status=order.status %}
             </div>
             <h1 class="jd-title font-monospace" style="letter-spacing: 0.05em;">{{ order.order_number }}</h1>
-            <p class="jd-subtitle">Customer: <strong class="text-white">{{ order.customer.name }}</strong> &bull; Created {{ order.created_at|date:"M d, Y" }}</p>
+            <p class="jd-subtitle">Customer: <strong class="jd-customer-name">{{ order.customer.name }}</strong> &bull; Created {{ order.created_at|date:"M d, Y" }}</p>
         </div>
         <div class="d-flex align-items-center gap-2 flex-wrap">
             {% if order.status != 'Delivered' and order.status != 'Cancelled' %}
@@ -176,8 +176,8 @@
             <div class="jd-card p-4 mb-4">
                 <div class="border-bottom pb-3 mb-3" style="border-color: rgba(236,200,106,0.12) !important;">
                     <span class="text-gold small fw-bold text-uppercase" style="letter-spacing: 0.08em;">Customer Details</span>
-                    <h5 class="font-serif fw-bold text-white mb-0 mt-1" style="font-family: 'Cinzel', serif;">
-                        <a href="{% url 'customer_detail' order.customer.id %}" class="text-white text-decoration-none">
+                    <h5 class="font-serif fw-bold mb-0 mt-1" style="font-family: 'Cinzel', serif;">
+                        <a href="{% url 'customer_detail' order.customer.id %}" class="jd-customer-name text-decoration-none">
                             {{ order.customer.name }}
                         </a>
                     </h5>

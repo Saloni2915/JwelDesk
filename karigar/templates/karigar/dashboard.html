@@ -25,9 +25,6 @@
                 <i class="bi bi-cash-coin me-1"></i> Pay Karigar
             </a>
             {% endif %}
-            <a href="{% url 'karigar:reports' %}" class="jd-btn-ghost">
-                <i class="bi bi-bar-chart-line me-1"></i> Reports
-            </a>
         </div>
     </div>
 
@@ -109,7 +106,7 @@
                 </div>
             </div>
             <div class="col-md-1 text-end">
-                <a href="{% url 'karigar:reports' %}?tab=material" class="jd-btn-ghost btn-sm px-2" title="View Metal Report">
+                <a href="{% url 'karigar:assignment_list' %}" class="jd-btn-ghost btn-sm px-2" title="View Karigar Jobs">
                     <i class="bi bi-arrow-right"></i>
                 </a>
             </div>
@@ -197,7 +194,7 @@
                                 </td>
                                 <td>
                                     {% if asg.customer %}
-                                    <span class="text-light small d-block">{{ asg.customer.name }}</span>
+                                    <span class="jd-customer-name small d-block">{{ asg.customer.name }}</span>
                                     {% elif asg.inventory_item %}
                                     <span class="text-muted small d-block font-monospace">SKU: {{ asg.inventory_item.item_code }}</span>
                                     {% else %}

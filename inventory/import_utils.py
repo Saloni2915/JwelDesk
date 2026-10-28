@@ -423,7 +423,7 @@ def get_duplicate_rows(invalid_rows):
     return duplicate_rows
 
 
-def create_jewellery_item_from_row(row, category, tenant=None):
+def create_jewellery_item_from_row(row, category, tenant=None, batch=None):
     """
     Create and return one `JewelleryItem` from a row produced by `validate_import_rows`.
 
@@ -448,6 +448,8 @@ def create_jewellery_item_from_row(row, category, tenant=None):
         }
         if tenant is not None:
             kwargs['tenant'] = tenant
+        if batch is not None:
+            kwargs['import_batch'] = batch
         if row.get('tag_number'):
             kwargs['tag_number'] = row['tag_number']
         if row.get('huid'):
@@ -466,7 +468,7 @@ def create_jewellery_item_from_row(row, category, tenant=None):
         ) from exc
 
 
-def import_valid_rows(valid_rows, user=None, tenant=None):
+def import_valid_rows(valid_rows, user=None, tenant=None, batch=None):
     """
     Insert every row of `valid_rows` inside a single atomic database transaction.
 
@@ -482,6 +484,7 @@ def import_valid_rows(valid_rows, user=None, tenant=None):
     imported_count = 0
     with transaction.atomic():
         category_cache = {}
+        created_items = []
         for row in valid_rows:
             category_name = row['category_name']
             category = category_cache.get(category_name)
@@ -495,12 +498,37 @@ def import_valid_rows(valid_rows, user=None, tenant=None):
                 )
                 category_cache[category_name] = category
 
-            item = create_jewellery_item_from_row(row, category, tenant=tenant)
+            item = create_jewellery_item_from_row(row, category, tenant=tenant, batch=batch)
+            created_items.append(item)
             record_initial_stock(
                 item,
                 user=user,
                 notes='Opening stock recorded by bulk inventory import.',
             )
             imported_count += 1
+
+        if batch is not None:
+            items_summary = [
+                {
+                    'id': it.pk,
+                    'item_code': it.item_code,
+                    'tag_number': it.tag_number,
+                    'name': it.name,
+                    'category': it.category.name if it.category else '',
+                    'metal_type': it.metal_type,
+                    'purity': it.purity,
+                    'gross_weight': str(it.gross_weight),
+                    'stone_weight': str(it.stone_weight),
+                    'net_weight': str(it.net_weight),
+                    'making_charge': str(it.making_charge),
+                    'selling_price': str(it.selling_price),
+                    'status': it.status,
+                    'huid': it.huid,
+                }
+                for it in created_items
+            ]
+            batch.imported_count = imported_count
+            batch.items_summary = items_summary
+            batch.save(update_fields=['imported_count', 'items_summary'])
 
     return imported_count

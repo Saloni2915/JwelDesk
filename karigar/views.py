@@ -735,13 +735,40 @@ def settlement_detail(request, pk):
         tenant=request.tenant,
     )
     assignments = settlement.assignments.all()
+    from accounts.models import CompanySettings
+    from sales.invoice_utils import amount_to_words_inr
+
+    company = CompanySettings.load(tenant=request.tenant)
+    amount_in_words = amount_to_words_inr(settlement.amount)
 
     context = {
         'page_title': f"Settlement Voucher: {settlement.settlement_number}",
         'settlement': settlement,
         'assignments': assignments,
+        'company': company,
+        'amount_in_words': amount_in_words,
     }
     return render(request, 'karigar/settlement_detail.html', context)
+
+
+@login_required
+@require_permission(EmployeePermission.MODULE_KARIGAR, 'view')
+def settlement_receipt_pdf(request, pk):
+    """Download or stream official PDF Payment Receipt for a Karigar settlement."""
+    settlement = get_object_or_404(
+        KarigarSettlement.objects.select_related('karigar', 'processed_by', 'cancelled_by'),
+        pk=pk,
+        tenant=request.tenant,
+    )
+    from .receipt_pdf import generate_karigar_receipt_pdf
+    pdf_bytes = generate_karigar_receipt_pdf(settlement)
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    filename = f"Payment_Receipt_{settlement.settlement_number}.pdf"
+    if request.GET.get('download') == '1':
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    else:
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
+    return response
 
 
 @login_required

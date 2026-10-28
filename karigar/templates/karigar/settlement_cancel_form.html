@@ -22,15 +22,15 @@
                 </div>
 
                 <div class="jd-badge mb-2" style="background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3);">Cancel Payment</div>
-                <h3 class="font-serif fw-bold text-white mb-2" style="font-family: 'Cinzel', serif;">Cancel Payment Voucher?</h3>
+                <h3 class="font-serif fw-bold text-body mb-2" style="font-family: 'Cinzel', serif;">Cancel Payment Voucher?</h3>
                 <p class="text-muted small mb-4">
-                    Cancelling voucher <strong class="text-white">{{ settlement.settlement_number }}</strong> will mark it as Cancelled and reverse payments for linked jobs.
+                    Cancelling voucher <strong class="text-body font-monospace">{{ settlement.settlement_number }}</strong> will mark it as Cancelled and reverse payments for linked jobs.
                 </p>
 
                 <div class="p-3 rounded-3 text-start mb-4" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(236, 200, 106, 0.12);">
                     <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
                         <span class="text-muted small">Karigar:</span>
-                        <span class="text-white fw-bold">{{ settlement.karigar.name }}</span>
+                        <span class="jd-customer-name fw-bold">{{ settlement.karigar.name }}</span>
                     </div>
                     <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
                         <span class="text-muted small">Payment Amount:</span>
@@ -38,7 +38,7 @@
                     </div>
                     <div class="d-flex justify-content-between py-1">
                         <span class="text-muted small">Payment Date:</span>
-                        <span class="text-light">{{ settlement.payment_date|date:"d M Y" }}</span>
+                        <span class="text-body">{{ settlement.payment_date|date:"d M Y" }}</span>
                     </div>
                 </div>
 

@@ -517,6 +517,11 @@ label,
     color: #0F172A !important;
 }
 
+[data-theme="light"] .text-white:not(.badge):not(.badge *):not(.btn):not(.btn *):not(.alert *):not(.toast *):not(.dropdown-menu-dark *):not([class*="bg-dark"] *):not([class*="bg-primary"] *):not([class*="bg-danger"] *):not([class*="bg-success"] *):not([class*="bg-black"] *):not(.navbar-dark *):not(.top-navbar *),
+[data-theme="light"] .jd-subtitle strong,
+[data-theme="light"] .jd-subtitle .text-white,
+[data-theme="light"] .jd-subtitle .text-light,
+[data-theme="light"] .jd-customer-name,
 [data-theme="light"] .jd-table .text-white,
 [data-theme="light"] .jd-table-card .text-white,
 [data-theme="light"] .jd-card .text-white,

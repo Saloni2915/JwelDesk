@@ -1,0 +1,11 @@
+item_code,design_code,name,category,metal_type,purity,gross_weight,stone_weight,net_weight,making_charge,selling_price,status,tag_number,huid,huid_status,hallmark_status
+GLD-RN-101,DSG-001,Traditional Floral Gold Ring,Rings,Gold,22K,5.500,0.000,5.500,450.00,38500.00,Available,JWL-100001,AB1234,Verified,Hallmarked
+GLD-NK-102,DSG-002,Royal Bridal Choker Necklace,Necklaces,Gold,22K,28.750,1.250,27.500,650.00,205000.00,Available,JWL-100002,CD5678,Verified,Hallmarked
+DIA-ER-103,DSG-003,Solitaire Diamond Stud Earrings,Earrings,Diamond,18K,4.200,0.800,3.400,1200.00,62000.00,Available,JWL-100003,EF9012,Verified,Hallmarked
+SLV-AK-104,DSG-004,Oxidised Silver Ghungroo Payal,Anklets,Silver,92.5%,45.000,0.000,45.000,150.00,4800.00,Available,JWL-100004,,Not Applicable,Not Applicable
+GLD-BG-105,DSG-005,Antique Temple Kada Bangle,Bangles & Kadas,Gold,22K,32.400,0.000,32.400,550.00,230000.00,Available,JWL-100005,GH3456,Verified,Hallmarked
+PLT-RN-106,DSG-006,Platinum Couple Love Band,Rings,Platinum,950,6.100,0.200,5.900,1400.00,45000.00,Available,JWL-100006,JK7890,Verified,Hallmarked
+GLD-MS-107,DSG-007,Short Daily Wear Mangalsutra,Mangalsutra,Gold,22K,12.300,0.500,11.800,480.00,85000.00,Available,JWL-100007,LM2345,Verified,Hallmarked
+GLD-CN-108,DSG-008,Classic Men Hollow Rope Chain,Chains,Gold,22K,18.600,0.000,18.600,380.00,132000.00,Available,JWL-100008,NP6789,Verified,Hallmarked
+DIA-PD-109,DSG-009,Heart Shaped Diamond Pendant,Pendants,Diamond,18K,3.150,0.450,2.700,950.00,34000.00,Available,JWL-100009,QR0123,Verified,Hallmarked
+GLD-CN-110,DSG-010,Lakshmi Gold Coin 10g,Coins & Bars,Gold,24K,10.000,0.000,10.000,100.00,74000.00,Available,JWL-100010,ST4567,Verified,Hallmarked

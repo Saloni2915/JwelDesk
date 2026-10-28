@@ -8,8 +8,10 @@ sales, returns, and discrepancy resolutions.
 
 from decimal import Decimal
 from django import forms
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 
+from accounts.models import clean_10_digit_phone
 from team.models import Employee
 from customers.models import Customer
 from inventory.models import JewelleryItem
@@ -106,9 +108,15 @@ class OutstationSaleForm(forms.Form):
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Client full name or business owner'})
     )
     new_customer_mobile = forms.CharField(
-        max_length=20,
+        max_length=10,
         required=False,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Mobile / WhatsApp number'})
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': '10-digit mobile number',
+            'maxlength': '10',
+            'inputmode': 'numeric',
+            'pattern': '[0-9]{10}',
+        })
     )
     new_customer_city = forms.CharField(
         max_length=100,
@@ -173,6 +181,11 @@ class OutstationSaleForm(forms.Form):
 
         if not customer and new_name and not new_mob:
             self.add_error('new_customer_mobile', 'Mobile number is required when registering a new buyer.')
+        elif new_mob:
+            try:
+                cleaned_data['new_customer_mobile'] = clean_10_digit_phone(new_mob, field_label='Mobile number', required=True)
+            except ValidationError as err:
+                self.add_error('new_customer_mobile', err.message if hasattr(err, 'message') else str(err))
 
         sale_price = cleaned_data.get('sale_price')
         paid_amount = cleaned_data.get('paid_amount')
@@ -399,8 +412,15 @@ class ExhibitionSaleForm(forms.Form):
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Buyer full name'})
     )
     new_customer_mobile = forms.CharField(
+        max_length=10,
         required=False,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '10-digit mobile number'})
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': '10-digit mobile number',
+            'maxlength': '10',
+            'inputmode': 'numeric',
+            'pattern': '[0-9]{10}',
+        })
     )
     new_customer_city = forms.CharField(
         required=False,
@@ -455,6 +475,11 @@ class ExhibitionSaleForm(forms.Form):
             self.add_error('customer', 'Select an existing buyer or enter a new buyer name.')
         if not customer and new_name and not new_mobile:
             self.add_error('new_customer_mobile', 'Mobile number is required for new customer registration.')
+        elif new_mobile:
+            try:
+                cleaned_data['new_customer_mobile'] = clean_10_digit_phone(new_mobile, field_label='Mobile number', required=True)
+            except ValidationError as err:
+                self.add_error('new_customer_mobile', err.message if hasattr(err, 'message') else str(err))
 
         buyer_type = cleaned_data.get('buyer_type')
         biz_name = cleaned_data.get('business_name', '').strip()

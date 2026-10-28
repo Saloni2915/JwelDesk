@@ -4,46 +4,116 @@
 
 {% block page_title %}Payment Voucher: {{ settlement.settlement_number }}{% endblock %}
 
-{% block page_actions %}
-<div class="d-flex gap-2">
-    <button onclick="window.print()" class="jd-btn-gold btn-sm">
-        <i class="bi bi-printer me-1"></i> Print Receipt
-    </button>
-    {% if settlement.status == 'Completed' and user_perms.karigar.can_delete %}
-    <a href="{% url 'karigar:settlement_cancel' settlement.id %}" class="jd-btn-danger-ghost btn-sm">
-        <i class="bi bi-x-circle me-1"></i> Cancel Payment
-    </a>
-    {% endif %}
-    <a href="{% url 'karigar:settlement_list' %}" class="jd-btn-ghost btn-sm">
-        <i class="bi bi-arrow-left me-1"></i> All Payments
-    </a>
-</div>
-{% endblock %}
-
 {% block content %}
 <div class="jd-canvas">
+    <!-- Top Interactive Header (Hidden during Print) -->
+    <div class="jd-header d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 no-print">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="jd-badge"><i class="bi bi-wallet2 me-1"></i> Karigar Settlement</span>
+                {% if settlement.status == 'Completed' %}
+                <span class="jd-stage-pill" style="background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.35);">
+                    <i class="bi bi-check-circle-fill me-1"></i> Paid &amp; Settled
+                </span>
+                {% else %}
+                <span class="jd-stage-pill" style="background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.35);">
+                    <i class="bi bi-x-circle-fill me-1"></i> Cancelled
+                </span>
+                {% endif %}
+            </div>
+            <h1 class="jd-title mb-0">
+                Payment Voucher <span class="text-gold font-monospace">{{ settlement.settlement_number }}</span>
+            </h1>
+            <p class="jd-subtitle mb-0">
+                Disbursed to <strong>{{ settlement.karigar.name }}</strong> ({{ settlement.karigar.karigar_code }}) on {{ settlement.payment_date|date:"d M Y" }}
+            </p>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <!-- Print Receipt Button -->
+            <button type="button" onclick="window.print()" class="jd-btn-gold" id="btnPrintReceipt" title="Print physical payment voucher">
+                <i class="bi bi-printer me-1"></i> Print Receipt
+            </button>
+
+            <!-- Download PDF Button -->
+            <a href="{% url 'karigar:settlement_pdf' settlement.id %}?download=1" class="jd-btn-outline-gold" id="btnDownloadPdf" title="Download official PDF receipt">
+                <i class="bi bi-download me-1"></i> Download PDF
+            </a>
+
+            <!-- View / Open PDF in new tab -->
+            <a href="{% url 'karigar:settlement_pdf' settlement.id %}" target="_blank" class="jd-btn-ghost text-gold" title="Open PDF in new tab">
+                <i class="bi bi-file-earmark-pdf me-1"></i> View PDF
+            </a>
+
+            {% if settlement.status == 'Completed' and user_perms.karigar.can_delete %}
+            <a href="{% url 'karigar:settlement_cancel' settlement.id %}" class="jd-btn-danger-ghost" title="Cancel this payment voucher">
+                <i class="bi bi-x-circle me-1"></i> Cancel Payment
+            </a>
+            {% endif %}
+
+            <a href="{% url 'karigar:settlement_list' %}" class="jd-btn-ghost">
+                <i class="bi bi-arrow-left me-1"></i> All Payments
+            </a>
+        </div>
+    </div>
+
+    <!-- Voucher Receipt Document Body -->
     <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <!-- Voucher Card -->
-            <div class="jd-card p-4 p-md-5 print-area">
-                <div class="d-flex justify-content-between align-items-center border-bottom pb-4 mb-4" style="border-color: rgba(236,200,106,0.15) !important;">
-                    <div>
-                        <span class="text-gold small fw-bold text-uppercase" style="letter-spacing: 0.08em;">Karigar Payment Voucher</span>
-                        <h3 class="mb-0 fw-bold font-monospace text-white mt-1">{{ settlement.settlement_number }}</h3>
+        <div class="col-lg-9 col-xl-8">
+            <div class="jd-card p-4 p-md-5 print-voucher-card shadow-lg" id="printableVoucher">
+
+                <!-- Action Toolbar directly on the voucher card (Visible on screen, hidden on print) -->
+                <div class="d-flex justify-content-between align-items-center pb-3 mb-4 border-bottom no-print" style="border-color: rgba(236,200,106,0.15) !important;">
+                    <div class="small text-muted d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-check text-gold"></i>
+                        <span>Official Store Payment Voucher &bull; Printable &bull; PDF Supported</span>
                     </div>
-                    <div>
-                        {% if settlement.status == 'Completed' %}
-                        <span class="jd-stage-pill" style="background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.35);">Paid</span>
-                        {% else %}
-                        <span class="jd-stage-pill" style="background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.35);">Cancelled</span>
-                        {% endif %}
+                    <div class="d-flex gap-2">
+                        <button type="button" onclick="window.print()" class="btn btn-sm btn-outline-warning d-inline-flex align-items-center gap-1">
+                            <i class="bi bi-printer"></i> Print
+                        </button>
+                        <a href="{% url 'karigar:settlement_pdf' settlement.id %}?download=1" class="btn btn-sm btn-outline-light d-inline-flex align-items-center gap-1">
+                            <i class="bi bi-download"></i> PDF
+                        </a>
                     </div>
                 </div>
 
-                <!-- Cancelled Alert if applicable -->
+                <!-- Store & Voucher Header (Shown in both Screen and Print) -->
+                <div class="d-flex justify-content-between align-items-start border-bottom pb-4 mb-4 voucher-header-section" style="border-color: rgba(236,200,106,0.2) !important;">
+                    <div>
+                        <span class="text-gold small fw-bold text-uppercase d-block mb-1" style="letter-spacing: 0.1em;">
+                            Karigar Labour Payment Voucher
+                        </span>
+                        <h2 class="mb-1 fw-bold text-white voucher-store-name">{{ company.name|default:"JewelDesk Atelier" }}</h2>
+                        <div class="small text-muted voucher-store-meta">
+                            {% if company.address %}<div>{{ company.address|linebreaksbr }}</div>{% endif %}
+                            <div class="mt-1">
+                                {% if company.phone %}<span>Phone: {{ company.phone }}</span>{% endif %}
+                                {% if company.gstin %}<span class="ms-2">GSTIN: <strong class="font-monospace text-light">{{ company.gstin }}</strong></span>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div class="mb-1">
+                            {% if settlement.status == 'Completed' %}
+                            <span class="badge px-3 py-2 fs-6" style="background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.4);">
+                                <i class="bi bi-check-circle-fill me-1"></i> PAID
+                            </span>
+                            {% else %}
+                            <span class="badge px-3 py-2 fs-6" style="background: rgba(239,68,68,0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.4);">
+                                <i class="bi bi-x-circle-fill me-1"></i> CANCELLED
+                            </span>
+                            {% endif %}
+                        </div>
+                        <h4 class="mb-0 fw-bold font-monospace text-gold mt-2">{{ settlement.settlement_number }}</h4>
+                        <div class="small text-muted mt-1">Date: <strong class="text-white">{{ settlement.payment_date|date:"d M Y" }}</strong></div>
+                    </div>
+                </div>
+
+                <!-- Cancelled Notice if applicable -->
                 {% if settlement.status == 'Cancelled' %}
                 <div class="alert alert-danger py-3 px-4 mb-4" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5;">
-                    <h6 class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> This payment has been cancelled</h6>
+                    <h6 class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> This payment voucher has been cancelled</h6>
                     <div class="small">
                         Cancelled by: {{ settlement.cancelled_by.get_full_name|default:settlement.cancelled_by.username }}
                         on {{ settlement.cancelled_at|date:"d M Y, H:i" }}
@@ -54,53 +124,110 @@
                 </div>
                 {% endif %}
 
-                <!-- Top Voucher Overview -->
-                <div class="row g-4 mb-4 border-bottom pb-4" style="border-color: rgba(236,200,106,0.12) !important;">
-                    <div class="col-md-6">
-                        <span class="text-gold small fw-bold text-uppercase d-block mb-1">Karigar:</span>
-                        <h4 class="fw-bold mb-1 text-white">
+                <!-- Karigar & Payment Details Two-Column Block -->
+                <div class="row g-4 mb-4 border-bottom pb-4" style="border-color: rgba(236,200,106,0.15) !important;">
+                    <!-- Karigar Information -->
+                    <div class="col-md-6 border-end-md" style="border-color: rgba(255,255,255,0.08) !important;">
+                        <span class="text-gold small fw-bold text-uppercase d-block mb-1" style="font-size: 0.75rem; letter-spacing: 0.05em;">
+                            Payee (Artisan / Karigar):
+                        </span>
+                        <h4 class="fw-bold mb-1 text-white payee-name">
                             <a href="{% url 'karigar:karigar_detail' settlement.karigar.id %}" class="text-white text-decoration-none">
                                 {{ settlement.karigar.name }}
                             </a>
                         </h4>
-                        <div class="small text-muted font-monospace">{{ settlement.karigar.karigar_code }} &bull; {{ settlement.karigar.mobile }}</div>
+                        <div class="small text-muted font-monospace mb-2">
+                            <span>Code: <strong class="text-light">{{ settlement.karigar.karigar_code }}</strong></span>
+                            &bull;
+                            <span>Phone: <strong class="text-light">{{ settlement.karigar.mobile }}</strong></span>
+                        </div>
+                        {% if settlement.karigar.specialization %}
+                        <div class="small text-muted mb-1">
+                            Specialization: <span class="text-light">{{ settlement.karigar.specialization }}</span>
+                        </div>
+                        {% endif %}
                         {% if settlement.karigar.address %}
-                        <div class="small text-light mt-1">{{ settlement.karigar.address|linebreaksbr }}</div>
+                        <div class="small text-muted mb-2">
+                            Workshop: <span class="text-light">{{ settlement.karigar.address|linebreaksbr }}</span>
+                        </div>
+                        {% endif %}
+
+                        <!-- Bank Details Box -->
+                        {% if settlement.karigar.bank_name or settlement.karigar.account_number or settlement.karigar.ifsc_code or settlement.karigar.upi_id %}
+                        <div class="p-2 px-3 rounded-2 mt-2 bank-details-box" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
+                            <div class="small fw-bold text-gold mb-1" style="font-size: 0.72rem;">BANK / PAYOUT ACCOUNT:</div>
+                            <div class="small text-light font-monospace" style="font-size: 0.8rem; line-height: 1.4;">
+                                {% if settlement.karigar.bank_name %}<div>Bank: <strong>{{ settlement.karigar.bank_name }}</strong></div>{% endif %}
+                                {% if settlement.karigar.account_number %}<div>A/C No: <strong>{{ settlement.karigar.account_number }}</strong></div>{% endif %}
+                                {% if settlement.karigar.ifsc_code %}<div>IFSC: <strong>{{ settlement.karigar.ifsc_code }}</strong></div>{% endif %}
+                                {% if settlement.karigar.upi_id %}<div>UPI: <strong class="text-success">{{ settlement.karigar.upi_id }}</strong></div>{% endif %}
+                            </div>
+                        </div>
                         {% endif %}
                     </div>
-                    <div class="col-md-6 text-md-end">
-                        <span class="text-gold small fw-bold text-uppercase d-block mb-1">Paid Amount:</span>
-                        <h2 class="fw-bold text-success font-monospace mb-0">₹{{ settlement.amount|floatformat:2 }}</h2>
-                        <div class="small text-light mt-1">Paid on {{ settlement.payment_date|date:"d M Y" }}</div>
-                        <div class="small text-muted">{{ settlement.payment_method }} {% if settlement.payment_reference %}(Ref: {{ settlement.payment_reference }}){% endif %}</div>
+
+                    <!-- Payment Amount Summary -->
+                    <div class="col-md-6 text-md-end d-flex flex-column justify-content-between">
+                        <div>
+                            <span class="text-gold small fw-bold text-uppercase d-block mb-1" style="font-size: 0.75rem; letter-spacing: 0.05em;">
+                                Total Amount Paid:
+                            </span>
+                            <h1 class="fw-bold text-success font-monospace mb-1 payment-amount" style="font-size: 2.3rem;">
+                                ₹{{ settlement.amount|floatformat:2 }}
+                            </h1>
+                            {% if amount_in_words %}
+                            <div class="small text-light fst-italic mb-2" style="font-size: 0.85rem;">
+                                {{ amount_in_words }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="p-3 rounded-2 text-md-end payment-method-card" style="background: rgba(236,200,106,0.06); border: 1px solid rgba(236,200,106,0.2);">
+                            <div class="small text-muted">
+                                Payment Mode: <strong class="text-white">{{ settlement.payment_method }}</strong>
+                            </div>
+                            {% if settlement.payment_reference %}
+                            <div class="small text-muted font-monospace mt-1">
+                                Reference / UTR: <strong class="text-gold">{{ settlement.payment_reference }}</strong>
+                            </div>
+                            {% endif %}
+                            <div class="small text-muted mt-1">
+                                Disbursed on: <span class="text-light">{{ settlement.payment_date|date:"d M Y" }}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Processed Info -->
+                <!-- Processed Info Strip -->
                 <div class="row g-3 mb-4 small">
                     <div class="col-sm-6">
-                        <span class="text-muted d-block">Paid By:</span>
-                        <span class="text-white fw-semibold">{{ settlement.processed_by.get_full_name|default:settlement.processed_by.username|default:"System" }}</span>
+                        <span class="text-muted d-block">Authorized / Processed By:</span>
+                        <span class="text-white fw-semibold">
+                            {{ settlement.processed_by.get_full_name|default:settlement.processed_by.username|default:"Store Authorized Executive" }}
+                        </span>
                     </div>
                     <div class="col-sm-6 text-sm-end">
-                        <span class="text-muted d-block">Created On:</span>
+                        <span class="text-muted d-block">Voucher Created At:</span>
                         <span class="text-light font-monospace">{{ settlement.created_at|date:"d M Y, H:i" }}</span>
                     </div>
                 </div>
 
-                <!-- Allocated Assignments -->
+                <!-- Allocated Assignments / Job Cards Table -->
                 {% if assignments %}
                 <div class="mb-4">
-                    <h6 class="fw-bold text-gold mb-3"><i class="bi bi-list-check me-2"></i> Linked Karigar Jobs</h6>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold text-gold mb-0"><i class="bi bi-list-check me-2"></i> Linked Karigar Job Cards</h6>
+                        <span class="badge bg-secondary bg-opacity-25 text-light">{{ assignments|length }} job(s) settled</span>
+                    </div>
                     <div class="table-responsive">
-                        <table class="jd-table">
+                        <table class="jd-table w-100">
                             <thead>
                                 <tr>
                                     <th>Job #</th>
                                     <th>Work Type</th>
                                     <th>Metal Issued</th>
                                     <th>Labour Charges</th>
-                                    <th>Amount Paid</th>
+                                    <th>Amount Settled</th>
                                     <th>Status</th>
                                 </tr>
                             </thead>
@@ -112,7 +239,12 @@
                                             {{ asg.assignment_number }}
                                         </a>
                                     </td>
-                                    <td><span class="jd-tag">{{ asg.work_type }}</span></td>
+                                    <td>
+                                        <span class="jd-tag">{{ asg.work_type }}</span>
+                                        {% if asg.metal_type and asg.purity %}
+                                        <small class="text-muted d-block mt-1">{{ asg.metal_type }} {{ asg.purity }}</small>
+                                        {% endif %}
+                                    </td>
                                     <td class="text-white font-monospace">{{ asg.net_weight_issued|floatformat:3 }} g</td>
                                     <td class="text-white font-monospace">₹{{ asg.total_charge|floatformat:2 }}</td>
                                     <td class="text-success font-monospace fw-bold">₹{{ asg.paid_amount|floatformat:2 }}</td>
@@ -129,28 +261,155 @@
                         </table>
                     </div>
                 </div>
+                {% else %}
+                <div class="p-3 rounded-2 small mb-4 text-muted fst-italic" style="background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.1);">
+                    <i class="bi bi-info-circle me-1"></i> General labour payment / Advance disbursement on artisan running craftsmanship ledger (no individual job linked).
+                </div>
                 {% endif %}
 
+                <!-- Notes / Remarks -->
                 {% if settlement.notes %}
                 <div class="p-3 rounded-3 small mb-4" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);">
-                    <strong class="d-block text-gold text-uppercase mb-1">Notes:</strong>
+                    <strong class="d-block text-gold text-uppercase mb-1" style="font-size: 0.72rem;">Payment Remarks / Notes:</strong>
                     <span class="text-light">{{ settlement.notes|linebreaksbr }}</span>
                 </div>
                 {% endif %}
 
-                <!-- Signature block for print -->
-                <div class="row pt-5 mt-4 border-top text-center small text-muted" style="border-color: rgba(255,255,255,0.1) !important;">
+                <!-- Signature Block for Print & Voucher -->
+                <div class="row pt-5 mt-4 border-top text-center small voucher-signature-section" style="border-color: rgba(255,255,255,0.15) !important;">
                     <div class="col-6">
-                        <div class="border-top pt-2 mx-4" style="border-color: rgba(255,255,255,0.2) !important;">Authorized Signature</div>
+                        <div class="border-top pt-2 mx-4 signature-line" style="border-color: rgba(255,255,255,0.3) !important;">
+                            <strong class="d-block text-white">Authorized Store Signatory</strong>
+                            <span class="text-muted" style="font-size: 0.75rem;">(For {{ company.name|default:"JewelDesk" }})</span>
+                        </div>
                     </div>
                     <div class="col-6">
-                        <div class="border-top pt-2 mx-4" style="border-color: rgba(255,255,255,0.2) !important;">Karigar Signature</div>
+                        <div class="border-top pt-2 mx-4 signature-line" style="border-color: rgba(255,255,255,0.3) !important;">
+                            <strong class="d-block text-white">Karigar Signature</strong>
+                            <span class="text-muted" style="font-size: 0.75rem;">(Payment Received Acknowledgment)</span>
+                        </div>
                     </div>
+                </div>
+
+                <!-- Footer declaration -->
+                <div class="text-center text-muted small mt-4 pt-2 border-top" style="font-size: 0.7rem; border-color: rgba(255,255,255,0.06) !important;">
+                    This is an authentic computerized payment receipt issued by {{ company.name|default:"JewelDesk" }} &bull; Voucher #{{ settlement.settlement_number }}
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Clean CSS for Screen and Print -->
+<style>
+@media print {
+    /* Hide all application layout chrome */
+    body, html {
+        background: #ffffff !important;
+        color: #111827 !important;
+        font-size: 12pt;
+    }
+    .no-print,
+    .jd-header,
+    .page-header-wrapper,
+    #sidebar,
+    .sidebar,
+    header,
+    nav,
+    .navbar,
+    .btn,
+    .jd-btn-gold,
+    .jd-btn-ghost,
+    .jd-btn-outline-gold,
+    .jd-btn-danger-ghost,
+    footer,
+    #page-content > div:not(.jd-canvas) {
+        display: none !important;
+    }
+
+    /* Expand canvas to full page */
+    .jd-canvas {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    .col-lg-9, .col-xl-8, .col-lg-8 {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 0 0 100% !important;
+        padding: 0 !important;
+    }
+
+    /* Print voucher card styling */
+    .print-voucher-card {
+        background: #ffffff !important;
+        color: #111827 !important;
+        border: 1px solid #94a3b8 !important;
+        box-shadow: none !important;
+        padding: 20mm 15mm !important;
+        border-radius: 0 !important;
+    }
+
+    /* Typography adjustments for high-contrast black on white */
+    .text-white, .text-light {
+        color: #0f172a !important;
+    }
+    .text-gold {
+        color: #92400e !important;
+    }
+    .text-success {
+        color: #047857 !important;
+    }
+    .text-muted {
+        color: #475569 !important;
+    }
+    .voucher-store-name {
+        color: #0f172a !important;
+    }
+    .payee-name a {
+        color: #0f172a !important;
+    }
+    .payment-amount {
+        color: #047857 !important;
+    }
+
+    /* Table styling for print */
+    .jd-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-top: 10px !important;
+    }
+    .jd-table th {
+        background: #f1f5f9 !important;
+        color: #0f172a !important;
+        border-bottom: 2px solid #cbd5e1 !important;
+        padding: 6px 8px !important;
+    }
+    .jd-table td {
+        border-bottom: 1px solid #e2e8f0 !important;
+        padding: 6px 8px !important;
+        color: #1e293b !important;
+    }
+    .jd-tag {
+        background: #f1f5f9 !important;
+        color: #1e293b !important;
+        border: 1px solid #cbd5e1 !important;
+    }
+
+    .bank-details-box,
+    .payment-method-card {
+        background: #f8fafc !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #0f172a !important;
+    }
+
+    .signature-line {
+        border-color: #64748b !important;
+    }
+    .signature-line strong {
+        color: #0f172a !important;
+    }
+}
+</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

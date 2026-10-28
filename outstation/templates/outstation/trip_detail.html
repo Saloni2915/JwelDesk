@@ -403,7 +403,7 @@
                         </td>
 
                         <td>
-                            <div class="text-white fw-semibold">
+                            <div class="jd-customer-name fw-semibold">
                                 {% if ts.business_name %}{{ ts.business_name }} ({{ ts.sale.customer.name }}){% else %}{{ ts.sale.customer.name }}{% endif %}
                             </div>
                             {% if ts.business_gstin %}
@@ -480,7 +480,7 @@
                         <td>
                             <a href="{% url 'sale_detail' p.sale_id %}" class="text-warning font-monospace text-decoration-none">#{{ p.sale_id }}</a>
                         </td>
-                        <td class="text-white fw-semibold">{{ p.sale.customer.name }}</td>
+                        <td class="jd-customer-name fw-semibold">{{ p.sale.customer.name }}</td>
                         <td>
                             <span class="badge bg-secondary bg-opacity-25 text-light">{{ p.payment_method }}</span>
                         </td>

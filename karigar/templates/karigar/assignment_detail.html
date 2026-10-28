@@ -136,12 +136,12 @@
                         <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06);">
                             <span class="text-muted small d-block">Customer</span>
                             {% if assignment.customer %}
-                            <a href="{% url 'customer_detail' assignment.customer.id %}" class="fw-bold text-white text-decoration-none">
+                            <a href="{% url 'customer_detail' assignment.customer.id %}" class="fw-bold jd-customer-name text-decoration-none">
                                 {{ assignment.customer.name }}
                             </a>
                             <small class="text-muted font-monospace d-block">{{ assignment.customer.mobile }}</small>
                             {% else %}
-                            <span class="text-light">Showroom Stock</span>
+                            <span class="text-body">Showroom Stock</span>
                             {% endif %}
                         </div>
                     </div>

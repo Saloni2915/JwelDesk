@@ -47,7 +47,7 @@
           </div>
         {% endif %}
 
-        <h4 class="fw-bold text-white mb-1">{{ employee.full_name }}</h4>
+        <h4 class="fw-bold jd-customer-name mb-1">{{ employee.full_name }}</h4>
         <p class="text-gold mb-2 fw-medium small">
           {{ employee.designation|default:"Staff Member" }} &bull; {{ employee.department|default:"Jewellery Operations" }}
         </p>
@@ -64,25 +64,25 @@
         </div>
 
         <div class="p-3 rounded-3 text-start mb-3" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06);">
-          <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
-            <span class="text-muted small">Employee ID:</span>
+          <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
+            <span class="text-muted small flex-shrink-0 me-2">Employee ID:</span>
             <span class="text-gold font-monospace fw-bold">{{ employee.employee_id }}</span>
           </div>
-          <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
-            <span class="text-muted small">Email:</span>
-            <span class="text-white small text-truncate" style="max-width: 170px;">{{ employee.email }}</span>
+          <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
+            <span class="text-muted small flex-shrink-0 me-2">Email:</span>
+            <span class="text-body small text-end text-break font-monospace" style="word-break: break-all;">{{ employee.email|default:"—" }}</span>
           </div>
-          <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
-            <span class="text-muted small">Mobile / Phone:</span>
-            <span class="text-white font-monospace small">{{ employee.mobile|default:"—" }}</span>
+          <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
+            <span class="text-muted small flex-shrink-0 me-2">Mobile / Phone:</span>
+            <span class="text-body font-monospace small text-end">{{ employee.mobile|default:"—" }}</span>
           </div>
-          <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
-            <span class="text-muted small">Department:</span>
-            <span class="text-light small">{{ employee.department }}</span>
+          <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="border-color: rgba(255,255,255,0.06) !important;">
+            <span class="text-muted small flex-shrink-0 me-2">Department:</span>
+            <span class="text-body small text-end">{{ employee.department|default:"—" }}</span>
           </div>
-          <div class="d-flex justify-content-between pt-1">
-            <span class="text-muted small">Joining Date:</span>
-            <span class="text-light small">{{ employee.joining_date|date:"d M Y"|default:"—" }}</span>
+          <div class="d-flex justify-content-between align-items-center pt-2">
+            <span class="text-muted small flex-shrink-0 me-2">Joining Date:</span>
+            <span class="text-body small text-end">{{ employee.joining_date|date:"d M Y"|default:"—" }}</span>
           </div>
         </div>
 
@@ -91,11 +91,11 @@
           <span class="text-gold small fw-bold text-uppercase d-block mb-2"><i class="bi bi-key me-1"></i> Login Account</span>
           {% if employee.user %}
             <div class="d-flex justify-content-between align-items-center mb-1 small">
-              <span class="text-muted">Username:</span>
-              <span class="text-white font-monospace fw-bold">{{ employee.user.username }}</span>
+              <span class="text-muted flex-shrink-0 me-2">Username:</span>
+              <span class="text-body font-monospace fw-bold text-end text-break" style="word-break: break-all;">{{ employee.user.username }}</span>
             </div>
             <div class="d-flex justify-content-between align-items-center mb-3 small">
-              <span class="text-muted">Login Status:</span>
+              <span class="text-muted flex-shrink-0 me-2">Login Status:</span>
               {% if employee.user.is_active %}
                 <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Active</span>
               {% else %}

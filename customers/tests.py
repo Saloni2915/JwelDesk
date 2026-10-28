@@ -73,6 +73,41 @@ class CustomerViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(Customer.objects.filter(mobile='+91 9876000000').exists())
 
+    def test_customer_add_less_than_10_digits_fails(self):
+        """Entering less than 10 digits (e.g. 87 or 9 digits) must show validation error and NOT save."""
+        response = self.client.post(reverse('customer_add'), {
+            'name': 'Punam Sharma',
+            'mobile': '87',
+            'email': 'punam@example.com',
+            'address': 'Jaipur',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Customer.objects.filter(name='Punam Sharma').exists())
+        self.assertContains(response, 'Mobile number must be exactly 10 digits.')
+
+    def test_customer_add_9_digits_fails(self):
+        """9 digits is less than 10 digits, must fail and not save."""
+        response = self.client.post(reverse('customer_add'), {
+            'name': 'Nine Digit Customer',
+            'mobile': '987654321',
+            'email': 'nine@example.com',
+            'address': 'Jaipur',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Customer.objects.filter(name='Nine Digit Customer').exists())
+        self.assertContains(response, 'Mobile number must be exactly 10 digits.')
+
+    def test_customer_add_valid_10_digits_succeeds(self):
+        """Exactly 10 digits must succeed and save customer."""
+        response = self.client.post(reverse('customer_add'), {
+            'name': 'Valid Customer',
+            'mobile': '9876543210',
+            'email': 'valid@example.com',
+            'address': 'Surat',
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(Customer.objects.filter(mobile='9876543210').exists())
+
     def test_customer_detail_view(self):
         response = self.client.get(reverse('customer_detail', kwargs={'pk': self.customer.pk}))
         self.assertEqual(response.status_code, 200)

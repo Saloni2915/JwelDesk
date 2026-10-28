@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Import Batch Details — {{ batch.file_name }} — JewelDesk{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/inventory_atelier.css' %}?v={% now "U" %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="jd-inv-canvas">
+
+    <!-- 1. Header & Actions -->
+    <div class="jd-inv-header">
+        <div class="jd-inv-title-wrap">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{% url 'inventory_import' %}" class="jd-btn-ghost py-1 px-2 text-warning small">
+                    <i class="bi bi-arrow-left"></i> Import Stock
+                </a>
+                <span class="text-muted">/</span>
+                <span class="text-muted small">Batch #{{ batch.pk }}</span>
+            </div>
+            <h1>
+                <i class="bi bi-file-earmark-spreadsheet text-warning me-2"></i>
+                {{ batch.file_name }}
+            </h1>
+            <p class="jd-inv-subtitle">
+                Imported on {{ batch.created_at|date:"d M Y, h:i A" }} by
+                <strong class="text-light">{{ batch.imported_by.get_full_name|default:batch.imported_by.username|default:"System" }}</strong>
+                &middot; <span class="font-monospace text-warning">{{ batch.file_size_display }}</span>
+            </p>
+        </div>
+        <div class="jd-inv-header-actions">
+            <a href="{% url 'inventory_list' %}" class="jd-btn-gold">
+                <i class="bi bi-gem"></i> Go to All Stock Items
+            </a>
+            <a href="{% url 'inventory_import' %}" class="jd-btn-ghost">
+                <i class="bi bi-upload"></i> Import Another File
+            </a>
+        </div>
+    </div>
+
+    <!-- 2. KPI Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4">
+            <div class="jd-inv-kpi-card">
+                <div class="jd-inv-kpi-top">
+                    <div class="jd-inv-kpi-icon icon-blue"><i class="bi bi-box-seam"></i></div>
+                    <span class="badge bg-secondary bg-opacity-25 text-light">Count</span>
+                </div>
+                <div class="jd-inv-kpi-label">Imported Pieces</div>
+                <div class="jd-inv-kpi-val text-warning">{{ batch.imported_count }}</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4">
+            <div class="jd-inv-kpi-card">
+                <div class="jd-inv-kpi-top">
+                    <div class="jd-inv-kpi-icon icon-green"><i class="bi bi-speedometer2"></i></div>
+                    <span class="badge bg-success bg-opacity-25 text-success">Weight</span>
+                </div>
+                <div class="jd-inv-kpi-label">Total Gross Weight</div>
+                <div class="jd-inv-kpi-val text-light">{{ batch.total_gross_weight|floatformat:3 }}g</div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="jd-inv-kpi-card">
+                <div class="jd-inv-kpi-top">
+                    <div class="jd-inv-kpi-icon icon-amber"><i class="bi bi-cash-stack"></i></div>
+                    <span class="badge bg-warning bg-opacity-25 text-warning">Valuation</span>
+                </div>
+                <div class="jd-inv-kpi-label">Total Tagged Value</div>
+                <div class="jd-inv-kpi-val text-success">₹{{ batch.total_value|floatformat:2 }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Items Table Card -->
+    <div class="jd-inv-table-card">
+        <div class="jd-inv-table-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h2>
+                    <i class="bi bi-list-ul text-warning me-2"></i>
+                    Imported Jewellery Items
+                </h2>
+                <p class="text-muted small mb-0">List of physical pieces registered from this file</p>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <input type="text" id="detailSearch" class="jd-inv-input py-1 px-3" style="max-width: 280px;"
+                       placeholder="Filter items..." oninput="filterDetailTable()">
+                <span class="badge bg-secondary font-monospace" id="detailCount">{{ items|length }} Items</span>
+            </div>
+        </div>
+
+        {% if items %}
+        <div class="jd-inv-table-scroll">
+            <table class="jd-inv-table" id="detailTable">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>Piece ID / Tag</th>
+                        <th>Item Name</th>
+                        <th>Category</th>
+                        <th>Metal &amp; Purity</th>
+                        <th>Gross Wt</th>
+                        <th>Net Wt</th>
+                        <th>Selling Price</th>
+                        <th>Status</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="detailBody">
+                    {% for it in items %}
+                    <tr class="detail-row">
+                        <td class="text-muted small">{{ forloop.counter }}</td>
+                        <td>
+                            <span class="badge bg-warning bg-opacity-10 text-warning font-monospace border border-warning border-opacity-25 px-2 py-1">
+                                {{ it.item_code }}
+                            </span>
+                            {% if it.tag_number and it.tag_number != it.item_code %}
+                            <span class="badge bg-secondary font-monospace" style="font-size: 0.72rem;">{{ it.tag_number }}</span>
+                            {% endif %}
+                            {% if it.huid %}
+                            <span class="badge bg-secondary ms-1 font-monospace" style="font-size: 0.7rem;">HUID: {{ it.huid }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold text-light item-name">{{ it.name }}</td>
+                        <td><span class="badge bg-secondary bg-opacity-50 item-category">{{ it.category|default:"Jewellery" }}</span></td>
+                        <td>
+                            <span class="small text-light item-metal">{{ it.metal_type }}</span>
+                            <span class="badge bg-warning bg-opacity-25 text-warning ms-1" style="font-size: 0.72rem;">{{ it.purity }}</span>
+                        </td>
+                        <td class="font-monospace text-light">{{ it.gross_weight|floatformat:3 }}g</td>
+                        <td class="font-monospace text-light">{{ it.net_weight|floatformat:3 }}g</td>
+                        <td class="font-monospace text-warning fw-bold">₹{{ it.selling_price }}</td>
+                        <td>
+                            <span class="badge {% if it.status == 'Available' %}bg-success{% else %}bg-secondary{% endif %}">
+                                {{ it.status|default:"Available" }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            {% if it.id %}
+                            <a href="{% url 'inventory_detail' it.id %}" target="_blank" class="btn btn-sm btn-outline-warning py-0 px-2" title="Open stock piece detail in new tab">
+                                <i class="bi bi-box-arrow-up-right"></i> Open
+                            </a>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-5 text-center text-muted">
+            <i class="bi bi-inbox fs-1 d-block mb-2 text-warning opacity-50"></i>
+            <p>No items found recorded for this import batch.</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+    function filterDetailTable() {
+        const query = (document.getElementById('detailSearch').value || '').toLowerCase().trim();
+        const rows = document.querySelectorAll('.detail-row');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            if (!query || text.includes(query)) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        document.getElementById('detailCount').innerText = `${visibleCount} of ${rows.length} Items`;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.body.classList.add('has-inventory-suite');
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) mainContent.classList.add('jd-inv-active');
+        const pageContent = document.getElementById('page-content');
+        if (pageContent) pageContent.classList.add('jd-inv-active');
+    });
+</script>
+{% endblock %}

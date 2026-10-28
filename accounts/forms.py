@@ -255,9 +255,12 @@ class CompanySettingsForm(forms.ModelForm):
 
         if email and '@' not in email:
             self.add_error('email', 'Enter a valid email address.')
-        if phone and not re.match(r'^[0-9+\-\s()]{5,20}$', phone):
-            self.add_error(
-                'phone', 'Enter a valid phone number (digits, spaces, + - ( ) only).')
+        if phone:
+            from .models import clean_10_digit_phone
+            try:
+                cleaned['phone'] = clean_10_digit_phone(phone, field_label='Phone number', required=False)
+            except forms.ValidationError as err:
+                self.add_error('phone', err.message if hasattr(err, 'message') else str(err))
         if gstin and not COMPANY_GSTIN_RE.fullmatch(gstin):
             self.add_error(
                 'gstin', 'GSTIN must be 15 characters in the correct pattern '

@@ -715,14 +715,6 @@
                                     </a>
                                 </li>
                                 {% endif %}
-                                {% if 'sub_karigar_reports' not in hidden_menus %}
-                                <li class="nav-item" data-submenu-key="sub_karigar_reports">
-                                    <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'reports' %}active{% endif %}"
-                                       href="{% url 'karigar:reports' %}">
-                                        <i class="bi bi-file-earmark-bar-graph"></i> {% if is_hindi %}कारीगर रिपोर्ट्स{% else %}Karigar Reports{% endif %}
-                                    </a>
-                                </li>
-                                {% endif %}
                             </ul>
                         </div>
                     </li>
@@ -831,16 +823,6 @@
                                     <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name == 'reports' %}active{% endif %}"
                                        href="{% url 'wholesale:reports' %}">
                                         <i class="bi bi-bar-chart-line"></i> {% if is_hindi %}थोक व्यापार रिपोर्ट{% else %}Wholesale Reports{% endif %}
-                                    </a>
-                                </li>
-                                {% endif %}
-                                {% endif %}
-                                {% if user.is_superuser or user.is_staff or user_perms.karigar.can_view or not user.employee_profile %}
-                                {% if 'sub_reports_karigar' not in hidden_menus %}
-                                <li class="nav-item" data-submenu-key="sub_reports_karigar">
-                                    <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'reports' %}active{% endif %}"
-                                       href="{% url 'karigar:reports' %}">
-                                        <i class="bi bi-file-earmark-bar-graph"></i> {% if is_hindi %}कारीगर रिपोर्ट्स{% else %}Karigar Reports{% endif %}
                                     </a>
                                 </li>
                                 {% endif %}
@@ -1123,6 +1105,95 @@
                     }, 120);
                 }
             });
+        })();
+
+        // ---------------------------------------------------------------------
+        // Universal 10-digit Phone / Mobile Number Enforcement
+        // ---------------------------------------------------------------------
+        (function() {
+            function setupPhoneValidation() {
+                var phoneSelectors = [
+                    'input[type="tel"]',
+                    'input[name="phone"]',
+                    'input[name="mobile"]',
+                    'input[name="alternate_contact"]',
+                    'input[name="new_customer_mobile"]',
+                    'input[name="contact_phone"]'
+                ];
+                var inputs = document.querySelectorAll(phoneSelectors.join(','));
+                inputs.forEach(function(input) {
+                    if (input.dataset.phoneValidationInit) return;
+                    input.dataset.phoneValidationInit = 'true';
+                    input.setAttribute('maxlength', '10');
+                    input.setAttribute('inputmode', 'numeric');
+
+                    input.addEventListener('input', function() {
+                        var cleaned = this.value.replace(/[^0-9]/g, '').slice(0, 10);
+                        if (this.value !== cleaned) {
+                            this.value = cleaned;
+                        }
+                        var errEl = this.parentNode.querySelector('.jd-phone-client-error');
+                        if (errEl && (this.value.length === 10 || this.value.length === 0)) {
+                            errEl.remove();
+                            this.style.borderColor = '';
+                        }
+                    });
+
+                    input.addEventListener('blur', function() {
+                        var val = this.value.replace(/[^0-9]/g, '');
+                        if (val.length > 0 && val.length < 10) {
+                            showPhoneError(this, (this.name.indexOf('mobile') !== -1 ? 'Mobile' : 'Phone') + ' number must be exactly 10 digits (' + val.length + '/10 entered).');
+                        }
+                    });
+
+                    var form = input.closest('form');
+                    if (form && !form.dataset.phoneSubmitAttached) {
+                        form.dataset.phoneSubmitAttached = 'true';
+                        form.addEventListener('submit', function(e) {
+                            var formPhones = form.querySelectorAll(phoneSelectors.join(','));
+                            for (var i = 0; i < formPhones.length; i++) {
+                                var p = formPhones[i];
+                                var clean = p.value.replace(/[^0-9]/g, '');
+                                if (p.value !== clean) {
+                                    p.value = clean;
+                                }
+                                var isRequired = p.hasAttribute('required') || p.getAttribute('aria-required') === 'true' || (p.closest('.col-md-6, .col-md-7, .col-md-4, .mb-3, .col-lg-6') && p.closest('.col-md-6, .col-md-7, .col-md-4, .mb-3, .col-lg-6').querySelector('.text-danger'));
+                                if (clean.length > 0 && clean.length < 10) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    showPhoneError(p, (p.name.indexOf('mobile') !== -1 ? 'Mobile' : 'Phone') + ' number must be exactly 10 digits (' + clean.length + '/10 entered).');
+                                    p.focus();
+                                    return false;
+                                }
+                                if (isRequired && clean.length === 0) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    showPhoneError(p, (p.name.indexOf('mobile') !== -1 ? 'Mobile' : 'Phone') + ' number is required (10 digits).');
+                                    p.focus();
+                                    return false;
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+
+            function showPhoneError(input, msg) {
+                var errEl = input.parentNode.querySelector('.jd-phone-client-error');
+                if (!errEl) {
+                    errEl = document.createElement('div');
+                    errEl.className = 'text-danger small mt-1 jd-phone-client-error';
+                    input.parentNode.appendChild(errEl);
+                }
+                errEl.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i>' + msg;
+                input.style.borderColor = '#ef4444';
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', setupPhoneValidation);
+            } else {
+                setupPhoneValidation();
+            }
         })();
     </script>
 

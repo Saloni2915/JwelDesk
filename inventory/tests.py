@@ -2416,4 +2416,67 @@ class JewelleryItemPhotoTests(TestCase):
         self.assertEqual(item.images.count(), 0)
 
 
+class StockImportHistoryTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='history_tester', password='password123')
+        self.client.login(username='history_tester', password='password123')
+        self.category = Category.objects.create(name='Pendants', description='Pendants Category')
+
+    def test_import_creates_history_batch_and_links_items(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from inventory.models import StockImportBatch, JewelleryItem
+
+        csv_content = (
+            "item_code,name,category,metal_type,purity,gross_weight,net_weight,selling_price,status\n"
+            "HIST-001,History Item 1,Pendants,Gold,22K,5.000,5.000,35000.00,Available\n"
+            "HIST-002,History Item 2,Pendants,Gold,22K,8.000,8.000,56000.00,Available\n"
+        ).encode('utf-8')
+
+        # 1. Upload
+        upload = self.client.post(reverse('inventory_import'), {
+            'action': 'upload',
+            'import_file': SimpleUploadedFile('my_history_stock.csv', csv_content, content_type='text/csv'),
+        })
+        self.assertEqual(upload.status_code, 302)
+
+        # 2. Confirm
+        confirm = self.client.post(reverse('inventory_import'), {'action': 'confirm'})
+        self.assertEqual(confirm.status_code, 302)
+
+        # 3. Verify StockImportBatch was created
+        batch = StockImportBatch.objects.get(file_name='my_history_stock.csv')
+        self.assertEqual(batch.imported_count, 2)
+        self.assertEqual(batch.status, 'Success')
+        self.assertEqual(batch.imported_by, self.user)
+        self.assertEqual(len(batch.items_summary), 2)
+
+        # 4. Verify items are linked to the batch
+        items = JewelleryItem.objects.filter(import_batch=batch)
+        self.assertEqual(items.count(), 2)
+
+        # 5. Check import page renders history table
+        page = self.client.get(reverse('inventory_import'))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'my_history_stock.csv')
+        self.assertContains(page, 'Import History')
+        self.assertContains(page, '2 Items')
+
+        # 6. Check items JSON API returns batch and items
+        api_res = self.client.get(reverse('inventory_import_history_items', kwargs={'batch_id': batch.pk}))
+        self.assertEqual(api_res.status_code, 200)
+        api_data = api_res.json()
+        self.assertTrue(api_data['ok'])
+        self.assertEqual(api_data['batch']['file_name'], 'my_history_stock.csv')
+        self.assertEqual(len(api_data['items']), 2)
+        self.assertEqual(api_data['items'][0]['item_code'], 'HIST-001')
+
+        # 7. Check full-page detail view works
+        detail_res = self.client.get(reverse('inventory_import_history_detail', kwargs={'batch_id': batch.pk}))
+        self.assertEqual(detail_res.status_code, 200)
+        self.assertContains(detail_res, 'my_history_stock.csv')
+        self.assertContains(detail_res, 'HIST-001')
+        self.assertContains(detail_res, 'History Item 2')
+
+
+
 

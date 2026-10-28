@@ -153,10 +153,48 @@
                         <span class="text-light small">{{ karigar.address|linebreaksbr }}</span>
                     </div>
                     {% endif %}
-                    {% if karigar.bank_details %}
+                    {% if karigar.bank_name or karigar.account_number or karigar.ifsc_code or karigar.upi_id or karigar.bank_details %}
                     <div class="pt-2 border-top" style="border-color: rgba(255,255,255,0.06) !important;">
-                        <span class="text-muted small d-block mb-1">Bank / UPI:</span>
-                        <span class="text-light small font-monospace">{{ karigar.bank_details|linebreaksbr }}</span>
+                        <span class="text-gold small fw-bold d-block mb-2"><i class="bi bi-bank me-1"></i> Bank Account &amp; UPI:</span>
+                        {% if karigar.bank_name %}
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted small">Bank Name:</span>
+                            <span class="text-body fw-semibold small">{{ karigar.bank_name }}</span>
+                        </div>
+                        {% endif %}
+                        {% if karigar.account_holder_name %}
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted small">A/C Holder:</span>
+                            <span class="text-body small">{{ karigar.account_holder_name }}</span>
+                        </div>
+                        {% endif %}
+                        {% if karigar.account_number %}
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted small">A/C Number:</span>
+                            <span class="text-body font-monospace fw-semibold small">{{ karigar.account_number }}</span>
+                        </div>
+                        {% endif %}
+                        {% if karigar.ifsc_code %}
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted small">IFSC Code:</span>
+                            <span class="text-gold font-monospace fw-bold small">{{ karigar.ifsc_code }}</span>
+                        </div>
+                        {% endif %}
+                        {% if karigar.branch_name %}
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted small">Branch:</span>
+                            <span class="text-body small">{{ karigar.branch_name }}</span>
+                        </div>
+                        {% endif %}
+                        {% if karigar.upi_id %}
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted small">UPI ID:</span>
+                            <span class="text-success font-monospace fw-semibold small">{{ karigar.upi_id }}</span>
+                        </div>
+                        {% endif %}
+                        {% if not karigar.account_number and not karigar.upi_id and karigar.bank_details %}
+                        <span class="text-body small font-monospace">{{ karigar.bank_details|linebreaksbr }}</span>
+                        {% endif %}
                     </div>
                     {% endif %}
                 </div>

@@ -387,6 +387,18 @@ class PricingIntegrationTests(TestCase):
 
     def test_pricing_calculator_page_and_api(self):
         """Pricing calculator view and JSON API endpoint work cleanly."""
+        item = JewelleryItem.objects.create(
+            item_code='GLD-RN-CALC-1',
+            name='22K Calculator Ring',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K (916)',
+            gross_weight=Decimal('5.000'),
+            net_weight=Decimal('5.000'),
+            selling_price=Decimal('35000.00'),
+            quantity=1,
+            status='Available'
+        )
         client = Client(SERVER_NAME='127.0.0.1')
         client.force_login(self.admin_user)
 
@@ -395,6 +407,7 @@ class PricingIntegrationTests(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertContains(res, 'Jewellery Price Calculator')
         self.assertContains(res, 'Live Price Breakdown')
+        self.assertContains(res, '22K Calculator Ring')
 
         # POST to JSON API
         api_res = client.post(

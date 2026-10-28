@@ -61,8 +61,8 @@
                         </td>
                         <td><span class="jd-tag">{{ asg.work_type }}</span></td>
                         <td>
-                            {% if asg.customer %}<span class="text-light">{{ asg.customer.name }} ({{ asg.customer.mobile }})</span>
-                            {% elif asg.inventory_item %}<span class="text-light">Stock Piece: {{ asg.inventory_item.item_code }}</span>
+                            {% if asg.customer %}<span class="jd-customer-name">{{ asg.customer.name }} ({{ asg.customer.mobile }})</span>
+                            {% elif asg.inventory_item %}<span class="text-body">Stock Piece: {{ asg.inventory_item.item_code }}</span>
                             {% else %}<span class="text-muted">Showroom Piece</span>{% endif %}
                         </td>
                         <td class="text-danger fw-bold font-monospace">{{ asg.expected_completion_date|date:"d M Y" }}</td>

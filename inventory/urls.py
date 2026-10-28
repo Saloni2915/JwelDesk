@@ -26,6 +26,8 @@ urlpatterns = [
     # Bulk import routes
     path('inventory/import/', views.inventory_import, name='inventory_import'),
     path('inventory/import/sample-csv/', views.inventory_import_sample, name='inventory_import_sample'),
+    path('inventory/import/history/<int:batch_id>/', views.inventory_import_history_detail, name='inventory_import_history_detail'),
+    path('inventory/import/history/<int:batch_id>/items/', views.inventory_import_history_items, name='inventory_import_history_items'),
 
     # Metal price & Pricing Engine routes
     path('metal-prices/refresh/', views.metal_price_refresh, name='metal_price_refresh'),

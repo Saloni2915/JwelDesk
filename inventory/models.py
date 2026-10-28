@@ -68,6 +68,81 @@ class ItemSequence(models.Model):
         return f"{self.name}: {self.last_number}"
 
 
+class StockImportBatch(models.Model):
+    STATUS_CHOICES = [
+        ('Success', 'Success'),
+        ('Partial', 'Partial'),
+        ('Failed', 'Failed'),
+    ]
+
+    tenant = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.CASCADE,
+        related_name='stock_import_batches',
+        null=True,
+        blank=True,
+        help_text="Tenant showroom owning this import batch"
+    )
+    file_name = models.CharField(max_length=255, help_text="Original uploaded spreadsheet file name")
+    file_size = models.PositiveIntegerField(default=0, help_text="File size in bytes")
+    total_rows = models.PositiveIntegerField(default=0)
+    imported_count = models.PositiveIntegerField(default=0)
+    failed_count = models.PositiveIntegerField(default=0)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Success')
+    imported_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='stock_import_batches',
+        help_text="User who initiated and confirmed the bulk import"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    items_summary = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Snapshot of imported items metadata"
+    )
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Stock Import Batch'
+        verbose_name_plural = 'Stock Import Batches'
+
+    def __str__(self):
+        return f"Import '{self.file_name}' ({self.imported_count} items) on {self.created_at.strftime('%Y-%m-%d %H:%M')}"
+
+    @property
+    def file_size_display(self):
+        if not self.file_size:
+            return "0 B"
+        bytes_val = float(self.file_size)
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if bytes_val < 1024.0:
+                return f"{bytes_val:.1f} {unit}" if unit != 'B' else f"{int(bytes_val)} B"
+            bytes_val /= 1024.0
+        return f"{bytes_val:.1f} TB"
+
+    @property
+    def total_gross_weight(self):
+        total = Decimal('0.000')
+        for it in (self.items_summary or []):
+            try:
+                total += Decimal(str(it.get('gross_weight', 0)))
+            except Exception:
+                pass
+        return total
+
+    @property
+    def total_value(self):
+        total = Decimal('0.00')
+        for it in (self.items_summary or []):
+            try:
+                total += Decimal(str(it.get('selling_price', 0)))
+            except Exception:
+                pass
+        return total
+
 
 class JewelleryItem(models.Model):
     METAL_CHOICES = [
@@ -76,6 +151,29 @@ class JewelleryItem(models.Model):
         ('Diamond', 'Diamond'),
         ('Platinum', 'Platinum'),
         ('Other', 'Other'),
+    ]
+
+    PURITY_CHOICES = [
+        ('24K', '24K (99.9% Pure Gold)'),
+        ('22K', '22K / 916 (91.6% Hallmark Gold)'),
+        ('20K', '20K (83.3% Gold)'),
+        ('18K', '18K / 750 (75.0% Gold)'),
+        ('14K', '14K / 585 (58.5% Gold)'),
+        ('10K', '10K (41.7% Gold)'),
+        ('9K', '9K (37.5% Gold)'),
+        ('999', '999 Fine Silver'),
+        ('925', '925 Sterling Silver'),
+        ('800', '800 Silver'),
+        ('Pt 950', 'Pt 950 Platinum'),
+        ('Pt 900', 'Pt 900 Platinum'),
+        ('Other', 'Other / Custom Purity'),
+        # Backwards-compatible legacy values
+        ('24K (999)', '24K (999)'),
+        ('22K (916)', '22K (916)'),
+        ('18K (750)', '18K (750)'),
+        ('14K (585)', '14K (585)'),
+        ('925 Silver', '925 Silver'),
+        ('925 Sterling Silver', '925 Sterling Silver'),
     ]
 
     STATUS_CHOICES = [
@@ -106,6 +204,15 @@ class JewelleryItem(models.Model):
         help_text="Tenant shop owning this jewellery piece"
     )
 
+    import_batch = models.ForeignKey(
+        StockImportBatch,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='items',
+        help_text="Bulk import batch that created this physical piece"
+    )
+
     # Physical piece identity
     tag_number = models.CharField(
         max_length=50,
@@ -123,7 +230,11 @@ class JewelleryItem(models.Model):
     name = models.CharField(max_length=200)
     category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name='items')
     metal_type = models.CharField(max_length=20, choices=METAL_CHOICES)
-    purity = models.CharField(max_length=50, help_text="e.g. 22K, 18K, 925 Silver, VVS-1")
+    purity = models.CharField(
+        max_length=50,
+        default='22K',
+        help_text="Standard jewellery purity grade (e.g. 22K, 18K, 925)"
+    )
 
     # Authentication / Hallmark
     huid = models.CharField(

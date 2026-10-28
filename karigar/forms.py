@@ -3,9 +3,11 @@ from django import forms
 from django.core.validators import FileExtensionValidator
 from django.utils import timezone
 
+from accounts.models import clean_10_digit_phone
 from customers.models import Customer
 from custom_orders.models import CustomOrder
 from inventory.models import JewelleryItem
+from inventory.forms import PurityChoiceField
 from .models import Karigar, KarigarWorkAssignment, KarigarSettlement
 
 
@@ -25,6 +27,12 @@ class KarigarForm(forms.ModelForm):
             'status',
             'joining_date',
             'pan_or_id',
+            'bank_name',
+            'account_holder_name',
+            'account_number',
+            'ifsc_code',
+            'branch_name',
+            'upi_id',
             'bank_details',
             'notes',
         ]
@@ -40,10 +48,16 @@ class KarigarForm(forms.ModelForm):
             'mobile': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': '10-digit mobile number',
+                'maxlength': '10',
+                'inputmode': 'numeric',
+                'pattern': '[0-9]{10}',
             }),
             'alternate_contact': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Alternate phone or workshop contact',
+                'placeholder': '10-digit alternate contact (optional)',
+                'maxlength': '10',
+                'inputmode': 'numeric',
+                'pattern': '[0-9]{10}',
             }),
             'email': forms.EmailInput(attrs={
                 'class': 'form-control',
@@ -61,10 +75,36 @@ class KarigarForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'PAN, Aadhaar, or Workshop Reg. (optional)',
             }),
+            'bank_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'e.g. State Bank of India, HDFC Bank',
+            }),
+            'account_holder_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Name as per bank account',
+            }),
+            'account_number': forms.TextInput(attrs={
+                'class': 'form-control font-monospace',
+                'placeholder': 'Bank account number (e.g. 123456789012)',
+                'maxlength': '35',
+            }),
+            'ifsc_code': forms.TextInput(attrs={
+                'class': 'form-control font-monospace text-uppercase',
+                'placeholder': '11-digit IFSC code (e.g. SBIN0001234)',
+                'maxlength': '11',
+            }),
+            'branch_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Branch location / city (e.g. Zaveri Bazaar)',
+            }),
+            'upi_id': forms.TextInput(attrs={
+                'class': 'form-control font-monospace',
+                'placeholder': 'e.g. artisan@upi or 9876543210@paytm',
+            }),
             'bank_details': forms.Textarea(attrs={
                 'class': 'form-control',
-                'rows': 3,
-                'placeholder': 'Bank A/C, IFSC, UPI ID for payments...',
+                'rows': 2,
+                'placeholder': 'Additional banking remarks or legacy details...',
             }),
             'notes': forms.Textarea(attrs={
                 'class': 'form-control',
@@ -82,12 +122,25 @@ class KarigarForm(forms.ModelForm):
 
     def clean_mobile(self):
         mobile = self.cleaned_data.get('mobile', '').strip()
-        if not mobile:
-            raise forms.ValidationError('Mobile number is required.')
-        clean_digits = ''.join(c for c in mobile if c.isdigit())
-        if len(clean_digits) < 7:
-            raise forms.ValidationError('Please enter a valid mobile number (minimum 7 digits).')
-        return mobile
+        return clean_10_digit_phone(mobile, field_label='Mobile number', required=True)
+
+    def clean_alternate_contact(self):
+        alt = self.cleaned_data.get('alternate_contact', '').strip()
+        return clean_10_digit_phone(alt, field_label='Alternate contact', required=False)
+
+    def clean_ifsc_code(self):
+        ifsc = (self.cleaned_data.get('ifsc_code') or '').strip().upper()
+        if ifsc and len(ifsc) > 11:
+            raise forms.ValidationError("IFSC code should be 11 characters (e.g. SBIN0001234).")
+        return ifsc
+
+    def clean_account_number(self):
+        acct = (self.cleaned_data.get('account_number') or '').strip()
+        return acct
+
+    def clean_upi_id(self):
+        upi = (self.cleaned_data.get('upi_id') or '').strip()
+        return upi
 
     def clean_karigar_code(self):
         code = self.cleaned_data.get('karigar_code', '').strip()
@@ -119,6 +172,7 @@ class KarigarWorkAssignmentForm(forms.ModelForm):
         label="Deduct inventory piece from stock during assignment",
         help_text="If checked and an inventory piece is selected, 1 piece will be removed from available showroom stock into manufacturing."
     )
+    purity = PurityChoiceField(required=False, initial='22K')
 
     class Meta:
         model = KarigarWorkAssignment
@@ -160,11 +214,8 @@ class KarigarWorkAssignmentForm(forms.ModelForm):
             'reference_image': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'issue_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'expected_completion_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'metal_type': forms.Select(attrs={'class': 'form-select'}),
-            'purity': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'e.g. 22K (916), 18K (750), 925 Silver',
-            }),
+            'metal_type': forms.Select(attrs={'class': 'form-select', 'id': 'id_metal_type'}),
+            'purity': forms.Select(attrs={'class': 'form-select', 'id': 'id_purity'}),
             'gross_weight_issued': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.001',
@@ -241,6 +292,22 @@ class KarigarWorkAssignmentForm(forms.ModelForm):
 
         if 'purity' in self.fields:
             self.fields['purity'].required = False
+            purity_field = self.fields['purity']
+            choices = getattr(purity_field, 'choices', None)
+            if choices is None and hasattr(purity_field, 'widget'):
+                choices = getattr(purity_field.widget, 'choices', None)
+            if choices:
+                try:
+                    choice_keys = [c[0] for c in choices]
+                    curr_purity = getattr(self.instance, 'purity', None) if self.instance else None
+                    if curr_purity and curr_purity not in choice_keys:
+                        new_choices = list(choices) + [(curr_purity, curr_purity)]
+                        if hasattr(purity_field, 'choices'):
+                            purity_field.choices = new_choices
+                        if hasattr(purity_field, 'widget') and hasattr(purity_field.widget, 'choices'):
+                            purity_field.widget.choices = new_choices
+                except Exception:
+                    pass
 
         if not self.instance.pk:
             self.fields['issue_date'].initial = timezone.localdate()
@@ -249,6 +316,18 @@ class KarigarWorkAssignmentForm(forms.ModelForm):
         if self.instance.pk and self.instance.stock_movement_issued:
             # If stock was already deducted, don't show checkbox
             self.fields.pop('issue_stock_item', None)
+
+    def clean_purity(self):
+        val = (self.cleaned_data.get('purity') or '').strip()
+        if val.lower() == '22k':
+            return '22K'
+        if val.lower() == '24k':
+            return '24K'
+        if val.lower() == '18k':
+            return '18K'
+        if val.lower() == '14k':
+            return '14K'
+        return val or '22K'
 
     def clean(self):
         cleaned_data = super().clean()

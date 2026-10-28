@@ -97,8 +97,9 @@
 
                 <!-- Banking & Compliance -->
                 <div class="jd-card p-4">
-                    <div class="d-flex align-items-center gap-2 mb-4 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
+                    <div class="d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom" style="border-color: rgba(236,200,106,0.15) !important;">
                         <span class="text-gold fw-bold"><i class="bi bi-bank me-1"></i> Bank &amp; ID Details</span>
+                        <span class="badge bg-secondary bg-opacity-25 text-body small" style="font-size: 0.75rem;">NEFT / RTGS / IMPS / UPI</span>
                     </div>
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -115,13 +116,53 @@
                             <div class="text-danger small mt-1">{{ form.joining_date.errors.0 }}</div>
                             {% endif %}
                         </div>
-                        <div class="col-12">
-                            <label class="form-label text-gold small fw-bold">Bank Account Details</label>
-                            {{ form.bank_details }}
-                            {% if form.bank_details.errors %}
-                            <div class="text-danger small mt-1">{{ form.bank_details.errors.0 }}</div>
+
+                        <!-- Separate Bank Account Fields -->
+                        <div class="col-md-6">
+                            <label class="form-label text-gold small fw-bold">Bank Name</label>
+                            {{ form.bank_name }}
+                            {% if form.bank_name.errors %}
+                            <div class="text-danger small mt-1">{{ form.bank_name.errors.0 }}</div>
                             {% endif %}
-                            <small class="text-muted d-block mt-1">Bank name, account number, IFSC code, or UPI ID for making labour payments.</small>
+                            <small class="text-muted d-block mt-1" style="font-size: 0.74rem;">e.g. State Bank of India, HDFC Bank, ICICI Bank</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-gold small fw-bold">Account Holder Name</label>
+                            {{ form.account_holder_name }}
+                            {% if form.account_holder_name.errors %}
+                            <div class="text-danger small mt-1">{{ form.account_holder_name.errors.0 }}</div>
+                            {% endif %}
+                            <small class="text-muted d-block mt-1" style="font-size: 0.74rem;">Beneficiary name as registered in passbook</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-gold small fw-bold">Bank Account Number</label>
+                            {{ form.account_number }}
+                            {% if form.account_number.errors %}
+                            <div class="text-danger small mt-1">{{ form.account_number.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-gold small fw-bold">IFSC Code</label>
+                            {{ form.ifsc_code }}
+                            {% if form.ifsc_code.errors %}
+                            <div class="text-danger small mt-1">{{ form.ifsc_code.errors.0 }}</div>
+                            {% endif %}
+                            <small class="text-muted d-block mt-1" style="font-size: 0.74rem;">11-digit alphanumeric code (e.g. SBIN0001234)</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-gold small fw-bold">Branch Name / City</label>
+                            {{ form.branch_name }}
+                            {% if form.branch_name.errors %}
+                            <div class="text-danger small mt-1">{{ form.branch_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-gold small fw-bold">UPI ID (VPA)</label>
+                            {{ form.upi_id }}
+                            {% if form.upi_id.errors %}
+                            <div class="text-danger small mt-1">{{ form.upi_id.errors.0 }}</div>
+                            {% endif %}
+                            <small class="text-muted d-block mt-1" style="font-size: 0.74rem;">e.g. artisan@upi or 9876543210@paytm</small>
                         </div>
                     </div>
                 </div>

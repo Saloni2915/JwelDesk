@@ -288,6 +288,23 @@ document.addEventListener('DOMContentLoaded', function() {
     if (grossInput) grossInput.addEventListener('input', updateNetPreview);
     if (stoneInput) stoneInput.addEventListener('input', updateNetPreview);
     updateNetPreview();
+
+    const metalSelect = document.getElementById('id_metal_type');
+    const puritySelect = document.getElementById('id_purity');
+    if (metalSelect && puritySelect) {
+        metalSelect.addEventListener('change', function() {
+            const m = this.value;
+            if (m === 'Silver') {
+                puritySelect.value = '925';
+            } else if (m === 'Platinum') {
+                puritySelect.value = 'Pt 950';
+            } else if (m === 'Gold' || m === 'Diamond') {
+                if (['925', '800', 'Pt 950', 'Pt 900'].includes(puritySelect.value)) {
+                    puritySelect.value = '22K';
+                }
+            }
+        });
+    }
 });
 </script>
 {% endblock %}

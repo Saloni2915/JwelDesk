@@ -99,23 +99,23 @@
                 <div class="jd-card-body">
                     <div class="mb-3">
                         <div class="text-muted small text-uppercase">Customer Name</div>
-                        <div class="fs-5 fw-bold text-light">{{ customer.name }}</div>
+                        <div class="fs-5 fw-bold jd-customer-name">{{ customer.name }}</div>
                     </div>
                     <div class="mb-3">
                         <div class="text-muted small text-uppercase">Mobile Number</div>
-                        <div class="fs-6 font-monospace text-light">
-                            <a href="tel:{{ customer.mobile }}" class="text-decoration-none text-light">
+                        <div class="fs-6 font-monospace text-body">
+                            <a href="tel:{{ customer.mobile }}" class="text-decoration-none text-body">
                                 <i class="bi bi-telephone text-warning me-1"></i> {{ customer.mobile }}
                             </a>
                         </div>
                     </div>
                     <div class="mb-3">
                         <div class="text-muted small text-uppercase">Email Address</div>
-                        <div class="fs-6 text-light">{{ customer.email|default:"—" }}</div>
+                        <div class="fs-6 text-body">{{ customer.email|default:"—" }}</div>
                     </div>
                     <div class="mb-3">
                         <div class="text-muted small text-uppercase">Address</div>
-                        <div class="fs-6 text-light">{{ customer.address|default:"—"|linebreaksbr }}</div>
+                        <div class="fs-6 text-body">{{ customer.address|default:"—"|linebreaksbr }}</div>
                     </div>
                     <div>
                         <div class="text-muted small text-uppercase">Customer Since</div>

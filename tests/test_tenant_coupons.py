@@ -19,6 +19,7 @@ from customers.models import Customer
 from inventory.models import JewelleryItem, Category
 from sales.models import Sale
 from coupons.models import CustomerCoupon, CouponCodeItem, CouponRedemption
+from coupons.forms import CustomerCouponForm
 from coupons.services import (
     calculate_coupon_discount,
     validate_coupon_for_sale,
@@ -490,3 +491,98 @@ class TenantCouponSystemTests(TestCase):
         self.assertIn("Report Test Campaign", csv_content)
         self.assertIn("RPT2026", csv_content)
         self.assertIn("500.00", csv_content)
+
+    def test_coupon_form_allows_omitted_color_fields(self):
+        """CustomerCouponForm succeeds without color fields and assigns default colors."""
+        form_data = {
+            'name': 'Gold Gala 2026',
+            'code': 'GALA2026',
+            'occasion': 'general',
+            'status': 'active',
+            'discount_type': 'percentage',
+            'discount_value': '15.00',
+            'min_purchase_amount': '1000.00',
+            'terms_and_conditions': 'Standard terms.',
+            'design_source': 'preset',
+            'preset_style': 'compact_sheet',
+            'page_size': 'a4',
+            'orientation': 'portrait',
+            'coupon_width_mm': '90',
+            'coupon_height_mm': '55',
+            'grid_columns': '2',
+            'grid_rows': '3',
+            'margin_mm': '8',
+            'spacing_mm': '6',
+            'show_barcode': 'on',
+            'show_qr_code': 'on',
+        }
+        form = CustomerCouponForm(data=form_data, tenant=self.tenant_a)
+        self.assertTrue(form.is_valid(), form.errors)
+        coupon = form.save(commit=False)
+        coupon.tenant = self.tenant_a
+        coupon.save()
+        self.assertEqual(coupon.primary_color, '#d4af37')
+        self.assertEqual(coupon.background_color, '#160f09')
+        self.assertEqual(coupon.text_color, '#fef9ed')
+
+    def test_coupon_edit_preserves_existing_colors_when_omitted(self):
+        """Editing an existing coupon without submitting colors preserves current colors."""
+        coupon = CustomerCoupon.objects.create(
+            tenant=self.tenant_a,
+            name="Compact Sheet Voucher",
+            code="COMPACT01",
+            primary_color="#78716c",
+            background_color="#ffffff",
+            text_color="#1c1917",
+            discount_type=CustomerCoupon.DISCOUNT_FIXED,
+            discount_value=Decimal('500.00'),
+        )
+        form_data = {
+            'name': 'Compact Sheet Voucher Updated',
+            'code': 'COMPACT01',
+            'occasion': 'general',
+            'status': 'active',
+            'discount_type': 'fixed',
+            'discount_value': '500.00',
+            'min_purchase_amount': '10000.00',
+            'terms_and_conditions': 'Terms apply.',
+            'design_source': 'preset',
+            'preset_style': 'compact_sheet',
+            'page_size': 'a4',
+            'orientation': 'portrait',
+            'coupon_width_mm': '90',
+            'coupon_height_mm': '55',
+            'grid_columns': '2',
+            'grid_rows': '3',
+            'margin_mm': '8',
+            'spacing_mm': '6',
+        }
+        form = CustomerCouponForm(data=form_data, instance=coupon, tenant=self.tenant_a)
+        self.assertTrue(form.is_valid(), form.errors)
+        saved = form.save()
+        self.assertEqual(saved.primary_color, '#78716c')
+        self.assertEqual(saved.background_color, '#ffffff')
+        self.assertEqual(saved.text_color, '#1c1917')
+
+    def test_coupon_form_custom_html_is_blank_by_default(self):
+        """CustomerCouponForm should have blank custom_html and custom_css by default for a clean slate."""
+        form = CustomerCouponForm(tenant=self.tenant_a)
+        self.assertEqual(form.initial.get('custom_html', ''), '')
+        self.assertEqual(form.initial.get('custom_css', ''), '')
+
+    def test_custom_voucher_preview_blank_canvas_when_html_is_empty(self):
+        """AJAX preview should return blank canvas guidance instead of luxury preset when in custom mode with no HTML."""
+        self.client.force_login(self.user_a)
+        response = self.client.post(reverse('coupons:coupon_preview_api'), {
+            'design_source': 'custom',
+            'custom_html': '',
+            'custom_css': '',
+            'code': 'CUSTOMTEST',
+            'name': 'Custom Campaign',
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertIn("Custom Voucher Canvas Blank", data['rendered_html'])
+        self.assertNotIn("jd-luxury-card", data['rendered_html'])
+

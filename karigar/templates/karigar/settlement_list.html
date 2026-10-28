@@ -129,9 +129,14 @@
                             ₹{{ st.amount|floatformat:2 }}
                         </td>
                         <td class="text-end pe-3">
-                            <a href="{% url 'karigar:settlement_detail' st.id %}" class="jd-btn-ghost btn-sm py-1 px-2" title="View Payment">
-                                <i class="bi bi-eye"></i>
-                            </a>
+                            <div class="d-inline-flex gap-1">
+                                <a href="{% url 'karigar:settlement_detail' st.id %}" class="jd-btn-ghost btn-sm py-1 px-2" title="View Payment Voucher">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'karigar:settlement_pdf' st.id %}?download=1" class="jd-btn-ghost btn-sm py-1 px-2 text-gold" title="Download Official PDF Receipt">
+                                    <i class="bi bi-file-earmark-pdf"></i>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}

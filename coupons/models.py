@@ -235,16 +235,19 @@ class CustomerCoupon(models.Model):
     primary_color = models.CharField(
         max_length=30,
         default='#d4af37',
+        blank=True,
         help_text="Primary gold/accent color (hex)"
     )
     background_color = models.CharField(
         max_length=30,
         default='#160f09',
+        blank=True,
         help_text="Card background color (hex)"
     )
     text_color = models.CharField(
         max_length=30,
         default='#fef9ed',
+        blank=True,
         help_text="Text color (hex)"
     )
 

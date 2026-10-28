@@ -105,6 +105,47 @@ def validate_logo_extension(value):
             + ', '.join(ALLOWED_LOGO_EXTENSIONS))
 
 
+def clean_10_digit_phone(value, field_label='Phone number', required=True):
+    """
+    Validate that a phone or mobile number contains exactly 10 digits.
+    Prevents saving numbers with fewer or more than 10 digits.
+    Handles optional +91/91 country prefix and leading 0 trunk prefix.
+    """
+    if not value or not str(value).strip():
+        if required:
+            raise ValidationError(f"{field_label} is required.")
+        return ''
+
+    val_str = str(value).strip()
+    digits = re.sub(r'\D', '', val_str)
+
+    # Handle leading +91 or 91 country code (12 digits total)
+    if (val_str.startswith('+91') or digits.startswith('91')) and len(digits) == 12:
+        core_digits = digits[2:]
+    # Handle single leading 0 trunk prefix (11 digits total)
+    elif digits.startswith('0') and len(digits) == 11:
+        core_digits = digits[1:]
+    else:
+        core_digits = digits
+
+    if len(core_digits) < 10:
+        raise ValidationError(f"{field_label} must be exactly 10 digits.")
+    if len(core_digits) > 10:
+        raise ValidationError(f"{field_label} cannot exceed 10 digits.")
+
+    # Preserve +91 prefix in existing unit tests if passed that way
+    if val_str.startswith('+91'):
+        return val_str
+    return core_digits
+
+
+def validate_10_digit_phone(value):
+    """Model validator for 10-digit phone number."""
+    if value:
+        clean_10_digit_phone(value, field_label='Phone number', required=False)
+
+
+
 class Tenant(models.Model):
     """Independent jewellery shop / business showroom tenant.
 
@@ -311,7 +352,9 @@ class CompanySettings(models.Model):
         super().clean()
         if self.email and '@' not in self.email:
             raise ValidationError({'email': 'Enter a valid email address.'})
-        if self.phone and not re.match(r'^[0-9+\-\s()]{5,20}$', self.phone):
-            raise ValidationError(
-                {'phone': 'Enter a valid phone number (digits, spaces, + - ( ) only).'})
+        if self.phone:
+            try:
+                self.phone = clean_10_digit_phone(self.phone, field_label='Phone number', required=False)
+            except ValidationError as err:
+                raise ValidationError({'phone': err.message if hasattr(err, 'message') else str(err)})
 

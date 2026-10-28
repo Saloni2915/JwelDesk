@@ -16,7 +16,7 @@
                 </ol>
             </nav>
             <div class="d-flex align-items-center gap-2 flex-wrap">
-                <h3 class="fw-bold mb-0 text-light">Ticket #{{ ticket.ticket_number }}</h3>
+                <h3 class="fw-bold mb-0">Ticket #{{ ticket.ticket_number }}</h3>
                 
                 <!-- Status Badge -->
                 {% if ticket.status == 'resolved' or ticket.status == 'closed' %}
@@ -171,7 +171,7 @@
             {% if can_reply %}
             <div class="card bg-dark border-secondary border-opacity-25 shadow-sm mt-2" style="background: #1a1712 !important; border: 1px solid rgba(236, 200, 106, 0.3) !important;">
                 <div class="card-header bg-dark p-3 border-bottom border-secondary border-opacity-25" style="background: rgba(236, 200, 106, 0.05) !important;">
-                    <h6 class="fw-bold text-light mb-0 d-flex align-items-center gap-2">
+                    <h6 class="fw-bold mb-0 d-flex align-items-center gap-2">
                         <i class="bi bi-reply-fill text-warning"></i> Reply to Support Team
                     </h6>
                 </div>

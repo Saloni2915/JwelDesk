@@ -27,6 +27,7 @@ urlpatterns = [
     path('settlements/', views.settlement_list, name='settlement_list'),
     path('settlements/add/', views.settlement_create, name='settlement_create'),
     path('settlements/<int:pk>/', views.settlement_detail, name='settlement_detail'),
+    path('settlements/<int:pk>/pdf/', views.settlement_receipt_pdf, name='settlement_pdf'),
     path('settlements/<int:pk>/cancel/', views.settlement_cancel, name='settlement_cancel'),
 
     # Reports

@@ -50,6 +50,22 @@
     border-color: #d4af37;
     color: #ffffff;
 }
+.form-control-color {
+    width: 3.5rem;
+    height: 38px;
+    padding: 3px;
+    background-color: #1e1e1e;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    cursor: pointer;
+}
+.form-control-color::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+.form-control-color::-webkit-color-swatch {
+    border: none;
+    border-radius: 4px;
+}
 </style>
 {% endblock %}
 
@@ -66,7 +82,7 @@
                 <span class="text-muted">&bull;</span>
                 <span class="text-muted small">Showroom: <strong>{{ business_name }}</strong></span>
             </div>
-            <h2 class="h3 fw-bold text-light mb-0">{{ page_title }}</h2>
+            <h2 class="h3 fw-bold mb-0">{{ page_title }}</h2>
         </div>
 
         <div class="d-flex gap-2">
@@ -228,7 +244,7 @@
                     </div>
                     <div class="card-body p-3">
                         <div class="row g-3 mb-3">
-                            <div class="col-12 col-md-6">
+                            <div class="col-12 col-md-6" id="designSourceWrap">
                                 <label class="form-label text-light small fw-semibold">Design Mode</label>
                                 {{ form.design_source }}
                             </div>
@@ -238,8 +254,50 @@
                             </div>
                         </div>
 
-                        <!-- Placeholder Tag Bar -->
-                        <div class="mb-3 p-2 rounded bg-black border border-secondary border-opacity-25">
+                        <!-- Color Scheme & Palette Accents Section -->
+                        <div class="p-3 mb-3 rounded bg-black bg-opacity-40 border border-secondary border-opacity-25">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label text-warning small fw-bold mb-0">
+                                    <i class="bi bi-palette-fill me-1"></i> Color Scheme &amp; Palette Accents
+                                </label>
+                                <span class="text-muted" style="font-size: 0.75rem;">Border accent, card background &amp; text colors</span>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label text-light small mb-1" for="{{ form.primary_color.id_for_label }}">Primary / Border Accent</label>
+                                    <div class="d-flex align-items-center gap-2">
+                                        {{ form.primary_color }}
+                                        <span class="font-monospace text-warning small" id="primaryColorHex">{{ form.primary_color.value|default:'#d4af37' }}</span>
+                                    </div>
+                                    {% if form.primary_color.errors %}
+                                    <div class="text-danger small mt-1">{{ form.primary_color.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label text-light small mb-1" for="{{ form.background_color.id_for_label }}">Card Background</label>
+                                    <div class="d-flex align-items-center gap-2">
+                                        {{ form.background_color }}
+                                        <span class="font-monospace text-warning small" id="backgroundColorHex">{{ form.background_color.value|default:'#160f09' }}</span>
+                                    </div>
+                                    {% if form.background_color.errors %}
+                                    <div class="text-danger small mt-1">{{ form.background_color.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label text-light small mb-1" for="{{ form.text_color.id_for_label }}">Text Color</label>
+                                    <div class="d-flex align-items-center gap-2">
+                                        {{ form.text_color }}
+                                        <span class="font-monospace text-warning small" id="textColorHex">{{ form.text_color.value|default:'#fef9ed' }}</span>
+                                    </div>
+                                    {% if form.text_color.errors %}
+                                    <div class="text-danger small mt-1">{{ form.text_color.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Placeholder Tag Bar (for Custom HTML Designer) -->
+                        <div class="mb-3 p-2 rounded bg-black border border-secondary border-opacity-25" id="placeholderBarWrap">
                             <div class="text-muted small mb-1 fw-semibold"><i class="bi bi-code-slash me-1"></i> Click to copy dynamic placeholders:</div>
                             <div class="d-flex flex-wrap gap-1">
                                 <span class="jd-placeholder-pill" onclick="copyTag(this)">&#123;&#123;business_name&#125;&#125;</span>
@@ -252,17 +310,31 @@
                                 <span class="jd-placeholder-pill" onclick="copyTag(this)">&#123;&#123;barcode_svg&#125;&#125;</span>
                                 <span class="jd-placeholder-pill" onclick="copyTag(this)">&#123;&#123;qr_svg&#125;&#125;</span>
                                 <span class="jd-placeholder-pill" onclick="copyTag(this)">&#123;&#123;serial_number&#125;&#125;</span>
+                                <span class="jd-placeholder-pill" onclick="copyTag(this)">&#123;&#123;primary_color&#125;&#125;</span>
+                                <span class="jd-placeholder-pill" onclick="copyTag(this)">&#123;&#123;background_color&#125;&#125;</span>
+                                <span class="jd-placeholder-pill" onclick="copyTag(this)">&#123;&#123;text_color&#125;&#125;</span>
                             </div>
                         </div>
 
-                        <!-- HTML & CSS Editors -->
-                        <div class="row g-3">
+                        <!-- HTML & CSS Editors (Active for Custom Voucher) -->
+                        <div class="row g-3" id="customEditorsWrap">
                             <div class="col-12">
-                                <label class="form-label text-light small fw-semibold">Custom HTML Structure</label>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label text-light small fw-semibold mb-0">Custom HTML Structure</label>
+                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size: 0.75rem;" onclick="clearCustomHtml();" title="Clear HTML to blank canvas">
+                                        <i class="bi bi-trash3 me-1"></i>Clear HTML
+                                    </button>
+                                </div>
                                 {{ form.custom_html }}
+                                <div class="form-text text-muted small">Write or paste your custom HTML. Use dynamic placeholders like &#123;&#123;coupon_code&#125;&#125;, &#123;&#123;discount_value&#125;&#125;, &#123;&#123;valid_until&#125;&#125;.</div>
                             </div>
                             <div class="col-12">
-                                <label class="form-label text-light small fw-semibold">Custom CSS Styling</label>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label text-light small fw-semibold mb-0">Custom CSS Styling</label>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;" onclick="clearCustomCss();" title="Clear CSS">
+                                        <i class="bi bi-trash3 me-1"></i>Clear CSS
+                                    </button>
+                                </div>
                                 {{ form.custom_css }}
                             </div>
                         </div>
@@ -411,11 +483,145 @@ function refreshLivePreview() {
     });
 }
 
+// Built-in preset palettes dictionary
+const PRESET_PALETTES = {
+    'luxury_gold': { primary: '#d4af37', bg: '#160f09', text: '#fef9ed' },
+    'festive_diwali': { primary: '#e5a93b', bg: '#2b0e04', text: '#fff6e5' },
+    'percentage_promo': { primary: '#d4af37', bg: '#141416', text: '#f5f5f7' },
+    'cash_voucher': { primary: '#d4af37', bg: '#11161d', text: '#f0f4f8' },
+    'minimal_white': { primary: '#111827', bg: '#ffffff', text: '#111827' },
+    'compact_sheet': { primary: '#78716c', bg: '#ffffff', text: '#1c1917' }
+};
+
+function updateColorHexLabels() {
+    const p = document.getElementById('id_primary_color');
+    const b = document.getElementById('id_background_color');
+    const t = document.getElementById('id_text_color');
+    if (p && document.getElementById('primaryColorHex')) {
+        document.getElementById('primaryColorHex').innerText = p.value;
+    }
+    if (b && document.getElementById('backgroundColorHex')) {
+        document.getElementById('backgroundColorHex').innerText = b.value;
+    }
+    if (t && document.getElementById('textColorHex')) {
+        document.getElementById('textColorHex').innerText = t.value;
+    }
+}
+
+function clearCustomHtml() {
+    const el = document.getElementById('id_custom_html');
+    if (el) {
+        el.value = '';
+        refreshLivePreview();
+    }
+}
+
+function clearCustomCss() {
+    const el = document.getElementById('id_custom_css');
+    if (el) {
+        el.value = '';
+        refreshLivePreview();
+    }
+}
+
+function updateDesignMode(isUserAction) {
+    const designSource = document.getElementById('id_design_source');
+    if (!designSource) return;
+    const isCustom = (designSource.value === 'custom');
+    const presetWrap = document.getElementById('presetSelectWrap');
+    const designWrap = document.getElementById('designSourceWrap');
+    const customEditorsWrap = document.getElementById('customEditorsWrap');
+    const placeholderBarWrap = document.getElementById('placeholderBarWrap');
+    const htmlField = document.getElementById('id_custom_html');
+    const cssField = document.getElementById('id_custom_css');
+
+    if (isCustom) {
+        // For custom voucher: do not show ready-made template dropdown
+        if (presetWrap) presetWrap.style.display = 'none';
+        if (designWrap) {
+            designWrap.classList.remove('col-md-6');
+            designWrap.classList.add('col-md-12');
+        }
+        // Show custom HTML / CSS editors and placeholder copy bar
+        if (customEditorsWrap) customEditorsWrap.style.display = '';
+        if (placeholderBarWrap) placeholderBarWrap.style.display = '';
+
+        // If user actively switched to custom mode, ensure custom HTML is blank for adding new HTML
+        if (isUserAction) {
+            if (htmlField && (htmlField.value.includes('jd-luxury-card') || htmlField.value.includes('jd-offer-title'))) {
+                htmlField.value = '';
+            }
+            if (cssField && cssField.value.includes('.jd-luxury-card')) {
+                cssField.value = '';
+            }
+        }
+    } else {
+        // Ready-made preset mode: show template dropdown and hide custom editors
+        if (presetWrap) presetWrap.style.display = '';
+        if (designWrap) {
+            designWrap.classList.remove('col-md-12');
+            designWrap.classList.add('col-md-6');
+        }
+        if (customEditorsWrap) customEditorsWrap.style.display = 'none';
+        if (placeholderBarWrap) placeholderBarWrap.style.display = 'none';
+    }
+}
+
 // Initial preview and debounce inputs
 document.addEventListener('DOMContentLoaded', function() {
+    updateColorHexLabels();
+    updateDesignMode(false);
     refreshLivePreview();
 
-    const inputs = ['id_name', 'id_code', 'id_discount_type', 'id_discount_value', 'id_min_purchase_amount', 'id_valid_until', 'id_terms_and_conditions', 'id_design_source', 'id_preset_style', 'id_custom_html', 'id_custom_css'];
+    // Design Mode toggle listener (preset vs custom)
+    const designSource = document.getElementById('id_design_source');
+    if (designSource) {
+        designSource.addEventListener('change', function() {
+            updateDesignMode(true);
+            refreshLivePreview();
+        });
+    }
+
+    // When template/preset changes, auto-populate matching color scheme
+    const presetSelect = document.getElementById('id_preset_style');
+    if (presetSelect) {
+        presetSelect.addEventListener('change', function() {
+            const pal = PRESET_PALETTES[this.value];
+            if (pal) {
+                const p = document.getElementById('id_primary_color');
+                const b = document.getElementById('id_background_color');
+                const t = document.getElementById('id_text_color');
+                if (p) p.value = pal.primary;
+                if (b) b.value = pal.bg;
+                if (t) t.value = pal.text;
+                updateColorHexLabels();
+            }
+            refreshLivePreview();
+        });
+    }
+
+    // Attach listeners to color fields for real-time hex label updates and preview
+    ['id_primary_color', 'id_background_color', 'id_text_color'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', () => {
+                updateColorHexLabels();
+                clearTimeout(timeout);
+                timeout = setTimeout(refreshLivePreview, 300);
+            });
+            el.addEventListener('change', () => {
+                updateColorHexLabels();
+                refreshLivePreview();
+            });
+        }
+    });
+
+    const inputs = [
+        'id_name', 'id_code', 'id_discount_type', 'id_discount_value',
+        'id_min_purchase_amount', 'id_valid_until', 'id_terms_and_conditions',
+        'id_design_source', 'id_preset_style', 'id_custom_html', 'id_custom_css',
+        'id_primary_color', 'id_background_color', 'id_text_color'
+    ];
 
     let timeout = null;
     inputs.forEach(id => {

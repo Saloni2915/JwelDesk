@@ -5,6 +5,32 @@
 
 {% block extra_css %}
 <link href="{% static 'css/inventory_atelier.css' %}?v={% now "U" %}" rel="stylesheet">
+<style>
+    .jd-stock-picker-trigger:hover {
+        border-color: rgba(212, 175, 55, 0.5) !important;
+    }
+    .jd-stock-picker-trigger:focus {
+        border-color: #D4AF37 !important;
+        box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.25);
+        outline: none;
+    }
+    .jd-picker-option:hover {
+        background: rgba(212, 175, 55, 0.15) !important;
+    }
+    #stockPickerList::-webkit-scrollbar {
+        width: 6px;
+    }
+    #stockPickerList::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.2);
+    }
+    #stockPickerList::-webkit-scrollbar-thumb {
+        background: rgba(212, 175, 55, 0.35);
+        border-radius: 4px;
+    }
+    #stockPickerList::-webkit-scrollbar-thumb:hover {
+        background: rgba(212, 175, 55, 0.6);
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -86,23 +112,117 @@
             <!-- Item Loader Picker -->
             <div class="jd-form-card mb-3">
                 <div class="jd-form-card-body p-3">
-                    <label class="jd-field-label small mb-1">
-                        <i class="bi bi-upc-scan text-warning me-1"></i> Pre-fill from Existing Stock Item
-                    </label>
-                    <div class="d-flex gap-2">
-                        <select id="item_loader" class="jd-inv-select" onchange="loadSelectedPiece()">
-                            <option value="">-- Choose stock item to calculate price --</option>
-                            {% for it in inventory_items %}
-                            <option value="{{ it.pk }}" {% if selected_item and selected_item.pk == it.pk %}selected{% endif %}>
-                                [{{ it.tag_number|default:it.item_code }}] {{ it.name }} ({{ it.metal_type }} {{ it.purity }}, {{ it.net_weight }}g) - Tag ₹{{ it.selling_price }}
-                            </option>
-                            {% endfor %}
-                        </select>
+                    <label class="jd-field-label small mb-1 d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-upc-scan text-warning me-1"></i> Pre-fill from Existing Stock Item</span>
                         {% if selected_item %}
-                        <a href="{% url 'pricing_calculator' %}" class="jd-btn-ghost px-2" title="Clear selection">
-                            <i class="bi bi-x-lg"></i>
+                        <a href="{% url 'pricing_calculator' %}" class="text-warning text-decoration-none small" style="font-size: 0.78rem;" title="Clear selection">
+                            <i class="bi bi-x-circle me-1"></i>Clear Selection
                         </a>
                         {% endif %}
+                    </label>
+
+                    <!-- Hidden native select kept for backwards compatibility and tests -->
+                    <select id="item_loader" style="display: none;" onchange="loadSelectedPiece()">
+                        <option value="">-- Choose stock item to calculate price --</option>
+                        {% for it in available_items|default:inventory_items %}
+                        <option value="{{ it.pk }}" {% if selected_item and selected_item.pk == it.pk %}selected{% endif %}>
+                            [{{ it.tag_number|default:it.item_code }}] {{ it.name }} ({{ it.metal_type }} {{ it.purity }}, {{ it.net_weight }}g) - Tag ₹{{ it.selling_price }}{% if it.status != 'Available' %} ({{ it.status }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+
+                    <!-- Compact Searchable Dropdown Picker (Does not cover the screen) -->
+                    <div class="jd-stock-picker-wrap position-relative" id="stockPickerWrap">
+                        <div class="jd-stock-picker-trigger d-flex align-items-center justify-content-between px-3 py-2 rounded"
+                             id="stockPickerTrigger"
+                             onclick="toggleStockPicker(event)"
+                             role="button"
+                             tabindex="0"
+                             style="background: var(--jd-inv-input-bg, #14171f); border: 1px solid var(--jd-inv-border, #2a2f3a); cursor: pointer; min-height: 42px;">
+                            <div class="d-flex align-items-center gap-2 min-w-0 overflow-hidden text-truncate">
+                                {% if selected_item %}
+                                <span class="badge bg-warning bg-opacity-10 text-warning font-monospace border border-warning border-opacity-25 px-2 py-1 flex-shrink-0" style="font-size: 0.75rem;">
+                                    {{ selected_item.tag_number|default:selected_item.item_code }}
+                                </span>
+                                <span class="fw-semibold text-light text-truncate" style="font-size: 0.88rem;">
+                                    {{ selected_item.name }}
+                                </span>
+                                <span class="text-muted small text-truncate d-none d-md-inline" style="font-size: 0.78rem;">
+                                    ({{ selected_item.metal_type }} {{ selected_item.purity }}, {{ selected_item.net_weight }}g) · Tag ₹{{ selected_item.selling_price }}
+                                </span>
+                                {% else %}
+                                <i class="bi bi-search text-warning me-1 flex-shrink-0"></i>
+                                <span class="text-muted" style="font-size: 0.88rem;">
+                                    Search or choose stock item to calculate price...
+                                </span>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-2">
+                                {% if selected_item %}
+                                <a href="{% url 'pricing_calculator' %}" class="btn btn-sm btn-link text-muted p-0 text-decoration-none" title="Clear selection" onclick="event.stopPropagation();">
+                                    <i class="bi bi-x-lg"></i>
+                                </a>
+                                {% endif %}
+                                <i class="bi bi-chevron-down text-muted" id="stockPickerChevron" style="font-size: 0.8rem; transition: transform 0.2s;"></i>
+                            </div>
+                        </div>
+
+                        <!-- Dropdown Menu (Strictly constrained max-height to avoid covering the screen) -->
+                        <div class="jd-stock-picker-menu d-none position-absolute w-100 shadow-lg rounded"
+                             id="stockPickerMenu"
+                             style="top: calc(100% + 4px); left: 0; z-index: 1050; background: #181c24; border: 1px solid rgba(212, 175, 55, 0.35); max-height: 280px; box-shadow: 0 12px 30px rgba(0,0,0,0.7); overflow: hidden;">
+                            
+                            <!-- Search Field inside Dropdown -->
+                            <div class="p-2 border-bottom border-secondary border-opacity-25" style="background: rgba(0,0,0,0.35);" onclick="event.stopPropagation();">
+                                <div class="position-relative">
+                                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-2 text-warning" style="font-size: 0.8rem;"></i>
+                                    <input type="text"
+                                           id="stockPickerSearchInput"
+                                           class="form-control form-control-sm text-light ps-4 py-1"
+                                           placeholder="Type name, tag, metal, purity to filter..."
+                                           style="background: #10131a; border: 1px solid rgba(212, 175, 55, 0.25); font-size: 0.82rem;"
+                                           oninput="filterStockPickerItems()"
+                                           autocomplete="off">
+                                </div>
+                            </div>
+
+                            <!-- Scrollable Items List (Height capped at 210px) -->
+                            <div class="p-1" id="stockPickerList" style="max-height: 210px; overflow-y: auto;">
+                                {% for it in available_items|default:inventory_items %}
+                                <div class="jd-picker-option p-2 rounded mb-1 d-flex justify-content-between align-items-center {% if selected_item and selected_item.pk == it.pk %}bg-warning bg-opacity-25 border-start border-3 border-warning{% endif %}"
+                                     data-pk="{{ it.pk }}"
+                                     data-search="{{ it.name|lower }} {{ it.item_code|lower }} {{ it.tag_number|lower }} {{ it.metal_type|lower }} {{ it.purity|lower }}"
+                                     onclick="selectStockItem('{{ it.pk }}')"
+                                     role="button"
+                                     style="cursor: pointer; transition: background 0.15s ease;">
+                                    <div class="d-flex flex-column min-w-0 me-2" style="line-height: 1.25;">
+                                        <div class="d-flex align-items-center gap-1">
+                                            <span class="badge bg-warning bg-opacity-10 text-warning font-monospace px-1 py-0 flex-shrink-0" style="font-size: 0.72rem;">
+                                                {{ it.tag_number|default:it.item_code }}
+                                            </span>
+                                            <span class="fw-bold text-light text-truncate" style="font-size: 0.84rem;">
+                                                {{ it.name }}
+                                            </span>
+                                            {% if it.status != 'Available' %}
+                                            <span class="badge bg-secondary font-monospace flex-shrink-0" style="font-size: 0.65rem;">{{ it.status }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-muted" style="font-size: 0.74rem;">
+                                            {{ it.metal_type }} {{ it.purity }} &middot; Net: {{ it.net_weight }}g
+                                        </div>
+                                    </div>
+                                    <div class="text-end flex-shrink-0 font-monospace text-warning fw-bold" style="font-size: 0.82rem;">
+                                        ₹{{ it.selling_price }}
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="p-3 text-center text-muted small">No stock items found</div>
+                                {% endfor %}
+                                <div id="stockPickerNoMatch" class="p-3 text-center text-muted small d-none">
+                                    No matching items found
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -140,14 +260,17 @@
                             </div>
                             <div>
                                 <label class="jd-field-label">Purity / Karatage Standard</label>
-                                <input type="text" name="purity" id="id_purity" class="jd-inv-input"
-                                       value="{{ form_data.purity }}" placeholder="e.g. 22K (916), 18K (750)" oninput="triggerRecalc()">
+                                <select name="purity" id="id_purity" class="jd-inv-select" onchange="triggerRecalc()">
+                                    {% for p_val, p_lbl in purity_choices %}
+                                    <option value="{{ p_val }}" {% if form_data.purity == p_val %}selected{% endif %}>{{ p_lbl }}</option>
+                                    {% endfor %}
+                                </select>
                                 <div class="mt-1 d-flex gap-1 flex-wrap">
-                                    <button type="button" class="btn btn-sm py-0 px-2 btn-outline-warning" style="font-size: 0.72rem;" onclick="setPurity('24K (999)')">24K</button>
-                                    <button type="button" class="btn btn-sm py-0 px-2 btn-outline-warning" style="font-size: 0.72rem;" onclick="setPurity('22K (916)')">22K 916</button>
-                                    <button type="button" class="btn btn-sm py-0 px-2 btn-outline-warning" style="font-size: 0.72rem;" onclick="setPurity('18K (750)')">18K 750</button>
-                                    <button type="button" class="btn btn-sm py-0 px-2 btn-outline-warning" style="font-size: 0.72rem;" onclick="setPurity('14K (585)')">14K</button>
-                                    <button type="button" class="btn btn-sm py-0 px-2 btn-outline-secondary" style="font-size: 0.72rem;" onclick="setPurity('925 Sterling Silver')">925 Silver</button>
+                                    <button type="button" class="btn btn-sm py-0 px-2 btn-outline-warning" style="font-size: 0.72rem;" onclick="setPurity('24K')">24K</button>
+                                    <button type="button" class="btn btn-sm py-0 px-2 btn-outline-warning" style="font-size: 0.72rem;" onclick="setPurity('22K')">22K 916</button>
+                                    <button type="button" class="btn btn-sm py-0 px-2 btn-outline-warning" style="font-size: 0.72rem;" onclick="setPurity('18K')">18K 750</button>
+                                    <button type="button" class="btn btn-sm py-0 px-2 btn-outline-warning" style="font-size: 0.72rem;" onclick="setPurity('14K')">14K</button>
+                                    <button type="button" class="btn btn-sm py-0 px-2 btn-outline-secondary" style="font-size: 0.72rem;" onclick="setPurity('925')">925 Silver</button>
                                 </div>
                             </div>
                         </div>
@@ -374,12 +497,14 @@ function onMetalTypeChange() {
         rateInput.value = DEFAULT_RATES[mType].toFixed(2);
     }
     const purityInput = document.getElementById('id_purity');
-    if (mType === 'Silver') {
-        purityInput.value = '925 Sterling Silver';
-    } else if (mType === 'Platinum') {
-        purityInput.value = 'Pt 950';
-    } else {
-        purityInput.value = '22K (916)';
+    if (purityInput) {
+        if (mType === 'Silver') {
+            purityInput.value = '925';
+        } else if (mType === 'Platinum') {
+            purityInput.value = 'Pt 950';
+        } else {
+            purityInput.value = '22K';
+        }
     }
     triggerRecalc();
 }
@@ -407,10 +532,80 @@ function onGrossOrStoneChange() {
 
 function loadSelectedPiece() {
     const picker = document.getElementById('item_loader');
-    if (picker.value) {
+    if (picker && picker.value) {
         window.location.href = "{% url 'pricing_calculator' %}?item=" + picker.value;
     }
 }
+
+function toggleStockPicker(e) {
+    if (e) e.stopPropagation();
+    const menu = document.getElementById('stockPickerMenu');
+    const chevron = document.getElementById('stockPickerChevron');
+    if (!menu) return;
+
+    const isHidden = menu.classList.contains('d-none');
+    if (isHidden) {
+        menu.classList.remove('d-none');
+        if (chevron) chevron.style.transform = 'rotate(180deg)';
+        const searchInput = document.getElementById('stockPickerSearchInput');
+        if (searchInput) {
+            searchInput.value = '';
+            filterStockPickerItems();
+            setTimeout(() => searchInput.focus(), 50);
+        }
+    } else {
+        closeStockPicker();
+    }
+}
+
+function closeStockPicker() {
+    const menu = document.getElementById('stockPickerMenu');
+    const chevron = document.getElementById('stockPickerChevron');
+    if (menu) menu.classList.add('d-none');
+    if (chevron) chevron.style.transform = 'rotate(0deg)';
+}
+
+function selectStockItem(pk) {
+    if (pk) {
+        window.location.href = "{% url 'pricing_calculator' %}?item=" + pk;
+    }
+}
+
+function filterStockPickerItems() {
+    const input = document.getElementById('stockPickerSearchInput');
+    const q = (input ? input.value : '').toLowerCase().trim();
+    const options = document.querySelectorAll('.jd-picker-option');
+    let matches = 0;
+
+    options.forEach(opt => {
+        const text = opt.getAttribute('data-search') || '';
+        if (!q || text.includes(q)) {
+            opt.style.display = 'flex';
+            matches++;
+        } else {
+            opt.style.display = 'none';
+        }
+    });
+
+    const noMatch = document.getElementById('stockPickerNoMatch');
+    if (noMatch) {
+        noMatch.classList.toggle('d-none', matches > 0);
+    }
+}
+
+// Close dropdown on outside click or Esc key
+document.addEventListener('click', function(e) {
+    const wrap = document.getElementById('stockPickerWrap');
+    if (wrap && !wrap.contains(e.target)) {
+        closeStockPicker();
+    }
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeStockPicker();
+    }
+});
 
 let recalcTimeout = null;
 function triggerRecalc() {

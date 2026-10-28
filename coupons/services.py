@@ -44,6 +44,9 @@ ALLOWED_PLACEHOLDERS = [
     "serial_number",
     "barcode_svg",
     "qr_svg",
+    "primary_color",
+    "background_color",
+    "text_color",
 ]
 
 

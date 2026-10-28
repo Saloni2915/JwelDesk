@@ -103,13 +103,18 @@ class CustomerCouponForm(forms.ModelForm):
             self.fields['applicable_category'].queryset = Category.objects.filter(tenant=self.tenant)
             self.fields['specific_customer'].queryset = Customer.objects.filter(tenant=self.tenant)
 
-        # Set default preset markup if creating and empty
-        if not self.instance or not self.instance.pk:
-            default_preset = get_tenant_preset_markup('luxury_gold')
-            if not self.initial.get('custom_html'):
-                self.initial['custom_html'] = default_preset['html']
-            if not self.initial.get('custom_css'):
-                self.initial['custom_css'] = default_preset['css']
+        # Ensure color fields are optional so saving templates never raises validation errors
+        if 'primary_color' in self.fields:
+            self.fields['primary_color'].required = False
+        if 'background_color' in self.fields:
+            self.fields['background_color'].required = False
+        if 'text_color' in self.fields:
+            self.fields['text_color'].required = False
+        if 'max_uses_per_customer' in self.fields:
+            self.fields['max_uses_per_customer'].required = False
+
+        # Custom voucher HTML and CSS should remain blank by default for a clean slate
+
 
     def clean_code(self):
         code = self.cleaned_data.get('code', '').strip().upper()
@@ -143,6 +148,28 @@ class CustomerCouponForm(forms.ModelForm):
         elif discount_type == CustomerCoupon.DISCOUNT_FIXED and discount_value:
             if discount_value <= 0:
                 self.add_error('discount_value', "Cash discount amount must be greater than ₹0.")
+
+        # Robust color defaults fallback if omitted or left blank
+        if not cleaned_data.get('primary_color'):
+            cleaned_data['primary_color'] = (
+                self.instance.primary_color if (self.instance and self.instance.pk and self.instance.primary_color)
+                else '#d4af37'
+            )
+        if not cleaned_data.get('background_color'):
+            cleaned_data['background_color'] = (
+                self.instance.background_color if (self.instance and self.instance.pk and self.instance.background_color)
+                else '#160f09'
+            )
+        if not cleaned_data.get('text_color'):
+            cleaned_data['text_color'] = (
+                self.instance.text_color if (self.instance and self.instance.pk and self.instance.text_color)
+                else '#fef9ed'
+            )
+        if not cleaned_data.get('max_uses_per_customer'):
+            cleaned_data['max_uses_per_customer'] = (
+                self.instance.max_uses_per_customer if (self.instance and self.instance.pk and self.instance.max_uses_per_customer)
+                else 1
+            )
 
         # Sanitize HTML and CSS
         custom_html = cleaned_data.get('custom_html', '')

@@ -194,9 +194,328 @@
 
     </div>
 
+    <!-- 3. Import History Section -->
+    <div class="jd-inv-table-card mt-5">
+        <div class="jd-inv-table-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h2>
+                    <i class="bi bi-clock-history text-warning me-2"></i>
+                    Import History
+                </h2>
+                <p class="text-muted small mb-0">Record of files imported into inventory. Click any file to view its imported items.</p>
+            </div>
+            {% if import_batches %}
+            <span class="badge bg-warning text-dark font-monospace px-3 py-2">
+                {{ import_batches|length }} File{{ import_batches|length|pluralize }} Recorded
+            </span>
+            {% endif %}
+        </div>
+
+        {% if import_batches %}
+        <div class="jd-inv-table-scroll">
+            <table class="jd-inv-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>Imported File</th>
+                        <th>Import Date &amp; Time</th>
+                        <th>Imported By</th>
+                        <th>Items Count</th>
+                        <th>Status</th>
+                        <th class="text-end" style="width: 160px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for batch in import_batches %}
+                    <tr class="jd-history-item-row" style="cursor: pointer;" onclick="openImportModal('{{ batch.pk }}')" title="Click to view imported items">
+                        <td class="text-muted small">{{ forloop.counter }}</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 p-2 rounded">
+                                    {% if '.xlsx' in batch.file_name|lower %}
+                                    <i class="bi bi-file-earmark-excel fs-5 text-success"></i>
+                                    {% else %}
+                                    <i class="bi bi-file-earmark-spreadsheet fs-5 text-warning"></i>
+                                    {% endif %}
+                                </span>
+                                <div>
+                                    <div class="fw-bold text-light text-decoration-underline" style="cursor: pointer;">
+                                        {{ batch.file_name }}
+                                    </div>
+                                    <div class="small text-muted font-monospace">
+                                        {{ batch.file_size_display }} &middot; Batch #{{ batch.pk }}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="text-light small font-monospace">{{ batch.created_at|date:"d M Y, h:i A" }}</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">{{ batch.created_at|timesince }} ago</div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-person-circle text-muted"></i>
+                                <span class="text-light small">{{ batch.imported_by.get_full_name|default:batch.imported_by.username|default:"System" }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25 font-monospace px-2 py-1">
+                                <i class="bi bi-box-seam me-1"></i>{{ batch.imported_count }} Item{{ batch.imported_count|pluralize }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if batch.status == 'Success' %}
+                            <span class="badge bg-success text-dark">
+                                <i class="bi bi-check-circle-fill"></i> Completed
+                            </span>
+                            {% elif batch.status == 'Failed' %}
+                            <span class="badge bg-danger text-light">
+                                <i class="bi bi-x-circle-fill"></i> Failed
+                            </span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">{{ batch.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end" onclick="event.stopPropagation();">
+                            <button type="button" class="jd-btn-gold btn-sm py-1 px-3" onclick="openImportModal('{{ batch.pk }}')">
+                                <i class="bi bi-eye"></i> View Items
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-5 text-center text-muted">
+            <i class="bi bi-inbox fs-1 d-block mb-3 text-warning opacity-50"></i>
+            <h5>No Import History Yet</h5>
+            <p class="small mb-0">Upload and confirm a CSV or Excel file above to see imported files and their item records here.</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Modal for Viewing Imported Items -->
+<div class="modal fade" id="importItemsModal" tabindex="-1" aria-labelledby="importItemsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content bg-dark text-light border border-secondary border-opacity-50">
+            <!-- Modal Header -->
+            <div class="modal-header border-bottom border-secondary border-opacity-25 py-3">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 p-2 rounded">
+                        <i class="bi bi-file-earmark-spreadsheet fs-4"></i>
+                    </span>
+                    <div>
+                        <h5 class="modal-title mb-0 fw-bold text-warning" id="modalFileName">Imported Items</h5>
+                        <div class="small text-muted" id="modalBatchMeta">Loading file metadata...</div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body p-4">
+                <!-- KPI Bar -->
+                <div class="row g-3 mb-4" id="modalKpiBar">
+                    <div class="col-4">
+                        <div class="jd-inv-kpi-card p-3 mb-0">
+                            <div class="small text-muted">Total Pieces</div>
+                            <div class="fs-4 fw-bold text-warning font-monospace" id="modalTotalPieces">0</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="jd-inv-kpi-card p-3 mb-0">
+                            <div class="small text-muted">Total Gross Weight</div>
+                            <div class="fs-4 fw-bold text-light font-monospace" id="modalTotalWeight">0.000g</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="jd-inv-kpi-card p-3 mb-0">
+                            <div class="small text-muted">Total Tagged Value</div>
+                            <div class="fs-4 fw-bold text-success font-monospace" id="modalTotalValue">₹0.00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Search Filter in Modal -->
+                <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="position-relative" style="max-width: 380px; width: 100%;">
+                        <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                        <input type="text" id="modalSearchInput" class="jd-inv-input py-2 ps-5 pe-3 w-100"
+                               placeholder="Search items by code, name, metal, category..." oninput="filterModalTable()">
+                    </div>
+                    <div class="small text-muted" id="modalItemFilterCount">Showing all items</div>
+                </div>
+
+                <!-- Table Loading Spinner -->
+                <div id="modalLoadingSpinner" class="text-center py-5">
+                    <div class="spinner-border text-warning" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="text-muted small mt-2">Fetching imported items...</div>
+                </div>
+
+                <!-- Items Table Container -->
+                <div class="table-responsive" id="modalTableWrap" style="display: none; max-height: 480px; overflow-y: auto;">
+                    <table class="jd-inv-table table-hover" id="modalItemsTable">
+                        <thead class="sticky-top" style="background: #181c24;">
+                            <tr>
+                                <th>#</th>
+                                <th>Piece ID / Tag</th>
+                                <th>Item Name</th>
+                                <th>Category</th>
+                                <th>Metal &amp; Purity</th>
+                                <th>Gross Wt</th>
+                                <th>Net Wt</th>
+                                <th>Selling Price</th>
+                                <th>Status</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalItemsBody">
+                            <!-- Injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State within Modal -->
+                <div id="modalEmptyState" class="text-center py-5" style="display: none;">
+                    <i class="bi bi-search fs-2 text-muted d-block mb-2"></i>
+                    <p class="text-muted mb-0">No matching items found for your search filter.</p>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer border-top border-secondary border-opacity-25 py-2">
+                <a href="{% url 'inventory_list' %}" class="jd-btn-ghost me-auto">
+                    <i class="bi bi-gem"></i> Go to All Stock Items
+                </a>
+                <button type="button" class="jd-btn-gold px-4" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
+    let currentBatchItems = [];
+
+    function openImportModal(batchId) {
+        const modalEl = document.getElementById('importItemsModal');
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+
+        document.getElementById('modalLoadingSpinner').style.display = 'block';
+        document.getElementById('modalTableWrap').style.display = 'none';
+        document.getElementById('modalEmptyState').style.display = 'none';
+        document.getElementById('modalSearchInput').value = '';
+
+        fetch(`/inventory/import/history/${batchId}/items/`)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('modalLoadingSpinner').style.display = 'none';
+                if (!data.ok) {
+                    alert('Could not load batch items: ' + (data.error || 'Unknown error'));
+                    return;
+                }
+
+                document.getElementById('modalFileName').innerText = data.batch.file_name;
+                document.getElementById('modalBatchMeta').innerText =
+                    `Imported on ${data.batch.created_at} by ${data.batch.imported_by} · ${data.batch.file_size_display}`;
+
+                document.getElementById('modalTotalPieces').innerText = data.batch.imported_count;
+                document.getElementById('modalTotalWeight').innerText = data.batch.total_gross_weight + 'g';
+                document.getElementById('modalTotalValue').innerText = '₹' + data.batch.total_value;
+
+                currentBatchItems = data.items || [];
+                renderModalRows(currentBatchItems);
+                document.getElementById('modalTableWrap').style.display = 'block';
+            })
+            .catch(err => {
+                document.getElementById('modalLoadingSpinner').style.display = 'none';
+                alert('Network error while loading batch items.');
+                console.error(err);
+            });
+    }
+
+    function renderModalRows(items) {
+        const tbody = document.getElementById('modalItemsBody');
+        tbody.innerHTML = '';
+
+        if (!items || items.length === 0) {
+            document.getElementById('modalEmptyState').style.display = 'block';
+            document.getElementById('modalTableWrap').style.display = 'none';
+            document.getElementById('modalItemFilterCount').innerText = '0 items found';
+            return;
+        }
+
+        document.getElementById('modalEmptyState').style.display = 'none';
+        document.getElementById('modalTableWrap').style.display = 'block';
+        document.getElementById('modalItemFilterCount').innerText = `Showing ${items.length} item(s)`;
+
+        items.forEach((item, idx) => {
+            const tr = document.createElement('tr');
+            const tagOrCode = item.tag_number || item.item_code;
+            const priceFormatted = parseFloat(item.selling_price || 0).toLocaleString('en-IN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+
+            tr.innerHTML = `
+                <td class="text-muted small">${idx + 1}</td>
+                <td>
+                    <span class="badge bg-warning bg-opacity-10 text-warning font-monospace border border-warning border-opacity-25 px-2 py-1">
+                        ${item.item_code}
+                    </span>
+                    ${item.tag_number && item.tag_number !== item.item_code ? `<span class="badge bg-secondary font-monospace ms-1" style="font-size: 0.72rem;">${item.tag_number}</span>` : ''}
+                    ${item.huid ? `<span class="badge bg-secondary ms-1 font-monospace" style="font-size: 0.7rem;">HUID: ${item.huid}</span>` : ''}
+                </td>
+                <td class="fw-bold text-light">${item.name}</td>
+                <td><span class="badge bg-secondary bg-opacity-50">${item.category || 'Jewellery'}</span></td>
+                <td>
+                    <span class="small text-light">${item.metal_type}</span>
+                    <span class="badge bg-warning bg-opacity-25 text-warning ms-1" style="font-size: 0.72rem;">${item.purity}</span>
+                </td>
+                <td class="font-monospace text-light">${parseFloat(item.gross_weight || 0).toFixed(3)}g</td>
+                <td class="font-monospace text-light">${parseFloat(item.net_weight || 0).toFixed(3)}g</td>
+                <td class="font-monospace text-warning fw-bold">₹${priceFormatted}</td>
+                <td>
+                    <span class="badge ${item.status === 'Available' ? 'bg-success' : 'bg-secondary'}">
+                        ${item.status || 'Available'}
+                    </span>
+                </td>
+                <td class="text-end">
+                    ${item.id ? `
+                    <a href="/inventory/${item.id}/" target="_blank" class="btn btn-sm btn-outline-warning py-0 px-2" title="Open stock piece detail in new tab">
+                        <i class="bi bi-box-arrow-up-right"></i> Open
+                    </a>` : '-'}
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function filterModalTable() {
+        const query = (document.getElementById('modalSearchInput').value || '').toLowerCase().trim();
+        if (!query) {
+            renderModalRows(currentBatchItems);
+            return;
+        }
+
+        const filtered = currentBatchItems.filter(it => {
+            return (it.name || '').toLowerCase().includes(query) ||
+                   (it.item_code || '').toLowerCase().includes(query) ||
+                   (it.tag_number || '').toLowerCase().includes(query) ||
+                   (it.category || '').toLowerCase().includes(query) ||
+                   (it.metal_type || '').toLowerCase().includes(query) ||
+                   (it.purity || '').toLowerCase().includes(query) ||
+                   (it.huid || '').toLowerCase().includes(query);
+        });
+
+        renderModalRows(filtered);
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         document.body.classList.add('has-inventory-suite');
         const mainContent = document.querySelector('.main-content');

@@ -158,7 +158,7 @@
                                         <i class="bi bi-cloud-arrow-up-fill fs-3"></i>
                                     </span>
                                 </div>
-                                <h6 class="fw-bold text-light mb-1">Upload Product Photograph</h6>
+                                <h6 class="fw-bold mb-1">Upload Product Photograph</h6>
                                 <p class="text-muted small mb-3">Drag and drop your jewellery photo here, or browse from computer / camera</p>
                                 <button type="button" class="btn btn-outline-warning btn-sm px-3 py-1 fw-semibold" id="browsePhotoBtn">
                                     <i class="bi bi-folder2-open me-1"></i> Choose Photo
@@ -536,6 +536,24 @@
         if (huidInput) {
             huidInput.addEventListener('input', function() {
                 this.value = this.value.toUpperCase();
+            });
+        }
+
+        // Auto select standard purity when metal type changes
+        const metalSelect = document.getElementById('id_metal_type');
+        const puritySelect = document.getElementById('id_purity');
+        if (metalSelect && puritySelect) {
+            metalSelect.addEventListener('change', function() {
+                const m = this.value;
+                if (m === 'Silver') {
+                    puritySelect.value = '925';
+                } else if (m === 'Platinum') {
+                    puritySelect.value = 'Pt 950';
+                } else if (m === 'Gold' || m === 'Diamond') {
+                    if (['925', '800', 'Pt 950', 'Pt 900'].includes(puritySelect.value)) {
+                        puritySelect.value = '22K';
+                    }
+                }
             });
         }
     });

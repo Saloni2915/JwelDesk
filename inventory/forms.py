@@ -27,6 +27,49 @@ class SanitizedDecimalField(forms.DecimalField):
         return val
 
 
+class PurityChoiceField(forms.CharField):
+    """
+    Form field for Purity that renders as a <select> dropdown with standard
+    jewellery purities while accepting custom / legacy strings gracefully.
+    Exposes a .choices property that delegates to self.widget.choices.
+    """
+    def __init__(self, *args, **kwargs):
+        choices = kwargs.pop('choices', JewelleryItem.PURITY_CHOICES)
+        widget_attrs = kwargs.pop('widget_attrs', None) or {'class': 'form-select', 'id': 'id_purity'}
+        kwargs.setdefault('widget', forms.Select(attrs=widget_attrs, choices=choices))
+        kwargs.setdefault('initial', '22K')
+        super().__init__(*args, **kwargs)
+        self._choices = list(choices)
+
+    @property
+    def choices(self):
+        if hasattr(self, 'widget') and hasattr(self.widget, 'choices'):
+            return self.widget.choices
+        return self._choices
+
+    @choices.setter
+    def choices(self, value):
+        self._choices = list(value)
+        if hasattr(self, 'widget') and hasattr(self.widget, 'choices'):
+            self.widget.choices = self._choices
+
+    def clean(self, value):
+        val = super().clean(value)
+        if val:
+            val_str = str(val).strip()
+            mapping = {
+                '24k': '24K',
+                '22k': '22K',
+                '20k': '20K',
+                '18k': '18K',
+                '14k': '14K',
+                '10k': '10K',
+                '9k': '9K',
+            }
+            return mapping.get(val_str.lower(), val_str)
+        return val
+
+
 class JewelleryItemForm(forms.ModelForm):
     making_charge = SanitizedDecimalField(
         max_digits=10, decimal_places=2, required=False, default_zero=True,
@@ -65,6 +108,7 @@ class JewelleryItemForm(forms.ModelForm):
         }),
         help_text="Upload a photograph of the jewellery item (JPEG, PNG, WEBP, max 10MB).",
     )
+    purity = PurityChoiceField(initial='22K')
 
     class Meta:
         model = JewelleryItem
@@ -81,8 +125,8 @@ class JewelleryItemForm(forms.ModelForm):
             'design_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Design / Model Code, e.g. DSN-RN-001'}),
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. 22K Gold Solitaire Ring'}),
             'category': forms.Select(attrs={'class': 'form-select'}),
-            'metal_type': forms.Select(attrs={'class': 'form-select'}),
-            'purity': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. 22K (916), 18K, 925'}),
+            'metal_type': forms.Select(attrs={'class': 'form-select', 'id': 'id_metal_type'}),
+            'purity': forms.Select(attrs={'class': 'form-select', 'id': 'id_purity'}),
             'huid': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '6-char alphanumeric, e.g. AB1234', 'maxlength': 6}),
             'huid_status': forms.Select(attrs={'class': 'form-select'}),
             'hallmark_status': forms.Select(attrs={'class': 'form-select'}),
@@ -95,6 +139,23 @@ class JewelleryItemForm(forms.ModelForm):
     def __init__(self, *args, tenant=None, **kwargs):
         self.tenant = tenant or (kwargs.get('instance').tenant if kwargs.get('instance') else None)
         super().__init__(*args, **kwargs)
+        if 'purity' in self.fields:
+            purity_field = self.fields['purity']
+            choices = getattr(purity_field, 'choices', None)
+            if choices is None and hasattr(purity_field, 'widget'):
+                choices = getattr(purity_field.widget, 'choices', None)
+            if choices:
+                try:
+                    choice_keys = [c[0] for c in choices]
+                    curr_purity = getattr(self.instance, 'purity', None) if self.instance else None
+                    if curr_purity and curr_purity not in choice_keys:
+                        new_choices = list(choices) + [(curr_purity, curr_purity)]
+                        if hasattr(purity_field, 'choices'):
+                            purity_field.choices = new_choices
+                        if hasattr(purity_field, 'widget') and hasattr(purity_field.widget, 'choices'):
+                            purity_field.widget.choices = new_choices
+                except Exception:
+                    pass
         if self.tenant:
             self.fields['category'].queryset = Category.objects.filter(tenant=self.tenant)
         if self.instance and self.instance.pk:
@@ -126,6 +187,18 @@ class JewelleryItemForm(forms.ModelForm):
                     field.initial = self.initial.get(fname, default)
                 if not self.is_bound:
                     self.initial.setdefault(fname, default)
+
+    def clean_purity(self):
+        val = (self.cleaned_data.get('purity') or '').strip()
+        if val.lower() == '22k':
+            return '22K'
+        if val.lower() == '24k':
+            return '24K'
+        if val.lower() == '18k':
+            return '18K'
+        if val.lower() == '14k':
+            return '14K'
+        return val or '22K'
 
     def clean_tag_number(self):
         tag = self.cleaned_data.get('tag_number', '')

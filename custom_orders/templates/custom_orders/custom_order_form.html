@@ -242,6 +242,26 @@ document.addEventListener('DOMContentLoaded', function() {
     document.body.classList.add('has-atelier-suite');
     const pc = document.getElementById('page-content');
     if (pc) pc.classList.add('jd-active');
+
+    const metalSelect = document.getElementById('id_metal_type');
+    const puritySelect = document.getElementById('id_purity');
+
+    if (metalSelect && puritySelect) {
+        metalSelect.addEventListener('change', function() {
+            const m = this.value;
+            if (m === 'Silver') {
+                puritySelect.value = '925';
+            } else if (m === 'Platinum') {
+                puritySelect.value = 'Pt 950';
+            } else if (m === 'Gold' || m === 'Diamond') {
+                if (['925', '800', 'Pt 950', 'Pt 900'].includes(puritySelect.value)) {
+                    puritySelect.value = '22K';
+                }
+            }
+            calculateCustomOrderEstimate();
+        });
+        puritySelect.addEventListener('change', calculateCustomOrderEstimate);
+    }
 });
 
 function calculateCustomOrderEstimate() {

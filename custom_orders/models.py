@@ -5,7 +5,7 @@ from django.db import IntegrityError, models, transaction
 from django.utils import timezone
 
 from customers.models import Customer
-from inventory.models import Category
+from inventory.models import Category, JewelleryItem
 
 
 def default_expected_delivery_date():
@@ -82,7 +82,11 @@ class CustomOrder(models.Model):
     )
 
     metal_type = models.CharField(max_length=20, choices=METAL_CHOICES)
-    purity = models.CharField(max_length=50, help_text="e.g. 22K, 18K, 925 Silver")
+    purity = models.CharField(
+        max_length=50,
+        default='22K',
+        help_text="Standard jewellery purity grade (e.g. 22K, 18K, 925)"
+    )
     approx_gross_weight = models.DecimalField(
         max_digits=10, decimal_places=3, help_text="Approximate weight in grams")
     approx_net_weight = models.DecimalField(

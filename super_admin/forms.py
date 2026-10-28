@@ -12,6 +12,8 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
+from accounts.models import clean_10_digit_phone
+
 from .models import (
     CouponBatchItem,
     CouponDesignTemplate,
@@ -77,6 +79,11 @@ class PlatformDemoLeadForm(forms.ModelForm):
         self.fields['assigned_staff'].queryset = User.objects.filter(is_superuser=True) | User.objects.filter(is_staff=True)
         self.fields['assigned_staff'].required = False
         self.fields['email'].required = False
+
+    def clean_phone(self):
+        phone = (self.cleaned_data.get('phone') or '').strip()
+        return clean_10_digit_phone(phone, field_label='Phone number', required=True)
+
 
 
 class DemoMeetingScheduleForm(forms.Form):
@@ -184,6 +191,10 @@ class PublicDemoRequestForm(forms.Form):
         widget=forms.TextInput(attrs={'style': 'display:none !important;', 'tabindex': '-1', 'autocomplete': 'off'})
     )
 
+    def clean_phone(self):
+        phone = (self.cleaned_data.get('phone') or '').strip()
+        return clean_10_digit_phone(phone, field_label='Phone number', required=True)
+
     def clean(self):
         cleaned_data = super().clean()
         hp = cleaned_data.get('website_hp')
@@ -214,7 +225,12 @@ class PlatformSupportTicketForm(forms.ModelForm):
             'tenant': forms.Select(attrs={'class': 'form-select sa-input'}),
             'contact_name': forms.TextInput(attrs={'class': 'form-control sa-input', 'placeholder': 'Contact Name'}),
             'contact_email': forms.EmailInput(attrs={'class': 'form-control sa-input', 'placeholder': 'contact@jewellers.com'}),
-            'contact_phone': forms.TextInput(attrs={'class': 'form-control sa-input', 'placeholder': '+91 98765 43210'}),
+            'contact_phone': forms.TextInput(attrs={
+                'class': 'form-control sa-input',
+                'placeholder': '10-digit contact phone',
+                'maxlength': '10',
+                'inputmode': 'numeric',
+            }),
             'category': forms.Select(attrs={'class': 'form-select sa-input'}),
             'priority': forms.Select(attrs={'class': 'form-select sa-input'}),
             'status': forms.Select(attrs={'class': 'form-select sa-input'}),
@@ -229,6 +245,10 @@ class PlatformSupportTicketForm(forms.ModelForm):
         self.fields['assigned_to'].queryset = User.objects.filter(is_superuser=True) | User.objects.filter(is_staff=True)
         self.fields['tenant'].required = False
         self.fields['assigned_to'].required = False
+
+    def clean_contact_phone(self):
+        phone = (self.cleaned_data.get('contact_phone') or '').strip()
+        return clean_10_digit_phone(phone, field_label='Contact phone', required=False)
 
 
 # ============================================================================

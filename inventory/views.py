@@ -7,11 +7,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
-from django.db import IntegrityError, transaction
-from django.db.models import Q, Sum, Count, ProtectedError
-from django.http import HttpResponse
+from django.db import IntegrityError, transaction, models
+from django.db.models import Q, Sum, Count, ProtectedError, Case, When, Value, IntegerField
+from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
-from .models import JewelleryItem, Category, StockMovement, MetalRate, JewelleryItemImage
+from .models import JewelleryItem, Category, StockMovement, MetalRate, JewelleryItemImage, StockImportBatch
 from .forms import JewelleryItemForm, CategoryForm, StockAdjustmentForm
 from . import stock
 from .import_utils import (
@@ -895,6 +895,7 @@ def preview_inventory_import(request):
 
     request.session[IMPORT_SESSION_KEY] = {
         'filename': filename,
+        'file_size': uploaded_file.size,
         'rows': data_rows,
     }
 
@@ -944,9 +945,21 @@ def confirm_inventory_import(request):
         messages.warning(request, f"'{filename}' does not contain any rows that can be imported.")
         return redirect('inventory_import')
 
+    batch = StockImportBatch.objects.create(
+        tenant=request.tenant,
+        file_name=filename,
+        file_size=stored_import.get('file_size', 0),
+        total_rows=len(valid_rows),
+        imported_count=0,
+        imported_by=request.user,
+        status='Success'
+    )
+
     try:
-        imported_count = import_valid_rows(valid_rows, user=request.user, tenant=request.tenant)
+        imported_count = import_valid_rows(valid_rows, user=request.user, tenant=request.tenant, batch=batch)
     except (ValidationError, IntegrityError, InvalidOperation) as exc:
+        batch.status = 'Failed'
+        batch.save(update_fields=['status'])
         clear_stored_import(request)
         messages.error(
             request,
@@ -985,11 +998,15 @@ def inventory_import(request):
 
     stored_import = request.session.get(IMPORT_SESSION_KEY)
 
+    batches_qs = StockImportBatch.objects.filter(tenant=request.tenant) if request.tenant else StockImportBatch.objects.all()
+    import_batches = batches_qs.select_related('imported_by').order_by('-created_at')[:30]
+
     context = {
         'page_title': 'Bulk Import Inventory',
         'allowed_extensions': ', '.join(ALLOWED_IMPORT_EXTENSIONS),
         'max_file_size_mb': MAX_IMPORT_FILE_SIZE // (1024 * 1024),
         'max_rows': MAX_IMPORT_ROWS,
+        'import_batches': import_batches,
     }
 
     if not stored_import or not stored_import.get('rows'):
@@ -1022,6 +1039,97 @@ def inventory_import_sample(request):
     response = HttpResponse(generate_sample_csv(), content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="jeweldesk_inventory_import_sample.csv"'
     return response
+
+
+@login_required
+def inventory_import_history_items(request, batch_id):
+    """
+    JSON API returning imported items for a specific batch.
+    Used by the interactive modal on the import page.
+    """
+    if request.tenant:
+        batch = get_object_or_404(StockImportBatch, pk=batch_id, tenant=request.tenant)
+    else:
+        batch = get_object_or_404(StockImportBatch, pk=batch_id)
+
+    items = list(batch.items_summary or [])
+    if not items:
+        live_items = batch.items.all().select_related('category')
+        items = [
+            {
+                'id': it.pk,
+                'item_code': it.item_code,
+                'tag_number': it.tag_number,
+                'name': it.name,
+                'category': it.category.name if it.category else '',
+                'metal_type': it.metal_type,
+                'purity': it.purity,
+                'gross_weight': str(it.gross_weight),
+                'stone_weight': str(it.stone_weight),
+                'net_weight': str(it.net_weight),
+                'making_charge': str(it.making_charge),
+                'selling_price': str(it.selling_price),
+                'status': it.status,
+                'huid': it.huid,
+            }
+            for it in live_items
+        ]
+
+    return JsonResponse({
+        'ok': True,
+        'batch': {
+            'id': batch.pk,
+            'file_name': batch.file_name,
+            'file_size_display': batch.file_size_display,
+            'created_at': batch.created_at.strftime('%d %b %Y, %I:%M %p'),
+            'imported_by': batch.imported_by.get_full_name() or batch.imported_by.username if batch.imported_by else 'System',
+            'imported_count': batch.imported_count,
+            'total_gross_weight': f"{batch.total_gross_weight:.3f}",
+            'total_value': f"{batch.total_value:,.2f}",
+        },
+        'items': items,
+    })
+
+
+@login_required
+def inventory_import_history_detail(request, batch_id):
+    """
+    Full-page view displaying imported items for a specific import batch.
+    """
+    if request.tenant:
+        batch = get_object_or_404(StockImportBatch, pk=batch_id, tenant=request.tenant)
+    else:
+        batch = get_object_or_404(StockImportBatch, pk=batch_id)
+
+    items = list(batch.items_summary or [])
+    if not items:
+        live_items = batch.items.all().select_related('category')
+        items = [
+            {
+                'id': it.pk,
+                'item_code': it.item_code,
+                'tag_number': it.tag_number,
+                'name': it.name,
+                'category': it.category.name if it.category else '',
+                'metal_type': it.metal_type,
+                'purity': it.purity,
+                'gross_weight': str(it.gross_weight),
+                'stone_weight': str(it.stone_weight),
+                'net_weight': str(it.net_weight),
+                'making_charge': str(it.making_charge),
+                'selling_price': str(it.selling_price),
+                'status': it.status,
+                'huid': it.huid,
+            }
+            for it in live_items
+        ]
+
+    context = {
+        'page_title': f"Import Batch — {batch.file_name}",
+        'batch': batch,
+        'items': items,
+    }
+    return render(request, 'inventory/import_history_detail.html', context)
 
 
 @login_required
@@ -1094,14 +1202,26 @@ def pricing_calculator(request):
         has_module_perm(user, 'metal_prices', 'edit', tenant=tenant)
     )
 
-    # Available items for dropdown selector
-    available_items = JewelleryItem.objects.filter(status='Available', tenant=request.tenant).select_related('category').order_by('name')
+    # Stock items for dropdown selector (order Available first, then Reserved, then others)
+    items_qs = JewelleryItem.objects.filter(tenant=request.tenant) if request.tenant else JewelleryItem.objects.all()
+    available_items = items_qs.select_related('category').order_by(
+        models.Case(
+            models.When(status='Available', then=models.Value(0)),
+            models.When(status='Reserved', then=models.Value(1)),
+            default=models.Value(2),
+            output_field=models.IntegerField(),
+        ),
+        'name'
+    )
 
     selected_item = None
     item_id = request.GET.get('item') or request.POST.get('selected_item_id')
     if item_id:
         try:
-            selected_item = JewelleryItem.objects.get(pk=item_id, tenant=request.tenant)
+            if request.tenant:
+                selected_item = JewelleryItem.objects.get(pk=item_id, tenant=request.tenant)
+            else:
+                selected_item = JewelleryItem.objects.get(pk=item_id)
         except (JewelleryItem.DoesNotExist, ValueError):
             selected_item = None
 
@@ -1220,6 +1340,7 @@ def pricing_calculator(request):
         'breakdown': breakdown,
         'breakdown_json': breakdown.to_dict(),
         'available_items': available_items,
+        'inventory_items': available_items,
         'selected_item': selected_item,
         'selected_item_id': str(selected_item.pk) if selected_item else '',
         'can_edit_items': can_edit_items,
@@ -1230,6 +1351,7 @@ def pricing_calculator(request):
         'rate_18k': rate_18k,
         'rate_silver_999': rate_silver_999,
         'rate_silver_925': rate_silver_925,
+        'purity_choices': JewelleryItem.PURITY_CHOICES,
         # Current form inputs
         'form_data': {
             'metal_type': metal_type,

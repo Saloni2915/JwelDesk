@@ -223,21 +223,100 @@ a:hover {
 [data-theme="light"] table .text-light,
 [data-theme="light"] .table .text-light,
 [data-theme="light"] .card-body .text-light,
+[data-theme="light"] .card-header .text-light,
 [data-theme="light"] .jd-card .text-light,
 [data-theme="light"] .jd-kpi-card .text-light,
 [data-theme="light"] .stat-card .text-light,
 [data-theme="light"] .list-group-item .text-light,
-[data-theme="light"] a.text-light {
+[data-theme="light"] a.text-light,
+[data-theme="light"] h1.text-light,
+[data-theme="light"] h2.text-light,
+[data-theme="light"] h3.text-light,
+[data-theme="light"] h4.text-light,
+[data-theme="light"] h5.text-light,
+[data-theme="light"] h6.text-light,
+[data-theme="light"] .h1.text-light,
+[data-theme="light"] .h2.text-light,
+[data-theme="light"] .h3.text-light,
+[data-theme="light"] .h4.text-light,
+[data-theme="light"] .h5.text-light,
+[data-theme="light"] .h6.text-light,
+[data-theme="light"] label.text-light,
+[data-theme="light"] p.text-light,
+[data-theme="light"] .form-label.text-light,
+[data-theme="light"] div.text-light:not(.card):not(.modal-content):not(.dropdown-menu),
+[data-theme="light"] span.text-light:not(.badge):not(.badge *) {
     color: var(--text-primary) !important;
 }
 
+[data-theme="light"] .text-white:not(.badge):not(.badge *):not(.btn):not(.btn *):not(.alert *):not(.toast *):not(.dropdown-menu-dark *):not([class*="bg-dark"] *):not([class*="bg-primary"] *):not([class*="bg-danger"] *):not([class*="bg-success"] *):not([class*="bg-black"] *):not(.navbar-dark *):not(.top-navbar *),
+[data-theme="light"] strong.text-white:not(.badge *):not(.btn *),
+[data-theme="light"] span.text-white:not(.badge *):not(.btn *),
+[data-theme="light"] p.text-white:not(.badge *):not(.btn *),
+[data-theme="light"] a.text-white:not(.badge *):not(.btn *),
+[data-theme="light"] div.text-white:not(.badge *):not(.btn *),
+[data-theme="light"] dd.text-white:not(.badge *):not(.btn *),
+[data-theme="light"] dt.text-white:not(.badge *):not(.btn *),
+[data-theme="light"] td.text-white:not(.badge *):not(.btn *),
+[data-theme="light"] th.text-white:not(.badge *):not(.btn *),
 [data-theme="light"] table .text-white:not(.badge *):not(.btn *),
 [data-theme="light"] .table .text-white:not(.badge *):not(.btn *),
 [data-theme="light"] .card-body .text-white:not(.badge *):not(.btn *),
+[data-theme="light"] .card-header .text-white:not(.badge *):not(.btn *),
 [data-theme="light"] .jd-card .text-white:not(.badge *):not(.btn *),
 [data-theme="light"] .jd-table-card .text-white:not(.badge *):not(.btn *),
-[data-theme="light"] .modal-body .text-white:not(.badge *):not(.btn *) {
+[data-theme="light"] .modal-body .text-white:not(.badge *):not(.btn *),
+[data-theme="light"] h1.text-white:not(.badge *):not(.btn *),
+[data-theme="light"] h2.text-white:not(.badge *):not(.btn *),
+[data-theme="light"] h3.text-white:not(.badge *):not(.btn *),
+[data-theme="light"] h4.text-white:not(.badge *):not(.btn *),
+[data-theme="light"] h5.text-white:not(.badge *):not(.btn *),
+[data-theme="light"] h6.text-white:not(.badge *):not(.btn *) {
     color: var(--text-primary) !important;
+}
+
+/* System-wide Customer & Entity Names (Theme-adaptive) */
+.jd-customer-name {
+    color: var(--text-primary) !important;
+    font-weight: 700;
+}
+a.jd-customer-name {
+    color: var(--text-primary) !important;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+a.jd-customer-name:hover {
+    color: var(--accent, #B48516) !important;
+    text-decoration: underline;
+}
+
+.jd-subtitle strong,
+.jd-subtitle .text-white,
+.jd-subtitle .text-light,
+.jd-subtitle .jd-customer-name {
+    color: var(--text-primary) !important;
+    font-weight: 700;
+}
+
+/* In Light theme, prevent btn-outline-light from being invisible white-on-white */
+[data-theme="light"] .btn-outline-light {
+    color: #334155 !important;
+    border-color: #cbd5e1 !important;
+    background-color: #ffffff !important;
+}
+[data-theme="light"] .btn-outline-light:hover,
+[data-theme="light"] .btn-outline-light:focus,
+[data-theme="light"] .btn-outline-light:active {
+    color: #ffffff !important;
+    background-color: #1e293b !important;
+    border-color: #1e293b !important;
+}
+
+/* In Light theme, ensure badges with transparent/opacity background have dark readable text */
+[data-theme="light"] .badge[class*="bg-opacity-"].text-light,
+[data-theme="light"] .badge.bg-secondary.text-light,
+[data-theme="light"] .badge.bg-light.text-light {
+    color: #1e293b !important;
 }
 
 .bg-white {

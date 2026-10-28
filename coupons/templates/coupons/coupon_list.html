@@ -13,11 +13,11 @@
                 <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2 py-1">
                     <i class="bi bi-tag-fill me-1"></i> Marketing &amp; Sales Promotion
                 </span>
-                <span class="badge bg-secondary bg-opacity-25 text-light px-2 py-1">
+                <span class="badge bg-secondary bg-opacity-25 text-body px-2 py-1">
                     {{ total_campaigns }} Total Campaign{{ total_campaigns|pluralize }}
                 </span>
             </div>
-            <h2 class="h3 fw-bold text-light mb-1">Customer Coupons &amp; Offers</h2>
+            <h2 class="h3 fw-bold mb-1">Customer Coupons &amp; Offers</h2>
             <p class="text-muted small mb-0">Create, design, print, and redeem exclusive promotional vouchers for your jewellery showroom.</p>
         </div>
 
@@ -25,7 +25,7 @@
             <button type="button" class="btn btn-outline-warning d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#clonePlatformModal">
                 <i class="bi bi-copy"></i> Copy Platform Preset
             </button>
-            <a href="{% url 'coupons:coupon_reports' %}" class="btn btn-outline-light d-inline-flex align-items-center gap-2">
+            <a href="{% url 'coupons:coupon_reports' %}" class="btn btn-outline-warning d-inline-flex align-items-center gap-2">
                 <i class="bi bi-graph-up-arrow"></i> Campaign Reports
             </a>
             <a href="{% url 'coupons:coupon_create' %}" class="btn btn-warning text-dark fw-bold d-inline-flex align-items-center gap-2 shadow-sm">
@@ -45,7 +45,7 @@
                             <i class="bi bi-check-circle-fill"></i>
                         </div>
                     </div>
-                    <div class="h3 fw-bold text-light mb-0">{{ active_campaigns }}</div>
+                    <div class="h3 fw-bold mb-0">{{ active_campaigns }}</div>
                     <div class="text-muted small mt-1">Live &amp; redeemable at counter</div>
                 </div>
             </div>
@@ -60,7 +60,7 @@
                             <i class="bi bi-megaphone-fill"></i>
                         </div>
                     </div>
-                    <div class="h3 fw-bold text-light mb-0">{{ total_campaigns }}</div>
+                    <div class="h3 fw-bold mb-0">{{ total_campaigns }}</div>
                     <div class="text-muted small mt-1">Diwali, Bridal, Loyalty &amp; General</div>
                 </div>
             </div>
@@ -75,7 +75,7 @@
                             <i class="bi bi-patch-check-fill"></i>
                         </div>
                     </div>
-                    <div class="h3 fw-bold text-light mb-0">{{ total_redemptions }}</div>
+                    <div class="h3 fw-bold mb-0">{{ total_redemptions }}</div>
                     <div class="text-muted small mt-1">Completed bills with discounts</div>
                 </div>
             </div>
@@ -155,8 +155,8 @@
                     {% for c in coupons %}
                     <tr>
                         <td class="ps-3 py-3">
-                            <div class="fw-bold text-light mb-1">
-                                <a href="{% url 'coupons:coupon_detail' c.pk %}" class="text-light text-decoration-none hover-warning">
+                            <div class="fw-bold mb-1">
+                                <a href="{% url 'coupons:coupon_detail' c.pk %}" class="text-decoration-none hover-warning">
                                     {{ c.name }}
                                 </a>
                             </div>
@@ -176,7 +176,7 @@
                         </td>
 
                         <td>
-                            <span class="badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-25">
+                            <span class="badge bg-secondary bg-opacity-25 text-body border border-secondary border-opacity-25">
                                 {{ c.get_occasion_display }}
                             </span>
                         </td>
@@ -190,14 +190,14 @@
                         </td>
 
                         <td>
-                            <div class="small text-light">
+                            <div class="small">
                                 {% if c.valid_from %}From: {{ c.valid_from|date:"d-M-Y" }}<br>{% endif %}
                                 {% if c.valid_until %}Until: <strong>{{ c.valid_until|date:"d-M-Y" }}</strong>{% else %}<span class="text-success">No Expiration</span>{% endif %}
                             </div>
                         </td>
 
                         <td>
-                            <div class="fw-semibold text-light">{{ c.times_redeemed }} used</div>
+                            <div class="fw-semibold">{{ c.times_redeemed }} used</div>
                             <div class="text-muted small">
                                 {% if c.max_uses_total %}of {{ c.max_uses_total }} max{% else %}Unlimited{% endif %}
                             </div>
@@ -220,10 +220,10 @@
                                 <a href="{% url 'coupons:coupon_print' c.pk %}" class="btn btn-outline-warning" title="Print Vouchers / A4 Sheets" target="_blank">
                                     <i class="bi bi-printer"></i>
                                 </a>
-                                <a href="{% url 'coupons:coupon_detail' c.pk %}" class="btn btn-outline-light" title="View Details">
+                                <a href="{% url 'coupons:coupon_detail' c.pk %}" class="btn btn-outline-secondary" title="View Details">
                                     <i class="bi bi-eye"></i>
                                 </a>
-                                <a href="{% url 'coupons:coupon_edit' c.pk %}" class="btn btn-outline-light" title="Edit Offer">
+                                <a href="{% url 'coupons:coupon_edit' c.pk %}" class="btn btn-outline-secondary" title="Edit Offer">
                                     <i class="bi bi-pencil"></i>
                                 </a>
 
@@ -282,7 +282,7 @@
                             <div class="text-muted mb-3">
                                 <i class="bi bi-tags display-4 opacity-50"></i>
                             </div>
-                            <h5 class="text-light">No coupons or offers found</h5>
+                            <h5 class="fw-bold mb-1">No coupons or offers found</h5>
                             <p class="text-muted small">Create your first jewellery campaign for Diwali, Dhanteras, or customer loyalty rewards.</p>
                             <a href="{% url 'coupons:coupon_create' %}" class="btn btn-warning text-dark fw-bold btn-sm mt-2">
                                 <i class="bi bi-plus-circle-fill me-1"></i> Create Your First Coupon

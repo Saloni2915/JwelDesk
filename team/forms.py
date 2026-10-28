@@ -8,6 +8,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
+from accounts.models import clean_10_digit_phone
 from .models import (
     Branch,
     Employee,
@@ -37,6 +38,16 @@ class BranchForm(forms.ModelForm):
         for name, field in self.fields.items():
             if name != 'is_active':
                 field.widget.attrs.setdefault('class', 'form-control')
+        if 'phone' in self.fields:
+            self.fields['phone'].widget.attrs.update({
+                'maxlength': '10',
+                'inputmode': 'numeric',
+                'placeholder': '10-digit contact phone (optional)',
+            })
+
+    def clean_phone(self):
+        phone = (self.cleaned_data.get('phone') or '').strip()
+        return clean_10_digit_phone(phone, field_label='Contact phone', required=False)
 
     def clean_name(self):
         name = self.cleaned_data['name'].strip()
@@ -119,6 +130,13 @@ class EmployeeCreateForm(forms.ModelForm):
             'joining_date', 'status', 'branches', 'photo',
         )
         widgets = {
+            'mobile': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '10-digit mobile number',
+                'maxlength': '10',
+                'inputmode': 'numeric',
+                'pattern': '[0-9]{10}',
+            }),
             'designation': forms.TextInput(attrs={'placeholder': 'e.g. Senior Gemologist, Store Manager'}),
             'joining_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'branches': forms.CheckboxSelectMultiple(),
@@ -136,6 +154,12 @@ class EmployeeCreateForm(forms.ModelForm):
                         widget.attrs.setdefault('class', 'form-select')
                     else:
                         widget.attrs.setdefault('class', 'form-control')
+        if 'mobile' in self.fields:
+            self.fields['mobile'].widget.attrs.update({
+                'maxlength': '10',
+                'inputmode': 'numeric',
+                'placeholder': '10-digit mobile number',
+            })
         if self.tenant:
             from django.db.models import Q
             self.fields['branches'].queryset = Branch.objects.filter(tenant=self.tenant, is_active=True)
@@ -146,6 +170,10 @@ class EmployeeCreateForm(forms.ModelForm):
         self.fields['joining_date'].initial = timezone.localdate
 
     # ---- Validation --------------------------------------------------------
+
+    def clean_mobile(self):
+        mobile = (self.cleaned_data.get('mobile') or '').strip()
+        return clean_10_digit_phone(mobile, field_label='Mobile number', required=False)
 
     def clean_joining_date(self):
         val = self.cleaned_data.get('joining_date')
@@ -264,6 +292,13 @@ class EmployeeEditForm(forms.ModelForm):
             'joining_date', 'status', 'branches', 'photo',
         )
         widgets = {
+            'mobile': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '10-digit mobile number',
+                'maxlength': '10',
+                'inputmode': 'numeric',
+                'pattern': '[0-9]{10}',
+            }),
             'designation': forms.TextInput(attrs={'placeholder': 'e.g. Senior Gemologist, Store Manager'}),
             'joining_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'branches': forms.CheckboxSelectMultiple(),
@@ -283,6 +318,12 @@ class EmployeeEditForm(forms.ModelForm):
                         widget.attrs.setdefault('class', 'form-select')
                     else:
                         widget.attrs.setdefault('class', 'form-control')
+        if 'mobile' in self.fields:
+            self.fields['mobile'].widget.attrs.update({
+                'maxlength': '10',
+                'inputmode': 'numeric',
+                'placeholder': '10-digit mobile number',
+            })
         if self.tenant:
             from django.db.models import Q
             self.fields['branches'].queryset = Branch.objects.filter(tenant=self.tenant, is_active=True)
@@ -290,6 +331,10 @@ class EmployeeEditForm(forms.ModelForm):
         else:
             self.fields['branches'].queryset = Branch.objects.filter(is_active=True)
         self.fields['joining_date'].required = False
+
+    def clean_mobile(self):
+        mobile = (self.cleaned_data.get('mobile') or '').strip()
+        return clean_10_digit_phone(mobile, field_label='Mobile number', required=False)
 
     def clean_joining_date(self):
         val = self.cleaned_data.get('joining_date')

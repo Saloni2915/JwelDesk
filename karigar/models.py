@@ -161,6 +161,36 @@ class Karigar(models.Model):
         blank=True,
         help_text="PAN / Aadhaar / Workshop Reg. for compliance"
     )
+    bank_name = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Bank Name (e.g. State Bank of India, HDFC Bank, ICICI Bank)"
+    )
+    account_holder_name = models.CharField(
+        max_length=150,
+        blank=True,
+        help_text="Beneficiary / Account Holder Name as per bank records"
+    )
+    account_number = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Bank Account Number"
+    )
+    ifsc_code = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text="11-character Bank IFSC Code (e.g. SBIN0001234)"
+    )
+    branch_name = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Bank Branch Location / City"
+    )
+    upi_id = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="UPI ID / VPA for instant settlements (e.g. artisan@upi)"
+    )
     bank_details = models.TextField(
         blank=True,
         help_text="Bank Account, IFSC, UPI ID for settlements"
@@ -188,9 +218,32 @@ class Karigar(models.Model):
         if self.mobile:
             self.mobile = self.mobile.strip()
 
+    def get_formatted_bank_details(self):
+        parts = []
+        if self.bank_name:
+            parts.append(f"Bank: {self.bank_name}")
+        if self.account_holder_name:
+            parts.append(f"A/C Holder: {self.account_holder_name}")
+        if self.account_number:
+            parts.append(f"A/C No: {self.account_number}")
+        if self.ifsc_code:
+            parts.append(f"IFSC: {self.ifsc_code.upper()}")
+        if self.branch_name:
+            parts.append(f"Branch: {self.branch_name}")
+        if self.upi_id:
+            parts.append(f"UPI: {self.upi_id}")
+        return "\n".join(parts)
+
     def save(self, *args, **kwargs):
         if not self.karigar_code:
             self.karigar_code = generate_karigar_code(tenant=self.tenant)
+        if self.ifsc_code:
+            self.ifsc_code = self.ifsc_code.strip().upper()
+        if self.account_number:
+            self.account_number = self.account_number.strip()
+        formatted = self.get_formatted_bank_details()
+        if formatted:
+            self.bank_details = formatted
         super().save(*args, **kwargs)
 
     # ---- Statistics & Balance Properties -------------------------------------
@@ -406,7 +459,7 @@ class KarigarWorkAssignment(models.Model):
         max_length=50,
         default='22K',
         blank=True,
-        help_text="e.g. 24K, 22K (916), 18K (750), 925 Silver"
+        help_text="Standard jewellery purity grade (e.g. 24K, 22K (916), 18K (750), 925 Silver)"
     )
     gross_weight_issued = models.DecimalField(
         max_digits=10,

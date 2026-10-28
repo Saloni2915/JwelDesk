@@ -3,7 +3,7 @@ from decimal import Decimal
 from django import forms
 from django.core.exceptions import ValidationError
 
-from accounts.models import validate_gstin
+from accounts.models import validate_gstin, clean_10_digit_phone
 from inventory.models import JewelleryItem, Category
 from .models import (
     RetailerParty,
@@ -33,7 +33,13 @@ class RetailerPartyForm(forms.ModelForm):
             'notes': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Royal Gems & Jewellers'}),
             'contact_person': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Contact Person Name'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Mobile / Phone Number'}),
+            'phone': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '10-digit mobile / phone number',
+                'maxlength': '10',
+                'inputmode': 'numeric',
+                'pattern': '[0-9]{10}',
+            }),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'retailer@email.com'}),
             'gstin': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '15-digit GSTIN (optional)'}),
             'pan_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'PAN Number (optional)'}),
@@ -67,9 +73,7 @@ class RetailerPartyForm(forms.ModelForm):
 
     def clean_phone(self):
         phone = (self.cleaned_data.get('phone') or '').strip()
-        if not phone:
-            raise ValidationError("Phone number is required.")
-        return phone
+        return clean_10_digit_phone(phone, field_label='Phone / Mobile number', required=True)
 
 
 class WholesaleOrderForm(forms.ModelForm):

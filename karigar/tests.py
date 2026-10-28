@@ -135,6 +135,29 @@ class KarigarMasterTests(KarigarTestCaseBase):
         self.karigar.refresh_from_db()
         self.assertEqual(self.karigar.status, Karigar.STATUS_ACTIVE)
 
+    def test_karigar_bank_details_fields_and_formatting(self):
+        k = Karigar.objects.create(
+            tenant=self.tenant,
+            name='Dinesh Goldsmith',
+            mobile='9822233344',
+            bank_name='State Bank of India',
+            account_holder_name='Dinesh Goldsmith Works',
+            account_number=' 30123456789 ',
+            ifsc_code='sbin0001234',
+            branch_name='Zaveri Bazaar',
+            upi_id='dinesh@okhdfcbank',
+        )
+        # Should strip and uppercase IFSC
+        self.assertEqual(k.ifsc_code, 'SBIN0001234')
+        self.assertEqual(k.account_number, '30123456789')
+        # Formatted string should be in bank_details
+        self.assertIn('Bank: State Bank of India', k.bank_details)
+        self.assertIn('A/C Holder: Dinesh Goldsmith Works', k.bank_details)
+        self.assertIn('A/C No: 30123456789', k.bank_details)
+        self.assertIn('IFSC: SBIN0001234', k.bank_details)
+        self.assertIn('Branch: Zaveri Bazaar', k.bank_details)
+        self.assertIn('UPI: dinesh@okhdfcbank', k.bank_details)
+
 
 class WeightAccountabilityAndCalculationsTests(KarigarTestCaseBase):
     """Test accurate weight formulas, wastage, and accountability difference."""
@@ -541,3 +564,35 @@ class ReportsAndExportsTests(KarigarTestCaseBase):
         overdue_resp = self.client.get(reverse('karigar:reports') + '?tab=overdue&export=csv')
         self.assertEqual(overdue_resp.status_code, 200)
         self.assertEqual(overdue_resp['Content-Type'], 'text/csv')
+
+    def test_settlement_receipt_detail_and_pdf_export(self):
+        self.client.force_login(self.admin_user)
+        st = KarigarSettlement.objects.create(
+            tenant=self.tenant,
+            karigar=self.karigar,
+            amount=Decimal('10000.00'),
+            payment_method='Cash',
+            payment_reference='RCPT-001',
+            processed_by=self.admin_user,
+        )
+
+        # 1. Detail view loads with print and download buttons
+        resp = self.client.get(reverse('karigar:settlement_detail', args=[st.pk]))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Print Receipt')
+        self.assertContains(resp, 'Download PDF')
+        self.assertContains(resp, 'Rupees Ten Thousand Only')
+        self.assertContains(resp, st.settlement_number)
+
+        # 2. PDF stream view
+        pdf_resp = self.client.get(reverse('karigar:settlement_pdf', args=[st.pk]))
+        self.assertEqual(pdf_resp.status_code, 200)
+        self.assertEqual(pdf_resp['Content-Type'], 'application/pdf')
+        self.assertTrue(pdf_resp.content.startswith(b'%PDF'))
+        self.assertIn('inline', pdf_resp['Content-Disposition'])
+
+        # 3. PDF download attachment view
+        pdf_dl_resp = self.client.get(reverse('karigar:settlement_pdf', args=[st.pk]) + '?download=1')
+        self.assertEqual(pdf_dl_resp.status_code, 200)
+        self.assertIn('attachment', pdf_dl_resp['Content-Disposition'])
+        self.assertTrue(pdf_dl_resp.content.startswith(b'%PDF'))

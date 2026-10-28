@@ -318,6 +318,9 @@ def coupon_detail(request, pk):
         'serial_number': "0001",
         'barcode_svg': generate_barcode_svg(coupon.code) if coupon.show_barcode else "",
         'qr_svg': generate_qr_svg(coupon.code) if coupon.show_qr_code else "",
+        'primary_color': coupon.primary_color or '#d4af37',
+        'background_color': coupon.background_color or '#160f09',
+        'text_color': coupon.text_color or '#fef9ed',
     }
 
     if coupon.design_source == CustomerCoupon.DESIGN_CUSTOM and coupon.custom_html:
@@ -466,6 +469,9 @@ def coupon_print(request, pk):
             'serial_number': c['serial'],
             'barcode_svg': c['barcode_svg'],
             'qr_svg': c['qr_svg'],
+            'primary_color': coupon.primary_color or '#d4af37',
+            'background_color': coupon.background_color or '#160f09',
+            'text_color': coupon.text_color or '#fef9ed',
         }
         rendered_cards.append(render_coupon_template(base_html, ctx))
 
@@ -537,13 +543,29 @@ def coupon_preview_api(request):
         'serial_number': "0001",
         'barcode_svg': generate_barcode_svg(code),
         'qr_svg': generate_qr_svg(code),
+        'primary_color': request.POST.get('primary_color') or '#d4af37',
+        'background_color': request.POST.get('background_color') or '#160f09',
+        'text_color': request.POST.get('text_color') or '#fef9ed',
     }
 
-    if design_source == 'custom' and raw_html:
-        clean_html = sanitize_coupon_html(raw_html)
-        clean_css = sanitize_coupon_css(raw_css)
-        rendered_html = render_coupon_template(clean_html, ctx)
-        rendered_css = clean_css
+    if design_source == 'custom':
+        if raw_html.strip():
+            clean_html = sanitize_coupon_html(raw_html)
+            clean_css = sanitize_coupon_css(raw_css)
+            rendered_html = render_coupon_template(clean_html, ctx)
+            rendered_css = clean_css
+        else:
+            rendered_html = (
+                '<div class="d-flex flex-column align-items-center justify-content-center p-4 text-center text-muted" '
+                'style="min-height: 200px; border: 2px dashed rgba(212, 175, 55, 0.35); border-radius: 10px; background: rgba(0,0,0,0.25);">'
+                '<i class="bi bi-code-slash fs-1 text-warning mb-2"></i>'
+                '<div class="fw-semibold text-light mb-1">Custom Voucher Canvas Blank</div>'
+                '<div class="small text-muted" style="max-width: 320px;">'
+                'Type or paste your custom HTML &amp; CSS structure in the editor to live preview your custom voucher design.'
+                '</div>'
+                '</div>'
+            )
+            rendered_css = ""
     else:
         preset = get_tenant_preset_markup(preset_style)
         rendered_html = render_coupon_template(preset['html'], ctx)

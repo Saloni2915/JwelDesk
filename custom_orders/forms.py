@@ -1,9 +1,14 @@
 from django import forms
 from django.core.validators import FileExtensionValidator
+from inventory.models import JewelleryItem
+from inventory.forms import PurityChoiceField
 from .models import CustomOrder
 
 
 class CustomOrderForm(forms.ModelForm):
+    purity = PurityChoiceField(initial='22K')
+
+
     class Meta:
         model = CustomOrder
         fields = [
@@ -19,8 +24,8 @@ class CustomOrderForm(forms.ModelForm):
                 'class': 'form-control', 'rows': 4,
                 'placeholder': 'Describe the design the customer wants made...'}),
             'reference_image': forms.ClearableFileInput(attrs={'class': 'form-control'}),
-            'metal_type': forms.Select(attrs={'class': 'form-select'}),
-            'purity': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. 22K, 18K, 925 Silver'}),
+            'metal_type': forms.Select(attrs={'class': 'form-select', 'id': 'id_metal_type'}),
+            'purity': forms.Select(attrs={'class': 'form-select', 'id': 'id_purity'}),
             'approx_gross_weight': forms.NumberInput(attrs={
                 'class': 'form-control', 'step': '0.001', 'min': '0', 'placeholder': '0.000'}),
             'approx_net_weight': forms.NumberInput(attrs={
@@ -42,6 +47,23 @@ class CustomOrderForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.tenant = kwargs.pop('tenant', None)
         super().__init__(*args, **kwargs)
+        if 'purity' in self.fields:
+            purity_field = self.fields['purity']
+            choices = getattr(purity_field, 'choices', None)
+            if choices is None and hasattr(purity_field, 'widget'):
+                choices = getattr(purity_field.widget, 'choices', None)
+            if choices:
+                try:
+                    choice_keys = [c[0] for c in choices]
+                    curr_purity = getattr(self.instance, 'purity', None) if self.instance else None
+                    if curr_purity and curr_purity not in choice_keys:
+                        new_choices = list(choices) + [(curr_purity, curr_purity)]
+                        if hasattr(purity_field, 'choices'):
+                            purity_field.choices = new_choices
+                        if hasattr(purity_field, 'widget') and hasattr(purity_field.widget, 'choices'):
+                            purity_field.widget.choices = new_choices
+                except Exception:
+                    pass
         self.fields['reference_image'].validators.append(
             FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png', 'gif', 'pdf']))
         self.fields['reference_image'].help_text = (
@@ -51,6 +73,18 @@ class CustomOrderForm(forms.ModelForm):
             from inventory.models import Category
             self.fields['customer'].queryset = Customer.objects.filter(tenant=self.tenant)
             self.fields['category'].queryset = Category.objects.filter(tenant=self.tenant)
+
+    def clean_purity(self):
+        val = (self.cleaned_data.get('purity') or '').strip()
+        if val.lower() == '22k':
+            return '22K'
+        if val.lower() == '24k':
+            return '24K'
+        if val.lower() == '18k':
+            return '18K'
+        if val.lower() == '14k':
+            return '14K'
+        return val or '22K'
 
     def clean_customer(self):
         customer = self.cleaned_data.get('customer')

@@ -239,16 +239,8 @@ class OldGoldTransaction(models.Model):
         (STATUS_CANCELLED, 'Cancelled'),
     ]
 
-    PURITY_CHOICES = [
-        ('24K', '24K (99.9% Pure)'),
-        ('22K', '22K / 916 (91.6%)'),
-        ('20K', '20K (83.3%)'),
-        ('18K', '18K / 750 (75.0%)'),
-        ('14K', '14K / 585 (58.5%)'),
-        ('10K', '10K (41.7%)'),
-        ('925', '925 Sterling Silver'),
-        ('Other', 'Other / Custom Purity'),
-    ]
+    PURITY_CHOICES = JewelleryItem.PURITY_CHOICES
+
 
     OLD_GOLD_TYPES = [
         ('Old Jewellery', 'Old Jewellery / Ornaments'),

@@ -113,17 +113,17 @@
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{% url 'karigar:karigar_detail' asg.karigar.id %}" class="text-white fw-semibold text-decoration-none d-block">
+                            <a href="{% url 'karigar:karigar_detail' asg.karigar.id %}" class="jd-customer-name fw-semibold text-decoration-none d-block">
                                 {{ asg.karigar.name }}
                             </a>
                             <small class="text-muted">{{ asg.karigar.specialization }}</small>
                         </td>
                         <td>
                             {% if asg.customer %}
-                            <span class="text-white fw-medium d-block">{{ asg.customer.name }}</span>
+                            <span class="jd-customer-name fw-medium d-block">{{ asg.customer.name }}</span>
                             <small class="text-muted font-monospace">{{ asg.customer.mobile }}</small>
                             {% elif asg.inventory_item %}
-                            <span class="text-light fw-medium d-block">Stock: {{ asg.inventory_item.item_code }}</span>
+                            <span class="text-body fw-medium d-block">Stock: {{ asg.inventory_item.item_code }}</span>
                             <small class="text-muted">{{ asg.inventory_item.name|truncatechars:25 }}</small>
                             {% else %}
                             <span class="text-muted small">Showroom Stock</span>

@@ -382,7 +382,7 @@
                                 <a href="{% url 'outstation:exhibition_record_sale' exhibition.pk ei.item.id %}" class="btn btn-success fw-bold">
                                     <i class="bi bi-cart-plus me-1"></i> Record Sale
                                 </a>
-                                <button type="button" class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#reconcileModal{{ ei.item.id }}">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#reconcileModal{{ ei.item.id }}">
                                     Reconcile
                                 </button>
                             </div>
@@ -477,7 +477,7 @@
                             <div class="text-muted small">{{ es.sale_datetime|date:"d M Y, h:i A" }}</div>
                         </td>
                         <td>
-                            <div class="text-white fw-semibold">{{ es.sale.customer.name }}</div>
+                            <div class="jd-customer-name fw-semibold">{{ es.sale.customer.name }}</div>
                             {% if es.buyer_type == 'B2B' %}
                             <span class="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-25 small">
                                 B2B Wholesale{% if es.business_name %}: {{ es.business_name }}{% endif %}
@@ -684,7 +684,7 @@
                                 Sale #{{ pay.sale.id }}
                             </a>
                         </td>
-                        <td class="text-white">{{ pay.sale.customer.name }}</td>
+                        <td class="jd-customer-name">{{ pay.sale.customer.name }}</td>
                         <td><span class="badge bg-secondary bg-opacity-25 text-light">{{ pay.payment_method }}</span></td>
                         <td class="text-muted font-monospace small">{{ pay.reference_number|default:"—" }}</td>
                         <td class="text-end pe-3 text-success fw-bold">₹{{ pay.amount|floatformat:2 }}</td>
