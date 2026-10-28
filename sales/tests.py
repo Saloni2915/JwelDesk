@@ -58,6 +58,49 @@ class SalesAndEnquiryTests(TestCase):
         self.item.refresh_from_db()
         self.assertEqual(self.item.status, 'Sold')
 
+        # Verify automatic payment entry creation
+        payment = Payment.objects.filter(sale=sale).first()
+        self.assertIsNotNone(payment)
+        self.assertEqual(payment.amount, Decimal('45000.00'))
+        self.assertEqual(payment.payment_method, 'UPI')
+        self.assertEqual(sale.paid_amount, Decimal('45000.00'))
+        self.assertEqual(sale.payment_status, 'Paid')
+        self.assertEqual(sale.due_amount, Decimal('0.00'))
+
+    def test_sale_creation_with_split_payment_creates_multiple_entries(self):
+        item_split = JewelleryItem.objects.create(
+            item_code='RN-SPLIT-01',
+            name='Split Tender Ring',
+            category=self.category,
+            metal_type='Gold',
+            purity='22K',
+            gross_weight=Decimal('5.000'),
+            net_weight=Decimal('4.800'),
+            selling_price=Decimal('50000.00'),
+            status='Available'
+        )
+        response = self.client.post(reverse('sale_add'), {
+            'customer': self.customer.id,
+            'jewellery_item': item_split.id,
+            'sale_price': '50000.00',
+            'payment_method': 'Cash',
+            'amount_paid': '30000.00',
+            'second_payment_amount': '20000.00',
+            'second_payment_method': 'UPI',
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        sale = Sale.objects.filter(jewellery_item=item_split).first()
+        self.assertIsNotNone(sale)
+        payments = Payment.objects.filter(sale=sale).order_by('id')
+        self.assertEqual(payments.count(), 2)
+        self.assertEqual(payments[0].amount, Decimal('30000.00'))
+        self.assertEqual(payments[0].payment_method, 'Cash')
+        self.assertEqual(payments[1].amount, Decimal('20000.00'))
+        self.assertEqual(payments[1].payment_method, 'UPI')
+        self.assertEqual(sale.paid_amount, Decimal('50000.00'))
+        self.assertEqual(sale.payment_status, 'Paid')
+
     def test_selling_one_piece_does_not_affect_other_pieces_of_same_design(self):
         # Create piece 2 with the same design code
         piece2 = JewelleryItem.objects.create(

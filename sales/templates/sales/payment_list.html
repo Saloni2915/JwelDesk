@@ -1,20 +1,481 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Payments &amp; Receipts — JewelDesk{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/sales_bullion.css' %}?v={% now "U" %}" rel="stylesheet">
 <style>
-.jd-payment-badge-cash { background-color: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); }
-.jd-payment-badge-upi { background-color: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
-.jd-payment-badge-card { background-color: rgba(168, 85, 247, 0.15); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3); }
-.jd-payment-badge-bank { background-color: rgba(234, 179, 8, 0.15); color: #eab308; border: 1px solid rgba(234, 179, 8, 0.3); }
-.jd-payment-badge-cheque { background-color: rgba(249, 115, 22, 0.15); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.3); }
-.jd-payment-badge-exchange { background-color: rgba(236, 200, 106, 0.2); color: #ecc86a; border: 1px solid rgba(236, 200, 106, 0.4); }
+/* ==========================================================================
+   JewelDesk Payments & Receipts — Ultra-Clean Atelier Ledger Styles
+   ========================================================================== */
 
-.jd-due-pill-settled { background-color: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.25); font-size: 0.75rem; padding: 2px 8px; border-radius: 9999px; }
-.jd-due-pill-pending { background-color: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.25); font-size: 0.75rem; padding: 2px 8px; border-radius: 9999px; font-weight: 600; }
+/* 1. Header & Icons */
+.jd-header-icon-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    background: rgba(180, 133, 22, 0.12);
+    border: 1px solid rgba(180, 133, 22, 0.25);
+    color: var(--jd-gold, #B48516);
+}
+
+/* 2. KPI Cards Grid */
+.jd-kpi-grid-clean {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.15rem;
+    margin-bottom: 1.5rem;
+}
+@media (max-width: 1200px) {
+    .jd-kpi-grid-clean {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (max-width: 576px) {
+    .jd-kpi-grid-clean {
+        grid-template-columns: 1fr;
+    }
+}
+
+.jd-kpi-card-clean {
+    background: var(--jd-card, #FFFFFF);
+    border: 1px solid var(--jd-border, #E2E8F0);
+    border-radius: 14px;
+    padding: 1.15rem 1.25rem;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.jd-kpi-card-clean:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+    border-color: var(--jd-border-strong, #CBD5E1);
+}
+
+.jd-kpi-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.85rem;
+}
+
+.jd-kpi-icon-squircle {
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+.jd-kpi-icon-squircle.green {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.25);
+}
+.jd-kpi-icon-squircle.gold {
+    background: rgba(217, 119, 6, 0.12);
+    color: #d97706;
+    border: 1px solid rgba(217, 119, 6, 0.25);
+}
+.jd-kpi-icon-squircle.rose {
+    background: rgba(225, 29, 72, 0.12);
+    color: #e11d48;
+    border: 1px solid rgba(225, 29, 72, 0.25);
+}
+.jd-kpi-icon-squircle.indigo {
+    background: rgba(99, 102, 241, 0.12);
+    color: #4f46e5;
+    border: 1px solid rgba(99, 102, 241, 0.25);
+}
+
+.jd-kpi-label-clean {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--jd-muted, #64748B);
+    margin-bottom: 0.25rem;
+}
+
+.jd-kpi-val-clean {
+    font-size: 1.55rem;
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--jd-ivory, #0F172A);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+}
+.jd-kpi-val-clean.val-green {
+    color: #059669;
+}
+.jd-kpi-val-clean.val-gold {
+    color: var(--jd-gold-dark, #b45309);
+}
+.jd-kpi-val-clean.val-rose {
+    color: #e11d48;
+}
+
+.jd-kpi-sub-clean {
+    font-size: 0.74rem;
+    color: var(--jd-ivory-dim, #64748B);
+    margin-top: 0.35rem;
+}
+
+/* 3. Filter Bar */
+.jd-filter-card-clean {
+    background: var(--jd-card, #FFFFFF);
+    border: 1px solid var(--jd-border, #E2E8F0);
+    border-radius: 12px;
+    padding: 0.85rem 1.15rem;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+    margin-bottom: 1.5rem;
+}
+
+.jd-search-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 260px;
+}
+.jd-search-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--jd-muted, #94A3B8);
+    font-size: 0.95rem;
+    pointer-events: none;
+}
+.jd-search-clear {
+    position: absolute;
+    right: 12px;
+    color: var(--jd-muted, #94A3B8);
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+.jd-search-clear:hover {
+    color: var(--jd-ivory, #0F172A);
+}
+
+.jd-clean-input {
+    padding-left: 2.35rem !important;
+    padding-right: 2.1rem !important;
+    height: 42px;
+    border-radius: 8px;
+    border: 1px solid var(--jd-border, #CBD5E1) !important;
+    background: var(--jd-input-bg, #FFFFFF) !important;
+    color: var(--jd-ivory, #0F172A) !important;
+    font-size: 0.88rem;
+    transition: all 0.15s ease;
+}
+.jd-clean-input:focus {
+    border-color: var(--jd-gold, #B48516) !important;
+    box-shadow: 0 0 0 3px rgba(180, 133, 22, 0.15) !important;
+}
+
+.jd-clean-select {
+    height: 42px;
+    border-radius: 8px;
+    border: 1px solid var(--jd-border, #CBD5E1) !important;
+    background: var(--jd-input-bg, #FFFFFF) !important;
+    color: var(--jd-ivory, #0F172A) !important;
+    font-size: 0.86rem;
+    font-weight: 500;
+    min-width: 185px;
+    transition: all 0.15s ease;
+}
+.jd-clean-select:focus {
+    border-color: var(--jd-gold, #B48516) !important;
+    box-shadow: 0 0 0 3px rgba(180, 133, 22, 0.15) !important;
+}
+
+.jd-btn-filter {
+    height: 42px;
+    background: var(--jd-btn-primary-bg, #1E293B);
+    color: var(--jd-btn-primary-color, #FFFFFF) !important;
+    border: 1px solid var(--jd-btn-primary-border, #1E293B);
+    font-weight: 600;
+    font-size: 0.86rem;
+    border-radius: 8px;
+    padding: 0 1.25rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    transition: all 0.15s ease;
+}
+.jd-btn-filter:hover {
+    opacity: 0.92;
+    transform: translateY(-1px);
+    color: #FFFFFF !important;
+}
+
+.jd-btn-reset {
+    height: 42px;
+    background: var(--jd-card-high, #F1F5F9);
+    color: var(--jd-muted, #64748B) !important;
+    border: 1px solid var(--jd-border, #CBD5E1);
+    font-weight: 600;
+    font-size: 0.86rem;
+    border-radius: 8px;
+    padding: 0 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+.jd-btn-reset:hover {
+    background: var(--jd-card-highest, #E2E8F0);
+    color: var(--jd-ivory, #0F172A) !important;
+}
+
+/* 4. Table Card & Design */
+.jd-clean-table-card {
+    background: var(--jd-card, #FFFFFF);
+    border: 1px solid var(--jd-border, #E2E8F0);
+    border-radius: 14px;
+    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
+}
+
+.jd-table-card-head {
+    background: var(--jd-card-header, #FAF7F2);
+    border-bottom: 1px solid var(--jd-border, #E2E8F0);
+}
+
+.jd-table-head-badge {
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    background: rgba(180, 133, 22, 0.12);
+    color: var(--jd-gold, #B48516);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+}
+
+.jd-entries-badge {
+    background: var(--jd-card-high, #F1F5F9);
+    color: var(--jd-ivory-dim, #475569);
+    border: 1px solid var(--jd-border, #CBD5E1);
+    font-size: 0.74rem;
+    font-weight: 600;
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
+}
+
+/* 5. Clean Table Styles */
+.jd-clean-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0;
+    font-size: 0.88rem;
+    color: var(--jd-ivory, #0F172A);
+}
+
+.jd-clean-table thead th {
+    background: var(--jd-table-th, #F8FAFC);
+    color: var(--jd-ivory-dim, #64748B);
+    font-weight: 700;
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.95rem 1.15rem;
+    border-bottom: 1.5px solid var(--jd-border, #E2E8F0);
+    white-space: nowrap;
+}
+
+.jd-clean-table tbody tr {
+    border-bottom: 1px solid var(--jd-border, #E2E8F0);
+    transition: background-color 0.12s ease;
+}
+.jd-clean-table tbody tr:hover {
+    background-color: var(--jd-table-hover, rgba(180, 133, 22, 0.04));
+}
+
+.jd-clean-table tbody td {
+    padding: 1rem 1.15rem;
+    vertical-align: middle;
+}
+
+/* 6. Refined Cell Elements */
+.jd-invoice-link {
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: var(--jd-gold, #B48516);
+    text-decoration: none;
+    background: rgba(180, 133, 22, 0.08);
+    border: 1px solid rgba(180, 133, 22, 0.25);
+    padding: 0.28rem 0.65rem;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+.jd-invoice-link:hover {
+    background: var(--jd-gold, #B48516);
+    color: #FFFFFF !important;
+    border-color: var(--jd-gold, #B48516);
+}
+
+.jd-customer-hover:hover {
+    color: var(--jd-gold, #B48516) !important;
+}
+
+.jd-tag-pill {
+    background: var(--jd-card-high, #F1F5F9);
+    border: 1px solid var(--jd-border, #CBD5E1);
+    color: var(--jd-ivory-dim, #475569);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.72rem;
+}
+
+/* Payment Mode Badges */
+.jd-mode-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.28rem 0.7rem;
+    border-radius: 9999px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.jd-mode-pill.mode-cash {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.28);
+}
+.jd-mode-pill.mode-upi {
+    background: rgba(37, 99, 235, 0.12);
+    color: #2563eb;
+    border: 1px solid rgba(37, 99, 235, 0.28);
+}
+.jd-mode-pill.mode-card {
+    background: rgba(124, 58, 237, 0.12);
+    color: #7c3aed;
+    border: 1px solid rgba(124, 58, 237, 0.28);
+}
+.jd-mode-pill.mode-bank {
+    background: rgba(217, 119, 6, 0.12);
+    color: #d97706;
+    border: 1px solid rgba(217, 119, 6, 0.28);
+}
+.jd-mode-pill.mode-cheque {
+    background: rgba(234, 88, 12, 0.12);
+    color: #ea580c;
+    border: 1px solid rgba(234, 88, 12, 0.28);
+}
+.jd-mode-pill.mode-exchange {
+    background: rgba(180, 133, 22, 0.14);
+    color: #b45309;
+    border: 1px solid rgba(180, 133, 22, 0.32);
+}
+.jd-mode-pill.mode-default {
+    background: var(--jd-card-high, #F1F5F9);
+    color: var(--jd-ivory-dim, #475569);
+    border: 1px solid var(--jd-border, #CBD5E1);
+}
+
+/* Reference / Txn */
+.jd-ref-badge {
+    display: inline-flex;
+    align-items: center;
+    background: var(--jd-card-high, #F1F5F9);
+    border: 1px solid var(--jd-border, #CBD5E1);
+    color: var(--jd-ivory, #0F172A);
+    padding: 0.2rem 0.55rem;
+    border-radius: 5px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Amount Val */
+.jd-amount-val {
+    color: #059669;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+/* Due Status Badges */
+.jd-due-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.24rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.jd-due-badge.due-settled {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.25);
+}
+.jd-due-badge.due-pending {
+    background: rgba(225, 29, 72, 0.12);
+    color: #e11d48;
+    border: 1px solid rgba(225, 29, 72, 0.25);
+}
+
+/* Action button */
+.jd-action-btn {
+    background: var(--jd-card-high, #F1F5F9);
+    border: 1px solid var(--jd-border, #CBD5E1);
+    color: var(--jd-ivory, #0F172A) !important;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.32rem 0.75rem;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+}
+.jd-action-btn:hover {
+    background: var(--jd-gold, #B48516);
+    border-color: var(--jd-gold, #B48516);
+    color: #FFFFFF !important;
+}
+
+/* Dark & Gold Theme Overrides */
+[data-theme="gold"] .jd-kpi-val-clean.val-green,
+[data-theme="dark"] .jd-kpi-val-clean.val-green,
+[data-theme="gold"] .jd-amount-val,
+[data-theme="dark"] .jd-amount-val {
+    color: #34d399;
+}
+
+[data-theme="gold"] .jd-clean-table thead th,
+[data-theme="dark"] .jd-clean-table thead th {
+    background: var(--jd-table-th, #19120B);
+    color: var(--jd-sb-gold, #ECC86A);
+}
+
+[data-theme="gold"] .jd-ref-badge,
+[data-theme="dark"] .jd-ref-badge,
+[data-theme="gold"] .jd-tag-pill,
+[data-theme="dark"] .jd-tag-pill {
+    background: var(--jd-card-high, #2C2A24);
+    border-color: var(--jd-border, rgba(212, 175, 55, 0.28));
+    color: var(--jd-ivory, #FAF4EA);
+}
 </style>
 {% endblock %}
 
@@ -22,114 +483,153 @@
 <div class="jd-sb-canvas">
 
     <!-- 1. Header & Actions -->
-    <div class="jd-sb-header">
-        <div class="jd-sb-title-wrap">
-            <h1><i class="bi bi-cash-coin text-warning me-2"></i>Payments &amp; Receipts</h1>
-            <p class="jd-sb-subtitle">Record and view all customer payments, receipts, and pending balances</p>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2.5 mb-1">
+                <span class="jd-header-icon-badge">
+                    <i class="bi bi-cash-coin"></i>
+                </span>
+                <h1 class="h3 fw-bold mb-0 text-body">Payments &amp; Receipts</h1>
+            </div>
+            <p class="text-secondary small mb-0">Record and view all customer payments, receipts, and pending balances</p>
         </div>
-        <div class="jd-sb-header-actions">
-            <a href="{% url 'sale_list' %}" class="jd-btn-ghost">
-                <i class="bi bi-receipt"></i> All Sales Bills
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="{% url 'sale_list' %}" class="btn jd-btn-ghost">
+                <i class="bi bi-receipt me-1"></i> All Sales Bills
             </a>
-            <button type="button" class="jd-btn-gold" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">
-                <i class="bi bi-plus-circle-fill"></i> + Add Payment
+            <button type="button" class="btn jd-btn-gold" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">
+                <i class="bi bi-plus-circle-fill me-1"></i> + Record Payment
             </button>
         </div>
     </div>
 
     <!-- 2. KPI Summary Cards Grid -->
-    <div class="jd-sb-kpi-grid">
+    <div class="jd-kpi-grid-clean">
         <!-- Today's Collections -->
-        <div class="jd-sb-kpi-card">
-            <div class="jd-sb-kpi-top">
-                <div class="jd-sb-kpi-icon icon-green">
-                    <i class="bi bi-cash-stack"></i>
+        <div class="jd-kpi-card-clean">
+            <div>
+                <div class="jd-kpi-top-row">
+                    <div class="jd-kpi-icon-squircle green">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25 px-2 py-1">
+                        Today
+                    </span>
                 </div>
-                <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25">Today</span>
+                <div class="jd-kpi-label-clean">Today's Collections</div>
+                <div class="jd-kpi-val-clean val-green">₹ {{ today_collected|floatformat:2|intcomma }}</div>
             </div>
-            <div class="jd-sb-kpi-label">Today's Collections</div>
-            <div class="jd-sb-kpi-val text-success">₹{{ today_collected|floatformat:2 }}</div>
-            <div class="jd-sb-kpi-sub">Received across counters today</div>
+            <div class="jd-kpi-sub-clean">
+                <i class="bi bi-check2-circle text-success me-1"></i>Received across counters today
+            </div>
         </div>
 
         <!-- Total Collected Lifetime -->
-        <div class="jd-sb-kpi-card">
-            <div class="jd-sb-kpi-top">
-                <div class="jd-sb-kpi-icon">
-                    <i class="bi bi-wallet2"></i>
+        <div class="jd-kpi-card-clean">
+            <div>
+                <div class="jd-kpi-top-row">
+                    <div class="jd-kpi-icon-squircle gold">
+                        <i class="bi bi-wallet2"></i>
+                    </div>
+                    <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25 px-2 py-1">
+                        Lifetime
+                    </span>
                 </div>
-                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">Lifetime</span>
+                <div class="jd-kpi-label-clean">Total Collections</div>
+                <div class="jd-kpi-val-clean val-gold">₹ {{ total_collected|floatformat:2|intcomma }}</div>
             </div>
-            <div class="jd-sb-kpi-label">Total Collections</div>
-            <div class="jd-sb-kpi-val text-warning">₹{{ total_collected|floatformat:2 }}</div>
-            <div class="jd-sb-kpi-sub">{{ total_count }} transaction{{ total_count|pluralize }} recorded</div>
+            <div class="jd-kpi-sub-clean">
+                <i class="bi bi-receipt text-warning me-1"></i>{{ total_count }} transaction{{ total_count|pluralize }} recorded
+            </div>
         </div>
 
         <!-- Total Outstanding Dues -->
-        <div class="jd-sb-kpi-card">
-            <div class="jd-sb-kpi-top">
-                <div class="jd-sb-kpi-icon icon-amber">
-                    <i class="bi bi-hourglass-split"></i>
+        <div class="jd-kpi-card-clean">
+            <div>
+                <div class="jd-kpi-top-row">
+                    <div class="jd-kpi-icon-squircle rose">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                    <span class="badge {% if total_outstanding_due > 0 %}bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25{% else %}bg-success bg-opacity-25 text-success border border-success border-opacity-25{% endif %} px-2 py-1">
+                        {% if total_outstanding_due > 0 %}Dues Pending{% else %}All Settled{% endif %}
+                    </span>
                 </div>
-                <span class="badge {% if total_outstanding_due > 0 %}bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25{% else %}bg-success bg-opacity-25 text-success border border-success border-opacity-25{% endif %}">
-                    {% if total_outstanding_due > 0 %}Dues Pending{% else %}All Settled{% endif %}
-                </span>
+                <div class="jd-kpi-label-clean">Customer Outstanding Dues</div>
+                <div class="jd-kpi-val-clean {% if total_outstanding_due > 0 %}val-rose{% else %}val-green{% endif %}">
+                    ₹ {{ total_outstanding_due|floatformat:2|intcomma }}
+                </div>
             </div>
-            <div class="jd-sb-kpi-label">Total Customer Dues</div>
-            <div class="jd-sb-kpi-val {% if total_outstanding_due > 0 %}text-danger{% else %}text-success{% endif %}">₹{{ total_outstanding_due|floatformat:2 }}</div>
-            <div class="jd-sb-kpi-sub">{{ pending_sales_count }} customer invoice{{ pending_sales_count|pluralize }} with balance</div>
+            <div class="jd-kpi-sub-clean">
+                <i class="bi bi-people text-secondary me-1"></i>{{ pending_sales_count }} invoice{{ pending_sales_count|pluralize }} with balance
+            </div>
         </div>
 
-        <!-- Total Ledger Records -->
-        <div class="jd-sb-kpi-card">
-            <div class="jd-sb-kpi-top">
-                <div class="jd-sb-kpi-icon icon-purple">
-                    <i class="bi bi-journal-check"></i>
+        <!-- Audited Ledger Entries -->
+        <div class="jd-kpi-card-clean">
+            <div>
+                <div class="jd-kpi-top-row">
+                    <div class="jd-kpi-icon-squircle indigo">
+                        <i class="bi bi-journal-check"></i>
+                    </div>
+                    <span class="badge bg-info bg-opacity-25 text-info border border-info border-opacity-25 px-2 py-1">
+                        Audited
+                    </span>
                 </div>
-                <span class="badge bg-info bg-opacity-25 text-info border border-info border-opacity-25">Verified</span>
+                <div class="jd-kpi-label-clean">Payment Entries</div>
+                <div class="jd-kpi-val-clean">{{ total_count }}</div>
             </div>
-            <div class="jd-sb-kpi-label">Payments Count</div>
-            <div class="jd-sb-kpi-val">{{ total_count }}</div>
-            <div class="jd-sb-kpi-sub">Audited collection entries</div>
+            <div class="jd-kpi-sub-clean">
+                <i class="bi bi-shield-check text-info me-1"></i>Verified collection entries
+            </div>
         </div>
     </div>
 
     <!-- 3. Search & Filter Bar -->
-    <div class="jd-sb-filter-card">
-        <form method="get" class="row g-2 align-items-center">
-            <div class="col-lg-5 col-md-5 col-12">
-                <div class="input-group">
-                    <span class="input-group-text jd-sb-input-addon"><i class="bi bi-search"></i></span>
-                    <input type="text"
-                           name="q"
-                           value="{{ q }}"
-                           class="form-control jd-sb-filter-input"
-                           placeholder="Search customer, mobile, INV-00005, Txn Ref, or ornament...">
-                </div>
+    <div class="jd-filter-card-clean">
+        <form method="get" class="d-flex flex-wrap align-items-center gap-2">
+            <!-- Search Query -->
+            <div class="jd-search-input-wrap flex-grow-1">
+                <i class="bi bi-search jd-search-icon"></i>
+                <input type="text"
+                       name="q"
+                       value="{{ q }}"
+                       class="form-control jd-clean-input"
+                       placeholder="Search customer, mobile, INV-00005, Txn Ref, or ornament...">
+                {% if q %}
+                <a href="?{% if selected_method %}method={{ selected_method }}&{% endif %}{% if date_preset %}date_preset={{ date_preset }}{% endif %}" class="jd-search-clear" title="Clear search">
+                    <i class="bi bi-x-circle-fill"></i>
+                </a>
+                {% endif %}
             </div>
-            <div class="col-lg-3 col-md-3 col-6">
-                <select name="method" class="form-select jd-sb-filter-select">
-                    <option value="">All Payment Methods</option>
+
+            <!-- Payment Method Filter -->
+            <div class="jd-filter-select-wrap">
+                <select name="method" class="form-select jd-clean-select" aria-label="Payment Mode Filter">
+                    <option value="">All Payment Modes</option>
                     {% for code, label in payment_methods %}
                     <option value="{{ code }}" {% if selected_method == code %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-lg-2 col-md-2 col-6">
-                <select name="date_preset" class="form-select jd-sb-filter-select">
-                    <option value="">All Time</option>
+
+            <!-- Date Preset Filter -->
+            <div class="jd-filter-select-wrap">
+                <select name="date_preset" class="form-select jd-clean-select" aria-label="Date Range Filter">
+                    <option value="">All Dates</option>
                     <option value="today" {% if date_preset == 'today' %}selected{% endif %}>Today</option>
                     <option value="week" {% if date_preset == 'week' %}selected{% endif %}>Last 7 Days</option>
                     <option value="month" {% if date_preset == 'month' %}selected{% endif %}>Last 30 Days</option>
                 </select>
             </div>
-            <div class="col-lg-2 col-md-2 col-12 d-flex gap-2">
-                <button type="submit" class="jd-btn-gold flex-grow-1">
+
+            <!-- Action Buttons -->
+            <div class="d-flex align-items-center gap-2">
+                <button type="submit" class="btn jd-btn-filter">
                     <i class="bi bi-funnel"></i> Filter
                 </button>
                 {% if q or selected_method or date_preset %}
-                <a href="{% url 'payment_list' %}" class="jd-btn-ghost text-center px-3" title="Clear Filters">
-                    <i class="bi bi-x-lg"></i>
+                <a href="{% url 'payment_list' %}" class="btn jd-btn-reset" title="Reset all filters">
+                    <i class="bi bi-arrow-counterclockwise"></i> Reset
                 </a>
                 {% endif %}
             </div>
@@ -137,119 +637,146 @@
     </div>
 
     <!-- 4. Payments Register Table Card -->
-    <div class="jd-sb-table-card">
-        <div class="jd-sb-table-header">
-            <h2>
-                <i class="bi bi-list-check text-warning"></i>
-                Payments List
-            </h2>
-            <span class="badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-25 font-monospace">
-                Showing {{ payments|length }} of {{ total_count }} Entries
-            </span>
+    <div class="jd-clean-table-card">
+        <div class="jd-table-card-head d-flex justify-content-between align-items-center flex-wrap gap-2 px-4 py-3">
+            <div class="d-flex align-items-center gap-2.5">
+                <div class="jd-table-head-badge">
+                    <i class="bi bi-receipt-cutoff"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bold mb-0 text-body" style="font-size: 1.05rem;">Payment Receipts Register</h5>
+                    <span class="text-secondary small">Real-time ledger of recorded collections &amp; split tenders</span>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge jd-entries-badge">
+                    Showing {{ payments|length }} of {{ total_count }} Entries
+                </span>
+                {% if q or selected_method or date_preset %}
+                <span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-25 px-2 py-1">
+                    Filtered
+                </span>
+                {% endif %}
+            </div>
         </div>
 
         {% if payments %}
-        <div class="jd-sb-table-scroll">
-            <table class="jd-sb-table">
+        <div class="table-responsive">
+            <table class="jd-clean-table">
                 <thead>
                     <tr>
                         <th>Date &amp; Time</th>
                         <th>Invoice #</th>
                         <th>Customer</th>
-                        <th>Item Name</th>
+                        <th>Jewellery Ornament</th>
                         <th>Payment Mode</th>
                         <th>Reference / Txn</th>
-                        <th class="text-end">Amount Paid</th>
+                        <th class="text-end">Amount Received</th>
                         <th>Due Status</th>
-                        <th class="text-center">Action</th>
+                        <th class="text-end pe-4">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for p in payments %}
                     <tr>
                         <!-- Date & Time -->
-                        <td class="font-monospace small">
-                            <div class="text-light fw-bold">{{ p.payment_date|date:"d M Y" }}</div>
-                            <div class="text-muted" style="font-size: 0.76rem;">{{ p.payment_date|date:"h:i A" }}</div>
+                        <td>
+                            <div class="fw-semibold text-body" style="font-size: 0.88rem;">{{ p.payment_date|date:"d M Y" }}</div>
+                            <div class="text-secondary small d-flex align-items-center gap-1 mt-0.5" style="font-size: 0.76rem;">
+                                <i class="bi bi-clock opacity-75"></i> {{ p.payment_date|date:"h:i A" }}
+                            </div>
                         </td>
 
                         <!-- Invoice Link -->
                         <td>
-                            <a href="{% url 'sale_detail' p.sale.id %}" class="fw-bold font-monospace text-warning text-decoration-none" title="View Full Invoice & Receipt">
-                                INV-{{ p.sale.id|stringformat:"05d" }}
+                            <a href="{% url 'sale_detail' p.sale.id %}" class="jd-invoice-link" title="Open Sale & Print Receipt">
+                                <i class="bi bi-receipt me-1"></i>INV-{{ p.sale.id|stringformat:"05d" }}
                             </a>
                         </td>
 
                         <!-- Customer Details -->
                         <td>
-                            <div class="fw-bold text-light">{{ p.sale.customer.name }}</div>
-                            <div class="small font-monospace text-muted">{{ p.sale.customer.mobile }}</div>
+                            <a href="{% url 'customer_detail' p.sale.customer.id %}" class="fw-bold text-body text-decoration-none jd-customer-hover" style="font-size: 0.9rem;">
+                                {{ p.sale.customer.name }}
+                            </a>
+                            <div class="text-secondary small d-flex align-items-center gap-1 mt-0.5" style="font-size: 0.78rem;">
+                                <i class="bi bi-telephone opacity-75"></i> {{ p.sale.customer.mobile }}
+                            </div>
                         </td>
 
                         <!-- Jewellery Ornament -->
                         <td>
-                            <div class="text-light small fw-semibold">{{ p.sale.jewellery_item.name }}</div>
-                            <div class="small font-monospace text-muted" style="font-size: 0.74rem;">
-                                Tag: {{ p.sale.jewellery_item.tag_number|default:p.sale.jewellery_item.item_code }}
-                                &bull; {{ p.sale.jewellery_item.metal_type }} {{ p.sale.jewellery_item.purity }}
+                            <div class="fw-semibold text-body text-truncate" style="max-width: 250px; font-size: 0.88rem;" title="{{ p.sale.jewellery_item.name }}">
+                                {{ p.sale.jewellery_item.name }}
+                            </div>
+                            <div class="d-flex align-items-center gap-1.5 mt-0.5 flex-wrap" style="font-size: 0.74rem;">
+                                <span class="jd-tag-pill">
+                                    <i class="bi bi-tag-fill me-0.5 opacity-75"></i>{{ p.sale.jewellery_item.tag_number|default:p.sale.jewellery_item.item_code }}
+                                </span>
+                                <span class="text-secondary">&bull; {{ p.sale.jewellery_item.metal_type }} {{ p.sale.jewellery_item.purity }}</span>
                             </div>
                         </td>
 
                         <!-- Payment Method Badge -->
                         <td>
                             {% if p.payment_method == 'Cash' %}
-                            <span class="badge jd-payment-badge-cash"><i class="bi bi-cash me-1"></i>Cash</span>
+                            <span class="jd-mode-pill mode-cash"><i class="bi bi-cash-stack me-1"></i>Cash</span>
                             {% elif p.payment_method == 'UPI' %}
-                            <span class="badge jd-payment-badge-upi"><i class="bi bi-qr-code me-1"></i>UPI</span>
+                            <span class="jd-mode-pill mode-upi"><i class="bi bi-qr-code me-1"></i>UPI</span>
                             {% elif p.payment_method == 'Card' %}
-                            <span class="badge jd-payment-badge-card"><i class="bi bi-credit-card me-1"></i>Card</span>
+                            <span class="jd-mode-pill mode-card"><i class="bi bi-credit-card me-1"></i>Card</span>
                             {% elif p.payment_method == 'Bank Transfer' %}
-                            <span class="badge jd-payment-badge-bank"><i class="bi bi-bank me-1"></i>Bank Transfer</span>
+                            <span class="jd-mode-pill mode-bank"><i class="bi bi-bank me-1"></i>Bank Transfer</span>
                             {% elif p.payment_method == 'Cheque' %}
-                            <span class="badge jd-payment-badge-cheque"><i class="bi bi-card-checklist me-1"></i>Cheque</span>
+                            <span class="jd-mode-pill mode-cheque"><i class="bi bi-card-checklist me-1"></i>Cheque</span>
                             {% elif p.payment_method == 'Exchange' %}
-                            <span class="badge jd-payment-badge-exchange"><i class="bi bi-arrow-repeat me-1"></i>Exchange</span>
+                            <span class="jd-mode-pill mode-exchange"><i class="bi bi-arrow-repeat me-1"></i>Old Gold</span>
                             {% else %}
-                            <span class="badge bg-secondary">{{ p.payment_method }}</span>
+                            <span class="jd-mode-pill mode-default">{{ p.payment_method }}</span>
                             {% endif %}
                         </td>
 
-                        <!-- Reference / Notes -->
-                        <td class="font-monospace small">
+                        <!-- Reference / Txn -->
+                        <td>
                             {% if p.reference %}
-                            <span class="text-light fw-semibold">{{ p.reference }}</span>
+                            <div class="jd-ref-badge" title="{{ p.reference }}">
+                                <i class="bi bi-hash opacity-75"></i>{{ p.reference }}
+                            </div>
                             {% else %}
-                            <span class="text-muted">—</span>
+                            <span class="text-secondary opacity-50">—</span>
                             {% endif %}
                             {% if p.notes %}
-                            <div class="text-muted text-truncate" style="max-width: 160px; font-size: 0.72rem;" title="{{ p.notes }}">
+                            <div class="text-secondary text-truncate small mt-0.5" style="max-width: 150px; font-size: 0.74rem;" title="{{ p.notes }}">
                                 {{ p.notes }}
                             </div>
                             {% endif %}
                         </td>
 
                         <!-- Amount Paid -->
-                        <td class="text-end font-monospace fw-bold fs-6 text-success">
-                            ₹{{ p.amount|floatformat:2 }}
+                        <td class="text-end" data-amount="{{ p.amount|floatformat:2 }}">
+                            <div class="jd-amount-val">
+                                <span class="d-none">{{ p.amount|floatformat:2 }}</span>
+                                ₹ {{ p.amount|floatformat:2|intcomma }}
+                            </div>
                         </td>
 
-                        <!-- Invoice Due Status -->
+                        <!-- Due Status -->
                         <td>
                             {% if p.sale.due_amount <= 0 %}
-                            <span class="jd-due-pill-settled">
-                                <i class="bi bi-check-circle-fill me-1"></i>Fully Paid
+                            <span class="jd-due-badge due-settled">
+                                <i class="bi bi-check-circle-fill me-1"></i>Settled
                             </span>
                             {% else %}
-                            <span class="jd-due-pill-pending">
-                                Due: ₹{{ p.sale.due_amount|floatformat:2 }}
+                            <span class="jd-due-badge due-pending">
+                                <i class="bi bi-clock-history me-1"></i>Due: ₹ {{ p.sale.due_amount|floatformat:2|intcomma }}
                             </span>
                             {% endif %}
                         </td>
 
                         <!-- Action -->
-                        <td class="text-center">
-                            <a href="{% url 'sale_detail' p.sale.id %}" class="jd-btn-ghost py-1 px-2 small" title="View Sale & Print Receipt">
-                                <i class="bi bi-receipt"></i> Invoice
+                        <td class="text-end pe-4">
+                            <a href="{% url 'sale_detail' p.sale.id %}" class="jd-action-btn" title="View Sale &amp; Print Thermal / Tax Bill">
+                                <i class="bi bi-receipt me-1"></i>Bill
                             </a>
                         </td>
                     </tr>
@@ -261,8 +788,8 @@
         <!-- Pagination -->
         {% if page_obj.paginator.num_pages > 1 %}
         <div class="p-3 border-top border-secondary border-opacity-25 d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <span class="small text-muted">
-                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} &bull; Total {{ total_count }} payments
+            <span class="small text-secondary">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} &bull; Total {{ total_count }} payment{{ total_count|pluralize }}
             </span>
             <ul class="pagination pagination-sm m-0">
                 {% if page_obj.has_previous %}
@@ -286,24 +813,26 @@
 
         {% else %}
         <!-- Empty State -->
-        <div class="text-center py-5">
-            <i class="bi bi-cash-coin fs-1 text-warning opacity-50 mb-2 d-block"></i>
-            <h5 class="text-light">No Payments Recorded Yet</h5>
-            <p class="text-muted small mb-3">
+        <div class="text-center py-5 px-3">
+            <div class="jd-kpi-icon-squircle gold mx-auto mb-3" style="width: 54px; height: 54px; font-size: 1.6rem;">
+                <i class="bi bi-cash-coin"></i>
+            </div>
+            <h5 class="fw-bold text-body mb-1">No Payments Recorded Yet</h5>
+            <p class="text-secondary small mb-3 mx-auto" style="max-width: 420px;">
                 {% if q or selected_method or date_preset %}
-                No payments match your current filter criteria. Try clearing filters.
+                No payment receipts match your current filter criteria. Try resetting your search or filter.
                 {% else %}
                 Record your first customer payment collection against any open sales invoice.
                 {% endif %}
             </p>
             <div class="d-flex justify-content-center gap-2">
                 {% if q or selected_method or date_preset %}
-                <a href="{% url 'payment_list' %}" class="jd-btn-ghost">
-                    Clear Filters
+                <a href="{% url 'payment_list' %}" class="btn jd-btn-ghost">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Clear Filters
                 </a>
                 {% endif %}
-                <button type="button" class="jd-btn-gold" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">
-                    <i class="bi bi-plus-circle-fill"></i> + Receive Payment
+                <button type="button" class="btn jd-btn-gold" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">
+                    <i class="bi bi-plus-circle-fill me-1"></i> + Record Payment
                 </button>
             </div>
         </div>
@@ -397,8 +926,8 @@
             </div>
 
             <div class="modal-footer border-top border-secondary border-opacity-25 py-3">
-                <button type="button" class="jd-btn-ghost" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="jd-btn-gold px-4">
+                <button type="button" class="btn jd-btn-ghost" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn jd-btn-gold px-4">
                     <i class="bi bi-check2-circle me-1"></i> Save &amp; Record Payment
                 </button>
             </div>
@@ -410,6 +939,10 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('has-sales-suite');
+    var pc = document.getElementById('page-content');
+    if (pc) pc.classList.add('jd-sb-active');
+
     const duesData = JSON.parse(document.getElementById('salesDuesData').textContent || '{}');
     const saleSelect = document.getElementById('id_standalone_sale');
     const amountInput = document.getElementById('id_standalone_amount');
@@ -426,7 +959,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (info && info.due > 0) {
             detailsBanner.classList.remove('d-none');
             bannerCustomerItem.textContent = info.customer + ' — ' + info.item + ' (' + info.tag + ')';
-            bannerDueAmount.textContent = '₹' + info.due.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            bannerDueAmount.textContent = '₹ ' + info.due.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             fillFullDueBtn.classList.remove('d-none');
 
             // Auto populate amount if blank or zero
@@ -441,10 +974,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (saleSelect) {
         saleSelect.addEventListener('change', onSaleChange);
-        // If preselected on load
         if (saleSelect.value) {
             onSaleChange();
-            // Auto open modal if ?sale= param was provided
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('sale')) {
                 const modalEl = document.getElementById('recordPaymentModal');

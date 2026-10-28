@@ -1,6 +1,6 @@
 import datetime
 from datetime import timedelta
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
@@ -222,12 +222,126 @@ def sale_add(request):
                 # truth), so the stock can never be reduced twice for one sale.
                 movement = stock.record_sale(locked_item, sale, user=request.user)
 
+                # -------------------------------------------------------------
+                # Automatic Payment Entry Creation for Completed Sale
+                # -------------------------------------------------------------
+                raw_amount_paid = request.POST.get('amount_paid')
+                raw_second_amount = request.POST.get('second_payment_amount')
+                second_method = request.POST.get('second_payment_method') or 'UPI'
+                payment_ref = request.POST.get('payment_reference') or f"INV-{sale.id:04d}"
+
+                # 1. Parse primary tender amount
+                if raw_amount_paid is not None and raw_amount_paid.strip() != '':
+                    try:
+                        primary_paid = Decimal(raw_amount_paid.strip())
+                    except (InvalidOperation, ValueError):
+                        primary_paid = sale.sale_price
+                else:
+                    # Default: fully paid if no explicit tender was entered
+                    primary_paid = sale.sale_price
+
+                # 2. Parse secondary tender amount (split payment)
+                try:
+                    second_paid = Decimal(raw_second_amount.strip()) if raw_second_amount else Decimal('0.00')
+                except (InvalidOperation, ValueError):
+                    second_paid = Decimal('0.00')
+
+                primary_paid = max(Decimal('0.00'), primary_paid)
+                second_paid = max(Decimal('0.00'), second_paid)
+
+                # Cap payments at sale.sale_price to comply with Payment.clean() rules
+                max_payable = max(Decimal('0.00'), sale.sale_price)
+                if primary_paid + second_paid > max_payable:
+                    if primary_paid >= max_payable:
+                        primary_paid = max_payable
+                        second_paid = Decimal('0.00')
+                    else:
+                        second_paid = max_payable - primary_paid
+
+                created_payments = []
+                if primary_paid > 0:
+                    p1 = Payment.objects.create(
+                        tenant=request.tenant,
+                        sale=sale,
+                        amount=primary_paid,
+                        payment_method=sale.payment_method,
+                        payment_date=sale.sale_date,
+                        reference=payment_ref,
+                        notes=f"Initial payment received via {sale.payment_method} at counter"
+                    )
+                    created_payments.append(p1)
+
+                if second_paid > 0:
+                    p2 = Payment.objects.create(
+                        tenant=request.tenant,
+                        sale=sale,
+                        amount=second_paid,
+                        payment_method=second_method,
+                        payment_date=sale.sale_date,
+                        reference=f"{payment_ref}-SPLIT",
+                        notes=f"Split payment received via {second_method} at counter"
+                    )
+                    created_payments.append(p2)
+
+                # Optional Old Gold transaction record if exchange old gold was enabled
+                if request.POST.get('has_old_gold'):
+                    try:
+                        og_gross = Decimal(request.POST.get('old_gold_gross_weight', '0').strip() or '0')
+                        og_loss = Decimal(request.POST.get('old_gold_melting_loss', '0').strip() or '0')
+                        og_rate = Decimal(request.POST.get('old_gold_rate', '0').strip() or '0')
+                        og_purity = request.POST.get('old_gold_purity', '22K')
+                        og_desc = request.POST.get('old_gold_description', 'Old Scrap Gold')
+                        if og_gross > 0 and og_rate > 0:
+                            og_net = max(Decimal('0.000'), og_gross - og_loss)
+                            val = OldGoldTransaction.compute_valuation(
+                                gross_weight=og_gross,
+                                stone_weight=Decimal('0.000'),
+                                metal_type='Gold',
+                                purity=og_purity if og_purity in dict(OldGoldTransaction.PURITY_CHOICES) else '22K',
+                                applicable_rate=og_rate,
+                                deduction_percent=Decimal('0.00'),
+                            )
+                            tx_num = generate_old_gold_number(OldGoldTransaction.TYPE_EXCHANGE, tenant=request.tenant)
+                            OldGoldTransaction.objects.create(
+                                tenant=request.tenant,
+                                customer=sale.customer,
+                                new_jewellery_item=sale.jewellery_item,
+                                transaction_number=tx_num,
+                                transaction_type=OldGoldTransaction.TYPE_EXCHANGE,
+                                status=OldGoldTransaction.STATUS_COMPLETED,
+                                old_gold_type='Old Jewellery',
+                                metal_type='Gold',
+                                purity=og_purity if og_purity in dict(OldGoldTransaction.PURITY_CHOICES) else '22K',
+                                gross_weight=og_gross,
+                                stone_weight=Decimal('0.000'),
+                                net_weight=og_net,
+                                purity_factor=val['purity_factor'],
+                                pure_weight=val['pure_weight'],
+                                applicable_rate=og_rate,
+                                deduction_percent=Decimal('0.00'),
+                                gross_value=val['gross_value'],
+                                deduction_amount=Decimal('0.00'),
+                                final_value=val['final_value'],
+                                notes=f"Adjusted in POS Sale #{sale.id} ({og_desc})",
+                                payment_method='Adjusted in Sale',
+                            )
+                    except Exception as e:
+                        logger.warning(f"Failed to record OldGoldTransaction in sale_add: {e}")
+
+                total_paid_now = sum((p.amount for p in created_payments), Decimal('0.00'))
+                if total_paid_now >= sale.sale_price and sale.sale_price > 0:
+                    status_note = f"Payment of ₹{total_paid_now:,.2f} recorded via {sale.payment_method}"
+                elif total_paid_now > 0:
+                    status_note = f"Payment of ₹{total_paid_now:,.2f} recorded, remaining due: ₹{sale.due_amount:,.2f}"
+                else:
+                    status_note = "Bill saved with full amount pending on Khata"
+
                 if movement.stock_after == 0:
-                    messages.success(request, f"Sale #{sale.id} completed successfully! Item '{locked_item.name}' marked as Sold.")
+                    messages.success(request, f"Sale #{sale.id} completed successfully ({status_note})! Item '{locked_item.name}' marked as Sold.")
                 else:
                     messages.success(
                         request,
-                        f"Sale #{sale.id} completed successfully! '{locked_item.name}' stock "
+                        f"Sale #{sale.id} completed successfully ({status_note})! '{locked_item.name}' stock "
                         f"reduced to {movement.stock_after}.")
                 return redirect('sale_detail', pk=sale.pk)
     else:

@@ -6,7 +6,7 @@ compliant with:
 - Section 31 of CGST Act 2017.
 - HSN Code 7113 (Gold/Silver Jewellery).
 - BIS Hallmarking & HUID identification.
-- Accurate right-aligned numerical weights and currency amounts.
+- Accurate right-aligned numerical weights and currency amounts formatted with Indian comma grouping.
 """
 import io
 from decimal import Decimal
@@ -30,6 +30,68 @@ BRAND_GOLD_BG = colors.HexColor('#FEF3C7')   # Amber 100 subtle
 BRAND_MUTED = colors.HexColor('#64748B')     # Slate 500
 BRAND_LIGHT_BG = colors.HexColor('#F8FAFC')  # Slate 50
 BORDER_COLOR = colors.HexColor('#CBD5E1')    # Slate 300
+
+
+def _format_inr(val, decimals=2) -> str:
+    """Format numeric currency value into authentic Indian numbering notation: 485436.89 -> 4,85,436.89"""
+    if val is None:
+        return '0.00' if decimals else '0'
+    try:
+        d = Decimal(str(val))
+    except Exception:
+        return str(val)
+    sign = '-' if d < 0 else ''
+    d = abs(d)
+    s = f"{d:.{decimals}f}" if decimals else f"{d:.0f}"
+    parts = s.split('.')
+    int_part = parts[0]
+    dec_part = '.' + parts[1] if len(parts) > 1 else ''
+    if len(int_part) <= 3:
+        return sign + int_part + dec_part
+    last_three = int_part[-3:]
+    rest = int_part[:-3]
+    groups = []
+    while len(rest) > 2:
+        groups.append(rest[-2:])
+        rest = rest[:-2]
+    if rest:
+        groups.append(rest)
+    groups.reverse()
+    return sign + ','.join(groups) + ',' + last_three + dec_part
+
+
+def _split_purity(purity_str):
+    """
+    Intelligently splits long jewellery purity strings into two balanced lines
+    to avoid horizontal collision with adjacent table columns.
+    e.g. '22K (916 Hallmarked)' -> ('22K (916)', 'Hallmarked')
+         '18K (750) / VVS-1 GH' -> ('18K (750)', 'VVS-1 GH')
+         '925 Sterling Silver'   -> ('925 Silver', 'Sterling')
+         '22K (916)'             -> ('22K (916)', '')
+         '22K'                   -> ('22K', '')
+    """
+    if not purity_str:
+        return '22K', ''
+    import re
+    p = str(purity_str).strip()
+    if 'Hallmark' in p or 'hallmark' in p:
+        p_clean = re.sub(r'\b[Hh]allmarked?\b', '', p)
+        p_clean = re.sub(r'\s*\)', ')', p_clean)
+        p_clean = re.sub(r'\(\s*', '(', p_clean)
+        p_clean = re.sub(r'\(\s*\)', '', p_clean)
+        p_clean = re.sub(r'\s+', ' ', p_clean).strip()
+        p_clean = p_clean.rstrip(' -/')
+        return p_clean or '22K (916)', 'Hallmarked'
+    if '/' in p:
+        parts = p.split('/', 1)
+        return parts[0].strip(), parts[1].strip()
+    if 'Sterling' in p:
+        clean = re.sub(r'\s+', ' ', p.replace('Sterling', '')).strip()
+        return clean or '925 Silver', 'Sterling'
+    if len(p) > 10 and ' ' in p:
+        parts = p.split(' ', 1)
+        return parts[0].strip(), parts[1].strip()
+    return p, ''
 
 
 def _local_date_str(dt):
@@ -84,7 +146,7 @@ def build_invoice_pdf(sale, include_gst: bool = True) -> bytes:
         p.drawOn(c, x, y - h)
         return y - h
 
-    # Margins: 12mm left/right
+    # Margins: 12mm left/right -> content_w = 186mm
     left_m = 12 * mm
     right_m = page_w - 12 * mm
     content_w = right_m - left_m
@@ -241,35 +303,40 @@ def build_invoice_pdf(sale, include_gst: bool = True) -> bytes:
 
     c.drawString(right_box_x + 2.5 * mm, top_box_y - 20.5 * mm, 'Payment Method:')
     c.setFont('Helvetica-Bold', 8)
-    c.drawRightString(right_box_x + box_w - 2.5 * mm, top_box_y - 20.5 * mm, sale.payment_method)
+    # Handle split tender payment methods nicely
+    pm_display = sale.payment_method
+    if getattr(sale, 'second_payment_method', None) and sale.second_payment_method:
+        pm_display = f"{sale.payment_method} + {sale.second_payment_method}"
+    c.drawRightString(right_box_x + box_w - 2.5 * mm, top_box_y - 20.5 * mm, pm_display[:24])
 
     y = top_box_y - box_h - 4 * mm
 
     # =========================================================================
     # 4. JEWELLERY LINE ITEMS TABLE
-    # Columns:
-    # 1. Sr. (center)            width 8mm   x: 12..20
-    # 2. Description (left)      width 50mm  x: 20..70
-    # 3. HSN (center)            width 13mm  x: 70..83
-    # 4. Purity (center)         width 15mm  x: 83..98
-    # 5. Gross Wt (right)        width 15mm  x: 98..113
-    # 6. Less Wt (right)         width 13mm  x: 113..126
-    # 7. Net Wt (right)          width 15mm  x: 126..141
-    # 8. Rate / g (right)        width 16mm  x: 141..157
-    # 9. Making (right)          width 14mm  x: 157..171
-    # 10. Taxable Amt (right)    width 25mm  x: 171..196 (right_m is ~198mm)
+    # Perfectly rebalanced 10-column grid preventing all text overlap & clipping
+    # Total content_w = 186 mm
+    # 0. Sr. (center)            width 7mm   x: 12..19
+    # 1. Description (left)      width 45mm  x: 19..64
+    # 2. HSN (center)            width 12mm  x: 64..76
+    # 3. Purity (center)         width 19mm  x: 76..95
+    # 4. Gross Wt (right)        width 14mm  x: 95..109
+    # 5. Less Wt (right)         width 13mm  x: 109..122
+    # 6. Net Wt (right)          width 15mm  x: 122..137
+    # 7. Rate / g (right)        width 19mm  x: 137..156
+    # 8. Making (right)          width 18mm  x: 156..174
+    # 9. Taxable Amt (right)    width 24mm  x: 174..198
     # =========================================================================
     col_bounds = [
-        (left_m, left_m + 8 * mm),            # 0: Sr
-        (left_m + 8 * mm, left_m + 56 * mm),   # 1: Description
-        (left_m + 56 * mm, left_m + 70 * mm),  # 2: HSN
-        (left_m + 70 * mm, left_m + 86 * mm),  # 3: Purity
-        (left_m + 86 * mm, left_m + 102 * mm), # 4: Gross Wt
-        (left_m + 102 * mm, left_m + 116 * mm),# 5: Less Wt
-        (left_m + 116 * mm, left_m + 132 * mm),# 6: Net Wt
-        (left_m + 132 * mm, left_m + 150 * mm),# 7: Rate/g
-        (left_m + 150 * mm, left_m + 165 * mm),# 8: Making
-        (left_m + 165 * mm, right_m),          # 9: Taxable / Total
+        (left_m, left_m + 7 * mm),             # 0: Sr
+        (left_m + 7 * mm, left_m + 52 * mm),   # 1: Description
+        (left_m + 52 * mm, left_m + 64 * mm),  # 2: HSN
+        (left_m + 64 * mm, left_m + 83 * mm),  # 3: Purity
+        (left_m + 83 * mm, left_m + 97 * mm),  # 4: Gross Wt
+        (left_m + 97 * mm, left_m + 110 * mm), # 5: Less Wt
+        (left_m + 110 * mm, left_m + 125 * mm),# 6: Net Wt
+        (left_m + 125 * mm, left_m + 144 * mm),# 7: Rate / g
+        (left_m + 144 * mm, left_m + 162 * mm),# 8: Making
+        (left_m + 162 * mm, right_m),          # 9: Taxable / Amount
     ]
 
     tbl_header_h = 7 * mm
@@ -292,74 +359,112 @@ def build_invoice_pdf(sale, include_gst: bool = True) -> bytes:
 
     y -= tbl_header_h
 
-    # Table Item Data Row
-    row_h = 16 * mm
+    # Table Item Data Row (height 18.5mm gives generous breathing room)
+    row_h = 18.5 * mm
     c.setFillColor(colors.white)
     c.setStrokeColor(BORDER_COLOR)
     c.setLineWidth(0.5)
     c.rect(left_m, y - row_h, content_w, row_h, stroke=1, fill=1)
 
-    # Vertical separators
+    # Vertical column separator lines
     for b in col_bounds[:-1]:
         c.line(b[1], y, b[1], y - row_h)
 
-    # 1. Sr
-    c.setFont('Helvetica', 8.5)
+    # 0. Sr.
+    c.setFont('Helvetica', 8)
     c.setFillColor(BRAND_DARK)
-    c.drawCentredString((col_bounds[0][0] + col_bounds[0][1]) / 2, y - 5.5 * mm, '1')
+    c.drawCentredString((col_bounds[0][0] + col_bounds[0][1]) / 2, y - 6.5 * mm, '1')
 
-    # 2. Description & HUID / Tag
+    # 1. Description & HUID / Tag
     desc_x = col_bounds[1][0] + 2 * mm
-    c.setFont('Helvetica-Bold', 8.5)
-    c.drawString(desc_x, y - 4.5 * mm, item.name[:30])
-    c.setFont('Helvetica', 7.5)
+    desc_w = (col_bounds[1][1] - col_bounds[1][0]) - 3 * mm
+    item_name = str(item.name or 'Jewellery Item').strip()
+
+    c.setFillColor(BRAND_DARK)
+    # Check if item name needs 2 lines or 1 line
+    if len(item_name) > 28:
+        # Wrap cleanly with Paragraph
+        p_name = Paragraph(
+            f"<b>{item_name}</b>",
+            ParagraphStyle(
+                'item_desc_name',
+                parent=base['Normal'],
+                fontName='Helvetica-Bold',
+                fontSize=7.8,
+                leading=9.2,
+                textColor=BRAND_DARK
+            )
+        )
+        _, h_name = p_name.wrap(desc_w, 10 * mm)
+        p_name.drawOn(c, desc_x, y - h_name - 1.2 * mm)
+        sub_y = y - h_name - 3.2 * mm
+    else:
+        c.setFont('Helvetica-Bold', 8)
+        c.drawString(desc_x, y - 4.2 * mm, item_name)
+        sub_y = y - 7.5 * mm
+
+    c.setFont('Helvetica', 6.8)
     c.setFillColor(BRAND_MUTED)
     cat_name = getattr(getattr(item, 'category', None), 'name', '')
-    c.drawString(desc_x, y - 8 * mm, f'Category: {cat_name}' if cat_name else '')
     tag_str = item.tag_number or item.item_code or ''
     huid_str = item.huid or ''
+
     specs = []
+    if cat_name:
+        specs.append(cat_name)
     if tag_str:
         specs.append(f'Tag: {tag_str}')
     if huid_str:
         specs.append(f'HUID: {huid_str}')
-    c.drawString(desc_x, y - 11.5 * mm, ' | '.join(specs)[:36])
+    specs_line = ' • '.join(specs)
+    c.drawString(desc_x, sub_y, specs_line[:40])
+
     if item.design_code and item.design_code != item.item_code:
-        c.drawString(desc_x, y - 14.5 * mm, f'Design: {item.design_code[:20]}')
+        c.drawString(desc_x, sub_y - 3.2 * mm, f'Design: {item.design_code[:22]}')
 
-    # 3. HSN
-    c.setFont('Helvetica', 8)
+    # 2. HSN Code
+    c.setFont('Helvetica', 7.8)
     c.setFillColor(BRAND_DARK)
-    c.drawCentredString((col_bounds[2][0] + col_bounds[2][1]) / 2, y - 5.5 * mm, breakdown['hsn_code'])
+    c.drawCentredString((col_bounds[2][0] + col_bounds[2][1]) / 2, y - 6.5 * mm, str(breakdown.get('hsn_code', '7113')))
 
-    # 4. Purity
-    purity_label = item.purity or '22K'
+    # 3. Purity (Smart Two-Line Layout preventing all overlap into HSN & Gross Wt)
+    main_purity, sub_purity = _split_purity(item.purity or '22K (916)')
+    c.setFillColor(BRAND_DARK)
+    c.setFont('Helvetica-Bold', 7.6)
+    purity_cx = (col_bounds[3][0] + col_bounds[3][1]) / 2
+
+    if sub_purity:
+        c.drawCentredString(purity_cx, y - 5.5 * mm, main_purity)
+        c.setFont('Helvetica', 6.5)
+        c.setFillColor(BRAND_GOLD)
+        c.drawCentredString(purity_cx, y - 9.0 * mm, sub_purity)
+    else:
+        c.drawCentredString(purity_cx, y - 6.5 * mm, main_purity)
+
+    # 4. Gross Wt
+    c.setFont('Helvetica', 7.5)
+    c.setFillColor(BRAND_DARK)
+    c.drawRightString(col_bounds[4][1] - 1.5 * mm, y - 6.5 * mm, f"{breakdown['gross_weight']:,.3f}g")
+
+    # 5. Less Wt
+    c.drawRightString(col_bounds[5][1] - 1.5 * mm, y - 6.5 * mm, f"{breakdown['stone_weight']:,.3f}g")
+
+    # 6. Net Wt (Bold)
+    c.setFont('Helvetica-Bold', 7.5)
+    c.drawRightString(col_bounds[6][1] - 1.5 * mm, y - 6.5 * mm, f"{breakdown['net_weight']:,.3f}g")
+
+    # 7. Rate / g
+    c.setFont('Helvetica', 7.5)
+    rate_val = f"Rs. {_format_inr(breakdown['rate_per_gram'])}" if breakdown['rate_per_gram'] > 0 else '—'
+    c.drawRightString(col_bounds[7][1] - 1.5 * mm, y - 6.5 * mm, rate_val)
+
+    # 8. Making Charges
+    mk_val = f"Rs. {_format_inr(breakdown['making_charges'])}" if breakdown['making_charges'] > 0 else 'Included'
+    c.drawRightString(col_bounds[8][1] - 1.5 * mm, y - 6.5 * mm, mk_val)
+
+    # 9. Taxable Amt / Amount
     c.setFont('Helvetica-Bold', 8)
-    c.drawCentredString((col_bounds[3][0] + col_bounds[3][1]) / 2, y - 5.5 * mm, purity_label)
-
-    # 5. Gross Wt
-    c.setFont('Helvetica', 8)
-    c.drawRightString(col_bounds[4][1] - 1.5 * mm, y - 5.5 * mm, f"{breakdown['gross_weight']:,.3f}g")
-
-    # 6. Less Wt
-    c.drawRightString(col_bounds[5][1] - 1.5 * mm, y - 5.5 * mm, f"{breakdown['stone_weight']:,.3f}g")
-
-    # 7. Net Wt (Bold)
-    c.setFont('Helvetica-Bold', 8)
-    c.drawRightString(col_bounds[6][1] - 1.5 * mm, y - 5.5 * mm, f"{breakdown['net_weight']:,.3f}g")
-
-    # 8. Rate / g
-    c.setFont('Helvetica', 8)
-    rate_val = f"Rs.{breakdown['rate_per_gram']:,.2f}" if breakdown['rate_per_gram'] > 0 else '—'
-    c.drawRightString(col_bounds[7][1] - 1.5 * mm, y - 5.5 * mm, rate_val)
-
-    # 9. Making
-    mk_val = f"Rs.{breakdown['making_charges']:,.2f}" if breakdown['making_charges'] > 0 else 'Included'
-    c.drawRightString(col_bounds[8][1] - 1.5 * mm, y - 5.5 * mm, mk_val)
-
-    # 10. Taxable Amt
-    c.setFont('Helvetica-Bold', 8.5)
-    c.drawRightString(col_bounds[9][1] - 2 * mm, y - 5.5 * mm, f"Rs.{breakdown['taxable_value']:,.2f}")
+    c.drawRightString(col_bounds[9][1] - 2 * mm, y - 6.5 * mm, f"Rs. {_format_inr(breakdown['taxable_value'])}")
 
     y -= row_h
 
@@ -375,7 +480,7 @@ def build_invoice_pdf(sale, include_gst: bool = True) -> bytes:
     wt_text = (f"Gross Weight: {breakdown['gross_weight']:,.3f} g    |    "
                f"Stone/Less Weight: {breakdown['stone_weight']:,.3f} g    |    "
                f"Net Precious Metal Weight: {breakdown['net_weight']:,.3f} g")
-    c.drawString(left_m + 30 * mm, y - 3.5 * mm, wt_text)
+    c.drawString(left_m + 28 * mm, y - 3.5 * mm, wt_text)
     y -= (strip_h + 3.5 * mm)
 
     # =========================================================================
@@ -386,7 +491,7 @@ def build_invoice_pdf(sale, include_gst: bool = True) -> bytes:
     summary_left_w = content_w * 0.54
     summary_right_w = content_w - summary_left_w - 4 * mm
     summary_right_x = left_m + summary_left_w + 4 * mm
-    summary_h = 56 * mm
+    summary_h = 60 * mm
     summary_top_y = y
 
     # LEFT BOX: Words, Notes & Terms
@@ -403,13 +508,13 @@ def build_invoice_pdf(sale, include_gst: bool = True) -> bytes:
     c.setFont('Helvetica-Bold', 8)
     c.setFillColor(BRAND_GOLD)
     wrapped(breakdown['amount_in_words'], left_m + 2.5 * mm, summary_top_y - 6 * mm,
-            summary_left_w - 5 * mm, font_name='Helvetica-Bold', font_size=7.5, leading=9, color=BRAND_GOLD)
+            summary_left_w - 5 * mm, font_name='Helvetica-Bold', font_size=7.5, leading=9.5, color=BRAND_GOLD)
 
     # Payment info
     c.setFont('Helvetica', 7.5)
     c.setFillColor(BRAND_DARK)
     c.drawString(left_m + 2.5 * mm, summary_top_y - 16 * mm,
-                 f"Payment Mode: {sale.payment_method}    |    Status: {sale.payment_status}")
+                 f"Payment Mode: {pm_display}    |    Status: {sale.payment_status}")
 
     # Notes if any
     notes_y = summary_top_y - 19.5 * mm
@@ -442,65 +547,64 @@ def build_invoice_pdf(sale, include_gst: bool = True) -> bytes:
     c.setFillColor(colors.white)
     c.rect(summary_right_x, summary_top_y - summary_h, summary_right_w, summary_h, stroke=1, fill=1)
 
-    calc_y = summary_top_y - 5 * mm
-    def calc_row(label, val_str, bold=False, font_size=8, bg=None, text_color=BRAND_DARK):
+    calc_y = summary_top_y - 4.5 * mm
+    def calc_row(label, val_str, bold=False, font_size=7.8, bg=None, text_color=BRAND_DARK):
         nonlocal calc_y
         if bg:
             c.setFillColor(bg)
-            c.rect(summary_right_x, calc_y - 2 * mm, summary_right_w, 6 * mm, stroke=0, fill=1)
+            c.rect(summary_right_x, calc_y - 1.8 * mm, summary_right_w, 5.5 * mm, stroke=0, fill=1)
         c.setFillColor(text_color)
         c.setFont('Helvetica-Bold' if bold else 'Helvetica', font_size)
         c.drawString(summary_right_x + 3 * mm, calc_y, label)
         c.drawRightString(summary_right_x + summary_right_w - 3 * mm, calc_y, val_str)
-        calc_y -= 5.5 * mm
+        calc_y -= 4.9 * mm
 
     taxable_lbl = 'Total Taxable Value' if include_gst else 'Subtotal Amount'
-    calc_row(taxable_lbl, f"Rs. {breakdown['taxable_value']:,.2f}")
+    calc_row(taxable_lbl, f"Rs. {_format_inr(breakdown['taxable_value'])}")
 
     if include_gst:
-        calc_row('CGST @ 1.5%', f"Rs. {breakdown['cgst_amount']:,.2f}")
-        calc_row('SGST @ 1.5%', f"Rs. {breakdown['sgst_amount']:,.2f}")
-        calc_row('Total Tax (GST 3%)', f"Rs. {breakdown['total_tax']:,.2f}", bold=True, font_size=7.5)
+        calc_row('CGST @ 1.5%', f"Rs. {_format_inr(breakdown['cgst_amount'])}")
+        calc_row('SGST @ 1.5%', f"Rs. {_format_inr(breakdown['sgst_amount'])}")
+        calc_row('Total Tax (GST 3%)', f"Rs. {_format_inr(breakdown['total_tax'])}", bold=True, font_size=7.5)
     else:
         calc_row('GST / Tax Rate', 'Non-GST / Nil')
         calc_row('Tax Amount', 'Rs. 0.00')
 
     og = getattr(sale, 'old_gold_exchange', None)
     if og and getattr(og, 'status', None) == 'Completed':
-        calc_row(f'Old Gold Credit (#{og.transaction_number})', f"- Rs. {og.final_value:,.2f}", text_color=BRAND_GOLD)
+        calc_row(f'Old Gold Credit (#{og.transaction_number})', f"- Rs. {_format_inr(og.final_value)}", text_color=BRAND_GOLD)
 
     # Promotional Coupon Discount Line Item
     if getattr(sale, 'coupon_discount', None) and sale.coupon_discount > Decimal('0.00'):
         c_code = getattr(sale, 'applied_coupon_code', '') or 'PROMO'
-        calc_row(f"Coupon ({c_code})", f"- Rs. {sale.coupon_discount:,.2f}", bold=True, text_color=colors.HexColor('#166534'))
+        calc_row(f"Coupon ({c_code})", f"- Rs. {_format_inr(sale.coupon_discount)}", bold=True, text_color=colors.HexColor('#166534'))
 
     if breakdown['round_off'] != Decimal('0.00'):
         sign = '+' if breakdown['round_off'] > 0 else ''
-        calc_row('Round Off (+/-)', f"{sign}Rs. {breakdown['round_off']:,.2f}")
+        calc_row('Round Off (+/-)', f"{sign}Rs. {abs(breakdown['round_off']):.2f}")
 
     # Divider line
     c.setStrokeColor(BORDER_COLOR)
     c.line(summary_right_x, calc_y + 1 * mm, summary_right_x + summary_right_w, calc_y + 1 * mm)
 
     # GRAND TOTAL ROW (Prominent Gold/Dark banner)
-    calc_row('GRAND TOTAL', f"Rs. {sale.sale_price:,.2f}", bold=True, font_size=9.5,
+    calc_row('GRAND TOTAL', f"Rs. {_format_inr(sale.sale_price)}", bold=True, font_size=9,
              bg=BRAND_GOLD_BG if include_gst else BRAND_LIGHT_BG, text_color=BRAND_GOLD)
 
     # Paid / Due amounts
     paid_amt = sale.paid_amount
     due_amt = sale.due_amount
-    calc_row('Amount Paid', f"Rs. {paid_amt:,.2f}", bold=True, text_color=colors.HexColor('#166534'))
+    calc_row('Amount Paid', f"Rs. {_format_inr(paid_amt)}", bold=True, text_color=colors.HexColor('#166534'))
     if due_amt > 0:
-        calc_row('Balance Due', f"Rs. {due_amt:,.2f}", bold=True, text_color=colors.HexColor('#DC2626'))
+        calc_row('Balance Due', f"Rs. {_format_inr(due_amt)}", bold=True, text_color=colors.HexColor('#DC2626'))
     else:
-        calc_row('Balance Due', 'Rs. 0.00 (Fully Settled)', font_size=7.5)
+        calc_row('Balance Due', 'Rs. 0.00 (Fully Settled)', font_size=7.5, text_color=colors.HexColor('#166534'))
 
     y = summary_top_y - summary_h - 6 * mm
 
     # =========================================================================
     # 6. SIGNATURE SECTION
     # =========================================================================
-    sig_h = 16 * mm
     c.setStrokeColor(BORDER_COLOR)
     c.setLineWidth(0.5)
 

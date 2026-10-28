@@ -298,7 +298,7 @@
                     <div class="jd-pos-card-header" id="exchangeHeader" style="cursor: pointer; user-select: none;">
                         <div class="jd-pos-exchange-toggle-wrap w-100 m-0 d-flex justify-content-between align-items-center">
                             <span class="d-flex align-items-center gap-2">
-                                <input type="checkbox" id="exchange_toggle" class="jd-pos-exchange-checkbox">
+                                <input type="checkbox" id="exchange_toggle" name="has_old_gold" value="1" class="jd-pos-exchange-checkbox">
                                 <label for="exchange_toggle" class="fw-bold m-0" style="color: var(--jd-pos-ivory); cursor: pointer;">
                                     <i class="bi bi-arrow-repeat text-warning me-1"></i> Exchange Old Gold
                                 </label>
@@ -314,7 +314,7 @@
                             </div>
                             <div class="col-md-2 col-6">
                                 <label class="jd-pos-spec-label">Purity</label>
-                                <select id="ogPurity" class="form-select py-1 px-2" style="font-size: 0.85rem;">
+                                <select id="ogPurity" name="old_gold_purity" class="form-select py-1 px-2" style="font-size: 0.85rem;">
                                     <option value="24K">24K Gold</option>
                                     <option value="22K" selected>22K Gold (91.6%)</option>
                                     <option value="18K">18K Gold (75.0%)</option>
@@ -511,15 +511,16 @@
                                     <i class="bi bi-cash-stack text-warning" id="tenderPrimaryIcon"></i>
                                     <span id="tenderPrimaryText">Amount Paid</span>
                                 </span>
-                                <input type="number" step="0.01" class="jd-pos-tender-input" id="tenderPrimaryInput" placeholder="0.00">
+                                <input type="number" step="0.01" class="jd-pos-tender-input" id="tenderPrimaryInput" name="amount_paid" placeholder="0.00">
                             </div>
 
                             <div class="jd-pos-tender-row">
-                                <span class="jd-pos-tender-label">
+                                <span class="jd-pos-tender-label" id="tenderSecondaryLabel">
                                     <i class="bi bi-qr-code-scan text-warning"></i>
                                     <span>Second Payment / UPI</span>
                                 </span>
-                                <input type="number" step="0.01" class="jd-pos-tender-input" id="tenderSecondaryInput" value="0.00">
+                                <input type="number" step="0.01" class="jd-pos-tender-input" id="tenderSecondaryInput" name="second_payment_amount" value="0.00">
+                                <input type="hidden" name="second_payment_method" value="UPI" id="tenderSecondaryMethod">
                             </div>
 
                             <div class="jd-pos-balance-due-row">
