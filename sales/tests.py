@@ -903,16 +903,35 @@ class PaymentTests(TestCase):
         self.assertIsNotNone(payment)
         self.assertEqual(payment.amount, Decimal('25000.00'))
 
-    def test_payment_list_post_rejects_overpayment(self):
+    def test_payment_list_post_records_excess_payment_as_advance(self):
         self._pay('40000')  # Remaining due is 10,000
         response = self.client.post(reverse('payment_list'), {
             'sale': self.sale.pk,
             'amount': '15000.00',  # Exceeds remaining due
             'payment_method': 'UPI',
+            'reference': 'EXCESS-01',
         })
-        # Stays on page and does not create payment
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(Payment.objects.filter(sale=self.sale).count(), 1)
+        self.assertRedirects(response, reverse('payment_list'))
+        self.assertEqual(Payment.objects.filter(sale=self.sale).count(), 2)
+        payment = Payment.objects.filter(sale=self.sale, reference='EXCESS-01').first()
+        self.assertIsNotNone(payment)
+        self.assertEqual(payment.amount, Decimal('15000.00'))
+
+    def test_payment_list_post_records_payment_for_settled_sale(self):
+        self._pay('50000')  # Remaining due is 0 (fully paid)
+        self.assertEqual(self.sale.due_amount, 0)
+        response = self.client.post(reverse('payment_list'), {
+            'sale': self.sale.pk,
+            'amount': '5000.00',
+            'payment_method': 'Cash',
+            'reference': 'ADV-01',
+            'notes': '',
+        })
+        self.assertRedirects(response, reverse('payment_list'))
+        payment = Payment.objects.filter(sale=self.sale, reference='ADV-01').first()
+        self.assertIsNotNone(payment)
+        self.assertEqual(payment.amount, Decimal('5000.00'))
+        self.assertIn('Advance / Additional payment', payment.notes)
 
     def test_payment_list_filters_by_method_and_query(self):
         self._pay('12000', method='Cash', reference='CASH-001')

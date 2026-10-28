@@ -127,14 +127,14 @@ class Payment(models.Model):
         super().save(*args, **kwargs)
 
     def clean(self):
-        """Reject non-positive amounts and payments above remaining due."""
+        """Reject non-positive amounts and payments above remaining due (unless excess/advance is permitted)."""
         from django.db.models import Sum
         super().clean()
         errors = {}
         if self.amount is not None:
             if self.amount <= 0:
                 errors['amount'] = 'Payment amount must be greater than zero.'
-            elif self.sale_id:
+            elif self.sale_id and not getattr(self, '_allow_excess', False):
                 paid = (Payment.objects.filter(sale_id=self.sale_id)
                         .exclude(pk=self.pk)
                         .aggregate(total=Sum('amount'))['total'] or Decimal('0'))

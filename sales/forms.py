@@ -185,6 +185,7 @@ class StandalonePaymentForm(forms.ModelForm):
     def __init__(self, *args, tenant=None, sale_queryset=None, **kwargs):
         self.tenant = tenant or (kwargs.get('instance').tenant if kwargs.get('instance') else None)
         super().__init__(*args, **kwargs)
+        self.instance._allow_excess = True
         if sale_queryset is not None:
             self.fields['sale'].queryset = sale_queryset
         else:
@@ -202,11 +203,16 @@ class StandalonePaymentForm(forms.ModelForm):
                 .order_by('-sale_date')
             )
         self.fields['sale'].label_from_instance = (
-            lambda s: f"INV-{s.id:05d} \u2014 {s.customer.name} | {s.jewellery_item.name} | Due: \u20b9{getattr(s, 'computed_due', s.due_amount):,.2f}"
-            + (" (Paid)" if getattr(s, 'computed_due', s.due_amount) <= 0 else "")
+            lambda s: (
+                f"INV-{s.id:05d} \u2014 {s.customer.name} | {s.jewellery_item.name} | "
+                + (f"Due: \u20b9{getattr(s, 'computed_due', s.due_amount):,.2f}"
+                   if getattr(s, 'computed_due', s.due_amount) > 0
+                   else "Due: \u20b90.00 (Settled / Advance)")
+            )
         )
 
     def clean(self):
+        self.instance._allow_excess = True
         cleaned_data = super().clean()
         sale = cleaned_data.get('sale')
         amount = cleaned_data.get('amount')
@@ -215,15 +221,28 @@ class StandalonePaymentForm(forms.ModelForm):
             self.add_error('amount', 'Payment amount must be greater than zero.')
 
         if sale and amount:
-            remaining = sale.due_amount
+            self.instance._allow_excess = True
+            remaining = getattr(sale, 'computed_due', sale.due_amount)
+            notes = cleaned_data.get('notes') or ''
             if remaining <= 0:
-                self.add_error('sale', f'Sale INV-{sale.id:05d} is already fully settled.')
+                if not notes:
+                    cleaned_data['notes'] = 'Advance / Additional payment'
+                elif 'Advance' not in notes:
+                    cleaned_data['notes'] = f"{notes} (Advance / Additional payment)"
             elif amount > remaining:
-                self.add_error(
-                    'amount',
-                    f'Payment amount of \u20b9{amount:,.2f} exceeds remaining due balance of \u20b9{remaining:,.2f}.'
-                )
+                excess = amount - remaining
+                if not notes:
+                    cleaned_data['notes'] = f"Includes \u20b9{excess:,.2f} advance/excess"
+                elif 'advance' not in notes.lower():
+                    cleaned_data['notes'] = f"{notes} (Includes \u20b9{excess:,.2f} advance/excess)"
         return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance._allow_excess = True
+        if commit:
+            instance.save()
+        return instance
 
 
 class OldGoldExchangeForm(forms.ModelForm):

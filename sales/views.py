@@ -9,7 +9,7 @@ from django.core.paginator import Paginator
 import logging
 import time
 from django.db import connection, transaction
-from django.db.models import Avg, Count, F, Q, Sum
+from django.db.models import Avg, Case, Count, F, Q, Sum, When
 from django.db.models.functions import Coalesce, Greatest
 from django.http import JsonResponse
 from django.utils import timezone
@@ -844,21 +844,43 @@ def payment_list(request):
         )
     )
 
+    # Sales queryset with dues calculation, prioritizing sales with pending dues first
+    sale_order = (
+        annotated_sales.select_related('customer', 'jewellery_item')
+        .order_by(
+            Case(
+                When(computed_due__gt=0, then=0),
+                default=1
+            ),
+            '-sale_date'
+        )
+    )
+
     # Handle Recording Payment directly from this page (POST)
     if request.method == 'POST':
         form = StandalonePaymentForm(
             request.POST,
             tenant=request.tenant,
-            sale_queryset=annotated_sales.select_related('customer', 'jewellery_item').order_by('-sale_date')
+            sale_queryset=sale_order
         )
         if form.is_valid():
             payment = form.save(commit=False)
             payment.tenant = request.tenant
+            payment._allow_excess = True
             payment.save()
+
+            # Refresh sale to display correct updated remaining due in the success toast
+            sale = payment.sale
+            if hasattr(sale, 'total_paid'):
+                delattr(sale, 'total_paid')
+            if hasattr(sale, 'computed_due'):
+                delattr(sale, 'computed_due')
+
+            due_display = f"\u20b9{sale.due_amount:,.2f}" if sale.due_amount > 0 else "Fully Settled"
             messages.success(
                 request,
-                f"Payment of \u20b9{payment.amount:,.2f} recorded successfully for Invoice INV-{payment.sale.id:05d} "
-                f"({payment.sale.customer.name}). Remaining Due: \u20b9{payment.sale.due_amount:,.2f} ({payment.sale.payment_status})."
+                f"Payment receipt of \u20b9{payment.amount:,.2f} recorded successfully for Invoice INV-{payment.sale.id:05d} "
+                f"({payment.sale.customer.name}). Due Balance: {due_display} ({payment.sale.payment_status})."
             )
             return redirect('payment_list')
         else:
@@ -873,7 +895,7 @@ def payment_list(request):
         form = StandalonePaymentForm(
             initial=initial_data,
             tenant=request.tenant,
-            sale_queryset=annotated_sales.select_related('customer', 'jewellery_item').order_by('-sale_date')
+            sale_queryset=sale_order
         )
 
     # KPI Metrics
@@ -890,7 +912,7 @@ def payment_list(request):
     total_outstanding_due = dues_agg['total_due'] or Decimal('0.00')
     pending_sales_count = dues_agg['count'] or 0
 
-    # Sales with dues mapping for dynamic client-side modal auto-fill (lightweight values dictionary)
+    # Sales mapping for dynamic client-side modal auto-fill (all showroom sales)
     sales_with_dues_map = {
         row['id']: {
             'due': float(row['computed_due']),
@@ -898,8 +920,9 @@ def payment_list(request):
             'customer': row['customer__name'],
             'item': row['jewellery_item__name'],
             'tag': row['jewellery_item__tag_number'] or row['jewellery_item__item_code'],
+            'is_settled': row['computed_due'] <= 0,
         }
-        for row in pending_sales_qs.select_related('customer', 'jewellery_item').values(
+        for row in annotated_sales.select_related('customer', 'jewellery_item').values(
             'id', 'computed_due', 'sale_price',
             'customer__name', 'jewellery_item__name',
             'jewellery_item__tag_number', 'jewellery_item__item_code'

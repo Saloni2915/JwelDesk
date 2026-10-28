@@ -858,28 +858,44 @@
             </div>
 
             <div class="modal-body p-4">
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger py-2 small mb-3">
+                    {% for err in form.non_field_errors %}
+                    <div><i class="bi bi-exclamation-triangle me-1"></i>{{ err }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
                 <!-- Sale Selector -->
                 <div class="mb-3">
                     <label for="id_standalone_sale" class="jd-field-label fw-bold">
                         Select Customer Sale / Invoice <span class="text-danger">*</span>
                     </label>
                     {{ form.sale }}
+                    {% if form.sale.errors %}
+                    <div class="text-danger small mt-1">
+                        <i class="bi bi-exclamation-circle me-1"></i>{{ form.sale.errors.0 }}
+                    </div>
+                    {% endif %}
                     <div class="jd-field-help mt-1">
-                        Select from active sales. Invoices with remaining dues are highlighted.
+                        Select customer invoice. Invoices with pending balance appear first; fully settled invoices can be selected for advance / additional payments.
                     </div>
                 </div>
 
                 <!-- Dynamic Live Info Card when sale is selected -->
                 <div id="saleDetailsBanner" class="p-3 mb-3 rounded bg-dark border border-warning border-opacity-25 d-none">
-                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-1">
                         <div>
                             <div class="small text-muted">Customer &amp; Item:</div>
                             <strong class="text-light" id="bannerCustomerItem">—</strong>
                         </div>
                         <div class="text-end">
-                            <div class="small text-muted">Remaining Balance Due:</div>
-                            <span class="fs-5 fw-bold text-danger font-monospace" id="bannerDueAmount">₹0.00</span>
+                            <div class="small text-muted" id="bannerDueLabel">Remaining Balance Due:</div>
+                            <span class="fs-5 fw-bold font-monospace" id="bannerDueAmount">₹0.00</span>
                         </div>
+                    </div>
+                    <div id="bannerSettledNotice" class="small text-warning mt-1 d-none">
+                        <i class="bi bi-info-circle me-1"></i> This invoice is fully settled. This payment will be recorded as an advance / additional receipt.
                     </div>
                 </div>
 
@@ -890,6 +906,11 @@
                             Payment Amount (₹) <span class="text-danger">*</span>
                         </label>
                         {{ form.amount }}
+                        {% if form.amount.errors %}
+                        <div class="text-danger small mt-1">
+                            <i class="bi bi-exclamation-circle me-1"></i>{{ form.amount.errors.0 }}
+                        </div>
+                        {% endif %}
                         <div class="jd-field-help mt-1 d-flex justify-content-between">
                             <span>Enter received amount</span>
                             <a href="#" id="fillFullDueBtn" class="text-warning text-decoration-none fw-semibold d-none">
@@ -903,6 +924,11 @@
                             Payment Method <span class="text-danger">*</span>
                         </label>
                         {{ form.payment_method }}
+                        {% if form.payment_method.errors %}
+                        <div class="text-danger small mt-1">
+                            <i class="bi bi-exclamation-circle me-1"></i>{{ form.payment_method.errors.0 }}
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -912,6 +938,11 @@
                             Transaction / Reference No.
                         </label>
                         {{ form.reference }}
+                        {% if form.reference.errors %}
+                        <div class="text-danger small mt-1">
+                            <i class="bi bi-exclamation-circle me-1"></i>{{ form.reference.errors.0 }}
+                        </div>
+                        {% endif %}
                         <div class="jd-field-help mt-1">UPI transaction ID, card swipe slip no., or cheque number.</div>
                     </div>
 
@@ -920,6 +951,11 @@
                             Payment Remarks / Notes
                         </label>
                         {{ form.notes }}
+                        {% if form.notes.errors %}
+                        <div class="text-danger small mt-1">
+                            <i class="bi bi-exclamation-circle me-1"></i>{{ form.notes.errors.0 }}
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -949,6 +985,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const detailsBanner = document.getElementById('saleDetailsBanner');
     const bannerCustomerItem = document.getElementById('bannerCustomerItem');
     const bannerDueAmount = document.getElementById('bannerDueAmount');
+    const bannerDueLabel = document.getElementById('bannerDueLabel');
+    const bannerSettledNotice = document.getElementById('bannerSettledNotice');
     const fillFullDueBtn = document.getElementById('fillFullDueBtn');
 
     function onSaleChange() {
@@ -956,19 +994,32 @@ document.addEventListener('DOMContentLoaded', function() {
         const saleId = saleSelect.value;
         const info = duesData[saleId];
 
-        if (info && info.due > 0) {
+        if (info) {
             detailsBanner.classList.remove('d-none');
-            bannerCustomerItem.textContent = info.customer + ' — ' + info.item + ' (' + info.tag + ')';
-            bannerDueAmount.textContent = '₹ ' + info.due.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            fillFullDueBtn.classList.remove('d-none');
+            bannerCustomerItem.textContent = info.customer + ' — ' + info.item + (info.tag ? ' (' + info.tag + ')' : '');
 
-            // Auto populate amount if blank or zero
-            if (!amountInput.value || parseFloat(amountInput.value) <= 0) {
-                amountInput.value = info.due.toFixed(2);
+            if (info.due > 0) {
+                if (bannerDueLabel) bannerDueLabel.textContent = 'Remaining Balance Due:';
+                bannerDueAmount.textContent = '₹ ' + info.due.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                bannerDueAmount.className = 'fs-5 fw-bold text-danger font-monospace';
+                fillFullDueBtn.classList.remove('d-none');
+                if (bannerSettledNotice) bannerSettledNotice.classList.add('d-none');
+
+                // Auto populate amount if blank or zero
+                if (!amountInput.value || parseFloat(amountInput.value) <= 0) {
+                    amountInput.value = info.due.toFixed(2);
+                }
+            } else {
+                if (bannerDueLabel) bannerDueLabel.textContent = 'Invoice Status:';
+                bannerDueAmount.textContent = 'Fully Settled (₹0.00 Due)';
+                bannerDueAmount.className = 'fs-6 fw-bold text-success font-monospace';
+                fillFullDueBtn.classList.add('d-none');
+                if (bannerSettledNotice) bannerSettledNotice.classList.remove('d-none');
             }
         } else {
             detailsBanner.classList.add('d-none');
             fillFullDueBtn.classList.add('d-none');
+            if (bannerSettledNotice) bannerSettledNotice.classList.add('d-none');
         }
     }
 
@@ -976,16 +1027,26 @@ document.addEventListener('DOMContentLoaded', function() {
         saleSelect.addEventListener('change', onSaleChange);
         if (saleSelect.value) {
             onSaleChange();
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('sale')) {
-                const modalEl = document.getElementById('recordPaymentModal');
-                if (modalEl && typeof bootstrap !== 'undefined') {
-                    const modal = new bootstrap.Modal(modalEl);
-                    modal.show();
-                }
-            }
         }
     }
+
+    // Auto open modal if URL has ?sale= or if there are form validation errors
+    {% if form.errors %}
+    const modalEl = document.getElementById('recordPaymentModal');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+    {% else %}
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('sale')) {
+        const modalEl = document.getElementById('recordPaymentModal');
+        if (modalEl && typeof bootstrap !== 'undefined') {
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        }
+    }
+    {% endif %}
 
     if (fillFullDueBtn) {
         fillFullDueBtn.addEventListener('click', function(e) {
