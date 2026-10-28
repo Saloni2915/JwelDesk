@@ -217,7 +217,7 @@ def inventory_list(request):
     # taken from settings.INVENTORY_LOW_STOCK_THRESHOLD.
     threshold = stock.get_low_stock_threshold(request.GET.get('threshold'))
 
-    # Search filter (tag_number, item_code, name, design_code, or huid)
+    # Search filter (tag_number, item_code, name, design_code, huid, category, metal, purity)
     q = request.GET.get('q', '').strip()
     if q:
         items = items.filter(
@@ -225,7 +225,10 @@ def inventory_list(request):
             Q(item_code__icontains=q) |
             Q(name__icontains=q) |
             Q(design_code__icontains=q) |
-            Q(huid__icontains=q)
+            Q(huid__icontains=q) |
+            Q(category__name__icontains=q) |
+            Q(metal_type__icontains=q) |
+            Q(purity__icontains=q)
         )
 
     # Specific tag filter
@@ -240,13 +243,13 @@ def inventory_list(request):
 
     # Category filter
     category_id = request.GET.get('category', '').strip()
-    if category_id:
-        items = items.filter(category_id=category_id)
+    if category_id and category_id.isdigit():
+        items = items.filter(category_id=int(category_id))
 
     # Metal type filter
     metal = request.GET.get('metal', '').strip()
     if metal:
-        items = items.filter(metal_type=metal)
+        items = items.filter(metal_type__iexact=metal)
 
     # Purity filter (values are whatever the shop already uses, e.g. 22K, 925)
     purity = request.GET.get('purity', '').strip()
@@ -256,23 +259,30 @@ def inventory_list(request):
     # HUID status filter
     huid_status = request.GET.get('huid_status', '').strip()
     if huid_status:
-        items = items.filter(huid_status=huid_status)
+        items = items.filter(huid_status__iexact=huid_status)
 
     # Hallmark status filter
     hallmark_status = request.GET.get('hallmark_status', '').strip()
     if hallmark_status:
-        items = items.filter(hallmark_status=hallmark_status)
-
-    # Status filter (Available / Sold / Reserved)
-    status = request.GET.get('status', '').strip()
-    if status:
-        items = items.filter(status=status)
+        items = items.filter(hallmark_status__iexact=hallmark_status)
 
     # Stock summary & low-stock designs (computed once to prevent duplicate GROUP BY queries)
     inventory_summary = stock.inventory_summary(threshold, tenant=request.tenant)
     low_stock_codes = {d['design_code'] for d in inventory_summary.get('low_stock_designs', [])}
 
-    stock_filter = request.GET.get('stock', '').strip()
+    # Unified Stock & Status filter
+    stock_filter = request.GET.get('stock', '').strip().lower()
+    status_filter = request.GET.get('status', '').strip()
+
+    # If status is passed without stock (from legacy or direct links), normalize it
+    if status_filter and not stock_filter:
+        if status_filter.lower() == 'available':
+            stock_filter = 'available'
+        elif status_filter.lower() == 'sold':
+            stock_filter = 'out_of_stock'
+        elif status_filter.lower() == 'reserved':
+            stock_filter = 'reserved'
+
     if stock_filter == 'available':
         items = items.filter(status='Available')
     elif stock_filter == 'low_stock':
@@ -283,8 +293,8 @@ def inventory_list(request):
         items = items.filter(Q(status='Sold') | Q(quantity__lte=0))
     elif stock_filter == 'reserved':
         items = items.filter(status='Reserved')
-    else:
-        stock_filter = ''
+    elif status_filter:
+        items = items.filter(status__iexact=status_filter)
 
     # Sorting
     sort = request.GET.get('sort', '-created_at')
@@ -320,6 +330,27 @@ def inventory_list(request):
         )
         cache.set(purity_cache_key, purity_choices, 3600)
 
+    # Compile human-readable active filters for removable badges
+    active_filters = []
+    if q:
+        active_filters.append({'key': 'q', 'label': f'Search: "{q}"'})
+    if category_id:
+        cat_match = next((c.name for c in categories if str(c.id) == category_id), None)
+        active_filters.append({'key': 'category', 'label': f'Category: {cat_match or category_id}'})
+    if metal:
+        active_filters.append({'key': 'metal', 'label': f'Metal: {metal.title()}'})
+    if purity:
+        active_filters.append({'key': 'purity', 'label': f'Purity: {purity}'})
+    if stock_filter:
+        stock_labels = dict(stock.STOCK_STATUS_FILTERS)
+        active_filters.append({'key': 'stock', 'label': f'Stock: {stock_labels.get(stock_filter, stock_filter.title())}'})
+    elif status_filter:
+        active_filters.append({'key': 'status', 'label': f'Status: {status_filter}'})
+    if hallmark_status:
+        active_filters.append({'key': 'hallmark_status', 'label': f'Hallmark: {hallmark_status}'})
+    if huid_status:
+        active_filters.append({'key': 'huid_status', 'label': f'HUID: {huid_status}'})
+
     context = {
         'items': page_obj,
         'page_obj': page_obj,
@@ -338,11 +369,13 @@ def inventory_list(request):
         'selected_purity': purity,
         'selected_huid_status': huid_status,
         'selected_hallmark_status': hallmark_status,
-        'selected_status': status,
+        'selected_status': status_filter,
         'selected_stock': stock_filter,
         'selected_sort': sort,
         'low_stock_threshold': threshold,
         'summary': inventory_summary,
+        'active_filters': active_filters,
+        'has_active_filters': bool(active_filters),
     }
     return render(request, 'inventory/item_list.html', context)
 

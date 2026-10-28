@@ -1507,6 +1507,29 @@ class InventoryStockPageTests(TestCase):
         response = self.client.get(reverse('inventory_list'), {'threshold': '3'})
         self.assertEqual(response.context['low_stock_threshold'], 3)
 
+    def test_list_all_items_shown_when_filters_cleared(self):
+        # When filtered by purity, only 1 item matches
+        filtered_resp = self.client.get(reverse('inventory_list'), {'purity': '925'})
+        self.assertEqual(filtered_resp.context['page_obj'].paginator.count, 1)
+
+        # When all filters are cleared (e.g. hitting /inventory/), all 3 items are returned
+        cleared_resp = self.client.get(reverse('inventory_list'))
+        self.assertEqual(cleared_resp.context['page_obj'].paginator.count, 3)
+        self.assertFalse(cleared_resp.context['has_active_filters'])
+
+    def test_list_active_filters_reported_in_context(self):
+        response = self.client.get(reverse('inventory_list'), {'metal': 'Gold', 'q': 'Necklace'})
+        self.assertTrue(response.context['has_active_filters'])
+        active_keys = [f['key'] for f in response.context['active_filters']]
+        self.assertIn('metal', active_keys)
+        self.assertIn('q', active_keys)
+
+    def test_list_legacy_status_param_mapped_to_stock(self):
+        # Passing status=Available should work seamlessly with stock=available
+        response = self.client.get(reverse('inventory_list'), {'status': 'Available'})
+        codes = sorted(item.item_code for item in response.context['items'])
+        self.assertEqual(codes, ['PG-001', 'PG-002'])
+
     # ---------------------------------------------------------------- detail
     def test_detail_shows_stock_value_and_movements(self):
         response = self.client.get(reverse('inventory_detail', kwargs={'pk': self.item.pk}))

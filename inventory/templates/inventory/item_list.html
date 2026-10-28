@@ -147,14 +147,36 @@
 
     <!-- 3. Search & Filter Bar -->
     <div class="jd-inv-filter-card">
-        <form method="get" id="inventoryFilterForm">
-            <div class="jd-inv-filter-grid">
-                <div>
-                    <input type="text" name="q" value="{{ selected_q }}" class="jd-inv-input"
-                           placeholder="Search Tag, Item code, Design, HUID or Name...">
+        <form method="get" id="inventoryFilterForm" action="{% url 'inventory_list' %}">
+            
+            <!-- Row 1: Search & Action Buttons -->
+            <div class="jd-inv-search-row">
+                <div class="jd-inv-search-wrap">
+                    <i class="bi bi-search jd-inv-search-icon"></i>
+                    <input type="text" name="q" id="id_inv_q" value="{{ selected_q }}" class="jd-inv-input jd-inv-search-input"
+                           placeholder="Search Tag #, Item code, Design, Name, HUID, Category...">
+                    {% if selected_q %}
+                    <button type="button" class="jd-inv-search-clear" onclick="document.getElementById('id_inv_q').value=''; cleanSubmitForm(document.getElementById('inventoryFilterForm'));" title="Clear search">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </button>
+                    {% endif %}
                 </div>
+                <div class="jd-inv-btn-group">
+                    <button type="submit" class="jd-btn-filter" title="Apply Filters">
+                        <i class="bi bi-funnel-fill"></i> Filter
+                    </button>
+                    {% if has_active_filters or selected_sort != '-created_at' %}
+                    <a href="{% url 'inventory_list' %}" class="jd-btn-reset" title="Reset All Filters">
+                        <i class="bi bi-arrow-counterclockwise"></i> Reset
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Row 2: Clean Dropdown Filters Grid -->
+            <div class="jd-inv-selects-grid">
                 <div>
-                    <select name="category" class="jd-inv-select">
+                    <select name="category" class="jd-inv-select" aria-label="Filter by Category">
                         <option value="">All Categories</option>
                         {% for cat in categories %}
                         <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:"s" %}selected{% endif %}>
@@ -163,93 +185,89 @@
                         {% endfor %}
                     </select>
                 </div>
+
                 <div>
-                    <select name="metal" class="jd-inv-select">
+                    <select name="metal" class="jd-inv-select" aria-label="Filter by Metal">
                         <option value="">All Metals</option>
                         {% for key, val in metal_choices %}
-                        <option value="{{ key }}" {% if selected_metal == key %}selected{% endif %}>{{ val }}</option>
+                        <option value="{{ key }}" {% if selected_metal|lower == key|lower %}selected{% endif %}>{{ val }}</option>
                         {% endfor %}
                     </select>
                 </div>
+
                 <div>
-                    <select name="huid_status" class="jd-inv-select">
-                        <option value="">All HUID Status</option>
-                        {% for key, val in huid_status_choices %}
-                        <option value="{{ key }}" {% if selected_huid_status == key %}selected{% endif %}>{{ val }}</option>
+                    <select name="purity" class="jd-inv-select" aria-label="Filter by Purity">
+                        <option value="">All Purity Grades</option>
+                        {% for purity in purity_choices %}
+                        <option value="{{ purity }}" {% if selected_purity|lower == purity|lower %}selected{% endif %}>{{ purity }}</option>
                         {% endfor %}
                     </select>
                 </div>
+
                 <div>
-                    <select name="stock" class="jd-inv-select">
+                    <select name="stock" class="jd-inv-select" aria-label="Filter by Stock Status">
                         <option value="">All Stock Status</option>
                         {% for key, val in stock_filter_choices %}
-                        <option value="{{ key }}" {% if selected_stock == key %}selected{% endif %}>{{ val }}</option>
+                        <option value="{{ key }}" {% if selected_stock == key or selected_status|lower == key %}selected{% endif %}>{{ val }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="d-flex gap-2">
-                    <button type="submit" class="jd-btn-gold px-3" title="Apply Filters">
-                        <i class="bi bi-search"></i> Filter
-                    </button>
-                    {% if selected_q or selected_category or selected_metal or selected_purity or selected_huid_status or selected_hallmark_status or selected_status or selected_stock %}
-                    <a href="{% url 'inventory_list' %}" class="jd-btn-ghost px-2" title="Clear Filters">
-                        <i class="bi bi-x-lg"></i>
-                    </a>
-                    {% endif %}
+
+                <div>
+                    <select name="hallmark_status" class="jd-inv-select" aria-label="Filter by Hallmark Status">
+                        <option value="">All Hallmark Status</option>
+                        {% for key, val in hallmark_status_choices %}
+                        <option value="{{ key }}" {% if selected_hallmark_status|lower == key|lower %}selected{% endif %}>{{ val }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <select name="huid_status" class="jd-inv-select" aria-label="Filter by HUID Status">
+                        <option value="">All HUID Status</option>
+                        {% for key, val in huid_status_choices %}
+                        <option value="{{ key }}" {% if selected_huid_status|lower == key|lower %}selected{% endif %}>{{ val }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <select name="sort" class="jd-inv-select" aria-label="Sort Stock Items">
+                        <option value="-created_at" {% if selected_sort == '-created_at' %}selected{% endif %}>Sort: Newest Added</option>
+                        <option value="created_at" {% if selected_sort == 'created_at' %}selected{% endif %}>Sort: Oldest First</option>
+                        <option value="selling_price" {% if selected_sort == 'selling_price' %}selected{% endif %}>Sort: Price Low to High</option>
+                        <option value="-selling_price" {% if selected_sort == '-selling_price' %}selected{% endif %}>Sort: Price High to Low</option>
+                        <option value="quantity" {% if selected_sort == 'quantity' %}selected{% endif %}>Sort: Stock Low to High</option>
+                        <option value="-quantity" {% if selected_sort == '-quantity' %}selected{% endif %}>Sort: Stock High to Low</option>
+                        <option value="net_weight" {% if selected_sort == 'net_weight' %}selected{% endif %}>Sort: Weight Low to High</option>
+                        <option value="-net_weight" {% if selected_sort == '-net_weight' %}selected{% endif %}>Sort: Weight High to Low</option>
+                        <option value="tag_number" {% if selected_sort == 'tag_number' %}selected{% endif %}>Sort: Tag No. (A-Z)</option>
+                        <option value="name" {% if selected_sort == 'name' %}selected{% endif %}>Sort: Name (A-Z)</option>
+                    </select>
                 </div>
             </div>
 
-            <!-- Secondary Filter Row -->
-            <div class="jd-inv-filter-grid-2">
-                <div>
-                    <select name="purity" class="jd-inv-select">
-                        <option value="">All Purity Grades</option>
-                        {% for purity in purity_choices %}
-                        <option value="{{ purity }}" {% if selected_purity == purity %}selected{% endif %}>{{ purity }}</option>
-                        {% endfor %}
-                    </select>
+            <!-- Active Filters Bar (if any filters applied) -->
+            {% if has_active_filters %}
+            <div class="jd-inv-active-filters-bar">
+                <span class="jd-active-filter-title"><i class="bi bi-funnel"></i> Active:</span>
+                <div class="d-flex flex-wrap gap-1 align-items-center">
+                    {% for filter in active_filters %}
+                    <button type="button" class="jd-active-filter-badge" onclick="removeFilter('{{ filter.key }}')" title="Click to remove {{ filter.label }}">
+                        <span>{{ filter.label }}</span>
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                    {% endfor %}
+                    <a href="{% url 'inventory_list' %}" class="jd-clear-all-btn" title="Clear all active filters">
+                        <i class="bi bi-trash3 me-1"></i>Clear all
+                    </a>
                 </div>
-                <div>
-                    <select name="status" class="jd-inv-select">
-                        <option value="">Showroom Status</option>
-                        {% for key, val in status_choices %}
-                        <option value="{{ key }}" {% if selected_status == key %}selected{% endif %}>{{ val }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div>
-                    <select name="hallmark_status" class="jd-inv-select">
-                        <option value="">Hallmark Status</option>
-                        {% for key, val in hallmark_status_choices %}
-                        <option value="{{ key }}" {% if selected_hallmark_status == key %}selected{% endif %}>{{ val }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div>
-                    <select name="sort" class="jd-inv-select">
-                        <option value="-created_at" {% if selected_sort == '-created_at' %}selected{% endif %}>Newest Added First</option>
-                        <option value="created_at" {% if selected_sort == 'created_at' %}selected{% endif %}>Oldest First</option>
-                        <option value="selling_price" {% if selected_sort == 'selling_price' %}selected{% endif %}>Price: Low to High</option>
-                        <option value="-selling_price" {% if selected_sort == '-selling_price' %}selected{% endif %}>Price: High to Low</option>
-                        <option value="quantity" {% if selected_sort == 'quantity' %}selected{% endif %}>Stock: Low to High</option>
-                        <option value="-quantity" {% if selected_sort == '-quantity' %}selected{% endif %}>Stock: High to Low</option>
-                        <option value="net_weight" {% if selected_sort == 'net_weight' %}selected{% endif %}>Weight: Low to High</option>
-                        <option value="-net_weight" {% if selected_sort == '-net_weight' %}selected{% endif %}>Weight: High to Low</option>
-                        <option value="tag_number" {% if selected_sort == 'tag_number' %}selected{% endif %}>Tag Number (A-Z)</option>
-                        <option value="name" {% if selected_sort == 'name' %}selected{% endif %}>Item Name (A-Z)</option>
-                    </select>
-                </div>
-                <div>
-                    <div class="input-group input-group-sm">
-                        <span class="jd-alert-label">Min Alert</span>
-                        <input type="number" name="threshold" value="{{ low_stock_threshold }}" min="0" max="1000"
-                               class="jd-inv-input text-center" title="Low-stock threshold">
-                    </div>
-                </div>
-                <div class="d-none d-md-block text-muted small text-end pt-1">
+                <div class="ms-auto text-muted small d-none d-md-block">
                     Showing {{ page_obj.paginator.count }} item(s)
                 </div>
             </div>
+            {% endif %}
+
         </form>
     </div>
 
@@ -466,12 +484,54 @@
 </div>
 
 <script>
+    function removeFilter(key) {
+        const form = document.getElementById('inventoryFilterForm');
+        if (!form) return;
+        const el = form.elements[key];
+        if (el) {
+            if (el.tagName === 'SELECT') {
+                el.selectedIndex = 0;
+                el.value = '';
+            } else {
+                el.value = '';
+            }
+        }
+        if (key === 'stock' || key === 'status') {
+            if (form.elements['stock']) { form.elements['stock'].selectedIndex = 0; form.elements['stock'].value = ''; }
+            if (form.elements['status']) { form.elements['status'].selectedIndex = 0; form.elements['status'].value = ''; }
+        }
+        cleanSubmitForm(form);
+    }
+
+    function cleanSubmitForm(form) {
+        if (!form) return;
+        const inputs = form.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            if (!input.value || (input.name === 'sort' && input.value === '-created_at')) {
+                input.disabled = true;
+            }
+        });
+        form.submit();
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         document.body.classList.add('has-inventory-suite');
         const mainContent = document.querySelector('.main-content');
         if (mainContent) mainContent.classList.add('jd-inv-active');
         const pageContent = document.getElementById('page-content');
         if (pageContent) pageContent.classList.add('jd-inv-active');
+
+        const form = document.getElementById('inventoryFilterForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const inputs = form.querySelectorAll('input, select');
+                inputs.forEach(input => {
+                    if (!input.value || (input.name === 'sort' && input.value === '-created_at')) {
+                        input.disabled = true;
+                    }
+                });
+            });
+        }
     });
 </script>
 {% endblock %}
