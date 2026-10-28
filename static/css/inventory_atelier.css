@@ -369,21 +369,31 @@ body.has-inventory-suite .sidebar {
 .jd-inv-search-icon {
     position: absolute;
     left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
     color: var(--jd-inv-muted);
     font-size: 0.95rem;
     pointer-events: none;
     z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
 }
 
-.jd-inv-search-input {
-    padding-left: 2.45rem !important;
-    padding-right: 2.2rem !important;
+.jd-inv-search-wrap .jd-inv-search-input,
+.jd-inv-input.jd-inv-search-input {
+    padding-left: 2.85rem !important;
+    padding-right: 2.4rem !important;
     height: 42px;
 }
 
 .jd-inv-search-clear {
     position: absolute;
     right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
     background: transparent;
     border: none;
     color: var(--jd-inv-muted);
@@ -392,6 +402,9 @@ body.has-inventory-suite .sidebar {
     cursor: pointer;
     transition: color 0.15s ease;
     z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .jd-inv-search-clear:hover {
@@ -505,6 +518,12 @@ body.has-inventory-suite .sidebar {
     font-weight: 500;
     transition: all 0.2s ease;
     box-sizing: border-box;
+}
+
+.jd-inv-search-wrap input.jd-inv-search-input,
+.jd-inv-search-wrap .jd-inv-search-input {
+    padding-left: 2.85rem !important;
+    padding-right: 2.4rem !important;
 }
 
 .jd-inv-input:focus,

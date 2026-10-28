@@ -154,6 +154,7 @@
                 <div class="jd-inv-search-wrap">
                     <i class="bi bi-search jd-inv-search-icon"></i>
                     <input type="text" name="q" id="id_inv_q" value="{{ selected_q }}" class="jd-inv-input jd-inv-search-input"
+                           style="padding-left: 2.85rem !important; padding-right: 2.4rem !important;"
                            placeholder="Search Tag #, Item code, Design, Name, HUID, Category...">
                     {% if selected_q %}
                     <button type="button" class="jd-inv-search-clear" onclick="document.getElementById('id_inv_q').value=''; cleanSubmitForm(document.getElementById('inventoryFilterForm'));" title="Clear search">
