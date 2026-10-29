@@ -740,9 +740,15 @@ body:not([data-theme="dark"]):not([data-theme="gold"]) .pwa-update-mini-pill,
             });
         }
 
-        // Check Server Version API (/api/app-version/)
-        function checkServerVersion() {
-            fetch('/api/app-version/?t=' + Date.now(), { cache: 'no-store' })
+        // Check Server Version API (/api/app-version/) with 60s throttle
+        var lastVersionCheck = 0;
+        function checkServerVersion(force) {
+            var now = Date.now();
+            if (!force && (now - lastVersionCheck < 60000)) {
+                return; // Throttled: avoid duplicate serverless invocations within 60 seconds
+            }
+            lastVersionCheck = now;
+            fetch('/api/app-version/?t=' + now, { cache: 'no-store' })
                 .then(function(res) {
                     if (!res.ok) throw new Error('Version check failed');
                     return res.json();
@@ -809,13 +815,6 @@ body:not([data-theme="dark"]):not([data-theme="gold"]) .pwa-update-mini-pill,
                     }
                     checkServerVersion();
                 }
-            });
-
-            window.addEventListener('focus', function() {
-                if (swRegistration) {
-                    swRegistration.update().catch(function() {});
-                }
-                checkServerVersion();
             });
 
             setInterval(function() {

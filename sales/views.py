@@ -93,13 +93,17 @@ def sale_list(request):
         all_sales = Sale.objects.filter(tenant=request.tenant)
         if active_b:
             all_sales = all_sales.filter(Q(branch=active_b) | Q(branch__isnull=True))
-        total_revenue_all = all_sales.aggregate(total=Sum('sale_price'))['total'] or Decimal('0.00')
-        total_sales_count = all_sales.count()
-
         today = timezone.now().date()
-        today_sales = all_sales.filter(sale_date__date=today)
-        today_sales_revenue = today_sales.aggregate(total=Sum('sale_price'))['total'] or Decimal('0.00')
-        today_sales_count = today_sales.count()
+        kpis = all_sales.aggregate(
+            total_revenue=Sum('sale_price'),
+            total_count=Count('id'),
+            today_revenue=Sum('sale_price', filter=Q(sale_date__date=today)),
+            today_count=Count('id', filter=Q(sale_date__date=today)),
+        )
+        total_revenue_all = kpis['total_revenue'] or Decimal('0.00')
+        total_sales_count = kpis['total_count'] or 0
+        today_sales_revenue = kpis['today_revenue'] or Decimal('0.00')
+        today_sales_count = kpis['today_count'] or 0
         t_kpi_elapsed_ms = (time.perf_counter() - t_kpi_start) * 1000.0
         q_kpi_count = tracker.count - q_kpi_before
 

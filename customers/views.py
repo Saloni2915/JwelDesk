@@ -71,13 +71,21 @@ def customer_detail(request, pk):
     sales = customer.sales.select_related('jewellery_item').prefetch_related('payments').order_by('-sale_date')
     enquiries = customer.enquiries.select_related('category').order_by('-created_at')
 
+    total_purchase = customer.total_purchases_amount
+    total_paid = customer.total_paid_amount
+    try:
+        due = total_purchase - total_paid
+        outstanding = due if due > 0 else 0
+    except Exception:
+        outstanding = 0
+
     context = {
         'customer': customer,
         'sales': sales,
         'enquiries': enquiries,
-        'total_purchase': customer.total_purchases_amount,
-        'total_paid': customer.total_paid_amount,
-        'outstanding': customer.outstanding_amount,
+        'total_purchase': total_purchase,
+        'total_paid': total_paid,
+        'outstanding': outstanding,
     }
     return render(request, 'customers/customer_detail.html', context)
 

@@ -193,6 +193,8 @@ if _database_url:
     # - SSL is required for remote database connections
     conn_max_age_val = int(os.environ.get('CONN_MAX_AGE', '300'))
     ssl_required = 'localhost' not in _database_url and '127.0.0.1' not in _database_url
+    # Disable conn_health_checks by default over WAN to prevent redundant SELECT 1 round-trip on every request
+    conn_health_checks_val = os.environ.get('CONN_HEALTH_CHECKS', '').lower() in ('1', 'true', 'yes')
 
     try:
         import dj_database_url
@@ -200,7 +202,7 @@ if _database_url:
             'default': dj_database_url.parse(
                 _database_url,
                 conn_max_age=conn_max_age_val,
-                conn_health_checks=True,
+                conn_health_checks=conn_health_checks_val,
                 ssl_require=ssl_required,
                 disable_server_side_cursors=True,
             )

@@ -1625,6 +1625,10 @@
         var itemId = itemSelect ? itemSelect.value : '';
 
         setCouponFeedback('Verifying coupon with server rules...', 'info');
+        if (btnApplyCoupon) {
+            btnApplyCoupon.disabled = true;
+            btnApplyCoupon.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Validating...';
+        }
 
         var url = '/coupons/api/validate/?code=' + encodeURIComponent(code) +
                   '&customer_id=' + encodeURIComponent(custId) +
@@ -1655,6 +1659,12 @@
         })
         .catch(function(err) {
             setCouponFeedback('Unable to validate coupon at this time.', 'danger');
+        })
+        .finally(function() {
+            if (btnApplyCoupon) {
+                btnApplyCoupon.disabled = false;
+                btnApplyCoupon.innerHTML = '<i class="bi bi-tag me-1"></i> Apply';
+            }
         });
     }
 

@@ -83,7 +83,7 @@ def dashboard(request):
     active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
 
     # ---- Inventory summary & counts (single unified aggregate) -----------
-    summary = stock.inventory_summary(tenant=request.tenant, branch=active_b)
+    summary = stock.inventory_summary(tenant=request.tenant, branch=active_b, use_cache=True)
     total_items = summary.get('total_items', 0)
     available_items = summary.get('available_stock', 0)
     inventory_value = summary.get('inventory_value')
@@ -304,7 +304,7 @@ def inventory_list(request):
         items = items.filter(hallmark_status__iexact=hallmark_status)
 
     # Stock summary & low-stock designs (computed once to prevent duplicate GROUP BY queries)
-    inventory_summary = stock.inventory_summary(threshold, tenant=request.tenant, branch=active_b)
+    inventory_summary = stock.inventory_summary(threshold, tenant=request.tenant, branch=active_b, use_cache=True)
     low_stock_codes = {d['design_code'] for d in inventory_summary.get('low_stock_designs', [])}
 
     # Unified Stock & Status filter

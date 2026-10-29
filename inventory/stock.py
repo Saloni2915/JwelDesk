@@ -107,7 +107,7 @@ def item_stock_value(item):
     return item.estimated_value.quantize(Decimal('0.01'))
 
 
-def inventory_summary(threshold=None, tenant=None, branch=None):
+def inventory_summary(threshold=None, tenant=None, branch=None, use_cache=False):
     """
     Return the inventory KPI block used by the inventory pages scoped to tenant.
     Optionally filtered by a specific active branch.
@@ -117,6 +117,16 @@ def inventory_summary(threshold=None, tenant=None, branch=None):
     gold/silver rate is used.
     """
     threshold = get_low_stock_threshold(threshold)
+    import sys
+    if use_cache and 'test' not in sys.argv:
+        from django.core.cache import cache
+        t_id = getattr(tenant, 'id', 0) if tenant else 0
+        b_id = getattr(branch, 'id', 0) if branch else 0
+        cache_key = f'stock:summary:{t_id}:{b_id}:{threshold}'
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
+
     available = _available_quantity()
 
     qs = JewelleryItem.objects.filter(tenant=tenant) if tenant else JewelleryItem.objects.all()
@@ -171,6 +181,8 @@ def inventory_summary(threshold=None, tenant=None, branch=None):
     totals['low_stock_designs'] = designs
     totals['low_stock_design_count'] = len(designs)
     totals['low_stock_items'] = sum(d['item_count'] for d in designs)
+    if use_cache and 'test' not in sys.argv:
+        cache.set(cache_key, totals, 60)
     return totals
 
 

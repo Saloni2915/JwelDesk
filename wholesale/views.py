@@ -130,9 +130,32 @@ def dashboard(request):
         total=Coalesce(Sum('amount'), Decimal('0.00'), output_field=DecimalField())
     )['total']
 
-    # Outstanding retailer balances (sum of all active retailer balances)
-    parties = RetailerParty.objects.filter(tenant=tenant, is_active=True)
-    total_outstanding = sum((p.current_balance for p in parties), Decimal('0.00'))
+    # Outstanding retailer balances (computed in 4 bulk tenant-wide aggregate queries instead of 3*N queries)
+    active_parties = RetailerParty.objects.filter(tenant=tenant, is_active=True)
+    active_party_ids = list(active_parties.values_list('id', flat=True))
+    if active_party_ids:
+        total_opening = active_parties.aggregate(
+            total=Coalesce(Sum('opening_balance'), Decimal('0.00'), output_field=DecimalField())
+        )['total']
+        total_invoiced = WholesaleInvoice.objects.filter(
+            tenant=tenant, party_id__in=active_party_ids
+        ).exclude(status=WholesaleInvoice.STATUS_CANCELLED).aggregate(
+            total=Coalesce(Sum('total_amount'), Decimal('0.00'), output_field=DecimalField())
+        )['total']
+        total_paid_cust = payments_qs.filter(party_id__in=active_party_ids).aggregate(
+            total=Coalesce(Sum('amount'), Decimal('0.00'), output_field=DecimalField())
+        )['total']
+        total_returns_credit = WholesaleReturn.objects.filter(
+            tenant=tenant,
+            party_id__in=active_party_ids,
+            status__in=[WholesaleReturn.STATUS_APPROVED, WholesaleReturn.STATUS_RESTOCKED, WholesaleReturn.STATUS_COMPLETED],
+            credit_note_issued=True
+        ).aggregate(
+            total=Coalesce(Sum('total_credit_amount'), Decimal('0.00'), output_field=DecimalField())
+        )['total']
+        total_outstanding = total_opening + total_invoiced - total_paid_cust - total_returns_credit
+    else:
+        total_outstanding = Decimal('0.00')
 
     # 3. Returns awaiting inspection
     returns_pending = WholesaleReturn.objects.filter(tenant=tenant, status=WholesaleReturn.STATUS_REQUESTED).count()
@@ -204,6 +227,7 @@ def party_list(request):
 
     paginator = Paginator(qs, 20)
     page_obj = paginator.get_page(request.GET.get('page'))
+    RetailerParty.batch_annotate_balances(page_obj.object_list)
 
     context = {
         'page_obj': page_obj,
@@ -315,7 +339,7 @@ def order_list(request):
         return redirect('dashboard')
 
     active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
-    qs = WholesaleOrder.objects.filter(tenant=tenant).select_related('party')
+    qs = WholesaleOrder.objects.filter(tenant=tenant).select_related('party').prefetch_related('items', 'dispatches', 'invoices')
     if active_b:
         qs = qs.filter(Q(party__branch=active_b) | Q(party__branch__isnull=True))
 
@@ -759,7 +783,8 @@ def ledger_view(request):
     if party_id:
         qs = qs.filter(party_id=party_id)
 
-    parties = RetailerParty.objects.filter(tenant=tenant)
+    parties = list(RetailerParty.objects.filter(tenant=tenant))
+    RetailerParty.batch_annotate_balances(parties)
     paginator = Paginator(qs, 30)
     page_obj = paginator.get_page(request.GET.get('page'))
 

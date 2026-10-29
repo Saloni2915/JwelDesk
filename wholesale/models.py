@@ -148,9 +148,62 @@ class RetailerParty(models.Model):
         """
         Calculated Outstanding Balance (Receivable):
         Opening Balance + Total Invoiced - Total Payments Received - Approved Returns Credit.
+        Memoized on model instance to prevent duplicate N+1 queries during a single request.
         """
+        if hasattr(self, '_annotated_current_balance'):
+            return self._annotated_current_balance
+        if hasattr(self, '_cached_balance'):
+            return self._cached_balance
         op = self.opening_balance or Decimal('0.00')
-        return op + self.total_invoiced_amount - self.total_paid_amount - self.total_returns_credit_amount
+        bal = op + self.total_invoiced_amount - self.total_paid_amount - self.total_returns_credit_amount
+        self._cached_balance = bal
+        return bal
+
+    @classmethod
+    def batch_annotate_balances(cls, parties):
+        """
+        Pre-calculate and memoize current_balance for an iterable of RetailerParty instances
+        using 3 bulk aggregate queries instead of 3*N individual queries.
+        """
+        party_list = list(parties)
+        if not party_list:
+            return party_list
+        party_ids = [p.id for p in party_list if getattr(p, 'id', None)]
+        if not party_ids:
+            return party_list
+
+        inv_map = {
+            r['party_id']: r['total'] or Decimal('0.00')
+            for r in WholesaleInvoice.objects.filter(party_id__in=party_ids)
+            .exclude(status=WholesaleInvoice.STATUS_CANCELLED)
+            .values('party_id')
+            .annotate(total=models.Sum('total_amount'))
+        }
+        pay_map = {
+            r['party_id']: r['total'] or Decimal('0.00')
+            for r in RetailerPayment.objects.filter(party_id__in=party_ids)
+            .values('party_id')
+            .annotate(total=models.Sum('amount'))
+        }
+        ret_map = {
+            r['party_id']: r['total'] or Decimal('0.00')
+            for r in WholesaleReturn.objects.filter(
+                party_id__in=party_ids,
+                status__in=[WholesaleReturn.STATUS_APPROVED, WholesaleReturn.STATUS_RESTOCKED, WholesaleReturn.STATUS_COMPLETED],
+                credit_note_issued=True
+            ).values('party_id')
+            .annotate(total=models.Sum('total_credit_amount'))
+        }
+
+        for p in party_list:
+            op = p.opening_balance or Decimal('0.00')
+            invoiced = inv_map.get(p.id, Decimal('0.00'))
+            paid = pay_map.get(p.id, Decimal('0.00'))
+            returns = ret_map.get(p.id, Decimal('0.00'))
+            bal = op + invoiced - paid - returns
+            p._cached_balance = bal
+            p._annotated_current_balance = bal
+        return party_list
 
     @property
     def available_credit(self):

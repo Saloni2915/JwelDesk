@@ -85,27 +85,28 @@ class BranchMiddleware:
                 elif session_val:
                     try:
                         b_id = int(session_val)
-                        matched = allowed_branches.filter(id=b_id).first()
+                        # In-memory lookup from already evaluated available_branches (avoids redundant SQL query on every HTTP request)
+                        matched = next((b for b in request.available_branches if b.id == b_id), None)
                         if matched:
                             request.branch = matched
                             request.active_branch_id = matched.id
                             request.is_all_branches = False
                         else:
-                            # Stale or unauthorized branch in session -> pick fallback
-                            fallback = allowed_branches.filter(is_default=True).first() or allowed_branches.first()
+                            # Stale or unauthorized branch in session -> pick fallback in-memory
+                            fallback = next((b for b in request.available_branches if b.is_default), None) or (request.available_branches[0] if request.available_branches else None)
                             request.branch = fallback
                             request.active_branch_id = fallback.id if fallback else None
                             request.is_all_branches = False
                             request.session[session_key] = request.active_branch_id
                     except (ValueError, TypeError):
-                        fallback = allowed_branches.filter(is_default=True).first() or allowed_branches.first()
+                        fallback = next((b for b in request.available_branches if b.is_default), None) or (request.available_branches[0] if request.available_branches else None)
                         request.branch = fallback
                         request.active_branch_id = fallback.id if fallback else None
                         request.is_all_branches = False
                         request.session[session_key] = request.active_branch_id
                 else:
-                    # Initial load: default branch
-                    fallback = allowed_branches.filter(is_default=True).first() or allowed_branches.first()
+                    # Initial load: default branch in-memory
+                    fallback = next((b for b in request.available_branches if b.is_default), None) or (request.available_branches[0] if request.available_branches else None)
                     request.branch = fallback
                     request.active_branch_id = fallback.id if fallback else None
                     request.is_all_branches = False

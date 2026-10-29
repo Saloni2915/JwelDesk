@@ -264,7 +264,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+let coCalcDebounceTimer = null;
 function calculateCustomOrderEstimate() {
+    clearTimeout(coCalcDebounceTimer);
+    coCalcDebounceTimer = setTimeout(_executeCustomOrderEstimate, 250);
+}
+
+function _executeCustomOrderEstimate() {
     const payload = {
         metal_type: document.getElementById('id_metal_type') ? document.getElementById('id_metal_type').value : 'Gold',
         purity: document.getElementById('id_purity') ? document.getElementById('id_purity').value : '22K',

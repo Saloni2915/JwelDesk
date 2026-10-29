@@ -652,6 +652,13 @@ class Employee(models.Model):
 
     # ---- Helpers -----------------------------------------------------------
 
+    def refresh_from_db(self, *args, **kwargs):
+        super().refresh_from_db(*args, **kwargs)
+        if hasattr(self, '_cached_permissions_map'):
+            del self._cached_permissions_map
+        if hasattr(self, '_cached_role_permissions_map'):
+            del self._cached_role_permissions_map
+
     def clean(self):
         super().clean()
         if self.email:
@@ -694,22 +701,29 @@ class Employee(models.Model):
             return True
         if self.role and self.role.name in (Role.ROLE_ADMIN, getattr(Role, 'ROLE_TENANT_ADMIN', 'Tenant Administrator'), 'Tenant Administrator', 'Admin'):
             return True
-        try:
-            perm = self.permissions.get(module=module)
-            flag_map = {
-                'view':   perm.can_view,
-                'add':    perm.can_add,
-                'edit':   perm.can_edit,
-                'delete': perm.can_delete,
-                'export': perm.can_export,
+
+        # Memoize all permissions for this employee on first check to prevent 10-15 sequential queries in base.html
+        if not hasattr(self, '_cached_permissions_map'):
+            self._cached_permissions_map = {
+                p.module: {
+                    'view':   p.can_view,
+                    'add':    p.can_add,
+                    'edit':   p.can_edit,
+                    'delete': p.can_delete,
+                    'export': p.can_export,
+                }
+                for p in self.permissions.all()
             }
-            return flag_map.get(action, False)
-        except EmployeePermission.DoesNotExist:
-            if self.role and hasattr(self.role, 'get_permissions'):
-                perms = self.role.get_permissions(tenant=self.tenant)
-                module_perms = perms.get(module, {})
-                return module_perms.get(f'can_{action}', False)
-            return False
+
+        if module in self._cached_permissions_map:
+            return self._cached_permissions_map[module].get(action, False)
+
+        if self.role and hasattr(self.role, 'get_permissions'):
+            if not hasattr(self, '_cached_role_permissions_map'):
+                self._cached_role_permissions_map = self.role.get_permissions(tenant=self.tenant)
+            module_perms = self._cached_role_permissions_map.get(module, {})
+            return module_perms.get(f'can_{action}', False)
+        return False
 
     def apply_default_permissions(self):
         """Create/reset EmployeePermission rows to role defaults."""
