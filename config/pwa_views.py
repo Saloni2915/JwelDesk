@@ -214,10 +214,25 @@ def system_migrate_view(request):
             'message': f'Password set successfully for {len(updated_users)} user(s)',
         })
 
+    if action in ('backfill_branch_data', 'backfill'):
+        out = io.StringIO()
+        try:
+            call_command('backfill_branch_data', stdout=out)
+            return JsonResponse({
+                'status': 'success',
+                'output': out.getvalue(),
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'exception': str(e)}, status=500)
+
     out = io.StringIO()
     err = io.StringIO()
     try:
         call_command('migrate', interactive=False, stdout=out, stderr=err)
+        try:
+            call_command('backfill_branch_data', stdout=out)
+        except Exception as b_err:
+            out.write(f"\n[Backfill Note] {b_err}\n")
         tables = connection.introspection.table_names()
         return JsonResponse({
             'status': 'success',
