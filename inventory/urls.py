@@ -40,6 +40,13 @@ urlpatterns = [
     path('inventory/categories/add/', views.category_add, name='category_add'),
     path('inventory/categories/<int:pk>/edit/', views.category_edit, name='category_edit'),
     path('inventory/categories/<int:pk>/delete/', views.category_delete, name='category_delete'),
+
+    # Branch-to-Branch Stock Transfers
+    path('inventory/transfers/', views.stock_transfer_list, name='stock_transfer_list'),
+    path('inventory/transfers/create/', views.stock_transfer_create, name='stock_transfer_create'),
+    path('inventory/transfers/<int:pk>/', views.stock_transfer_detail, name='stock_transfer_detail'),
+    path('inventory/transfers/<int:pk>/complete/', views.stock_transfer_complete, name='stock_transfer_complete'),
+    path('inventory/transfers/<int:pk>/cancel/', views.stock_transfer_cancel, name='stock_transfer_cancel'),
 ]
 
 

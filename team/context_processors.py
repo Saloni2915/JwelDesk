@@ -67,3 +67,16 @@ def team_permissions(request):
     return {
         'user_perms': UserPermsChecker(user, tenant=tenant),
     }
+
+
+def branch_context(request):
+    """Context processor exposing branch context and selection variables to all templates."""
+    return {
+        'active_branch': getattr(request, 'branch', None),
+        'active_branch_id': getattr(request, 'active_branch_id', None),
+        'available_branches': getattr(request, 'available_branches', []),
+        'can_view_all_branches': getattr(request, 'can_view_all_branches', False),
+        'is_all_branches': getattr(request, 'is_all_branches', False),
+        'has_multiple_branches': len(getattr(request, 'available_branches', [])) > 1 or getattr(request, 'can_view_all_branches', False),
+    }
+

@@ -182,3 +182,28 @@ def require_admin():
             return view_func(request, *args, **kwargs)
         return _wrapped_view
     return decorator
+
+
+def check_branch_access(request, obj):
+    """
+    Ensure the requesting user has authorization to access an object based on branch assignment.
+    Superusers, tenant owners, and users with can_view_all_branches can access all branches in tenant.
+    Restricted employees can only access records belonging to their allowed branches or records with no branch.
+    """
+    if not request.user or not request.user.is_authenticated:
+        return False
+    if request.user.is_superuser:
+        return True
+    tenant = getattr(request, 'tenant', None)
+    if tenant and getattr(obj, 'tenant_id', None) and obj.tenant_id != tenant.id:
+        return False
+    branch = getattr(obj, 'branch', None)
+    if branch is None:
+        return True
+    if getattr(request, 'can_view_all_branches', False):
+        return True
+    allowed_qs = getattr(request, 'allowed_branches', None)
+    if allowed_qs is not None:
+        return allowed_qs.filter(id=branch.id).exists()
+    return True
+

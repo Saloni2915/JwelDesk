@@ -56,7 +56,13 @@
           {% for item in role_data %}
           <tr>
             <td class="py-3">
+              {% if can_manage_roles or not user.employee_profile %}
+              <a href="{% url 'team:role_edit' item.role.pk %}" class="jd-tag text-decoration-none fw-bold" title="Edit Role & Permissions">
+                <i class="bi bi-shield-check me-1"></i>{{ item.role.name }}
+              </a>
+              {% else %}
               <span class="jd-tag"><i class="bi bi-shield-check me-1"></i>{{ item.role.name }}</span>
+              {% endif %}
             </td>
             <td>
               {% if item.role.is_builtin %}
@@ -66,7 +72,7 @@
               {% endif %}
             </td>
             <td>
-              <span class="text-light small">{{ item.role.description|default:"—" }}</span>
+              <span class="text-muted small">{{ item.role.description|default:"—" }}</span>
             </td>
             <td>
               <span class="text-gold font-monospace small fw-bold">{{ item.employee_count }} member{{ item.employee_count|pluralize }}</span>
@@ -74,16 +80,16 @@
             <td>
               <div class="d-flex flex-wrap gap-1">
                 {% for mod in item.active_modules %}
-                  <span class="jd-badge small text-capitalize">{{ mod|cut:"_" }}</span>
+                  <span class="badge bg-light text-dark border small text-capitalize">{{ mod|cut:"_" }}</span>
                 {% empty %}
-                  <span class="text-muted small">None by default</span>
+                  <span class="text-muted small fst-italic">No permissions granted</span>
                 {% endfor %}
               </div>
             </td>
             <td class="text-end pe-3">
               {% if can_manage_roles or not user.employee_profile %}
-              <a href="{% url 'team:role_edit' item.role.pk %}" class="jd-btn-ghost btn-sm py-1 px-2" title="Edit Role">
-                <i class="bi bi-pencil"></i>
+              <a href="{% url 'team:role_edit' item.role.pk %}" class="btn btn-sm btn-outline-secondary py-1 px-2" title="Edit Role & Permissions">
+                <i class="bi bi-pencil me-1"></i> Edit
               </a>
               {% endif %}
             </td>

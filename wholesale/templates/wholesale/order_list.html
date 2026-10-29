@@ -25,32 +25,47 @@
     <!-- Filters & Search -->
     <div class="jd-card p-3 mb-4">
         <form method="get" class="row g-2 align-items-center">
-            <div class="col-md-4">
-                <div class="input-group">
-                    <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-search text-muted"></i></span>
-                    <input type="text" name="q" value="{{ q }}" class="form-control border-start-0" placeholder="Search by order # or party name...">
+            <div class="col-lg-5 col-md-4 col-12">
+                <div class="jd-search-wrap">
+                    <i class="bi bi-search jd-search-icon"></i>
+                    <input type="text"
+                           name="q"
+                           value="{{ q }}"
+                           class="jd-input jd-search-input"
+                           placeholder="Search by order # or party name...">
+                    {% if q %}
+                    <a href="{% url 'wholesale:order_list' %}{% if status_filter or party_id %}?{% if status_filter %}status={{ status_filter }}&{% endif %}{% if party_id %}party={{ party_id }}{% endif %}{% endif %}"
+                       class="jd-search-clear"
+                       title="Clear search text">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </a>
+                    {% endif %}
                 </div>
             </div>
-            <div class="col-md-3">
-                <select name="status" class="form-select">
+            <div class="col-lg-3 col-md-3 col-sm-6 col-12">
+                <select name="status" class="jd-select">
                     <option value="">All Statuses</option>
                     {% for s_val, s_lbl in status_choices %}
                     <option value="{{ s_val }}" {% if status_filter == s_val %}selected{% endif %}>{{ s_lbl }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-3">
-                <select name="party" class="form-select">
+            <div class="col-lg-2 col-md-3 col-sm-6 col-12">
+                <select name="party" class="jd-select">
                     <option value="">All Retailer Parties</option>
                     {% for p in parties %}
                     <option value="{{ p.id }}" {% if party_id == p.id|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-2 d-flex gap-1">
-                <button type="submit" class="btn btn-outline-warning flex-grow-1">Filter</button>
+            <div class="col-lg-2 col-md-2 col-12 d-flex gap-2">
+                <button type="submit" class="jd-btn-gold flex-grow-1 d-inline-flex align-items-center justify-content-center">
+                    <i class="bi bi-funnel me-1"></i> Filter
+                </button>
                 {% if q or status_filter or party_id %}
-                <a href="{% url 'wholesale:order_list' %}" class="btn btn-outline-secondary">Reset</a>
+                <a href="{% url 'wholesale:order_list' %}" class="jd-btn-ghost d-inline-flex align-items-center justify-content-center text-nowrap" title="Reset Filters">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </a>
                 {% endif %}
             </div>
         </form>
@@ -111,6 +126,14 @@
                             <a href="{% url 'wholesale:order_detail' ord.pk %}" class="btn btn-sm btn-outline-secondary" title="View Order">
                                 <i class="bi bi-eye"></i>
                             </a>
+                            {% if ord.status == 'Draft' and not ord.dispatches.exists and not ord.invoices.exists %}
+                            <form method="post" action="{% url 'wholesale:order_delete' ord.pk %}" class="d-inline" onsubmit="return confirm('Delete this draft order?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Draft Order">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
@@ -134,12 +157,25 @@
         {% endif %}
 
         {% else %}
+        {% if q or status_filter or party_id %}
         <div class="text-center py-5 text-muted">
-            <i class="bi bi-bag-check fs-1"></i>
-            <h5 class="mt-3">No wholesale orders found</h5>
-            <p class="small">Create an order for one of your registered retailers.</p>
-            <a href="{% url 'wholesale:order_create' %}" class="jd-btn-gold">Create Order</a>
+            <i class="bi bi-search fs-1 text-gold mb-3 d-block"></i>
+            <h5 class="mt-2 text-gold">No matching wholesale orders found</h5>
+            <p class="small">No orders match your search criteria {% if q %}for "<strong>{{ q }}</strong>"{% endif %}. Try a different search term or clear filters.</p>
+            <a href="{% url 'wholesale:order_list' %}" class="jd-btn-ghost mt-2 d-inline-flex align-items-center">
+                <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Filters
+            </a>
         </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-bag-check fs-1 text-gold mb-3 d-block"></i>
+            <h5 class="mt-2">No wholesale orders found</h5>
+            <p class="small">Create an order for one of your registered retailers.</p>
+            <a href="{% url 'wholesale:order_create' %}" class="jd-btn-gold mt-2 d-inline-flex align-items-center">
+                <i class="bi bi-plus-circle me-1"></i> Create Order
+            </a>
+        </div>
+        {% endif %}
         {% endif %}
     </div>
 </div>

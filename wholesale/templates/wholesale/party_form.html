@@ -37,6 +37,12 @@
                         </div>
 
                         <div class="col-md-5">
+                            <label class="form-label fw-semibold">Branch (Showroom / Depo)</label>
+                            {{ form.branch }}
+                            {% if form.branch.errors %}<div class="text-danger small">{{ form.branch.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <div class="col-md-6">
                             <label class="form-label fw-semibold">Contact Person</label>
                             {{ form.contact_person }}
                             {% if form.contact_person.errors %}<div class="text-danger small">{{ form.contact_person.errors.0 }}</div>{% endif %}

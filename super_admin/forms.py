@@ -12,7 +12,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-from accounts.models import clean_10_digit_phone
+from accounts.models import clean_10_digit_phone, validate_proper_email
 
 from .models import (
     CouponBatchItem,
@@ -195,6 +195,12 @@ class PublicDemoRequestForm(forms.Form):
         phone = (self.cleaned_data.get('phone') or '').strip()
         return clean_10_digit_phone(phone, field_label='Phone number', required=True)
 
+    def clean_email(self):
+        email = (self.cleaned_data.get('email') or '').strip().lower()
+        if not email:
+            return ''
+        return validate_proper_email(email, field_label='Email address', required=False)
+
     def clean(self):
         cleaned_data = super().clean()
         hp = cleaned_data.get('website_hp')
@@ -249,6 +255,12 @@ class PlatformSupportTicketForm(forms.ModelForm):
     def clean_contact_phone(self):
         phone = (self.cleaned_data.get('contact_phone') or '').strip()
         return clean_10_digit_phone(phone, field_label='Contact phone', required=False)
+
+    def clean_contact_email(self):
+        email = (self.cleaned_data.get('contact_email') or '').strip().lower()
+        if not email:
+            return ''
+        return validate_proper_email(email, field_label='Contact email', required=False)
 
 
 # ============================================================================

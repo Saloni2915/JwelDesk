@@ -145,6 +145,71 @@ def validate_10_digit_phone(value):
         clean_10_digit_phone(value, field_label='Phone number', required=False)
 
 
+EMAIL_FORMAT_REGEX = re.compile(
+    r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,24}$'
+)
+
+
+def validate_proper_email(value, field_label='Email address', required=True):
+    """
+    Validate that value is a well-formed email address.
+    Checks:
+    - Non-empty if required.
+    - Exactly one '@' symbol.
+    - Valid local-part and domain-part with at least one dot.
+    - Top-level domain between 2 and 24 alphabetic characters.
+    - Conforms to standard email address formatting.
+    Returns normalized, lowercased, stripped email string.
+    """
+    if not value or not str(value).strip():
+        if required:
+            raise ValidationError(f"{field_label} is required.")
+        return ''
+
+    val_str = str(value).strip().lower()
+
+    if len(val_str) > 254:
+        raise ValidationError(f"{field_label} cannot exceed 254 characters.")
+
+    if val_str.count('@') != 1:
+        raise ValidationError(f"Please enter a valid {field_label.lower()} with a single '@' (e.g. name@example.com).")
+
+    local_part, domain_part = val_str.split('@', 1)
+
+    if not local_part or not domain_part:
+        raise ValidationError(f"Please enter a valid {field_label.lower()} (e.g. name@example.com).")
+
+    if len(local_part) > 64:
+        raise ValidationError(f"{field_label} local username cannot exceed 64 characters.")
+
+    if '..' in val_str or local_part.startswith('.') or local_part.endswith('.'):
+        raise ValidationError(f"Please enter a valid {field_label.lower()} without consecutive or edge dots.")
+
+    if not domain_part or '.' not in domain_part or domain_part.startswith('.') or domain_part.endswith('.'):
+        raise ValidationError(f"Please enter a valid domain name for {field_label.lower()} (e.g. example.com).")
+
+    tld = domain_part.split('.')[-1]
+    if len(tld) < 2 or len(tld) > 18 or not tld.isalpha() or re.search(r'(.)\1\1', tld):
+        raise ValidationError(f"Please enter a valid domain extension for {field_label.lower()} (e.g. .com, .in).")
+
+    if not EMAIL_FORMAT_REGEX.match(val_str):
+        raise ValidationError(f"Please enter a valid {field_label.lower()} (e.g. name@example.com).")
+
+    try:
+        from django.core.validators import validate_email as django_validate_email
+        django_validate_email(val_str)
+    except ValidationError:
+        raise ValidationError(f"Please enter a valid {field_label.lower()} (e.g. name@example.com).")
+
+    return val_str
+
+
+def validate_email_address(value):
+    """Model validator for email fields: validates format if value is provided."""
+    if value:
+        validate_proper_email(value, field_label='Email address', required=False)
+
+
 
 class Tenant(models.Model):
     """Independent jewellery shop / business showroom tenant.
@@ -231,7 +296,7 @@ class CompanySettings(models.Model):
         help_text='15-character GSTIN, e.g. 27ABCDE1234F1Z5')
     address = models.TextField(blank=True)
     phone = models.CharField(max_length=20, blank=True)
-    email = models.EmailField(blank=True)
+    email = models.EmailField(blank=True, validators=[validate_email_address])
     invoice_footer_note = models.CharField(max_length=255, blank=True)
     hidden_menu_items = models.TextField(
         blank=True, default='',
@@ -350,8 +415,11 @@ class CompanySettings(models.Model):
 
     def clean(self):
         super().clean()
-        if self.email and '@' not in self.email:
-            raise ValidationError({'email': 'Enter a valid email address.'})
+        if self.email:
+            try:
+                self.email = validate_proper_email(self.email, field_label='Email address', required=False)
+            except ValidationError as err:
+                raise ValidationError({'email': err.message if hasattr(err, 'message') else str(err)})
         if self.phone:
             try:
                 self.phone = clean_10_digit_phone(self.phone, field_label='Phone number', required=False)

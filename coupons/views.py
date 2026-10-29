@@ -751,6 +751,7 @@ def coupon_reports(request):
     ).order_by('-redemptions_count', '-created_at')
 
     all_campaigns = CustomerCoupon.objects.filter(tenant=tenant).order_by('name')
+    recent_redemptions = redemptions_qs.order_by('-redeemed_at')[:100]
 
     context = {
         'total_campaigns': total_campaigns,
@@ -763,6 +764,7 @@ def coupon_reports(request):
         'total_sales_revenue': total_sales_revenue,
         'redemption_rate': round(redemption_rate, 1),
         'campaign_stats': campaign_stats,
+        'recent_redemptions': recent_redemptions,
         'all_campaigns': all_campaigns,
         'selected_campaign': campaign_id,
         'start_date': start_date,

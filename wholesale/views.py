@@ -4,7 +4,7 @@ import logging
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Count, DecimalField, F, Q, Sum
@@ -17,7 +17,7 @@ from django.utils import timezone
 from accounts.models import CompanySettings
 from inventory.models import Category, JewelleryItem
 from inventory.stock import get_low_stock_threshold
-from team.permissions import has_module_perm, is_admin_user
+from team.permissions import check_branch_access, has_module_perm, is_admin_user
 
 from .forms import (
     RetailerPartyForm,
@@ -179,10 +179,22 @@ def party_list(request):
         messages.error(request, "Permission denied.")
         return redirect('dashboard')
 
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     qs = RetailerParty.objects.filter(tenant=tenant)
+    if active_b:
+        qs = qs.filter(Q(branch=active_b) | Q(branch__isnull=True))
+
     q = request.GET.get('q', '').strip()
     if q:
-        qs = qs.filter(Q(name__icontains=q) | Q(phone__icontains=q) | Q(contact_person__icontains=q) | Q(gstin__icontains=q))
+        qs = qs.filter(
+            Q(name__icontains=q) |
+            Q(phone__icontains=q) |
+            Q(contact_person__icontains=q) |
+            Q(gstin__icontains=q) |
+            Q(email__icontains=q) |
+            Q(pan_number__icontains=q) |
+            Q(billing_address__icontains=q)
+        )
 
     status_filter = request.GET.get('status', 'active')
     if status_filter == 'active':
@@ -209,11 +221,14 @@ def party_create(request):
         messages.error(request, "Permission denied to add retailer parties.")
         return redirect('wholesale:party_list')
 
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     if request.method == 'POST':
-        form = RetailerPartyForm(request.POST, tenant=tenant)
+        form = RetailerPartyForm(request.POST, tenant=tenant, branch=active_b)
         if form.is_valid():
             party = form.save(commit=False)
             party.tenant = tenant
+            if not party.branch and active_b:
+                party.branch = active_b
             party.save()
 
             # If opening balance provided, log opening balance ledger entry
@@ -231,7 +246,7 @@ def party_create(request):
             messages.success(request, f"Retailer party '{party.name}' created successfully.")
             return redirect('wholesale:party_detail', pk=party.pk)
     else:
-        form = RetailerPartyForm(tenant=tenant)
+        form = RetailerPartyForm(tenant=tenant, branch=active_b)
 
     return render(request, 'wholesale/party_form.html', {'form': form, 'title': 'Add New Retailer Party'})
 
@@ -244,6 +259,9 @@ def party_detail(request, pk):
         return redirect('dashboard')
 
     party = get_object_or_404(RetailerParty, pk=pk, tenant=tenant)
+    if not check_branch_access(request, party):
+        raise PermissionDenied("You do not have permission to view retailer parties in this branch.")
+
     orders = party.orders.order_by('-order_date', '-id')[:15]
     invoices = party.invoices.order_by('-invoice_date', '-id')[:15]
     payments = party.payments.order_by('-payment_date', '-id')[:15]
@@ -269,14 +287,18 @@ def party_edit(request, pk):
         return redirect('wholesale:party_list')
 
     party = get_object_or_404(RetailerParty, pk=pk, tenant=tenant)
+    if not check_branch_access(request, party):
+        raise PermissionDenied("You do not have permission to edit retailer parties in this branch.")
+
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     if request.method == 'POST':
-        form = RetailerPartyForm(request.POST, instance=party, tenant=tenant)
+        form = RetailerPartyForm(request.POST, instance=party, tenant=tenant, branch=active_b)
         if form.is_valid():
             form.save()
             messages.success(request, f"Retailer party '{party.name}' updated successfully.")
             return redirect('wholesale:party_detail', pk=party.pk)
     else:
-        form = RetailerPartyForm(instance=party, tenant=tenant)
+        form = RetailerPartyForm(instance=party, tenant=tenant, branch=active_b)
 
     return render(request, 'wholesale/party_form.html', {'form': form, 'title': f'Edit Retailer - {party.name}', 'party': party})
 
@@ -292,7 +314,11 @@ def order_list(request):
         messages.error(request, "Permission denied.")
         return redirect('dashboard')
 
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     qs = WholesaleOrder.objects.filter(tenant=tenant).select_related('party')
+    if active_b:
+        qs = qs.filter(Q(party__branch=active_b) | Q(party__branch__isnull=True))
+
     status_filter = request.GET.get('status', '').strip()
     if status_filter:
         qs = qs.filter(status=status_filter)
@@ -303,12 +329,19 @@ def order_list(request):
 
     q = request.GET.get('q', '').strip()
     if q:
-        qs = qs.filter(Q(order_number__icontains=q) | Q(party__name__icontains=q))
+        qs = qs.filter(
+            Q(order_number__icontains=q) |
+            Q(party__name__icontains=q) |
+            Q(party__phone__icontains=q) |
+            Q(party__contact_person__icontains=q)
+        )
 
     paginator = Paginator(qs, 20)
     page_obj = paginator.get_page(request.GET.get('page'))
 
     parties = RetailerParty.objects.filter(tenant=tenant, is_active=True)
+    if active_b:
+        parties = parties.filter(Q(branch=active_b) | Q(branch__isnull=True))
 
     context = {
         'page_obj': page_obj,
@@ -328,8 +361,12 @@ def order_create(request):
         messages.error(request, "Permission denied.")
         return redirect('wholesale:order_list')
 
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     parties = RetailerParty.objects.filter(tenant=tenant, is_active=True)
     items = JewelleryItem.objects.filter(tenant=tenant, status='Available', quantity__gt=0).select_related('category')
+    if active_b:
+        parties = parties.filter(Q(branch=active_b) | Q(branch__isnull=True))
+        items = items.filter(Q(branch=active_b) | Q(branch__isnull=True))
 
     if request.method == 'POST':
         party_id = request.POST.get('party')
@@ -392,6 +429,7 @@ def order_create(request):
 
             messages.success(request, f"Wholesale Order #{order.order_number} created successfully as Draft.")
             return redirect('wholesale:order_detail', pk=order.pk)
+
         except Exception as e:
             logger.exception("Error creating wholesale order: %s", e)
             messages.error(request, f"Unable to create order: {e}")
@@ -407,6 +445,9 @@ def order_detail(request, pk):
         return redirect('dashboard')
 
     order = get_object_or_404(WholesaleOrder.objects.select_related('party', 'created_by'), pk=pk, tenant=tenant)
+    if order.party and not check_branch_access(request, order.party):
+        raise PermissionDenied("You do not have permission to view orders in this branch.")
+
     items = order.items.select_related('item', 'item__category').all()
     dispatches = order.dispatches.order_by('-dispatch_date', '-id')
     invoices = order.invoices.order_by('-invoice_date', '-id')
@@ -450,6 +491,32 @@ def order_status_update(request, pk):
         except Exception as ex:
             logger.exception("Error updating order status: %s", ex)
             messages.error(request, f"Status update failed: {ex}")
+
+    return redirect('wholesale:order_detail', pk=order.pk)
+
+
+@login_required
+def order_delete(request, pk):
+    """Permanently delete a draft or cancelled wholesale order that has no shipments or invoices."""
+    allowed, tenant = check_wholesale_access(request, 'delete')
+    if not allowed or not tenant:
+        messages.error(request, "Permission denied.")
+        return redirect('wholesale:order_list')
+
+    order = get_object_or_404(WholesaleOrder, pk=pk, tenant=tenant)
+    if order.status not in (WholesaleOrder.STATUS_DRAFT, WholesaleOrder.STATUS_CANCELLED):
+        messages.error(request, f"Cannot delete order in '{order.status}' status. Only Draft or Cancelled orders can be deleted.")
+        return redirect('wholesale:order_detail', pk=order.pk)
+
+    if order.dispatches.exists() or order.invoices.exists():
+        messages.error(request, "Cannot delete order because it has associated dispatches or invoices.")
+        return redirect('wholesale:order_detail', pk=order.pk)
+
+    if request.method == 'POST':
+        order_num = order.order_number
+        order.delete()
+        messages.success(request, f"Wholesale Order #{order_num} was deleted successfully.")
+        return redirect('wholesale:order_list')
 
     return redirect('wholesale:order_detail', pk=order.pk)
 
@@ -564,10 +631,22 @@ def invoice_list(request):
     if status_filter:
         qs = qs.filter(status=status_filter)
 
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(
+            Q(invoice_number__icontains=q) |
+            Q(party__name__icontains=q) |
+            Q(order__order_number__icontains=q)
+        )
+
     paginator = Paginator(qs, 20)
     page_obj = paginator.get_page(request.GET.get('page'))
 
-    return render(request, 'wholesale/invoice_list.html', {'page_obj': page_obj, 'status_filter': status_filter})
+    return render(request, 'wholesale/invoice_list.html', {
+        'page_obj': page_obj,
+        'status_filter': status_filter,
+        'q': q,
+    })
 
 
 @login_required
@@ -889,7 +968,12 @@ def catalogue_view(request):
     items = JewelleryItem.objects.filter(tenant=tenant, status='Available').select_related('category')
     q = request.GET.get('q', '').strip()
     if q:
-        items = items.filter(Q(name__icontains=q) | Q(item_code__icontains=q) | Q(design_code__icontains=q))
+        items = items.filter(
+            Q(name__icontains=q) |
+            Q(item_code__icontains=q) |
+            Q(design_code__icontains=q) |
+            Q(category__name__icontains=q)
+        )
 
     # Calculate wholesale price for each item in memory
     catalogue_data = []
@@ -924,11 +1008,20 @@ def reports_dashboard(request):
         messages.error(request, "Permission denied.")
         return redirect('dashboard')
 
+    # Overall wholesale aggregates
+    order_stats = WholesaleOrder.objects.filter(tenant=tenant).exclude(status=WholesaleOrder.STATUS_CANCELLED).aggregate(
+        total_sales=Sum('total_amount'),
+        orders_count=Count('id')
+    )
+    total_wholesale_sales = order_stats['total_sales'] or Decimal('0.00')
+    total_orders_count = order_stats['orders_count'] or 0
+    total_parties_count = RetailerParty.objects.filter(tenant=tenant).count()
+
     # Top Retailers by Wholesale Sales
     top_retailers = RetailerParty.objects.filter(tenant=tenant).annotate(
         total_sales=Coalesce(Sum('orders__total_amount', filter=~Q(orders__status=WholesaleOrder.STATUS_CANCELLED)), Decimal('0.00'), output_field=DecimalField()),
         orders_count=Count('orders', filter=~Q(orders__status=WholesaleOrder.STATUS_CANCELLED))
-    ).order_by('-total_sales')[:10]
+    ).order_by('-total_sales')
 
     # Category Sales Breakdown
     category_sales = Category.objects.filter(tenant=tenant).annotate(
@@ -936,9 +1029,38 @@ def reports_dashboard(request):
         pieces_sold=Coalesce(Sum('items__wholesale_order_items__quantity', filter=~Q(items__wholesale_order_items__order__status=WholesaleOrder.STATUS_CANCELLED)), 0)
     ).order_by('-sales_val')
 
+    total_pieces_sold = sum(cat.pieces_sold for cat in category_sales)
+    total_cat_sales_val = sum(cat.sales_val for cat in category_sales)
+
+    # Handle CSV Export
+    if request.GET.get('export') == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        today_str = timezone.localdate().strftime('%Y-%m-%d')
+        response['Content-Disposition'] = f'attachment; filename="Wholesale_B2B_Performance_Report_{today_str}.csv"'
+        writer = csv.writer(response)
+        writer.writerow(['#', 'Retailer Party Name', 'Contact Person', 'Phone', 'City', 'Orders Fulfilled', 'Total Wholesale Sales (INR)'])
+        for idx, r in enumerate(top_retailers, start=1):
+            writer.writerow([
+                idx,
+                r.name,
+                r.contact_person or '',
+                r.phone or '',
+                r.city or '',
+                r.orders_count,
+                f"{r.total_sales:.2f}"
+            ])
+        writer.writerow([])
+        writer.writerow(['Total Wholesale Revenue', '', '', '', total_orders_count, f"{total_wholesale_sales:.2f}"])
+        return response
+
     return render(request, 'wholesale/reports_dashboard.html', {
         'top_retailers': top_retailers,
         'category_sales': category_sales,
+        'total_wholesale_sales': total_wholesale_sales,
+        'total_orders_count': total_orders_count,
+        'total_parties_count': total_parties_count,
+        'total_pieces_sold': total_pieces_sold,
+        'total_cat_sales_val': total_cat_sales_val,
     })
 
 

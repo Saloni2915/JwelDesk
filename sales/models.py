@@ -26,6 +26,14 @@ class Sale(models.Model):
         blank=True,
         help_text="Tenant shop owning this sale"
     )
+    branch = models.ForeignKey(
+        'team.Branch',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='sales',
+        help_text="Branch where this sale was made"
+    )
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='sales')
     jewellery_item = models.ForeignKey(JewelleryItem, on_delete=models.PROTECT, related_name='sales')
     sale_price = models.DecimalField(max_digits=12, decimal_places=2)
@@ -50,6 +58,11 @@ class Sale(models.Model):
 
     def __str__(self):
         return f"Sale #{self.id} - {self.jewellery_item.name} to {self.customer.name}"
+
+    def save(self, *args, **kwargs):
+        if not self.branch_id and self.jewellery_item_id and getattr(self.jewellery_item, 'branch_id', None):
+            self.branch_id = self.jewellery_item.branch_id
+        super().save(*args, **kwargs)
 
     # ---- Payment summary (always calculated from Payment rows) ------
     @property
@@ -104,6 +117,14 @@ class Payment(models.Model):
         blank=True,
         help_text="Tenant shop owning this payment"
     )
+    branch = models.ForeignKey(
+        'team.Branch',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='payments',
+        help_text="Branch where this payment was received"
+    )
     sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='payments')
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS, default='Cash')
@@ -124,6 +145,8 @@ class Payment(models.Model):
     def save(self, *args, **kwargs):
         if not self.tenant_id and self.sale_id and getattr(self.sale, 'tenant_id', None):
             self.tenant_id = self.sale.tenant_id
+        if not self.branch_id and self.sale_id and getattr(self.sale, 'branch_id', None):
+            self.branch_id = self.sale.branch_id
         super().save(*args, **kwargs)
 
     def clean(self):
@@ -163,6 +186,14 @@ class Enquiry(models.Model):
         null=True,
         blank=True,
         help_text="Tenant shop owning this enquiry"
+    )
+    branch = models.ForeignKey(
+        'team.Branch',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='enquiries',
+        help_text="Branch managing this enquiry"
     )
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='enquiries')
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='enquiries')
@@ -265,6 +296,14 @@ class OldGoldTransaction(models.Model):
         null=True,
         blank=True,
         help_text="Tenant shop owning this transaction"
+    )
+    branch = models.ForeignKey(
+        'team.Branch',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='old_gold_transactions',
+        help_text="Branch where old gold was received"
     )
     transaction_number = models.CharField(
         max_length=50,

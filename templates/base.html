@@ -56,8 +56,92 @@
                 </a>
             </div>
 
-            <!-- Right Top Corner: Language Switcher + User Profile + Logout -->
+            <!-- Right Top Corner: Branch Selector + Language Switcher + User Profile + Logout -->
             <div class="ms-auto d-flex align-items-center gap-2 flex-shrink-0">
+
+                {% if user.is_authenticated and request.tenant %}
+                <!-- Branch Switcher Dropdown in Header -->
+                <div class="dropdown d-inline-block">
+                    <button class="btn btn-sm jd-branch-btn dropdown-toggle"
+                            type="button" id="headerBranchDropdown" data-bs-toggle="dropdown" aria-expanded="false"
+                            title="Active Branch: {% if is_all_branches %}All Branches (Consolidated){% elif active_branch %}{{ active_branch.name }}{% else %}Default Branch{% endif %}">
+                        <i class="bi bi-geo-alt-fill"></i>
+                        <span class="d-inline-block fw-semibold" style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle;">
+                            {% if is_all_branches %}
+                                All Branches
+                            {% elif active_branch %}
+                                {{ active_branch.name }}
+                            {% else %}
+                                Branch
+                            {% endif %}
+                        </span>
+                        {% if is_all_branches %}
+                        <span class="badge jd-branch-badge py-0 px-1 ms-1 d-none d-md-inline" style="font-size: 0.68rem; font-weight: 700;">ALL</span>
+                        {% elif active_branch and active_branch.code %}
+                        <span class="badge jd-branch-badge py-0 px-1 ms-1 d-none d-md-inline" style="font-size: 0.68rem;">{{ active_branch.code }}</span>
+                        {% endif %}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 jd-dropdown-menu" aria-labelledby="headerBranchDropdown">
+                        <li class="jd-dropdown-title">
+                            {% if is_hindi %}शाखा चुनें{% else %}Select Active Branch{% endif %}
+                        </li>
+                        {% if can_view_all_branches %}
+                        <li>
+                            <form method="post" action="{% url 'team:branch_switch' %}" class="m-0 p-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="branch_id" value="all">
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit" class="dropdown-item {% if is_all_branches %}active{% endif %}">
+                                    <span class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-buildings text-warning"></i>
+                                        <span>{% if is_hindi %}सभी शाखाएं (एकत्रित){% else %}All Branches (Consolidated){% endif %}</span>
+                                    </span>
+                                    {% if is_all_branches %}<i class="bi bi-check-circle-fill text-warning ms-2"></i>{% endif %}
+                                </button>
+                            </form>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% endif %}
+
+                        {% for b in available_branches %}
+                        <li>
+                            <form method="post" action="{% url 'team:branch_switch' %}" class="m-0 p-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="branch_id" value="{{ b.id }}">
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit" class="dropdown-item {% if not is_all_branches and active_branch and active_branch.id == b.id %}active{% endif %}">
+                                    <span class="d-flex align-items-center gap-2 text-truncate">
+                                        <i class="bi bi-shop text-warning"></i>
+                                        <span class="text-truncate">{{ b.name }}</span>
+                                        {% if b.code %}
+                                        <small class="badge badge-code py-0 px-1" style="font-size: 0.65rem;">{{ b.code }}</small>
+                                        {% endif %}
+                                        {% if b.is_default %}
+                                        <small class="badge badge-default py-0 px-1" style="font-size: 0.62rem;">Default</small>
+                                        {% endif %}
+                                    </span>
+                                    {% if not is_all_branches and active_branch and active_branch.id == b.id %}
+                                    <i class="bi bi-check-circle-fill text-warning ms-2"></i>
+                                    {% endif %}
+                                </button>
+                            </form>
+                        </li>
+                        {% empty %}
+                        <li class="px-3 py-2 text-muted small">No branches available</li>
+                        {% endfor %}
+
+                        {% if user_perms.team.can_add or is_platform_admin or is_tenant_admin %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item manage-branches-link gap-2" href="{% url 'team:branch_list' %}" style="font-size: 0.78rem;">
+                                <i class="bi bi-gear-fill"></i>
+                                <span>{% if is_hindi %}शाखाएं प्रबंधित करें{% else %}Manage Branches{% endif %}</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+                {% endif %}
 
                 <!-- Raise Ticket & AI Assistant Quick Action Buttons in Top Navbar (Visible on all pages) -->
                 <div class="d-inline-flex align-items-center gap-1">
@@ -69,16 +153,14 @@
                         <span class="d-none d-sm-inline">{% if is_hindi %}टिकट बनाएं{% else %}Raise Ticket{% endif %}</span>
                     </button>
 
-                    <button type="button" class="btn btn-outline-warning btn-sm d-inline-flex align-items-center gap-1 text-gold py-1 px-2"
-                            style="border-radius: 9999px; font-size: 0.8rem; background: rgba(236, 200, 106, 0.08); border-color: rgba(236, 200, 106, 0.35);"
+                    <button type="button" class="btn btn-sm jd-nav-ai-btn d-inline-flex align-items-center gap-1 py-1 px-2"
                             onclick="if(window.jdOpenSupportWidget){window.jdOpenSupportWidget('chat');}else{var l=document.getElementById('jdSupportLauncher'); if(l) l.click();}"
                             title="JewelDesk AI Assistant Bot / एआई चैटबॉट">
                         <i class="bi bi-robot text-warning"></i>
                         <span class="d-none d-md-inline fw-semibold">{% if is_hindi %}एआई बोट{% else %}AI Assistant{% endif %}</span>
                     </button>
 
-                    <a href="{% url 'support_customer:ticket_list' %}" class="btn btn-outline-secondary btn-sm d-none d-lg-inline-flex align-items-center gap-1 text-light py-1 px-2"
-                       style="border-radius: 9999px; font-size: 0.8rem; background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.2);"
+                    <a href="{% url 'support_customer:ticket_list' %}" class="btn btn-sm jd-nav-tickets-btn d-none d-lg-inline-flex align-items-center gap-1 py-1 px-2"
                        title="All My Tickets / मेरे सभी टिकट">
                         <i class="bi bi-ticket-perforated"></i>
                         <span>{% if is_hindi %}सभी टिकट{% else %}My Tickets{% endif %}</span>
@@ -87,19 +169,18 @@
 
                 <!-- Language Switcher Dropdown in Navbar -->
                 <div class="dropdown d-inline-block">
-                    <button class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1 dropdown-toggle text-light py-1 px-2"
+                    <button class="btn btn-sm jd-lang-btn d-inline-flex align-items-center gap-1 dropdown-toggle py-1 px-2"
                             type="button" id="navLanguageDropdown" data-bs-toggle="dropdown" aria-expanded="false"
-                            style="border-radius: 9999px; font-size: 0.8rem; background: rgba(255,255,255,0.06); border-color: rgba(236, 200, 106, 0.25);"
                             title="Switch Language / भाषा बदलें">
                         <i class="bi bi-translate text-warning"></i>
                         <span class="d-none d-sm-inline fw-semibold">{% if is_hindi %}🇮🇳 हिंदी{% else %}🇬🇧 EN{% endif %}</span>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="navLanguageDropdown" style="background: #1a1712; border: 1px solid rgba(236, 200, 106, 0.3) !important;">
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 jd-dropdown-menu" aria-labelledby="navLanguageDropdown">
                         <li>
                             <form method="post" action="{% url 'accounts:set_language' %}" class="m-0 p-0">
                                 {% csrf_token %}
                                 <input type="hidden" name="language" value="en">
-                                <button type="submit" class="dropdown-item d-flex align-items-center justify-content-between py-2 text-light {% if not is_hindi %}active bg-warning bg-opacity-25 text-warning fw-bold{% endif %}" style="font-size: 0.85rem;">
+                                <button type="submit" class="dropdown-item {% if not is_hindi %}active{% endif %}">
                                     <span>🇬🇧 English</span>
                                     {% if not is_hindi %}<i class="bi bi-check2 text-warning ms-2"></i>{% endif %}
                                 </button>
@@ -109,7 +190,7 @@
                             <form method="post" action="{% url 'accounts:set_language' %}" class="m-0 p-0">
                                 {% csrf_token %}
                                 <input type="hidden" name="language" value="hi">
-                                <button type="submit" class="dropdown-item d-flex align-items-center justify-content-between py-2 text-light {% if is_hindi %}active bg-warning bg-opacity-25 text-warning fw-bold{% endif %}" style="font-size: 0.85rem;">
+                                <button type="submit" class="dropdown-item {% if is_hindi %}active{% endif %}">
                                     <span>🇮🇳 हिंदी (Hindi)</span>
                                     {% if is_hindi %}<i class="bi bi-check2 text-warning ms-2"></i>{% endif %}
                                 </button>
@@ -288,11 +369,11 @@
                     {% if request.tenant and request.tenant.is_wholesale or user.is_superuser %}
                     {% if user.is_superuser or user.is_staff or not user.employee_profile or user_perms.wholesale.can_view %}
                     <li class="nav-item" data-menu-key="wholesale">
-                        <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.app_name == 'wholesale' or '/wholesale/' in request.path %}parent-active{% else %}collapsed{% endif %}"
+                        <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name != 'reports' or '/wholesale/' in request.path and '/wholesale/reports/' not in request.path %}parent-active{% else %}collapsed{% endif %}"
                            data-bs-toggle="collapse"
                            href="#submenu-wholesale"
                            role="button"
-                           aria-expanded="{% if request.resolver_match.app_name == 'wholesale' or '/wholesale/' in request.path %}true{% else %}false{% endif %}"
+                           aria-expanded="{% if request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name != 'reports' or '/wholesale/' in request.path and '/wholesale/reports/' not in request.path %}true{% else %}false{% endif %}"
                            aria-controls="submenu-wholesale">
                             <span class="sidebar-item-content">
                                 <i class="bi bi-buildings sidebar-item-icon"></i>
@@ -300,7 +381,7 @@
                             </span>
                             <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
-                        <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.app_name == 'wholesale' or '/wholesale/' in request.path %}show{% endif %}" id="submenu-wholesale">
+                        <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name != 'reports' or '/wholesale/' in request.path and '/wholesale/reports/' not in request.path %}show{% endif %}" id="submenu-wholesale">
                             <ul class="nav flex-column sidebar-submenu">
                                 {% if 'sub_wholesale_dashboard' not in hidden_menus %}
                                 <li class="nav-item" data-submenu-key="sub_wholesale_dashboard">
@@ -371,14 +452,6 @@
                                     <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and 'return' in request.resolver_match.url_name %}active{% endif %}"
                                        href="{% url 'wholesale:return_list' %}">
                                         <i class="bi bi-arrow-return-left"></i> {% if is_hindi %}वापसी एवं क्रेडिट नोट{% else %}Returns &amp; Credit Notes{% endif %}
-                                    </a>
-                                </li>
-                                {% endif %}
-                                {% if 'sub_wholesale_reports' not in hidden_menus %}
-                                <li class="nav-item" data-submenu-key="sub_wholesale_reports">
-                                    <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name == 'reports' %}active{% endif %}"
-                                       href="{% url 'wholesale:reports' %}">
-                                        <i class="bi bi-bar-chart-line"></i> {% if is_hindi %}थोक रिपोर्ट्स{% else %}Wholesale Reports{% endif %}
                                     </a>
                                 </li>
                                 {% endif %}
@@ -661,11 +734,11 @@
                     {% if 'karigar' not in hidden_menus %}
                     {% if user.is_superuser or user.is_staff or user_perms.karigar.can_view or not user.employee_profile %}
                     <li class="nav-item" data-menu-key="karigar">
-                        <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.app_name == 'karigar' or '/karigar/' in request.path %}parent-active{% else %}collapsed{% endif %}"
+                        <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name != 'reports' or '/karigar/' in request.path and '/karigar/reports/' not in request.path %}parent-active{% else %}collapsed{% endif %}"
                            data-bs-toggle="collapse"
                            href="#submenu-karigar"
                            role="button"
-                           aria-expanded="{% if request.resolver_match.app_name == 'karigar' or '/karigar/' in request.path %}true{% else %}false{% endif %}"
+                           aria-expanded="{% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name != 'reports' or '/karigar/' in request.path and '/karigar/reports/' not in request.path %}true{% else %}false{% endif %}"
                            aria-controls="submenu-karigar">
                             <span class="sidebar-item-content">
                                 <i class="bi bi-person-workspace sidebar-item-icon"></i>
@@ -673,7 +746,7 @@
                             </span>
                             <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
-                        <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.app_name == 'karigar' or '/karigar/' in request.path %}show{% endif %}" id="submenu-karigar">
+                        <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name != 'reports' or '/karigar/' in request.path and '/karigar/reports/' not in request.path %}show{% endif %}" id="submenu-karigar">
                             <ul class="nav flex-column sidebar-submenu">
                                 {% if 'sub_karigar_dashboard' not in hidden_menus %}
                                 <li class="nav-item" data-submenu-key="sub_karigar_dashboard">
@@ -793,11 +866,11 @@
                     <!-- 9. Reports -->
                     {% if 'reports' not in hidden_menus %}
                     <li class="nav-item" data-menu-key="reports">
-                        <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.url_name == 'sales_report' or request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'reports' or '/sales/report/' in request.path or '/karigar/reports/' in request.path %}parent-active{% else %}collapsed{% endif %}"
+                        <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.url_name == 'sales_report' or request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'reports' or request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name == 'reports' or '/sales/report/' in request.path or '/karigar/reports/' in request.path or '/wholesale/reports/' in request.path %}parent-active{% else %}collapsed{% endif %}"
                            data-bs-toggle="collapse"
                            href="#submenu-reports"
                            role="button"
-                           aria-expanded="{% if request.resolver_match.url_name == 'sales_report' or request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'reports' or '/sales/report/' in request.path or '/karigar/reports/' in request.path %}true{% else %}false{% endif %}"
+                           aria-expanded="{% if request.resolver_match.url_name == 'sales_report' or request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'reports' or request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name == 'reports' or '/sales/report/' in request.path or '/karigar/reports/' in request.path or '/wholesale/reports/' in request.path %}true{% else %}false{% endif %}"
                            aria-controls="submenu-reports">
                             <span class="sidebar-item-content">
                                 <i class="bi bi-bar-chart-line sidebar-item-icon"></i>
@@ -805,7 +878,7 @@
                             </span>
                             <i class="bi bi-chevron-down dropdown-chevron"></i>
                         </a>
-                        <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.url_name == 'sales_report' or request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'reports' or '/sales/report/' in request.path or '/karigar/reports/' in request.path %}show{% endif %}" id="submenu-reports">
+                        <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.url_name == 'sales_report' or request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'reports' or request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name == 'reports' or '/sales/report/' in request.path or '/karigar/reports/' in request.path or '/wholesale/reports/' in request.path %}show{% endif %}" id="submenu-reports">
                             <ul class="nav flex-column sidebar-submenu">
                                 {% if not request.tenant or request.tenant.is_retail or user.is_superuser %}
                                 {% if 'sub_reports_retail' not in hidden_menus %}
@@ -820,9 +893,19 @@
                                 {% if request.tenant and request.tenant.is_wholesale or user.is_superuser %}
                                 {% if 'sub_reports_wholesale' not in hidden_menus %}
                                 <li class="nav-item" data-submenu-key="sub_reports_wholesale">
-                                    <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name == 'reports' %}active{% endif %}"
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name == 'reports' or '/wholesale/reports/' in request.path %}active{% endif %}"
                                        href="{% url 'wholesale:reports' %}">
                                         <i class="bi bi-bar-chart-line"></i> {% if is_hindi %}थोक व्यापार रिपोर्ट{% else %}Wholesale Reports{% endif %}
+                                    </a>
+                                </li>
+                                {% endif %}
+                                {% endif %}
+                                {% if user.is_superuser or user.is_staff or user_perms.karigar.can_view or not user.employee_profile %}
+                                {% if 'sub_reports_karigar' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_reports_karigar">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'reports' or '/karigar/reports/' in request.path %}active{% endif %}"
+                                       href="{% url 'karigar:reports' %}">
+                                        <i class="bi bi-hammer"></i> {% if is_hindi %}कारीगर रिपोर्ट्स{% else %}Karigar Reports{% endif %}
                                     </a>
                                 </li>
                                 {% endif %}
@@ -1193,6 +1276,143 @@
                 document.addEventListener('DOMContentLoaded', setupPhoneValidation);
             } else {
                 setupPhoneValidation();
+            }
+        })();
+
+        // ---------------------------------------------------------------------
+        // Universal Email Address Format Enforcement
+        // ---------------------------------------------------------------------
+        (function() {
+            var emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,18}$/;
+
+            function validateEmailValue(val) {
+                if (!val) return { valid: true };
+                val = val.trim().toLowerCase();
+                if (val.length === 0) return { valid: true };
+                if (val.length > 254) return { valid: false, message: 'Email address cannot exceed 254 characters.' };
+                var atCount = (val.match(/@/g) || []).length;
+                if (atCount !== 1) {
+                    return { valid: false, message: "Please enter a valid email address with a single '@' (e.g. name@example.com)." };
+                }
+                var parts = val.split('@');
+                var local = parts[0];
+                var domain = parts[1];
+                if (!local || !domain) {
+                    return { valid: false, message: 'Please enter a valid email address (e.g. name@example.com).' };
+                }
+                if (local.length > 64) {
+                    return { valid: false, message: 'Email username cannot exceed 64 characters.' };
+                }
+                if (val.indexOf('..') !== -1 || local.startsWith('.') || local.endsWith('.')) {
+                    return { valid: false, message: 'Email address cannot contain consecutive or edge dots.' };
+                }
+                if (domain.indexOf('.') === -1 || domain.startsWith('.') || domain.endsWith('.')) {
+                    return { valid: false, message: 'Please enter a valid domain name (e.g. example.com).' };
+                }
+                var tld = domain.split('.').pop();
+                if (!tld || tld.length < 2 || tld.length > 18 || !/^[a-zA-Z]+$/.test(tld) || /(.)\1\1/.test(tld)) {
+                    return { valid: false, message: 'Please enter a valid domain extension (e.g. .com, .in).' };
+                }
+                if (!emailRegex.test(val)) {
+                    return { valid: false, message: 'Please enter a valid email address (e.g. name@example.com).' };
+                }
+                return { valid: true };
+            }
+
+            function showEmailError(input, msg) {
+                var container = input.closest('.col-md-6, .col-md-4, .mb-3, .form-group') || input.parentNode;
+                var errEl = container.querySelector('.jd-email-client-error');
+                if (!errEl) {
+                    errEl = document.createElement('div');
+                    errEl.className = 'text-danger small mt-1 jd-email-client-error';
+                    input.parentNode.appendChild(errEl);
+                }
+                errEl.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i>' + msg;
+                input.style.borderColor = '#ef4444';
+            }
+
+            function clearEmailError(input) {
+                var container = input.closest('.col-md-6, .col-md-4, .mb-3, .form-group') || input.parentNode;
+                var errEl = container.querySelector('.jd-email-client-error');
+                if (errEl) errEl.remove();
+                input.style.borderColor = '';
+            }
+
+            function setupEmailValidation() {
+                var emailSelectors = [
+                    'input[type="email"]',
+                    'input[name="email"]',
+                    'input[name="client_email"]',
+                    'input[name="contact_email"]'
+                ];
+                var inputs = document.querySelectorAll(emailSelectors.join(','));
+                inputs.forEach(function(input) {
+                    if (input.dataset.emailValidationInit) return;
+                    input.dataset.emailValidationInit = 'true';
+
+                    input.addEventListener('input', function() {
+                        var val = this.value.trim();
+                        if (val.length === 0) {
+                            clearEmailError(this);
+                        } else {
+                            var res = validateEmailValue(val);
+                            if (res.valid) {
+                                clearEmailError(this);
+                            }
+                        }
+                    });
+
+                    input.addEventListener('blur', function() {
+                        var val = this.value.trim();
+                        if (val.length > 0) {
+                            var res = validateEmailValue(val);
+                            if (!res.valid) {
+                                showEmailError(this, res.message);
+                            } else {
+                                clearEmailError(this);
+                            }
+                        }
+                    });
+
+                    var form = input.closest('form');
+                    if (form && !form.dataset.emailSubmitAttached) {
+                        form.dataset.emailSubmitAttached = 'true';
+                        form.addEventListener('submit', function(e) {
+                            var formEmails = form.querySelectorAll(emailSelectors.join(','));
+                            for (var i = 0; i < formEmails.length; i++) {
+                                var em = formEmails[i];
+                                var val = em.value.trim();
+                                var isRequired = em.hasAttribute('required') || em.getAttribute('aria-required') === 'true' ||
+                                    (em.closest('.col-md-6, .col-md-4, .mb-3') && em.closest('.col-md-6, .col-md-4, .mb-3').querySelector('.text-danger'));
+
+                                if (isRequired && val.length === 0) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    showEmailError(em, 'Email address is required.');
+                                    em.focus();
+                                    return false;
+                                }
+
+                                if (val.length > 0) {
+                                    var res = validateEmailValue(val);
+                                    if (!res.valid) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        showEmailError(em, res.message);
+                                        em.focus();
+                                        return false;
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', setupEmailValidation);
+            } else {
+                setupEmailValidation();
             }
         })();
     </script>

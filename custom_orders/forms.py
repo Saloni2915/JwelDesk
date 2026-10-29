@@ -12,7 +12,7 @@ class CustomOrderForm(forms.ModelForm):
     class Meta:
         model = CustomOrder
         fields = [
-            'customer', 'category', 'design_description', 'reference_image',
+            'customer', 'category', 'branch', 'design_description', 'reference_image',
             'metal_type', 'purity', 'approx_gross_weight', 'approx_net_weight',
             'making_charge', 'estimated_price', 'customer_budget', 'advance_amount',
             'expected_delivery_date', 'actual_delivery_date', 'notes',
@@ -20,6 +20,7 @@ class CustomOrderForm(forms.ModelForm):
         widgets = {
             'customer': forms.Select(attrs={'class': 'form-select'}),
             'category': forms.Select(attrs={'class': 'form-select'}),
+            'branch': forms.Select(attrs={'class': 'form-select'}),
             'design_description': forms.Textarea(attrs={
                 'class': 'form-control', 'rows': 4,
                 'placeholder': 'Describe the design the customer wants made...'}),
@@ -44,9 +45,23 @@ class CustomOrderForm(forms.ModelForm):
                 'class': 'form-control', 'rows': 3, 'placeholder': 'Internal notes (optional)...'}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, branch=None, **kwargs):
         self.tenant = kwargs.pop('tenant', None)
         super().__init__(*args, **kwargs)
+        if 'branch' in self.fields:
+            self.fields['branch'].required = False
+            self.fields['branch'].empty_label = "Select Branch (Showroom / Head Office)"
+            if self.tenant:
+                from team.models import Branch
+                self.fields['branch'].queryset = Branch.objects.filter(tenant=self.tenant, is_active=True).order_by('-is_default', 'name')
+            if not self.instance.pk:
+                if branch:
+                    self.initial['branch'] = branch
+                elif self.tenant:
+                    from team.models import Branch
+                    default_b = Branch.objects.filter(tenant=self.tenant, is_default=True, is_active=True).first()
+                    if default_b:
+                        self.initial['branch'] = default_b
         if 'purity' in self.fields:
             purity_field = self.fields['purity']
             choices = getattr(purity_field, 'choices', None)

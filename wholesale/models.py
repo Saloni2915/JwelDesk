@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
 
-from accounts.models import validate_gstin
+from accounts.models import validate_gstin, validate_email_address, validate_proper_email
 from inventory.models import JewelleryItem, Category
 
 logger = logging.getLogger('wholesale.models')
@@ -71,10 +71,18 @@ class RetailerParty(models.Model):
         related_name='wholesale_parties',
         help_text="Wholesale supplier tenant owning this retailer account"
     )
+    branch = models.ForeignKey(
+        'team.Branch',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='retailer_parties',
+        help_text="Branch managing this retailer party"
+    )
     name = models.CharField(max_length=200, help_text="Shop / Business Name")
     contact_person = models.CharField(max_length=150, blank=True)
     phone = models.CharField(max_length=20, help_text="Primary contact phone / mobile")
-    email = models.EmailField(blank=True)
+    email = models.EmailField(blank=True, validators=[validate_email_address])
     billing_address = models.TextField(blank=True)
     shipping_address = models.TextField(blank=True)
     gstin = models.CharField(max_length=15, blank=True, validators=[validate_gstin], help_text="15-character GSTIN")
@@ -109,6 +117,8 @@ class RetailerParty(models.Model):
             self.pan_number = self.pan_number.strip().upper()
         if self.phone:
             self.phone = self.phone.strip()
+        if self.email:
+            self.email = validate_proper_email(self.email, field_label='Email address', required=False)
 
     # ---- Derived Balance & Ledger Properties --------------------------------
     @property

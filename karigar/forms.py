@@ -3,7 +3,7 @@ from django import forms
 from django.core.validators import FileExtensionValidator
 from django.utils import timezone
 
-from accounts.models import clean_10_digit_phone
+from accounts.models import clean_10_digit_phone, validate_proper_email
 from customers.models import Customer
 from custom_orders.models import CustomOrder
 from inventory.models import JewelleryItem
@@ -19,6 +19,7 @@ class KarigarForm(forms.ModelForm):
         fields = [
             'karigar_code',
             'name',
+            'branch',
             'mobile',
             'alternate_contact',
             'email',
@@ -45,6 +46,7 @@ class KarigarForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'Artisan / Workshop Name',
             }),
+            'branch': forms.Select(attrs={'class': 'form-select'}),
             'mobile': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': '10-digit mobile number',
@@ -113,9 +115,23 @@ class KarigarForm(forms.ModelForm):
             }),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, branch=None, **kwargs):
         self.tenant = kwargs.pop('tenant', None)
         super().__init__(*args, **kwargs)
+        if 'branch' in self.fields:
+            self.fields['branch'].required = False
+            self.fields['branch'].empty_label = "Select Branch (Workshop / Showroom)"
+            if self.tenant:
+                from team.models import Branch
+                self.fields['branch'].queryset = Branch.objects.filter(tenant=self.tenant, is_active=True).order_by('-is_default', 'name')
+            if not self.instance.pk:
+                if branch:
+                    self.initial['branch'] = branch
+                elif self.tenant:
+                    from team.models import Branch
+                    default_b = Branch.objects.filter(tenant=self.tenant, is_default=True, is_active=True).first()
+                    if default_b:
+                        self.initial['branch'] = default_b
         self.fields['karigar_code'].required = False
         if not self.instance.pk:
             self.fields['joining_date'].initial = timezone.localdate()
@@ -127,6 +143,12 @@ class KarigarForm(forms.ModelForm):
     def clean_alternate_contact(self):
         alt = self.cleaned_data.get('alternate_contact', '').strip()
         return clean_10_digit_phone(alt, field_label='Alternate contact', required=False)
+
+    def clean_email(self):
+        email = (self.cleaned_data.get('email') or '').strip().lower()
+        if not email:
+            return ''
+        return validate_proper_email(email, field_label='Email address', required=False)
 
     def clean_ifsc_code(self):
         ifsc = (self.cleaned_data.get('ifsc_code') or '').strip().upper()
@@ -178,6 +200,7 @@ class KarigarWorkAssignmentForm(forms.ModelForm):
         model = KarigarWorkAssignment
         fields = [
             'karigar',
+            'branch',
             'customer',
             'custom_order',
             'inventory_item',
@@ -201,6 +224,7 @@ class KarigarWorkAssignmentForm(forms.ModelForm):
         ]
         widgets = {
             'karigar': forms.Select(attrs={'class': 'form-select'}),
+            'branch': forms.Select(attrs={'class': 'form-select'}),
             'customer': forms.Select(attrs={'class': 'form-select'}),
             'custom_order': forms.Select(attrs={'class': 'form-select'}),
             'inventory_item': forms.Select(attrs={'class': 'form-select'}),
@@ -264,9 +288,23 @@ class KarigarWorkAssignmentForm(forms.ModelForm):
             }),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, branch=None, **kwargs):
         self.tenant = kwargs.pop('tenant', None)
         super().__init__(*args, **kwargs)
+        if 'branch' in self.fields:
+            self.fields['branch'].required = False
+            self.fields['branch'].empty_label = "Select Branch (Workshop / Showroom)"
+            if self.tenant:
+                from team.models import Branch
+                self.fields['branch'].queryset = Branch.objects.filter(tenant=self.tenant, is_active=True).order_by('-is_default', 'name')
+            if not self.instance.pk:
+                if branch:
+                    self.initial['branch'] = branch
+                elif self.tenant:
+                    from team.models import Branch
+                    default_b = Branch.objects.filter(tenant=self.tenant, is_default=True, is_active=True).first()
+                    if default_b:
+                        self.initial['branch'] = default_b
         # Only active karigars for new assignments
         if self.tenant:
             self.fields['karigar'].queryset = Karigar.objects.filter(tenant=self.tenant, status=Karigar.STATUS_ACTIVE)
@@ -489,6 +527,7 @@ class KarigarSettlementForm(forms.ModelForm):
         model = KarigarSettlement
         fields = [
             'karigar',
+            'branch',
             'payment_date',
             'amount',
             'payment_method',
@@ -498,6 +537,7 @@ class KarigarSettlementForm(forms.ModelForm):
         ]
         widgets = {
             'karigar': forms.Select(attrs={'class': 'form-select'}),
+            'branch': forms.Select(attrs={'class': 'form-select'}),
             'payment_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'amount': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -522,10 +562,25 @@ class KarigarSettlementForm(forms.ModelForm):
             }),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, branch=None, **kwargs):
         self.tenant = kwargs.pop('tenant', None)
         karigar_id = kwargs.pop('karigar_id', None)
         super().__init__(*args, **kwargs)
+
+        if 'branch' in self.fields:
+            self.fields['branch'].required = False
+            self.fields['branch'].empty_label = "Select Branch (Workshop / Showroom)"
+            if self.tenant:
+                from team.models import Branch
+                self.fields['branch'].queryset = Branch.objects.filter(tenant=self.tenant, is_active=True).order_by('-is_default', 'name')
+            if not self.instance.pk:
+                if branch:
+                    self.initial['branch'] = branch
+                elif self.tenant:
+                    from team.models import Branch
+                    default_b = Branch.objects.filter(tenant=self.tenant, is_default=True, is_active=True).first()
+                    if default_b:
+                        self.initial['branch'] = default_b
 
         if not self.instance.pk:
             self.fields['payment_date'].initial = timezone.localdate()

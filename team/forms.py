@@ -8,7 +8,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
-from accounts.models import clean_10_digit_phone
+from accounts.models import clean_10_digit_phone, validate_proper_email
 from .models import (
     Branch,
     Employee,
@@ -27,16 +27,17 @@ User = get_user_model()
 class BranchForm(forms.ModelForm):
     class Meta:
         model = Branch
-        fields = ('name', 'address', 'phone', 'is_active')
+        fields = ('name', 'code', 'address', 'phone', 'is_default', 'is_active')
         widgets = {
-            'address': forms.Textarea(attrs={'rows': 3}),
+            'code': forms.TextInput(attrs={'placeholder': 'e.g. MAIN, BR-01 (optional)'}),
+            'address': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Physical showroom address'}),
         }
 
     def __init__(self, *args, **kwargs):
         self.tenant = kwargs.pop('tenant', None)
         super().__init__(*args, **kwargs)
         for name, field in self.fields.items():
-            if name != 'is_active':
+            if name not in ('is_active', 'is_default'):
                 field.widget.attrs.setdefault('class', 'form-control')
         if 'phone' in self.fields:
             self.fields['phone'].widget.attrs.update({
@@ -66,6 +67,8 @@ class BranchForm(forms.ModelForm):
             instance.tenant = self.tenant
         if commit:
             instance.save()
+            if instance.is_default and instance.tenant_id:
+                Branch.objects.filter(tenant_id=instance.tenant_id).exclude(pk=instance.pk).update(is_default=False)
         return instance
 
 
@@ -130,6 +133,11 @@ class EmployeeCreateForm(forms.ModelForm):
             'joining_date', 'status', 'branches', 'photo',
         )
         widgets = {
+            'email': forms.EmailInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'name@example.com',
+                'autocomplete': 'email',
+            }),
             'mobile': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': '10-digit mobile number',
@@ -181,6 +189,7 @@ class EmployeeCreateForm(forms.ModelForm):
 
     def clean_email(self):
         email = (self.cleaned_data.get('email') or '').strip().lower()
+        email = validate_proper_email(email, field_label='Email address', required=True)
         qs = Employee.objects.filter(email__iexact=email)
         if self.tenant:
             qs = qs.filter(tenant=self.tenant)
@@ -292,6 +301,11 @@ class EmployeeEditForm(forms.ModelForm):
             'joining_date', 'status', 'branches', 'photo',
         )
         widgets = {
+            'email': forms.EmailInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'name@example.com',
+                'autocomplete': 'email',
+            }),
             'mobile': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': '10-digit mobile number',
@@ -342,6 +356,7 @@ class EmployeeEditForm(forms.ModelForm):
 
     def clean_email(self):
         email = (self.cleaned_data.get('email') or '').strip().lower()
+        email = validate_proper_email(email, field_label='Email address', required=True)
         qs = Employee.objects.filter(email__iexact=email)
         if self.tenant:
             qs = qs.filter(tenant=self.tenant)
@@ -503,6 +518,14 @@ class EmployeeLinkAccountForm(forms.Form):
 # ---------------------------------------------------------------------------
 
 class RoleForm(forms.ModelForm):
+    ACTIONS = ['view', 'add', 'edit', 'delete', 'export']
+
+    sync_employees = forms.BooleanField(
+        required=False,
+        initial=True,
+        label="Apply updated permissions to all existing employees with this role"
+    )
+
     class Meta:
         model = Role
         fields = ('name', 'description')
@@ -514,6 +537,34 @@ class RoleForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.tenant = kwargs.pop('tenant', None)
         super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk and self.instance.is_builtin:
+            self.fields['name'].widget.attrs['readonly'] = 'readonly'
+            self.fields['name'].widget.attrs['class'] = 'form-control opacity-75'
+            self.fields['name'].help_text = 'Standard built-in role name cannot be renamed.'
+
+        # Pre-load permissions for this role and tenant
+        existing_perms = {}
+        if self.instance and self.instance.pk:
+            existing_perms = self.instance.get_permissions(tenant=self.tenant)
+
+        # Build form-level initial dict when unbound (GET)
+        if not self.data:
+            for module_key, _ in EmployeePermission.MODULE_CHOICES:
+                mod_flags = existing_perms.get(module_key, {})
+                for action in self.ACTIONS:
+                    field_name = f'perm_{module_key}_{action}'
+                    self.initial[field_name] = mod_flags.get(f'can_{action}', False)
+
+        for module_key, module_label in EmployeePermission.MODULE_CHOICES:
+            mod_flags = existing_perms.get(module_key, {})
+            for action in self.ACTIONS:
+                field_name = f'perm_{module_key}_{action}'
+                current = mod_flags.get(f'can_{action}', False)
+                self.fields[field_name] = forms.BooleanField(
+                    required=False,
+                    initial=current,
+                    label=f'{module_label} – {action.title()}',
+                )
 
     def clean_name(self):
         from django.db.models import Q
@@ -531,10 +582,23 @@ class RoleForm(forms.ModelForm):
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        if self.tenant and not instance.tenant_id:
+        if not instance.is_builtin and self.tenant and not instance.tenant_id:
             instance.tenant = self.tenant
         if commit:
             instance.save()
+
+            # Check if any permission fields were submitted in POST data
+            has_perm_fields = any(str(k).startswith('perm_') for k in self.data)
+            if has_perm_fields:
+                permissions_data = {}
+                for module_key, _ in EmployeePermission.MODULE_CHOICES:
+                    permissions_data[module_key] = {
+                        f'can_{action}': self.cleaned_data.get(f'perm_{module_key}_{action}', False)
+                        for action in self.ACTIONS
+                    }
+                sync = self.cleaned_data.get('sync_employees', False)
+                instance.set_permissions(permissions_data, tenant=self.tenant, sync_employees=sync)
+
         return instance
 
 

@@ -38,15 +38,27 @@
           </div>
           {% endif %}
 
-          <div class="mb-4">
-            <label for="{{ form.name.id_for_label }}" class="form-label text-gold small fw-bold">
-              Branch Name <span class="text-danger">*</span>
-            </label>
-            {{ form.name }}
-            {% if form.name.errors %}
-              <div class="text-danger small mt-1">{{ form.name.errors|join:", " }}</div>
-            {% endif %}
-            <div class="form-text small text-muted mt-1">e.g. Main Branch, Market Branch</div>
+          <div class="row g-3 mb-4">
+            <div class="col-md-8">
+              <label for="{{ form.name.id_for_label }}" class="form-label text-gold small fw-bold">
+                Branch Name <span class="text-danger">*</span>
+              </label>
+              {{ form.name }}
+              {% if form.name.errors %}
+                <div class="text-danger small mt-1">{{ form.name.errors|join:", " }}</div>
+              {% endif %}
+              <div class="form-text small text-muted mt-1">e.g. Main Showroom, Bandra West Branch</div>
+            </div>
+            <div class="col-md-4">
+              <label for="{{ form.code.id_for_label }}" class="form-label text-gold small fw-bold">
+                Branch Code
+              </label>
+              {{ form.code }}
+              {% if form.code.errors %}
+                <div class="text-danger small mt-1">{{ form.code.errors|join:", " }}</div>
+              {% endif %}
+              <div class="form-text small text-muted mt-1">e.g. MAIN, BR-01</div>
+            </div>
           </div>
 
           <div class="mb-4">
@@ -69,14 +81,26 @@
             {% endif %}
           </div>
 
-          <div class="mb-5">
-            <div class="form-check form-switch p-3 rounded-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
-              <input type="checkbox" name="is_active" class="form-check-input" id="{{ form.is_active.id_for_label }}"
-                     {% if form.is_active.value %}checked{% endif %}>
-              <label class="form-check-label text-light small fw-bold ms-2" for="{{ form.is_active.id_for_label }}">
-                Active Branch
-              </label>
-              <div class="form-text small text-muted ms-2 mt-1">Inactive branches are hidden from selection when assigning staff or orders.</div>
+          <div class="row g-3 mb-5">
+            <div class="col-md-6">
+              <div class="form-check form-switch p-3 rounded-3 h-100" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
+                <input type="checkbox" name="is_default" class="form-check-input" id="{{ form.is_default.id_for_label }}"
+                       {% if form.is_default.value %}checked{% endif %}>
+                <label class="form-check-label text-light small fw-bold ms-2" for="{{ form.is_default.id_for_label }}">
+                  Primary / Default Branch
+                </label>
+                <div class="form-text small text-muted ms-2 mt-1">Default branch for newly logged-in staff and unassigned records.</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-check form-switch p-3 rounded-3 h-100" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
+                <input type="checkbox" name="is_active" class="form-check-input" id="{{ form.is_active.id_for_label }}"
+                       {% if form.is_active.value %}checked{% endif %}>
+                <label class="form-check-label text-light small fw-bold ms-2" for="{{ form.is_active.id_for_label }}">
+                  Active Branch
+                </label>
+                <div class="form-text small text-muted ms-2 mt-1">Inactive branches are hidden from selection.</div>
+              </div>
             </div>
           </div>
 

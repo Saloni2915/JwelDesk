@@ -113,7 +113,7 @@ class JewelleryItemForm(forms.ModelForm):
     class Meta:
         model = JewelleryItem
         fields = [
-            'tag_number', 'item_code', 'design_code', 'name', 'category', 'metal_type', 'purity',
+            'tag_number', 'item_code', 'design_code', 'name', 'category', 'branch', 'metal_type', 'purity',
             'huid', 'huid_status', 'hallmark_status', 'hallmark_details',
             'gross_weight', 'stone_weight', 'net_weight',
             'making_charge_type', 'making_charge', 'wastage_percent', 'stone_charges', 'other_charges',
@@ -125,6 +125,7 @@ class JewelleryItemForm(forms.ModelForm):
             'design_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Design / Model Code, e.g. DSN-RN-001'}),
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. 22K Gold Solitaire Ring'}),
             'category': forms.Select(attrs={'class': 'form-select'}),
+            'branch': forms.Select(attrs={'class': 'form-select'}),
             'metal_type': forms.Select(attrs={'class': 'form-select', 'id': 'id_metal_type'}),
             'purity': forms.Select(attrs={'class': 'form-select', 'id': 'id_purity'}),
             'huid': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '6-char alphanumeric, e.g. AB1234', 'maxlength': 6}),
@@ -136,9 +137,23 @@ class JewelleryItemForm(forms.ModelForm):
             'status': forms.Select(attrs={'class': 'form-select'}),
         }
 
-    def __init__(self, *args, tenant=None, **kwargs):
+    def __init__(self, *args, tenant=None, branch=None, **kwargs):
         self.tenant = tenant or (kwargs.get('instance').tenant if kwargs.get('instance') else None)
         super().__init__(*args, **kwargs)
+        if 'branch' in self.fields:
+            self.fields['branch'].required = False
+            self.fields['branch'].empty_label = "Select Branch (Showroom / Head Office)"
+            if self.tenant:
+                from team.models import Branch
+                self.fields['branch'].queryset = Branch.objects.filter(tenant=self.tenant, is_active=True).order_by('-is_default', 'name')
+            if not self.instance.pk:
+                if branch:
+                    self.initial['branch'] = branch
+                elif self.tenant:
+                    from team.models import Branch
+                    default_b = Branch.objects.filter(tenant=self.tenant, is_default=True, is_active=True).first()
+                    if default_b:
+                        self.initial['branch'] = default_b
         if 'purity' in self.fields:
             purity_field = self.fields['purity']
             choices = getattr(purity_field, 'choices', None)
@@ -482,5 +497,70 @@ class MetalRatesUpdateForm(forms.Form):
         max_length=50, required=False, initial='Shop Board Rate',
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. IBJA, Mumbai Bullion, Shop Opening Rate'})
     )
+
+
+class StockTransferForm(forms.ModelForm):
+    """Form to initiate or record a branch-to-branch stock transfer."""
+    item = forms.ModelChoiceField(
+        queryset=JewelleryItem.objects.none(),
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Jewellery Item to Transfer"
+    )
+    quantity = forms.IntegerField(
+        min_value=1,
+        initial=1,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+        label="Quantity to Transfer"
+    )
+
+    class Meta:
+        from .models import StockTransfer
+        model = StockTransfer
+        fields = ['from_branch', 'to_branch', 'notes']
+        widgets = {
+            'from_branch': forms.Select(attrs={'class': 'form-select'}),
+            'to_branch': forms.Select(attrs={'class': 'form-select'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Optional transfer dispatch notes / courier details'}),
+        }
+
+    def __init__(self, *args, tenant=None, from_branch=None, **kwargs):
+        self.tenant = tenant
+        super().__init__(*args, **kwargs)
+        from team.models import Branch
+        if self.tenant:
+            branches_qs = Branch.objects.filter(tenant=self.tenant, is_active=True).order_by('-is_default', 'name')
+            self.fields['from_branch'].queryset = branches_qs
+            self.fields['to_branch'].queryset = branches_qs
+            if from_branch:
+                self.fields['from_branch'].initial = from_branch
+                self.fields['item'].queryset = JewelleryItem.objects.filter(
+                    tenant=self.tenant,
+                    branch=from_branch,
+                    quantity__gt=0,
+                    status='Available'
+                ).order_by('name')
+            else:
+                self.fields['item'].queryset = JewelleryItem.objects.filter(
+                    tenant=self.tenant,
+                    quantity__gt=0,
+                    status='Available'
+                ).order_by('name')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        from_b = cleaned_data.get('from_branch')
+        to_b = cleaned_data.get('to_branch')
+        item = cleaned_data.get('item')
+        qty = cleaned_data.get('quantity') or 0
+
+        if from_b and to_b and from_b == to_b:
+            self.add_error('to_branch', 'Source branch and Destination branch cannot be the same.')
+
+        if item and qty:
+            if item.quantity < qty:
+                self.add_error('quantity', f'Selected item only has {item.quantity} available in {item.branch.name if item.branch else "stock"}. Cannot transfer {qty}.')
+
+        return cleaned_data
+
 
 

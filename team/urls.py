@@ -35,5 +35,6 @@ urlpatterns = [
     # Branches (standalone management)
     path('branches/',                             views.branch_list,                name='branch_list'),
     path('branches/add/',                         views.branch_create,              name='branch_create'),
+    path('branches/switch/',                      views.branch_switch,              name='branch_switch'),
     path('branches/<int:pk>/edit/',               views.branch_edit,                name='branch_edit'),
 ]

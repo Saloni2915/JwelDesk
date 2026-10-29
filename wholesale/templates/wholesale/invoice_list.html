@@ -24,8 +24,25 @@
     <!-- Filter Bar -->
     <div class="jd-card p-3 mb-4">
         <form method="get" class="row g-2 align-items-center">
-            <div class="col-md-4">
-                <select name="status" class="form-select">
+            <div class="col-lg-5 col-md-5 col-12">
+                <div class="jd-search-wrap">
+                    <i class="bi bi-search jd-search-icon"></i>
+                    <input type="text"
+                           name="q"
+                           value="{{ q }}"
+                           class="jd-input jd-search-input"
+                           placeholder="Search by invoice #, party, or order #...">
+                    {% if q %}
+                    <a href="{% url 'wholesale:invoice_list' %}{% if status_filter %}?status={{ status_filter }}{% endif %}"
+                       class="jd-search-clear"
+                       title="Clear search text">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-4 col-sm-6 col-12">
+                <select name="status" class="jd-select">
                     <option value="">All Invoice Statuses</option>
                     <option value="Unpaid" {% if status_filter == 'Unpaid' %}selected{% endif %}>Unpaid Invoices</option>
                     <option value="Partially Paid" {% if status_filter == 'Partially Paid' %}selected{% endif %}>Partially Paid</option>
@@ -33,14 +50,16 @@
                     <option value="Cancelled" {% if status_filter == 'Cancelled' %}selected{% endif %}>Cancelled</option>
                 </select>
             </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-outline-warning w-100">Filter</button>
+            <div class="col-lg-3 col-md-3 col-sm-6 col-12 d-flex gap-2">
+                <button type="submit" class="jd-btn-gold flex-grow-1 d-inline-flex align-items-center justify-content-center">
+                    <i class="bi bi-funnel me-1"></i> Filter
+                </button>
+                {% if q or status_filter %}
+                <a href="{% url 'wholesale:invoice_list' %}" class="jd-btn-ghost d-inline-flex align-items-center justify-content-center text-nowrap" title="Reset Filters">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+                </a>
+                {% endif %}
             </div>
-            {% if status_filter %}
-            <div class="col-md-2">
-                <a href="{% url 'wholesale:invoice_list' %}" class="btn btn-outline-secondary w-100">Clear</a>
-            </div>
-            {% endif %}
         </form>
     </div>
 
@@ -110,11 +129,22 @@
             </table>
         </div>
         {% else %}
+        {% if q or status_filter %}
         <div class="text-center py-5 text-muted">
-            <i class="bi bi-receipt fs-1"></i>
-            <h5 class="mt-3">No invoices found</h5>
+            <i class="bi bi-search fs-1 text-gold mb-3 d-block"></i>
+            <h5 class="mt-2 text-gold">No matching invoices found</h5>
+            <p class="small">No invoices match your search criteria {% if q %}for "<strong>{{ q }}</strong>"{% endif %}. Try a different search term or clear filters.</p>
+            <a href="{% url 'wholesale:invoice_list' %}" class="jd-btn-ghost mt-2 d-inline-flex align-items-center">
+                <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Filters
+            </a>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-receipt fs-1 text-gold mb-3 d-block"></i>
+            <h5 class="mt-2">No invoices found</h5>
             <p class="small">Invoices are generated against fulfilled wholesale orders or shipments.</p>
         </div>
+        {% endif %}
         {% endif %}
     </div>
 </div>

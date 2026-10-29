@@ -60,6 +60,14 @@ class CustomOrder(models.Model):
         blank=True,
         help_text="Tenant shop owning this custom order"
     )
+    branch = models.ForeignKey(
+        'team.Branch',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='custom_orders',
+        help_text="Branch managing this custom order"
+    )
     customer = models.ForeignKey(Customer, on_delete=models.PROTECT, related_name='custom_orders')
     order_number = models.CharField(
         max_length=20,

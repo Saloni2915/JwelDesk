@@ -18,6 +18,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
+from accounts.models import validate_proper_email, clean_10_digit_phone
 
 
 ALLOWED_IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.webp', '.svg', '.gif')
@@ -54,8 +55,17 @@ class Branch(models.Model):
         help_text="Tenant shop owning this branch"
     )
     name        = models.CharField(max_length=150)
+    code        = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text="Short branch identifier, e.g. MAIN, BR-01"
+    )
     address     = models.TextField(blank=True)
     phone       = models.CharField(max_length=20, blank=True)
+    is_default  = models.BooleanField(
+        default=False,
+        help_text="Primary / default branch for this showroom tenant"
+    )
     is_active   = models.BooleanField(default=True)
     created_at  = models.DateTimeField(auto_now_add=True)
 
@@ -70,7 +80,30 @@ class Branch(models.Model):
         ]
 
     def __str__(self):
+        if self.code:
+            return f"{self.name} ({self.code})"
         return self.name
+
+    @classmethod
+    def ensure_default_branch(cls, tenant):
+        """Return default branch for tenant, creating one if none exists."""
+        if not tenant:
+            return None
+        branch = cls.objects.filter(tenant=tenant, is_default=True).first()
+        if not branch:
+            branch = cls.objects.filter(tenant=tenant).first()
+        if not branch:
+            branch = cls.objects.create(
+                tenant=tenant,
+                name='Main Showroom',
+                code='MAIN',
+                is_default=True,
+                is_active=True,
+            )
+        elif not branch.is_default and not cls.objects.filter(tenant=tenant, is_default=True).exists():
+            branch.is_default = True
+            branch.save(update_fields=['is_default'])
+        return branch
 
 
 # ---------------------------------------------------------------------------
@@ -173,6 +206,85 @@ class Role(models.Model):
                 )
                 created += 1
         return created
+
+    def get_permissions(self, tenant=None):
+        """
+        Return a dict of {module: {can_view: bool, can_add: bool, can_edit: bool, can_delete: bool, can_export: bool}}
+        for this role, checking tenant-specific customization first, then global RolePermission,
+        and finally falling back to standard default permissions.
+        """
+        perms_dict = {}
+        target_tenant = tenant or self.tenant
+        if target_tenant:
+            custom_perms = self.role_permissions.filter(tenant=target_tenant)
+            if custom_perms.exists():
+                for p in custom_perms:
+                    perms_dict[p.module] = {
+                        'can_view': p.can_view,
+                        'can_add': p.can_add,
+                        'can_edit': p.can_edit,
+                        'can_delete': p.can_delete,
+                        'can_export': p.can_export,
+                    }
+
+        if not perms_dict:
+            base_perms = self.role_permissions.filter(tenant__isnull=True)
+            if base_perms.exists():
+                for p in base_perms:
+                    perms_dict[p.module] = {
+                        'can_view': p.can_view,
+                        'can_add': p.can_add,
+                        'can_edit': p.can_edit,
+                        'can_delete': p.can_delete,
+                        'can_export': p.can_export,
+                    }
+
+        if not perms_dict:
+            perms_dict = EmployeePermission.default_permissions_for_role(self.name)
+
+        none_flags = dict(can_view=False, can_add=False, can_edit=False, can_delete=False, can_export=False)
+        for m in EmployeePermission.MODULES:
+            if m not in perms_dict:
+                perms_dict[m] = none_flags.copy()
+
+        return perms_dict
+
+    def set_permissions(self, permissions_data, tenant=None, sync_employees=False):
+        """
+        Save permissions_data: dict of {module: {can_view: bool, can_add: bool, can_edit: bool, can_delete: bool, can_export: bool}}
+        for this role and tenant.
+        If sync_employees is True, updates EmployeePermission for all employees belonging to this tenant and role.
+        """
+        target_tenant = tenant or self.tenant
+        for module, flags in permissions_data.items():
+            RolePermission.objects.update_or_create(
+                role=self,
+                tenant=target_tenant,
+                module=module,
+                defaults={
+                    'can_view': bool(flags.get('can_view', False)),
+                    'can_add': bool(flags.get('can_add', False)),
+                    'can_edit': bool(flags.get('can_edit', False)),
+                    'can_delete': bool(flags.get('can_delete', False)),
+                    'can_export': bool(flags.get('can_export', False)),
+                }
+            )
+
+        if sync_employees:
+            employees = self.employees.filter(tenant=target_tenant) if target_tenant else self.employees.all()
+            for emp in employees:
+                for module, flags in permissions_data.items():
+                    EmployeePermission.objects.update_or_create(
+                        employee=emp,
+                        module=module,
+                        defaults={
+                            'can_view': bool(flags.get('can_view', False)),
+                            'can_add': bool(flags.get('can_add', False)),
+                            'can_edit': bool(flags.get('can_edit', False)),
+                            'can_delete': bool(flags.get('can_delete', False)),
+                            'can_export': bool(flags.get('can_export', False)),
+                        }
+                    )
 
 
 # ---------------------------------------------------------------------------
@@ -347,6 +459,56 @@ class EmployeePermission(models.Model):
 
 
 # ---------------------------------------------------------------------------
+# Role-level permission system
+# ---------------------------------------------------------------------------
+
+class RolePermission(models.Model):
+    """
+    Configurable permissions assigned directly to a Role.
+    Tenant-scoped so each showroom business can configure what Accountant, Cashier,
+    Sales, Manager, or custom roles can view, add, edit, delete, and export.
+    """
+    tenant     = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.CASCADE,
+        related_name='role_permissions',
+        null=True,
+        blank=True,
+        help_text="Tenant that customized this role's permissions (null for global defaults)"
+    )
+    role       = models.ForeignKey(
+        'Role',
+        on_delete=models.CASCADE,
+        related_name='role_permissions',
+        help_text="Role to which this permission set applies"
+    )
+    module     = models.CharField(max_length=30, choices=EmployeePermission.MODULE_CHOICES)
+
+    can_view   = models.BooleanField(default=False)
+    can_add    = models.BooleanField(default=False)
+    can_edit   = models.BooleanField(default=False)
+    can_delete = models.BooleanField(default=False)
+    can_export = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('tenant', 'role', 'module')
+        ordering = ['module']
+
+    def __str__(self):
+        tenant_str = f"[{self.tenant.name}] " if self.tenant else "[Global] "
+        flags = [
+            a for a, v in (
+                ('view',   self.can_view),
+                ('add',    self.can_add),
+                ('edit',   self.can_edit),
+                ('delete', self.can_delete),
+                ('export', self.can_export),
+            ) if v
+        ]
+        return f"{tenant_str}{self.role.name} | {self.module}: {', '.join(flags) or 'none'}"
+
+
+# ---------------------------------------------------------------------------
 # Employee
 # ---------------------------------------------------------------------------
 
@@ -430,7 +592,7 @@ class Employee(models.Model):
         help_text='ID like EMP-0001.'
     )
     full_name   = models.CharField(max_length=150)
-    email       = models.EmailField()
+    email       = models.EmailField(validators=[validate_proper_email])
     mobile      = models.CharField(max_length=20, blank=True)
     designation = models.CharField(
         max_length=100, blank=True,
@@ -490,6 +652,16 @@ class Employee(models.Model):
 
     # ---- Helpers -----------------------------------------------------------
 
+    def clean(self):
+        super().clean()
+        if self.email:
+            self.email = validate_proper_email(self.email, field_label='Email address', required=True)
+        if self.mobile:
+            try:
+                self.mobile = clean_10_digit_phone(self.mobile, field_label='Mobile number', required=False)
+            except ValidationError as err:
+                raise ValidationError({'mobile': err.message if hasattr(err, 'message') else str(err)})
+
     def save(self, *args, **kwargs):
         if not self.employee_id:
             self.employee_id = _next_employee_id(tenant=self.tenant)
@@ -524,21 +696,27 @@ class Employee(models.Model):
             return True
         try:
             perm = self.permissions.get(module=module)
+            flag_map = {
+                'view':   perm.can_view,
+                'add':    perm.can_add,
+                'edit':   perm.can_edit,
+                'delete': perm.can_delete,
+                'export': perm.can_export,
+            }
+            return flag_map.get(action, False)
         except EmployeePermission.DoesNotExist:
+            if self.role and hasattr(self.role, 'get_permissions'):
+                perms = self.role.get_permissions(tenant=self.tenant)
+                module_perms = perms.get(module, {})
+                return module_perms.get(f'can_{action}', False)
             return False
-        flag_map = {
-            'view':   perm.can_view,
-            'add':    perm.can_add,
-            'edit':   perm.can_edit,
-            'delete': perm.can_delete,
-            'export': perm.can_export,
-        }
-        return flag_map.get(action, False)
 
     def apply_default_permissions(self):
         """Create/reset EmployeePermission rows to role defaults."""
-        defaults = EmployeePermission.default_permissions_for_role(
-            self.role.name
+        defaults = (
+            self.role.get_permissions(tenant=self.tenant)
+            if hasattr(self.role, 'get_permissions')
+            else EmployeePermission.default_permissions_for_role(self.role.name)
         )
         for module, flags in defaults.items():
             EmployeePermission.objects.update_or_create(

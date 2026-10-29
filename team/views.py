@@ -427,7 +427,7 @@ def employee_branches(request, pk):
 @login_required
 @require_permission('team', 'view')
 def role_list(request):
-    """Overview of all built-in and custom roles with employee counts and defaults."""
+    """Overview of all built-in and custom roles with employee counts and current permissions."""
     from django.db.models import Q
     if not Role.objects.exists():
         Role.ensure_builtin_roles()
@@ -436,9 +436,9 @@ def role_list(request):
 
     role_data = []
     for r in roles:
-        defaults = EmployeePermission.default_permissions_for_role(r.name)
+        perms = r.get_permissions(tenant=request.tenant)
         active_modules = [
-            mod for mod, flags in defaults.items()
+            mod for mod, flags in perms.items()
             if any(flags.values())
         ]
         role_data.append({
@@ -465,10 +465,50 @@ def role_seed(request):
     return redirect('team:role_list')
 
 
+MODULE_METADATA = {
+    'dashboard':     {'icon': 'bi-speedometer2', 'desc': 'Executive overview, charts & showroom analytics'},
+    'team':          {'icon': 'bi-people', 'desc': 'Staff directory, branches, roles & permissions'},
+    'customers':     {'icon': 'bi-person-badge', 'desc': 'Customer accounts, purchase history & loyalty ledger'},
+    'inventory':     {'icon': 'bi-gem', 'desc': 'Jewellery stock, tags, gold/silver weights & categories'},
+    'sales':         {'icon': 'bi-receipt', 'desc': 'Counter POS billing, invoices, payments & exchange'},
+    'purchases':     {'icon': 'bi-bag-check', 'desc': 'Bullion intake, supplier purchases & vendor payments'},
+    'custom_orders': {'icon': 'bi-palette', 'desc': 'Bespoke designs, workshop orders & customer estimates'},
+    'reports':       {'icon': 'bi-file-earmark-bar-graph', 'desc': 'Sales registers, tax audits & stock reports'},
+    'metal_prices':  {'icon': 'bi-currency-exchange', 'desc': 'Live gold, silver, and metal rate board'},
+    'settings':      {'icon': 'bi-gear', 'desc': 'Company profile, GST, invoice formats & store policies'},
+    'karigar':       {'icon': 'bi-hammer', 'desc': 'Artisan job sheets, metal issuance & wastage ledger'},
+    'wholesale':     {'icon': 'bi-building', 'desc': 'B2B retailer parties, bulk catalog & dispatches'},
+}
+
+
+def _build_role_module_rows(form):
+    """Helper to group module permission form fields with icons and action metadata."""
+    rows = []
+    for module_key, module_label in EmployeePermission.MODULE_CHOICES:
+        meta = MODULE_METADATA.get(module_key, {'icon': 'bi-app', 'desc': ''})
+        actions = []
+        for action in RoleForm.ACTIONS:
+            field_name = f'perm_{module_key}_{action}'
+            actions.append({
+                'name': field_name,
+                'action': action,
+                'label': action.title(),
+                'field': form[field_name],
+            })
+        rows.append({
+            'key': module_key,
+            'label': module_label,
+            'icon': meta['icon'],
+            'desc': meta['desc'],
+            'actions': actions,
+        })
+    return rows
+
+
 @login_required
 @require_permission('team', 'edit')
 def role_create(request):
-    """Create a new custom role."""
+    """Create a new custom role with custom module permissions."""
     if request.method == 'POST':
         form = RoleForm(request.POST, tenant=request.tenant)
         if form.is_valid():
@@ -476,38 +516,53 @@ def role_create(request):
             role.tenant = request.tenant
             role.is_builtin = False
             role.save()
-            messages.success(request, f'Role "{role.name}" created successfully.')
+            # Save permissions via form.save logic
+            form.save()
+            messages.success(request, f'Role "{role.name}" and access permissions created successfully.')
             return redirect('team:role_list')
     else:
         form = RoleForm(tenant=request.tenant)
+
+    module_rows = _build_role_module_rows(form)
 
     return render(request, 'team/role_form.html', {
         'form': form,
         'form_title': 'Add Custom Role',
         'is_create': True,
+        'module_rows': module_rows,
+        'employee_count': 0,
     })
 
 
 @login_required
 @require_permission('team', 'edit')
 def role_edit(request, pk):
-    """Edit description or name of a custom role (built-in roles cannot be renamed)."""
-    role = get_object_or_404(Role, pk=pk, tenant=request.tenant)
+    """Edit role details and customize module permissions for this showroom business."""
+    from django.db.models import Q
+    if request.tenant:
+        role = get_object_or_404(Role, Q(tenant=request.tenant) | Q(tenant__isnull=True), pk=pk)
+    else:
+        role = get_object_or_404(Role, pk=pk)
 
     if request.method == 'POST':
         form = RoleForm(request.POST, instance=role, tenant=request.tenant)
         if form.is_valid():
             form.save()
-            messages.success(request, f'Role "{role.name}" updated.')
+            messages.success(request, f'Role "{role.name}" and access permissions updated successfully.')
             return redirect('team:role_list')
     else:
         form = RoleForm(instance=role, tenant=request.tenant)
 
+    employee_count = role.employees.filter(tenant=request.tenant).count() if request.tenant else role.employees.count()
+    module_rows = _build_role_module_rows(form)
+
     return render(request, 'team/role_form.html', {
         'form': form,
-        'form_title': f'Edit Role – {role.name}',
+        'form_title': f'Edit Role & Permissions – {role.name}',
         'role': role,
         'is_create': False,
+        'module_rows': module_rows,
+        'employee_count': employee_count,
     })
 
 
@@ -596,3 +651,52 @@ def branch_edit(request, pk):
         'form_title': f'Edit Branch – {branch.name}',
         'branch': branch,
     })
+
+
+@login_required
+def branch_switch(request):
+    """
+    Switch the active branch in user session.
+    Accepts branch_id ('all' or an integer ID) via POST or GET.
+    Validates against request.allowed_branches and request.can_view_all_branches.
+    """
+    tenant = getattr(request, 'tenant', None)
+    if not tenant:
+        messages.error(request, "No active business found.")
+        return redirect('dashboard')
+
+    branch_id = request.POST.get('branch_id') or request.GET.get('branch_id')
+    next_url = request.POST.get('next') or request.GET.get('next') or request.META.get('HTTP_REFERER') or '/dashboard/'
+
+    if not next_url.startswith('/'):
+        next_url = '/dashboard/'
+
+    session_key = f'active_branch_id_{tenant.id}'
+
+    if branch_id == 'all':
+        if getattr(request, 'can_view_all_branches', False):
+            request.session[session_key] = 'all'
+            messages.info(request, "Consolidated View: Showing data across All Branches.")
+        else:
+            messages.error(request, "You are not authorized to view all branches consolidated.")
+    elif branch_id:
+        try:
+            b_id = int(branch_id)
+            branch = getattr(request, 'allowed_branches', Branch.objects.none()).filter(id=b_id).first()
+            if branch:
+                request.session[session_key] = branch.id
+                messages.success(request, f"Active branch switched to {branch.name}.")
+            else:
+                messages.error(request, "Invalid or unauthorized branch selected.")
+        except (ValueError, TypeError):
+            messages.error(request, "Invalid branch identifier.")
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({
+            'status': 'ok',
+            'active_branch_id': request.session.get(session_key),
+            'next': next_url,
+        })
+
+    return redirect(next_url)
+

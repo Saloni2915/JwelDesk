@@ -213,6 +213,15 @@ class JewelleryItem(models.Model):
         help_text="Bulk import batch that created this physical piece"
     )
 
+    branch = models.ForeignKey(
+        'team.Branch',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='jewellery_items',
+        help_text="Showroom branch where this physical piece is currently located"
+    )
+
     # Physical piece identity
     tag_number = models.CharField(
         max_length=50,
@@ -608,6 +617,9 @@ class StockMovement(models.Model):
         ('Sale', 'Sale'),
         ('Wholesale Dispatch', 'Wholesale Dispatch'),
         ('Wholesale Return', 'Wholesale Return'),
+        ('Branch Transfer', 'Branch Transfer'),
+        ('Branch Transfer Out', 'Branch Transfer Out'),
+        ('Branch Transfer In', 'Branch Transfer In'),
     ]
 
     tenant = models.ForeignKey(
@@ -620,6 +632,14 @@ class StockMovement(models.Model):
     )
     item = models.ForeignKey(
         JewelleryItem, on_delete=models.CASCADE, related_name='stock_movements')
+    branch = models.ForeignKey(
+        'team.Branch',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='stock_movements',
+        help_text="Showroom branch where this stock movement occurred"
+    )
     movement_type = models.CharField(max_length=20, choices=MOVEMENT_TYPES)
     quantity_change = models.IntegerField(
         help_text="Signed piece change: positive adds stock, negative removes it.")
@@ -638,6 +658,8 @@ class StockMovement(models.Model):
     def save(self, *args, **kwargs):
         if not self.tenant_id and self.item_id and getattr(self.item, 'tenant_id', None):
             self.tenant_id = self.item.tenant_id
+        if not self.branch_id and self.item_id and getattr(self.item, 'branch_id', None):
+            self.branch_id = self.item.branch_id
         super().save(*args, **kwargs)
 
     class Meta:
@@ -892,5 +914,157 @@ class JewelleryItemImage(models.Model):
         primary_badge = " [Primary]" if self.is_primary else ""
         caption_part = f" ({self.caption})" if self.caption else ""
         return f"Image for {item_tag}{caption_part}{primary_badge}"
+
+
+# ==============================================================================
+# BRANCH-TO-BRANCH STOCK TRANSFER
+# ==============================================================================
+
+def generate_transfer_number(tenant=None):
+    """Generate sequential transfer reference: TRF-00001, TRF-00002, etc."""
+    qs = StockTransfer.objects.filter(transfer_number__startswith='TRF-')
+    if tenant:
+        qs = qs.filter(tenant=tenant)
+    latest = qs.order_by('-id').first()
+    next_num = 1
+    if latest and latest.transfer_number:
+        try:
+            next_num = int(latest.transfer_number.split('-')[-1]) + 1
+        except Exception:
+            next_num = qs.count() + 1
+    candidate = f"TRF-{next_num:05d}"
+    while qs.filter(transfer_number=candidate).exists():
+        next_num += 1
+        candidate = f"TRF-{next_num:05d}"
+    return candidate
+
+
+class StockTransfer(models.Model):
+    """Branch-to-branch jewellery stock transfer record."""
+    STATUS_PENDING = 'Pending'
+    STATUS_IN_TRANSIT = 'In Transit'
+    STATUS_RECEIVED = 'Received'
+    STATUS_CANCELLED = 'Cancelled'
+
+    STATUS_CHOICES = [
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_IN_TRANSIT, 'In Transit'),
+        (STATUS_RECEIVED, 'Received / Completed'),
+        (STATUS_CANCELLED, 'Cancelled'),
+    ]
+
+    tenant = models.ForeignKey(
+        'accounts.Tenant',
+        on_delete=models.CASCADE,
+        related_name='stock_transfers',
+        null=True,
+        blank=True,
+        help_text="Tenant shop owning this transfer"
+    )
+    transfer_number = models.CharField(max_length=50, db_index=True)
+    from_branch = models.ForeignKey(
+        'team.Branch',
+        on_delete=models.PROTECT,
+        related_name='transfers_out',
+        help_text="Source branch transferring the pieces"
+    )
+    to_branch = models.ForeignKey(
+        'team.Branch',
+        on_delete=models.PROTECT,
+        related_name='transfers_in',
+        help_text="Destination branch receiving the pieces"
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    notes = models.TextField(blank=True, help_text="Transfer instructions / transit notes")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_transfers'
+    )
+    received_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='received_transfers'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    received_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Stock Transfer'
+        verbose_name_plural = 'Stock Transfers'
+
+    def __str__(self):
+        return f"{self.transfer_number}: {self.from_branch.name} → {self.to_branch.name} ({self.status})"
+
+    def clean(self):
+        super().clean()
+        if self.from_branch_id and self.to_branch_id and self.from_branch_id == self.to_branch_id:
+            raise ValidationError("Source and destination branch cannot be the same.")
+
+    def save(self, *args, **kwargs):
+        if not self.transfer_number:
+            self.transfer_number = generate_transfer_number(self.tenant)
+        super().save(*args, **kwargs)
+
+    def complete_transfer(self, user=None):
+        """Finalize transfer: relocate items to destination branch and record stock audit movements."""
+        if self.status == self.STATUS_RECEIVED:
+            return
+        with transaction.atomic():
+            for item_rel in self.items.select_related('jewellery_item').all():
+                piece = item_rel.jewellery_item
+                old_branch = piece.branch
+                piece.branch = self.to_branch
+                piece.save(update_fields=['branch', 'updated_at'])
+
+                # Record audit movements
+                qty_transferred = item_rel.quantity
+                StockMovement.objects.create(
+                    tenant=self.tenant,
+                    branch=old_branch,
+                    item=piece,
+                    movement_type=StockMovement.REDUCTION,
+                    quantity_change=-qty_transferred,
+                    stock_before=piece.quantity,
+                    stock_after=max(0, piece.quantity - qty_transferred),
+                    reason='Branch Transfer Out',
+                    notes=f"Transferred to {self.to_branch.name} via {self.transfer_number}",
+                    created_by=user,
+                )
+                StockMovement.objects.create(
+                    tenant=self.tenant,
+                    branch=self.to_branch,
+                    item=piece,
+                    movement_type=StockMovement.ADDITION,
+                    quantity_change=qty_transferred,
+                    stock_before=max(0, piece.quantity - qty_transferred),
+                    stock_after=piece.quantity,
+                    reason='Branch Transfer In',
+                    notes=f"Received from {self.from_branch.name} via {self.transfer_number}",
+                    created_by=user,
+                )
+            self.status = self.STATUS_RECEIVED
+            self.received_by = user
+            self.received_at = timezone.now()
+            self.save(update_fields=['status', 'received_by', 'received_at'])
+
+
+class StockTransferItem(models.Model):
+    transfer = models.ForeignKey(StockTransfer, on_delete=models.CASCADE, related_name='items')
+    jewellery_item = models.ForeignKey(JewelleryItem, on_delete=models.PROTECT, related_name='transfer_items')
+    quantity = models.PositiveIntegerField(default=1)
+    notes = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        verbose_name = 'Stock Transfer Item'
+        verbose_name_plural = 'Stock Transfer Items'
+
+    def __str__(self):
+        return f"{self.jewellery_item.name} ({self.quantity}) in {self.transfer.transfer_number}"
 
 

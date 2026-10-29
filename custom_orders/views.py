@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.utils import timezone
@@ -9,6 +9,7 @@ from datetime import timedelta
 
 from .forms import CustomOrderForm, CustomOrderStatusForm
 from .models import CustomOrder
+from team.permissions import check_branch_access
 
 
 CUSTOM_ORDERS_PER_PAGE = 15
@@ -17,7 +18,11 @@ CUSTOM_ORDERS_PER_PAGE = 15
 @login_required
 def custom_order_list(request):
     """List custom orders with search, status, and expected-delivery filters."""
-    orders = CustomOrder.objects.filter(tenant=request.tenant).select_related('customer', 'category')
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
+    orders = CustomOrder.objects.filter(tenant=request.tenant).select_related('customer', 'category', 'branch')
+    if active_b:
+        orders = orders.filter(Q(branch=active_b) | Q(branch__isnull=True))
+
     today = timezone.localdate()
 
     q = request.GET.get('q', '').strip()
@@ -59,16 +64,19 @@ def custom_order_list(request):
 @login_required
 def custom_order_add(request):
     """Create a new custom order; status always starts at Enquiry."""
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     initial = {}
     customer_param = request.GET.get('customer', '').strip()
     if customer_param.isdigit():
         initial['customer'] = int(customer_param)
 
     if request.method == 'POST':
-        form = CustomOrderForm(request.POST, request.FILES, tenant=request.tenant)
+        form = CustomOrderForm(request.POST, request.FILES, tenant=request.tenant, branch=active_b)
         if form.is_valid():
             order = form.save(commit=False)
             order.tenant = request.tenant
+            if not order.branch and active_b:
+                order.branch = active_b
             order.status = CustomOrder.STATUS_ENQUIRY
             order.save()
             messages.success(
@@ -77,7 +85,7 @@ def custom_order_add(request):
             return redirect('custom_orders:custom_order_detail', pk=order.pk)
         messages.error(request, "Could not create the custom order. Please fix the errors below.")
     else:
-        form = CustomOrderForm(initial=initial, tenant=request.tenant)
+        form = CustomOrderForm(initial=initial, tenant=request.tenant, branch=active_b)
 
     context = {
         'form': form,
@@ -91,10 +99,13 @@ def custom_order_add(request):
 def custom_order_detail(request, pk):
     """Show the full order with allowed next statuses."""
     order = get_object_or_404(
-        CustomOrder.objects.select_related('customer', 'category'),
+        CustomOrder.objects.select_related('customer', 'category', 'branch'),
         pk=pk,
         tenant=request.tenant,
     )
+    if not check_branch_access(request, order):
+        raise PermissionDenied("You do not have permission to view custom orders in this branch.")
+
     # Only offer transitions allowed by the shop workflow, in workflow order.
     status_map = dict(CustomOrder.STATUS_CHOICES)
     allowed_statuses = [
@@ -122,15 +133,19 @@ def custom_order_detail(request, pk):
 @login_required
 def custom_order_edit(request, pk):
     """Edit a custom order; delivered/cancelled orders are read-only."""
-    order = get_object_or_404(CustomOrder, pk=pk, tenant=request.tenant)
+    order = get_object_or_404(CustomOrder.objects.select_related('branch'), pk=pk, tenant=request.tenant)
+    if not check_branch_access(request, order):
+        raise PermissionDenied("You do not have permission to edit custom orders in this branch.")
+
     if order.status in (CustomOrder.STATUS_DELIVERED, CustomOrder.STATUS_CANCELLED):
         messages.error(
             request,
             f"Custom order {order.order_number} is {order.status} and can no longer be edited.")
         return redirect('custom_orders:custom_order_detail', pk=order.pk)
 
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     if request.method == 'POST':
-        form = CustomOrderForm(request.POST, request.FILES, instance=order, tenant=request.tenant)
+        form = CustomOrderForm(request.POST, request.FILES, instance=order, tenant=request.tenant, branch=active_b)
         if form.is_valid():
             order = form.save()
             messages.success(
@@ -139,7 +154,7 @@ def custom_order_edit(request, pk):
             return redirect('custom_orders:custom_order_detail', pk=order.pk)
         messages.error(request, "Could not update the custom order. Please fix the errors below.")
     else:
-        form = CustomOrderForm(instance=order, tenant=request.tenant)
+        form = CustomOrderForm(instance=order, tenant=request.tenant, branch=active_b)
 
     context = {
         'form': form,
@@ -153,7 +168,9 @@ def custom_order_edit(request, pk):
 @login_required
 def custom_order_delete(request, pk):
     """Delete a draft-stage order, or cancel an order already in progress."""
-    order = get_object_or_404(CustomOrder, pk=pk, tenant=request.tenant)
+    order = get_object_or_404(CustomOrder.objects.select_related('branch'), pk=pk, tenant=request.tenant)
+    if not check_branch_access(request, order):
+        raise PermissionDenied("You do not have permission to delete custom orders in this branch.")
 
     if request.method == 'POST':
         if order.status in (CustomOrder.STATUS_DELIVERED, CustomOrder.STATUS_CANCELLED):
@@ -188,7 +205,10 @@ def custom_order_delete(request, pk):
 @login_required
 def custom_order_status(request, pk):
     """Change the order status, enforcing the allowed shop workflow."""
-    order = get_object_or_404(CustomOrder, pk=pk, tenant=request.tenant)
+    order = get_object_or_404(CustomOrder.objects.select_related('branch'), pk=pk, tenant=request.tenant)
+    if not check_branch_access(request, order):
+        raise PermissionDenied("You do not have permission to update custom orders in this branch.")
+
     if request.method != 'POST':
         return redirect('custom_orders:custom_order_detail', pk=order.pk)
 

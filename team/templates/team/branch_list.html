@@ -40,6 +40,7 @@
         <thead>
           <tr>
             <th>Branch Name</th>
+            <th>Code</th>
             <th>Contact Phone</th>
             <th>Address</th>
             <th>Status</th>
@@ -52,7 +53,11 @@
           <tr>
             <td class="fw-semibold text-body">
               <i class="bi bi-geo-alt-fill text-gold me-2"></i> {{ b.name }}
+              {% if b.is_default %}
+                <span class="badge bg-warning bg-opacity-25 text-warning ms-1" style="font-size: 0.72rem;"><i class="bi bi-star-fill me-1"></i>Default</span>
+              {% endif %}
             </td>
+            <td><span class="badge bg-secondary bg-opacity-50 font-monospace text-light">{{ b.code|default:"—" }}</span></td>
             <td><span class="text-gold font-monospace">{{ b.phone|default:"—" }}</span></td>
             <td><span class="text-light small text-truncate d-inline-block" style="max-width: 280px;">{{ b.address|default:"—"|truncatechars:60 }}</span></td>
             <td>

@@ -24,14 +24,25 @@
     <!-- Retailer Preview Filter -->
     <div class="jd-card p-3 mb-4">
         <form method="get" class="row g-2 align-items-center">
-            <div class="col-md-5">
-                <div class="input-group">
-                    <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-search text-muted"></i></span>
-                    <input type="text" name="q" value="{{ q }}" class="form-control border-start-0" placeholder="Search by item name, tag, or design code...">
+            <div class="col-lg-5 col-md-5 col-12">
+                <div class="jd-search-wrap">
+                    <i class="bi bi-search jd-search-icon"></i>
+                    <input type="text"
+                           name="q"
+                           value="{{ q }}"
+                           class="jd-input jd-search-input"
+                           placeholder="Search by item name, tag, or design code...">
+                    {% if q %}
+                    <a href="{% url 'wholesale:catalogue' %}{% if selected_party %}?party={{ selected_party.id }}{% endif %}"
+                       class="jd-search-clear"
+                       title="Clear search text">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </a>
+                    {% endif %}
                 </div>
             </div>
-            <div class="col-md-4">
-                <select name="party" class="form-select">
+            <div class="col-lg-4 col-md-4 col-sm-7 col-12">
+                <select name="party" class="jd-select">
                     <option value="">-- Preview Rates for General Wholesale --</option>
                     {% for p in parties %}
                     <option value="{{ p.id }}" {% if selected_party.id == p.id %}selected{% endif %}>
@@ -40,14 +51,16 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-outline-warning w-100">Apply</button>
+            <div class="col-lg-3 col-md-3 col-sm-5 col-12 d-flex gap-2">
+                <button type="submit" class="jd-btn-gold flex-grow-1 d-inline-flex align-items-center justify-content-center">
+                    <i class="bi bi-funnel me-1"></i> Apply
+                </button>
+                {% if q or selected_party %}
+                <a href="{% url 'wholesale:catalogue' %}" class="jd-btn-ghost d-inline-flex align-items-center justify-content-center text-nowrap" title="Reset Filters">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Clear
+                </a>
+                {% endif %}
             </div>
-            {% if q or selected_party %}
-            <div class="col-md-1">
-                <a href="{% url 'wholesale:catalogue' %}" class="btn btn-outline-secondary w-100">Clear</a>
-            </div>
-            {% endif %}
         </form>
     </div>
 
@@ -102,11 +115,22 @@
             </table>
         </div>
         {% else %}
+        {% if q or selected_party %}
         <div class="text-center py-5 text-muted">
-            <i class="bi bi-gem fs-1"></i>
-            <h5 class="mt-3">No products available in catalogue</h5>
+            <i class="bi bi-search fs-1 text-gold mb-3 d-block"></i>
+            <h5 class="mt-2 text-gold">No products match your search</h5>
+            <p class="small">No items found matching {% if q %}"<strong>{{ q }}</strong>"{% endif %}. Try a different search term or clear filters.</p>
+            <a href="{% url 'wholesale:catalogue' %}" class="jd-btn-ghost mt-2 d-inline-flex align-items-center">
+                <i class="bi bi-arrow-counterclockwise me-1"></i> Clear Filters
+            </a>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-gem fs-1 text-gold mb-3 d-block"></i>
+            <h5 class="mt-2">No products available in catalogue</h5>
             <p class="small">Add jewellery items to your stock inventory to make them available for wholesale orders.</p>
         </div>
+        {% endif %}
         {% endif %}
     </div>
 </div>

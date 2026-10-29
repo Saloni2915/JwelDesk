@@ -648,6 +648,28 @@ label,
     color: #0F172A !important;
 }
 
+[data-theme="light"] .input-group-text {
+    background-color: #FFFFFF !important;
+    border: 1px solid #CBD5E1 !important;
+    color: #64748B !important;
+}
+
+[data-theme="light"] .jd-search-wrap .jd-search-icon {
+    color: #64748B !important;
+}
+
+[data-theme="light"] .jd-search-wrap:focus-within .jd-search-icon {
+    color: #B48516 !important;
+}
+
+[data-theme="light"] .jd-search-wrap .jd-search-clear {
+    color: #94A3B8 !important;
+}
+
+[data-theme="light"] .jd-search-wrap .jd-search-clear:hover {
+    color: #0F172A !important;
+}
+
 /* Light Theme Dashboard Cockpit Components */
 [data-theme="light"] .jd-bullion-ribbon {
     background: #FFFFFF !important;
@@ -1589,6 +1611,120 @@ h1.jd-title i,
 }
 
 /* --------------------------------------------------------------------------
+   Universal Search Bar Wrap & Input Groups for Atelier Suite
+   -------------------------------------------------------------------------- */
+.jd-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.jd-search-wrap .jd-search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--jd-muted);
+    font-size: 0.95rem;
+    pointer-events: none;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    transition: color 0.2s ease;
+}
+
+.jd-search-wrap:focus-within .jd-search-icon {
+    color: var(--jd-gold) !important;
+}
+
+.jd-search-wrap input.jd-search-input,
+.jd-search-wrap input.jd-input,
+.jd-search-wrap .form-control {
+    padding-left: 2.75rem !important;
+    padding-right: 2.2rem !important;
+    width: 100% !important;
+    min-height: 38px !important;
+    box-sizing: border-box !important;
+}
+
+.jd-search-wrap .jd-search-clear {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: var(--jd-muted);
+    font-size: 0.95rem;
+    padding: 0;
+    cursor: pointer;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s ease;
+    text-decoration: none;
+}
+
+.jd-search-wrap .jd-search-clear:hover {
+    color: var(--jd-ivory);
+}
+
+/* Universal Input Group Fix inside Atelier Canvas */
+.jd-canvas .input-group,
+.input-group.jd-filter-group {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    position: relative !important;
+}
+
+.jd-canvas .input-group > .form-control,
+.jd-canvas .input-group > .jd-input,
+.input-group.jd-filter-group > .form-control,
+.input-group.jd-filter-group > .jd-input {
+    width: 1% !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-left: none !important;
+}
+
+.jd-canvas .input-group > .input-group-text,
+.input-group.jd-filter-group > .input-group-text {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background-color: var(--jd-input-bg) !important;
+    border: 1px solid var(--jd-border) !important;
+    border-right: none !important;
+    border-top-left-radius: 8px !important;
+    border-bottom-left-radius: 8px !important;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    color: var(--jd-muted) !important;
+    padding: 0.48rem 0.85rem !important;
+    font-size: 0.9rem !important;
+    white-space: nowrap !important;
+}
+
+.jd-canvas .input-group:focus-within > .input-group-text {
+    border-color: var(--jd-gold) !important;
+    color: var(--jd-gold) !important;
+}
+
+.jd-canvas .input-group:focus-within > .form-control,
+.jd-canvas .input-group:focus-within > .jd-input {
+    border-color: var(--jd-gold) !important;
+}
+
+/* --------------------------------------------------------------------------
    4. Tables & Ledgers
    -------------------------------------------------------------------------- */
 .jd-table-card {
@@ -2044,5 +2180,934 @@ h1.jd-title i,
     background: #1E293B !important;
     color: #FFFFFF !important;
     border-color: #1E293B !important;
+}
+
+/* ==========================================================================
+   FORMAL BUSINESS & ACCOUNTING REPORT SYSTEM (Clean Columns & Rows)
+   Designed for Ledger Registers, Formal Statements, Audits & Clean A4 Print
+   ========================================================================== */
+
+.jd-formal-report-container {
+    background: var(--jd-card);
+    border: 1px solid var(--jd-border);
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: var(--jd-shadow);
+    margin-bottom: 2rem;
+}
+
+/* Formal Document Header */
+.jd-formal-doc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--jd-gold);
+}
+
+.jd-formal-doc-header .company-brand {
+    display: flex;
+    flex-direction: column;
+}
+
+.jd-formal-doc-header .company-name {
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--jd-ivory);
+    margin: 0;
+    font-family: var(--jd-font-headline);
+}
+
+.jd-formal-doc-header .company-meta {
+    font-size: 0.82rem;
+    color: var(--jd-muted);
+    margin-top: 4px;
+}
+
+.jd-formal-doc-header .report-title-heading {
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--jd-gold);
+    margin-top: 8px;
+    margin-bottom: 2px;
+}
+
+.jd-formal-doc-header .report-meta-box {
+    text-align: right;
+    font-size: 0.82rem;
+    color: var(--jd-muted);
+    line-height: 1.5;
+}
+
+.jd-formal-doc-header .report-meta-box strong {
+    color: var(--jd-ivory);
+}
+
+/* Formal Action & Filter Toolbar */
+.jd-formal-toolbar {
+    background: var(--jd-card-header);
+    border: 1px solid var(--jd-border);
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin-bottom: 22px;
+}
+
+/* Formal Section Titles */
+.jd-formal-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--jd-border);
+}
+
+.jd-formal-section-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--jd-gold);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Formal Summary Schedule (Simple Columns & Rows Table) */
+.jd-formal-summary-table {
+    width: 100%;
+    margin-bottom: 24px;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    border: 1px solid var(--jd-border-strong);
+}
+
+.jd-formal-summary-table th {
+    background: var(--jd-table-th);
+    color: var(--jd-gold);
+    font-weight: 700;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 9px 14px;
+    border: 1px solid var(--jd-border);
+}
+
+.jd-formal-summary-table td {
+    padding: 9px 14px;
+    border: 1px solid var(--jd-border);
+    color: var(--jd-ivory);
+    vertical-align: middle;
+}
+
+.jd-formal-summary-table tbody tr:nth-of-type(even) {
+    background: var(--jd-table-zebra);
+}
+
+.jd-formal-summary-table .metric-name {
+    font-weight: 600;
+    color: var(--jd-ivory);
+    width: 35%;
+}
+
+.jd-formal-summary-table .metric-count {
+    text-align: center;
+    font-family: monospace, SFMono-Regular, Consolas;
+    width: 20%;
+}
+
+.jd-formal-summary-table .metric-weight {
+    text-align: right;
+    font-family: monospace, SFMono-Regular, Consolas;
+    width: 20%;
+}
+
+.jd-formal-summary-table .metric-amount {
+    text-align: right;
+    font-family: monospace, SFMono-Regular, Consolas;
+    font-weight: 700;
+    color: var(--jd-gold);
+    width: 25%;
+}
+
+/* Formal Transaction / Ledger Register Table */
+.jd-formal-register-table {
+    width: 100%;
+    margin-bottom: 0;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    border: 1px solid var(--jd-border-strong);
+}
+
+.jd-formal-register-table th {
+    background: var(--jd-table-th);
+    color: var(--jd-gold);
+    font-weight: 700;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 10px 12px;
+    border: 1px solid var(--jd-border);
+    white-space: nowrap;
+}
+
+.jd-formal-register-table td {
+    padding: 8px 12px;
+    border: 1px solid var(--jd-border);
+    color: var(--jd-ivory);
+    vertical-align: middle;
+}
+
+.jd-formal-register-table tbody tr:nth-of-type(even) {
+    background: var(--jd-table-zebra);
+}
+
+.jd-formal-register-table tbody tr:hover {
+    background: var(--jd-table-hover);
+}
+
+.jd-formal-register-table tfoot th,
+.jd-formal-register-table tfoot td {
+    background: var(--jd-card-header);
+    border-top: 2px solid var(--jd-gold) !important;
+    border-bottom: 3px double var(--jd-gold) !important;
+    font-weight: 700;
+    color: var(--jd-gold);
+    padding: 10px 12px;
+    white-space: nowrap;
+}
+
+.jd-formal-register-table .text-num {
+    text-align: right;
+    font-family: monospace, SFMono-Regular, Consolas;
+    font-variant-numeric: tabular-nums;
+}
+
+.jd-formal-register-table .text-code {
+    text-align: center;
+    font-family: monospace, SFMono-Regular, Consolas;
+}
+
+/* Print Stylesheet */
+@media print {
+    @page {
+        size: A4 landscape;
+        margin: 10mm;
+    }
+    body, html {
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-size: 9pt !important;
+    }
+    #sidebar, .sidebar, .sidebar-backdrop, .navbar, .jd-navbar,
+    .jd-formal-toolbar, .no-print, .btn, .jd-btn-gold, .jd-btn-ghost,
+    .breadcrumb-wrapper, .pagination-wrapper, nav[aria-label="Page navigation"] {
+        display: none !important;
+    }
+    .main-content, #page-content, .jd-canvas {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        background: transparent !important;
+    }
+    .jd-formal-report-container {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    .jd-formal-doc-header {
+        border-bottom: 2px solid #000 !important;
+        padding-bottom: 8px !important;
+        margin-bottom: 12px !important;
+    }
+    .jd-formal-doc-header .company-name {
+        color: #000 !important;
+        font-size: 13pt !important;
+    }
+    .jd-formal-doc-header .report-title-heading {
+        color: #000 !important;
+        font-size: 11pt !important;
+    }
+    .jd-formal-doc-header .company-meta,
+    .jd-formal-doc-header .report-meta-box {
+        color: #333 !important;
+        font-size: 8pt !important;
+    }
+    .jd-formal-section-title {
+        color: #000 !important;
+        font-size: 9pt !important;
+    }
+    .jd-formal-summary-table,
+    .jd-formal-register-table {
+        border: 1px solid #000 !important;
+        color: #000 !important;
+        font-size: 8.5pt !important;
+    }
+    .jd-formal-summary-table th,
+    .jd-formal-register-table th {
+        background: #f0f0f0 !important;
+        color: #000 !important;
+        border: 1px solid #000 !important;
+        font-weight: bold !important;
+    }
+    .jd-formal-summary-table td,
+    .jd-formal-register-table td {
+        border: 1px solid #ddd !important;
+        color: #000 !important;
+        padding: 4px 6px !important;
+    }
+    .jd-formal-register-table tfoot th,
+    .jd-formal-register-table tfoot td {
+        background: #f0f0f0 !important;
+        color: #000 !important;
+        border-top: 2px solid #000 !important;
+        border-bottom: 3px double #000 !important;
+        font-weight: bold !important;
+    }
+    .jd-formal-register-table tbody tr {
+        page-break-inside: avoid !important;
+    }
+    .print-only-footer {
+        display: block !important;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-size: 7.5pt;
+        color: #555;
+        border-top: 1px solid #ccc;
+        padding-top: 4px;
+    }
+}
+
+@media screen {
+    .print-only-footer {
+        display: none !important;
+    }
+}
+
+/* ==============================================================================
+   Navbar Branch Switcher & Quick Dropdowns (Theme Aware)
+   ============================================================================== */
+.jd-branch-btn {
+    border-radius: 9999px !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    padding: 4px 12px !important;
+    transition: all 0.15s ease-in-out !important;
+}
+
+.jd-dropdown-menu {
+    min-width: 250px !important;
+    border-radius: 12px !important;
+    padding: 6px 0 !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.18), 0 8px 10px -6px rgba(0, 0, 0, 0.12) !important;
+}
+
+.jd-dropdown-menu .jd-dropdown-title {
+    font-size: 0.68rem !important;
+    letter-spacing: 0.5px !important;
+    text-transform: uppercase !important;
+    font-weight: 700 !important;
+    padding: 6px 14px 4px 14px !important;
+    list-style: none !important;
+}
+
+.jd-dropdown-menu .dropdown-item {
+    font-size: 0.85rem !important;
+    padding: 8px 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    transition: background-color 0.12s ease, color 0.12s ease !important;
+}
+
+.jd-dropdown-menu .dropdown-divider {
+    margin: 4px 0 !important;
+}
+
+/* --- Light Theme (Clean Ivory & Rich Amber Gold) --- */
+[data-theme="light"] .jd-branch-btn {
+    background-color: #FFFBEB !important;
+    border: 1px solid #FCD34D !important;
+    color: #92400E !important;
+}
+[data-theme="light"] .jd-branch-btn:hover,
+[data-theme="light"] .jd-branch-btn:focus,
+[data-theme="light"] .jd-branch-btn[aria-expanded="true"] {
+    background-color: #FEF3C7 !important;
+    border-color: #F59E0B !important;
+    color: #78350F !important;
+}
+[data-theme="light"] .jd-branch-btn .bi-geo-alt-fill {
+    color: #D97706 !important;
+}
+[data-theme="light"] .jd-branch-badge {
+    background: #FEF3C7 !important;
+    color: #92400E !important;
+    border: 1px solid #FCD34D !important;
+}
+[data-theme="light"] .jd-dropdown-menu {
+    background-color: #FFFFFF !important;
+    border: 1px solid #E2E8F0 !important;
+}
+[data-theme="light"] .jd-dropdown-menu .jd-dropdown-title {
+    color: #64748B !important;
+}
+[data-theme="light"] .jd-dropdown-menu .dropdown-divider {
+    border-color: #E2E8F0 !important;
+}
+[data-theme="light"] .jd-dropdown-menu .dropdown-item {
+    color: #0F172A !important;
+    background-color: transparent !important;
+}
+[data-theme="light"] .jd-dropdown-menu .dropdown-item:hover,
+[data-theme="light"] .jd-dropdown-menu .dropdown-item:focus {
+    background-color: #F8FAFC !important;
+    color: #0F172A !important;
+}
+[data-theme="light"] .jd-dropdown-menu .dropdown-item.active,
+[data-theme="light"] .jd-dropdown-menu .dropdown-item:active {
+    background-color: #FEF3C7 !important;
+    color: #92400E !important;
+    font-weight: 700 !important;
+}
+[data-theme="light"] .jd-dropdown-menu .dropdown-item.active i.bi-check-circle-fill,
+[data-theme="light"] .jd-dropdown-menu .dropdown-item.active i.bi-check2 {
+    color: #D97706 !important;
+}
+[data-theme="light"] .jd-dropdown-menu .badge-code {
+    background: #F1F5F9 !important;
+    color: #475569 !important;
+    border: 1px solid #CBD5E1 !important;
+}
+[data-theme="light"] .jd-dropdown-menu .badge-default {
+    background: #FEF3C7 !important;
+    color: #92400E !important;
+    border: 1px solid #FCD34D !important;
+}
+[data-theme="light"] .jd-dropdown-menu .manage-branches-link {
+    color: #B45309 !important;
+    font-weight: 600 !important;
+}
+[data-theme="light"] .jd-dropdown-menu .manage-branches-link:hover {
+    background-color: #FFFBEB !important;
+    color: #78350F !important;
+}
+[data-theme="light"] .jd-lang-btn {
+    background-color: #F1F5F9 !important;
+    border: 1px solid #CBD5E1 !important;
+    color: #334155 !important;
+}
+[data-theme="light"] .jd-lang-btn:hover,
+[data-theme="light"] .jd-lang-btn[aria-expanded="true"] {
+    background-color: #E2E8F0 !important;
+    color: #0F172A !important;
+}
+[data-theme="light"] .jd-nav-ai-btn {
+    background-color: #FFFBEB !important;
+    border: 1px solid #FCD34D !important;
+    color: #92400E !important;
+}
+[data-theme="light"] .jd-nav-ai-btn:hover {
+    background-color: #FEF3C7 !important;
+    color: #78350F !important;
+}
+[data-theme="light"] .jd-nav-tickets-btn {
+    background-color: #F1F5F9 !important;
+    border: 1px solid #CBD5E1 !important;
+    color: #334155 !important;
+}
+[data-theme="light"] .jd-nav-tickets-btn:hover {
+    background-color: #E2E8F0 !important;
+    color: #0F172A !important;
+}
+
+/* --- Dark Theme (High Contrast Dark Slate) --- */
+[data-theme="dark"] .jd-branch-btn {
+    background-color: rgba(236, 200, 106, 0.1) !important;
+    border: 1px solid rgba(236, 200, 106, 0.35) !important;
+    color: #ECC86A !important;
+}
+[data-theme="dark"] .jd-branch-btn:hover,
+[data-theme="dark"] .jd-branch-btn[aria-expanded="true"] {
+    background-color: rgba(236, 200, 106, 0.2) !important;
+    border-color: rgba(236, 200, 106, 0.6) !important;
+    color: #ECC86A !important;
+}
+[data-theme="dark"] .jd-branch-badge {
+    background: #171D2A !important;
+    color: #ECC86A !important;
+    border: 1px solid rgba(236, 200, 106, 0.3) !important;
+}
+[data-theme="dark"] .jd-dropdown-menu {
+    background-color: #121620 !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+[data-theme="dark"] .jd-dropdown-menu .jd-dropdown-title {
+    color: #94A3B8 !important;
+}
+[data-theme="dark"] .jd-dropdown-menu .dropdown-divider {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+[data-theme="dark"] .jd-dropdown-menu .dropdown-item {
+    color: #F8FAFC !important;
+    background-color: transparent !important;
+}
+[data-theme="dark"] .jd-dropdown-menu .dropdown-item:hover,
+[data-theme="dark"] .jd-dropdown-menu .dropdown-item:focus {
+    background-color: #1C2332 !important;
+    color: #FFFFFF !important;
+}
+[data-theme="dark"] .jd-dropdown-menu .dropdown-item.active,
+[data-theme="dark"] .jd-dropdown-menu .dropdown-item:active {
+    background-color: rgba(236, 200, 106, 0.2) !important;
+    color: #ECC86A !important;
+    font-weight: 700 !important;
+}
+[data-theme="dark"] .jd-dropdown-menu .badge-code {
+    background: #242D40 !important;
+    color: #CBD5E1 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+[data-theme="dark"] .jd-dropdown-menu .badge-default {
+    background: rgba(236, 200, 106, 0.2) !important;
+    color: #ECC86A !important;
+    border: 1px solid rgba(236, 200, 106, 0.4) !important;
+}
+[data-theme="dark"] .jd-dropdown-menu .manage-branches-link {
+    color: #ECC86A !important;
+}
+[data-theme="dark"] .jd-lang-btn {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    color: #F8FAFC !important;
+}
+[data-theme="dark"] .jd-lang-btn:hover,
+[data-theme="dark"] .jd-lang-btn[aria-expanded="true"] {
+    background-color: rgba(255, 255, 255, 0.12) !important;
+}
+[data-theme="dark"] .jd-nav-ai-btn {
+    background-color: rgba(236, 200, 106, 0.1) !important;
+    border: 1px solid rgba(236, 200, 106, 0.35) !important;
+    color: #ECC86A !important;
+}
+[data-theme="dark"] .jd-nav-tickets-btn {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    color: #F8FAFC !important;
+}
+
+/* --- Gold Theme (Warm Velvet Gold) --- */
+[data-theme="gold"] .jd-branch-btn {
+    background-color: rgba(236, 200, 106, 0.12) !important;
+    border: 1px solid rgba(236, 200, 106, 0.45) !important;
+    color: #ECC86A !important;
+}
+[data-theme="gold"] .jd-branch-btn:hover,
+[data-theme="gold"] .jd-branch-btn[aria-expanded="true"] {
+    background-color: rgba(236, 200, 106, 0.22) !important;
+    border-color: #ECC86A !important;
+    color: #ECC86A !important;
+}
+[data-theme="gold"] .jd-branch-badge {
+    background: #1a1712 !important;
+    color: #ECC86A !important;
+    border: 1px solid rgba(236, 200, 106, 0.4) !important;
+}
+[data-theme="gold"] .jd-dropdown-menu {
+    background-color: #20160E !important;
+    border: 1px solid rgba(236, 200, 106, 0.35) !important;
+}
+[data-theme="gold"] .jd-dropdown-menu .jd-dropdown-title {
+    color: #A89F91 !important;
+}
+[data-theme="gold"] .jd-dropdown-menu .dropdown-divider {
+    border-color: rgba(236, 200, 106, 0.2) !important;
+}
+[data-theme="gold"] .jd-dropdown-menu .dropdown-item {
+    color: #FAF4EA !important;
+    background-color: transparent !important;
+}
+[data-theme="gold"] .jd-dropdown-menu .dropdown-item:hover,
+[data-theme="gold"] .jd-dropdown-menu .dropdown-item:focus {
+    background-color: #2C2A24 !important;
+    color: #FAF4EA !important;
+}
+[data-theme="gold"] .jd-dropdown-menu .dropdown-item.active,
+[data-theme="gold"] .jd-dropdown-menu .dropdown-item:active {
+    background-color: rgba(236, 200, 106, 0.22) !important;
+    color: #ECC86A !important;
+    font-weight: 700 !important;
+}
+[data-theme="gold"] .jd-dropdown-menu .badge-code {
+    background: #2C2A24 !important;
+    color: #D4AF37 !important;
+    border: 1px solid rgba(236, 200, 106, 0.25) !important;
+}
+[data-theme="gold"] .jd-dropdown-menu .badge-default {
+    background: rgba(236, 200, 106, 0.25) !important;
+    color: #ECC86A !important;
+    border: 1px solid rgba(236, 200, 106, 0.4) !important;
+}
+[data-theme="gold"] .jd-dropdown-menu .manage-branches-link {
+    color: #ECC86A !important;
+}
+[data-theme="gold"] .jd-lang-btn {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(236, 200, 106, 0.25) !important;
+    color: #FAF4EA !important;
+}
+[data-theme="gold"] .jd-lang-btn:hover,
+[data-theme="gold"] .jd-lang-btn[aria-expanded="true"] {
+    background-color: rgba(236, 200, 106, 0.15) !important;
+}
+[data-theme="gold"] .jd-nav-ai-btn {
+    background-color: rgba(236, 200, 106, 0.08) !important;
+    border: 1px solid rgba(236, 200, 106, 0.35) !important;
+    color: #ECC86A !important;
+}
+[data-theme="gold"] .jd-nav-tickets-btn {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: #FAF4EA !important;
+}
+
+/* ==============================================================================
+   ByajBatta Style Modern ERP Report Suite (.jd-report-view)
+   ============================================================================== */
+.jd-report-view {
+    padding: 1.25rem 0.5rem;
+}
+
+/* Filter / Control Bar */
+.jd-report-filter-bar {
+    background: var(--jd-card);
+    border: 1px solid var(--jd-border);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.jd-report-filter-bar .form-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--jd-muted);
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.jd-btn-regenerate {
+    background: #4F46E5 !important;
+    border: 1px solid #4338CA !important;
+    color: #FFFFFF !important;
+    font-weight: 600 !important;
+    font-size: 0.82rem !important;
+    border-radius: 8px !important;
+    padding: 6px 16px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    transition: all 0.15s ease !important;
+    box-shadow: 0 1px 2px rgba(79, 70, 229, 0.2) !important;
+}
+
+.jd-btn-regenerate:hover {
+    background: #4338CA !important;
+    color: #FFFFFF !important;
+}
+
+/* 5-KPI Tiles Row */
+.jd-report-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.jd-kpi-card {
+    border-radius: 10px;
+    padding: 0.95rem 1.15rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.jd-kpi-card .kpi-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 0.35rem;
+    line-height: 1.2;
+}
+
+.jd-kpi-card .kpi-val {
+    font-size: 1.45rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.5px;
+    font-family: inherit;
+}
+
+.jd-kpi-card .kpi-sub {
+    font-size: 0.72rem;
+    margin-top: 0.3rem;
+    opacity: 0.85;
+}
+
+/* Light theme KPI styles */
+[data-theme="light"] .jd-kpi-card.kpi-neutral {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+}
+[data-theme="light"] .jd-kpi-card.kpi-neutral .kpi-label { color: #64748B; }
+[data-theme="light"] .jd-kpi-card.kpi-neutral .kpi-val { color: #0F172A; }
+
+[data-theme="light"] .jd-kpi-card.kpi-blue {
+    background: #EFF6FF;
+    border: 1px solid #BFDBFE;
+}
+[data-theme="light"] .jd-kpi-card.kpi-blue .kpi-label { color: #2563EB; }
+[data-theme="light"] .jd-kpi-card.kpi-blue .kpi-val { color: #1D4ED8; }
+
+[data-theme="light"] .jd-kpi-card.kpi-green {
+    background: #F0FDF4;
+    border: 1px solid #BBF7D0;
+}
+[data-theme="light"] .jd-kpi-card.kpi-green .kpi-label { color: #16A34A; }
+[data-theme="light"] .jd-kpi-card.kpi-green .kpi-val { color: #15803D; }
+
+[data-theme="light"] .jd-kpi-card.kpi-amber {
+    background: #FEFCE8;
+    border: 1px solid #FEF08A;
+}
+[data-theme="light"] .jd-kpi-card.kpi-amber .kpi-label { color: #CA8A04; }
+[data-theme="light"] .jd-kpi-card.kpi-amber .kpi-val { color: #A16207; }
+
+[data-theme="light"] .jd-kpi-card.kpi-purple {
+    background: #FAF5FF;
+    border: 1px solid #E9D5FF;
+}
+[data-theme="light"] .jd-kpi-card.kpi-purple .kpi-label { color: #9333EA; }
+[data-theme="light"] .jd-kpi-card.kpi-purple .kpi-val { color: #7E22CE; }
+
+/* Dark theme KPI styles */
+[data-theme="dark"] .jd-kpi-card.kpi-neutral {
+    background: #171D2A;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+[data-theme="dark"] .jd-kpi-card.kpi-neutral .kpi-label { color: #94A3B8; }
+[data-theme="dark"] .jd-kpi-card.kpi-neutral .kpi-val { color: #F8FAFC; }
+
+[data-theme="dark"] .jd-kpi-card.kpi-blue {
+    background: rgba(30, 58, 138, 0.22);
+    border: 1px solid rgba(96, 165, 250, 0.3);
+}
+[data-theme="dark"] .jd-kpi-card.kpi-blue .kpi-label { color: #93C5FD; }
+[data-theme="dark"] .jd-kpi-card.kpi-blue .kpi-val { color: #60A5FA; }
+
+[data-theme="dark"] .jd-kpi-card.kpi-green {
+    background: rgba(20, 83, 45, 0.22);
+    border: 1px solid rgba(74, 222, 128, 0.3);
+}
+[data-theme="dark"] .jd-kpi-card.kpi-green .kpi-label { color: #86EFAC; }
+[data-theme="dark"] .jd-kpi-card.kpi-green .kpi-val { color: #4ADE80; }
+
+[data-theme="dark"] .jd-kpi-card.kpi-amber {
+    background: rgba(113, 63, 18, 0.22);
+    border: 1px solid rgba(250, 204, 21, 0.3);
+}
+[data-theme="dark"] .jd-kpi-card.kpi-amber .kpi-label { color: #FDE047; }
+[data-theme="dark"] .jd-kpi-card.kpi-amber .kpi-val { color: #FACC15; }
+
+[data-theme="dark"] .jd-kpi-card.kpi-purple {
+    background: rgba(88, 28, 135, 0.22);
+    border: 1px solid rgba(192, 132, 252, 0.3);
+}
+[data-theme="dark"] .jd-kpi-card.kpi-purple .kpi-label { color: #D8B4FE; }
+[data-theme="dark"] .jd-kpi-card.kpi-purple .kpi-val { color: #C084FC; }
+
+/* Gold theme KPI styles */
+[data-theme="gold"] .jd-kpi-card.kpi-neutral {
+    background: #20160E;
+    border: 1px solid rgba(236, 200, 106, 0.25);
+}
+[data-theme="gold"] .jd-kpi-card.kpi-neutral .kpi-label { color: #A89F91; }
+[data-theme="gold"] .jd-kpi-card.kpi-neutral .kpi-val { color: #FAF4EA; }
+
+[data-theme="gold"] .jd-kpi-card.kpi-blue {
+    background: rgba(30, 58, 138, 0.22);
+    border: 1px solid rgba(96, 165, 250, 0.35);
+}
+[data-theme="gold"] .jd-kpi-card.kpi-blue .kpi-label { color: #93C5FD; }
+[data-theme="gold"] .jd-kpi-card.kpi-blue .kpi-val { color: #60A5FA; }
+
+[data-theme="gold"] .jd-kpi-card.kpi-green {
+    background: rgba(20, 83, 45, 0.22);
+    border: 1px solid rgba(74, 222, 128, 0.35);
+}
+[data-theme="gold"] .jd-kpi-card.kpi-green .kpi-label { color: #86EFAC; }
+[data-theme="gold"] .jd-kpi-card.kpi-green .kpi-val { color: #4ADE80; }
+
+[data-theme="gold"] .jd-kpi-card.kpi-amber {
+    background: rgba(236, 200, 106, 0.12);
+    border: 1px solid rgba(236, 200, 106, 0.35);
+}
+[data-theme="gold"] .jd-kpi-card.kpi-amber .kpi-label { color: #ECC86A; }
+[data-theme="gold"] .jd-kpi-card.kpi-amber .kpi-val { color: #ECC86A; }
+
+[data-theme="gold"] .jd-kpi-card.kpi-purple {
+    background: rgba(88, 28, 135, 0.22);
+    border: 1px solid rgba(192, 132, 252, 0.35);
+}
+[data-theme="gold"] .jd-kpi-card.kpi-purple .kpi-label { color: #D8B4FE; }
+[data-theme="gold"] .jd-kpi-card.kpi-purple .kpi-val { color: #C084FC; }
+
+/* Subtitle / Officer Meta Bar */
+.jd-report-meta-bar {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--jd-muted);
+    margin-bottom: 0.85rem;
+    padding: 0 0.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.jd-report-meta-bar strong {
+    color: var(--jd-ivory);
+    font-weight: 600;
+}
+
+/* Modern Data Table Card */
+.jd-report-card {
+    background: var(--jd-card);
+    border: 1px solid var(--jd-border);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    margin-bottom: 1.5rem;
+}
+
+.jd-report-table {
+    width: 100%;
+    margin-bottom: 0;
+    border-collapse: collapse;
+}
+
+.jd-report-table thead th {
+    background: var(--jd-card-header);
+    color: var(--jd-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--jd-border);
+    white-space: nowrap;
+}
+
+[data-theme="light"] .jd-report-table thead th {
+    background: #F8FAFC;
+    color: #64748B;
+    border-bottom: 1px solid #E2E8F0;
+}
+
+.jd-report-table tbody td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--jd-border);
+    font-size: 0.84rem;
+    vertical-align: middle;
+    color: var(--jd-ivory);
+}
+
+[data-theme="light"] .jd-report-table tbody td {
+    border-bottom: 1px solid #F1F5F9;
+    color: #0F172A;
+}
+
+[data-theme="light"] .jd-report-table tbody tr:hover td {
+    background: #F8FAFC;
+}
+
+.jd-report-table tfoot th,
+.jd-report-table tfoot td {
+    padding: 12px 14px;
+    background: var(--jd-card-header);
+    border-top: 2px solid var(--jd-border);
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--jd-ivory);
+}
+
+[data-theme="light"] .jd-report-table tfoot th,
+[data-theme="light"] .jd-report-table tfoot td {
+    background: #F8FAFC;
+    border-top: 2px solid #E2E8F0;
+    color: #0F172A;
+}
+
+.jd-code-link {
+    color: #2563EB;
+    font-weight: 600;
+    text-decoration: none;
+}
+.jd-code-link:hover {
+    text-decoration: underline;
+    color: #1D4ED8;
+}
+[data-theme="dark"] .jd-code-link,
+[data-theme="gold"] .jd-code-link {
+    color: var(--jd-gold);
+}
+
+.jd-pill-status {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.jd-pill-status.status-pending {
+    background: #FEF3C7;
+    color: #92400E;
+    border: 1px solid #FCD34D;
+}
+
+.jd-pill-status.status-paid,
+.jd-pill-status.status-completed,
+.jd-pill-status.status-delivered {
+    background: #DCFCE7;
+    color: #166534;
+    border: 1px solid #86EFAC;
+}
+
+.jd-pill-status.status-cancelled,
+.jd-pill-status.status-overdue {
+    background: #FEE2E2;
+    color: #991B1B;
+    border: 1px solid #FCA5A5;
 }
 

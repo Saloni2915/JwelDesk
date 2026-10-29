@@ -140,6 +140,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'accounts.middleware.TenantMiddleware',
     'super_admin.middleware.SuperAdminImpersonationMiddleware',
+    'team.middleware.BranchMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -158,6 +159,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'accounts.context_processors.company_settings_context',
                 'team.context_processors.team_permissions',
+                'team.context_processors.branch_context',
                 'super_admin.context_processors.super_admin_context',
             ],
         },

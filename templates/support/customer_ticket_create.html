@@ -10,19 +10,19 @@
         <ol class="breadcrumb mb-2 small">
             <li class="breadcrumb-item"><a href="{% url 'dashboard' %}" class="text-gold text-decoration-none">Dashboard</a></li>
             <li class="breadcrumb-item"><a href="{% url 'support_customer:ticket_list' %}" class="text-gold text-decoration-none">Support Tickets</a></li>
-            <li class="breadcrumb-item active text-muted" aria-current="page">New Ticket</li>
+            <li class="breadcrumb-item active" style="color: var(--jd-muted);" aria-current="page">New Ticket</li>
         </ol>
     </nav>
 
-    <div class="card bg-dark border-secondary border-opacity-25 shadow-lg overflow-hidden" style="background: #1a1712 !important; border: 1px solid rgba(236, 200, 106, 0.3) !important;">
-        <div class="card-header bg-dark p-4 border-bottom border-secondary border-opacity-25" style="background: linear-gradient(180deg, #241e17 0%, #1a1712 100%) !important;">
+    <div class="jd-card shadow-sm overflow-hidden" style="border-radius: 8px;">
+        <div class="jd-card-header p-4 d-flex align-items-center justify-content-between" style="border-bottom: 1px solid var(--jd-border);">
             <div class="d-flex align-items-center gap-3">
                 <div class="rounded-circle d-flex align-items-center justify-content-center text-dark fw-bold fs-4" style="width: 48px; height: 48px; background: #ECC86A;">
                     <i class="bi bi-headset"></i>
                 </div>
                 <div>
-                    <h4 class="fw-bold mb-1">Raise a Support Ticket</h4>
-                    <p class="text-muted small mb-0">Describe your question or issue. Our support specialists will investigate and reply promptly.</p>
+                    <h4 class="fw-bold mb-1" style="color: var(--jd-ivory);">Raise a Support Ticket</h4>
+                    <p class="small mb-0" style="color: var(--jd-muted);">Describe your question or issue. Our support specialists will investigate and reply promptly.</p>
                 </div>
             </div>
         </div>
@@ -39,7 +39,7 @@
 
                 <!-- Subject -->
                 <div class="mb-3">
-                    <label class="form-label text-gold fw-semibold small">Subject *</label>
+                    <label class="form-label fw-semibold small" style="color: var(--jd-ivory);">Subject *</label>
                     {{ form.subject }}
                     {% if form.subject.errors %}
                     <div class="text-danger small mt-1">{{ form.subject.errors }}</div>
@@ -49,7 +49,7 @@
                 <div class="row g-3 mb-3">
                     <!-- Category -->
                     <div class="col-12 col-md-6">
-                        <label class="form-label text-gold fw-semibold small">Category *</label>
+                        <label class="form-label fw-semibold small" style="color: var(--jd-ivory);">Category *</label>
                         {{ form.category }}
                         {% if form.category.errors %}
                         <div class="text-danger small mt-1">{{ form.category.errors }}</div>
@@ -58,7 +58,7 @@
 
                     <!-- Priority -->
                     <div class="col-12 col-md-6">
-                        <label class="form-label text-gold fw-semibold small">Priority *</label>
+                        <label class="form-label fw-semibold small" style="color: var(--jd-ivory);">Priority *</label>
                         {{ form.priority }}
                         {% if form.priority.errors %}
                         <div class="text-danger small mt-1">{{ form.priority.errors }}</div>
@@ -68,9 +68,9 @@
 
                 <!-- Description -->
                 <div class="mb-3">
-                    <label class="form-label text-gold fw-semibold small">Problem Description *</label>
+                    <label class="form-label fw-semibold small" style="color: var(--jd-ivory);">Problem Description *</label>
                     {{ form.description }}
-                    <small class="text-muted d-block mt-1">Please provide clear details, steps you took, or error messages encountered.</small>
+                    <small class="d-block mt-1" style="color: var(--jd-muted);">Please provide clear details, steps you took, or error messages encountered.</small>
                     {% if form.description.errors %}
                     <div class="text-danger small mt-1">{{ form.description.errors }}</div>
                     {% endif %}
@@ -78,19 +78,19 @@
 
                 <!-- Attachment -->
                 <div class="mb-4">
-                    <label class="form-label text-gold fw-semibold small">Attachment (Optional)</label>
+                    <label class="form-label fw-semibold small" style="color: var(--jd-ivory);">Attachment (Optional)</label>
                     {{ form.attachment }}
-                    <small class="text-muted d-block mt-1">Attach relevant screenshots or files (Max size: 10MB; Supported: JPG, PNG, WEBP, PDF, CSV, TXT).</small>
+                    <small class="d-block mt-1" style="color: var(--jd-muted);">Attach relevant screenshots or files (Max size: 10MB; Supported: JPG, PNG, WEBP, PDF, CSV, TXT).</small>
                     {% if form.attachment.errors %}
                     <div class="text-danger small mt-1">{{ form.attachment.errors }}</div>
                     {% endif %}
                 </div>
 
-                <div class="d-flex align-items-center justify-content-between pt-3 border-top border-secondary border-opacity-25">
-                    <a href="{% url 'support_customer:ticket_list' %}" class="btn btn-outline-secondary text-light">
+                <div class="d-flex align-items-center justify-content-between pt-3" style="border-top: 1px solid var(--jd-border);">
+                    <a href="{% url 'support_customer:ticket_list' %}" class="btn jd-btn-ghost">
                         Cancel
                     </a>
-                    <button type="submit" class="btn btn-gold fw-bold px-4 shadow-sm">
+                    <button type="submit" class="btn jd-btn-gold fw-bold px-4 shadow-sm">
                         <i class="bi bi-send-check me-1"></i> Submit Ticket
                     </button>
                 </div>

@@ -56,6 +56,15 @@
                 <i class="bi bi-receipt me-1"></i> Generate Invoice
             </a>
 
+                        {% if order.status in 'Draft Cancelled' and not order.dispatches.exists and not order.invoices.exists %}
+            <form method="post" action="{% url 'wholesale:order_delete' order.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Permanently delete this order? This cannot be undone.')">
+                    <i class="bi bi-trash me-1"></i> Delete Order
+                </button>
+            </form>
+            {% endif %}
+
             {% if order.status not in 'Completed Cancelled Dispatched' %}
             <form method="post" action="{% url 'wholesale:order_status_update' order.pk %}" class="d-inline">
                 {% csrf_token %}

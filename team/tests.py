@@ -23,6 +23,7 @@ from .models import (
     EmployeeDocument,
     EmployeePermission,
     Role,
+    RolePermission,
 )
 from .permissions import has_module_perm, is_admin_user
 
@@ -683,6 +684,23 @@ class TeamModuleTests(TestCase):
         custom_role.refresh_from_db()
         self.assertEqual(custom_role.description, 'Expert in gem identification and grading.')
 
+    def test_builtin_role_edit_view_accessible(self):
+        """Admin can access and update description of a built-in role via role_edit view without 404."""
+        self.client.force_login(self.admin_user)
+        url = reverse('team:role_edit', kwargs={'pk': self.admin_role.pk})
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+
+        post_resp = self.client.post(url, {
+            'name': self.admin_role.name,
+            'description': 'Updated administrative description.',
+        })
+        self.assertEqual(post_resp.status_code, 302)
+        self.admin_role.refresh_from_db()
+        self.assertEqual(self.admin_role.description, 'Updated administrative description.')
+        self.assertTrue(self.admin_role.is_builtin)
+        self.assertIsNone(self.admin_role.tenant)
+
     def test_builtin_role_cannot_be_renamed(self):
         """Built-in roles must not have their name changed via RoleForm."""
         form = RoleForm(
@@ -800,4 +818,136 @@ class TeamModuleTests(TestCase):
         })
         self.assertEqual(create_resp.status_code, 302)
         self.assertTrue(Branch.objects.filter(name='Downtown Branch').exists())
+
+    def test_employee_email_validation(self):
+        """Test that invalid email formats are rejected and valid emails are accepted."""
+        from django.core.exceptions import ValidationError
+        bad_emails = [
+            'bvf@123333@gmail.commmmmmmmmmmmmmmjjj',
+            'invalidemailformat',
+            '@domain.com',
+            'user@.com',
+            'user@domain..com',
+            'user@domain.c',
+            'user@domain.commmmmmmmmmmmmmmjjj',
+        ]
+        for bad_email in bad_emails:
+            form = EmployeeCreateForm(data={
+                'full_name': 'Test User',
+                'email': bad_email,
+                'mobile': '9876543210',
+                'department': 'Sales',
+                'role': self.manager_role.pk,
+                'account_mode': EmployeeCreateForm.ACCOUNT_NONE,
+            })
+            self.assertFalse(form.is_valid(), f"Expected {bad_email} to be invalid in EmployeeCreateForm")
+            self.assertIn('email', form.errors)
+
+            emp = Employee(
+                full_name='Test User',
+                email=bad_email,
+                role=self.manager_role,
+            )
+            with self.assertRaises(ValidationError, msg=f"Expected Employee model to reject {bad_email}"):
+                emp.full_clean()
+
+        # Valid email should be accepted
+        good_form = EmployeeCreateForm(data={
+            'full_name': 'Valid User',
+            'email': 'valid.user@jeweldesk.test',
+            'mobile': '9876543210',
+            'department': 'Sales',
+            'role': self.manager_role.pk,
+            'status': Employee.STATUS_ACTIVE,
+            'account_mode': EmployeeCreateForm.ACCOUNT_NONE,
+        })
+        self.assertTrue(good_form.is_valid(), f"Form errors: {good_form.errors}")
+
+    def test_role_permissions_editing_via_role_edit_view(self):
+        """Admin can configure granular module permissions on a role and have them persisted."""
+        self.client.force_login(self.admin_user)
+        url = reverse('team:role_edit', kwargs={'pk': self.hr_role.pk})
+
+        # Submit form with custom permissions: grant sales view/add, revoke dashboard view
+        post_data = {
+            'name': self.hr_role.name,
+            'description': 'HR with counter sales access.',
+            'perm_sales_view': 'on',
+            'perm_sales_add': 'on',
+            'perm_team_view': 'on',
+            'perm_team_add': 'on',
+            'sync_employees': 'on',
+        }
+        resp = self.client.post(url, post_data)
+        self.assertEqual(resp.status_code, 302)
+
+        # Verify get_permissions returns updated rights
+        perms = self.hr_role.get_permissions()
+        self.assertTrue(perms['sales']['can_view'])
+        self.assertTrue(perms['sales']['can_add'])
+        self.assertFalse(perms['sales']['can_delete'])
+        self.assertFalse(perms['dashboard']['can_view'])
+
+        # Verify RolePermission records were created
+        self.assertTrue(RolePermission.objects.filter(role=self.hr_role, module='sales', can_view=True).exists())
+
+    def test_role_permissions_sync_to_existing_employees(self):
+        """Editing role permissions with sync_employees=True automatically updates all assigned staff."""
+        # Create an employee with HR role
+        user = User.objects.create_user(username='hremp1', email='hremp1@jeweldesk.test', password='Password123!')
+        emp = Employee.objects.create(
+            user=user,
+            full_name='HR Employee One',
+            email=user.email,
+            role=self.hr_role,
+            status=Employee.STATUS_ACTIVE,
+        )
+        emp.apply_default_permissions()
+
+        # Initially HR has no sales view
+        self.assertFalse(emp.has_module_permission('sales', 'view'))
+
+        # Now edit HR role to grant sales view and edit
+        self.client.force_login(self.admin_user)
+        url = reverse('team:role_edit', kwargs={'pk': self.hr_role.pk})
+        post_data = {
+            'name': self.hr_role.name,
+            'description': 'Updated HR',
+            'perm_sales_view': 'on',
+            'perm_sales_edit': 'on',
+            'sync_employees': 'on',
+        }
+        resp = self.client.post(url, post_data)
+        self.assertEqual(resp.status_code, 302)
+
+        # Verify the employee's permissions were updated
+        emp.refresh_from_db()
+        self.assertTrue(emp.has_module_permission('sales', 'view'))
+        self.assertTrue(emp.has_module_permission('sales', 'edit'))
+
+    def test_role_permissions_fallback_when_employee_permission_missing(self):
+        """If EmployeePermission record is missing for a module, has_module_permission falls back to role."""
+        # Custom role with purchases view permission
+        custom_role = Role.objects.create(name='Purchaser', description='Purchasing clerk', is_builtin=False)
+        custom_role.set_permissions({
+            'purchases': {'can_view': True, 'can_add': True, 'can_edit': False, 'can_delete': False, 'can_export': False}
+        })
+
+        user = User.objects.create_user(username='buyer1', email='buyer1@jeweldesk.test', password='Password123!')
+        emp = Employee.objects.create(
+            user=user,
+            full_name='Buyer Emp',
+            email=user.email,
+            role=custom_role,
+            status=Employee.STATUS_ACTIVE,
+        )
+        # Note: we deliberately DO NOT create EmployeePermission for purchases
+        self.assertFalse(EmployeePermission.objects.filter(employee=emp, module='purchases').exists())
+
+        # Fallback to role permissions should grant view and add, but not delete
+        self.assertTrue(emp.has_module_permission('purchases', 'view'))
+        self.assertTrue(emp.has_module_permission('purchases', 'add'))
+        self.assertFalse(emp.has_module_permission('purchases', 'delete'))
+
+
 

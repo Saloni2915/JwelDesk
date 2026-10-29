@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Transfer {{ transfer.transfer_number }} — JewelDesk{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/inventory_atelier.css' %}?v={% now "U" %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="jd-inv-canvas">
+
+    <!-- 1. Header & Actions -->
+    <div class="jd-inv-header">
+        <div class="jd-inv-title-wrap">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <h1>{{ transfer.transfer_number }}</h1>
+                {% if transfer.status == 'Received' %}
+                    <span class="badge bg-success bg-opacity-25 text-success border border-success px-3 py-2 fs-6">
+                        <i class="bi bi-check-circle me-1"></i>Completed / Received
+                    </span>
+                {% elif transfer.status == 'In Transit' %}
+                    <span class="badge bg-warning bg-opacity-25 text-warning border border-warning px-3 py-2 fs-6">
+                        <i class="bi bi-truck me-1"></i>In Transit
+                    </span>
+                {% elif transfer.status == 'Pending' %}
+                    <span class="badge bg-info bg-opacity-25 text-info border border-info px-3 py-2 fs-6">
+                        <i class="bi bi-hourglass-split me-1"></i>Pending Dispatch
+                    </span>
+                {% else %}
+                    <span class="badge bg-secondary bg-opacity-25 text-light border border-secondary px-3 py-2 fs-6">
+                        {{ transfer.status }}
+                    </span>
+                {% endif %}
+            </div>
+            <p class="jd-inv-subtitle">
+                Initiated on {{ transfer.created_at|date:"d M Y, h:i A" }} by {{ transfer.created_by.get_full_name|default:transfer.created_by.username|default:"Staff" }}
+            </p>
+        </div>
+        <div class="jd-inv-header-actions">
+            <a href="{% url 'stock_transfer_list' %}" class="jd-btn-ghost">
+                <i class="bi bi-arrow-left"></i> All Transfers
+            </a>
+            <button onclick="window.print()" class="jd-btn-ghost">
+                <i class="bi bi-printer"></i> Print Challan
+            </button>
+        </div>
+    </div>
+
+    <!-- 2. Transfer Route Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-5">
+            <div class="jd-card p-3 border-danger border-opacity-50">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge bg-danger bg-opacity-25 text-danger"><i class="bi bi-box-arrow-up-right me-1"></i>Dispatched From</span>
+                    <small class="text-muted">Source Branch</small>
+                </div>
+                <h4 class="text-light mb-1">{{ transfer.from_branch.name }}</h4>
+                <div class="small text-muted mb-2">Code: <span class="text-warning">{{ transfer.from_branch.code|default:"-" }}</span></div>
+                {% if transfer.from_branch.address %}
+                <div class="small text-muted"><i class="bi bi-geo-alt me-1"></i>{{ transfer.from_branch.address }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-md-2 d-flex align-items-center justify-content-center">
+            <div class="text-center">
+                <i class="bi bi-arrow-right fs-1 text-warning d-none d-md-block"></i>
+                <i class="bi bi-arrow-down fs-1 text-warning d-block d-md-none"></i>
+                <small class="text-muted d-block">Stock Relocation</small>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="jd-card p-3 border-success border-opacity-50">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge bg-success bg-opacity-25 text-success"><i class="bi bi-box-arrow-in-down-left me-1"></i>Destination Showroom</span>
+                    <small class="text-muted">Receiving Branch</small>
+                </div>
+                <h4 class="text-light mb-1">{{ transfer.to_branch.name }}</h4>
+                <div class="small text-muted mb-2">Code: <span class="text-warning">{{ transfer.to_branch.code|default:"-" }}</span></div>
+                {% if transfer.to_branch.address %}
+                <div class="small text-muted"><i class="bi bi-geo-alt me-1"></i>{{ transfer.to_branch.address }}</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Items in Transfer -->
+    <div class="jd-inv-table-card mb-4">
+        <div class="p-3 border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 text-light"><i class="bi bi-gem text-warning me-2"></i>Pieces in Transfer Challan</h5>
+            <span class="badge bg-warning bg-opacity-25 text-warning">{{ transfer.items.count }} Item(s)</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table jd-inv-table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Item Name / Tag</th>
+                        <th>Piece Code</th>
+                        <th>Metal & Purity</th>
+                        <th>Net Weight</th>
+                        <th>Current Quantity</th>
+                        <th>Transfer Qty</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item_rel in transfer.items.all %}
+                    <tr>
+                        <td>
+                            <div class="fw-bold">
+                                <a href="{% url 'inventory_detail' item_rel.jewellery_item.pk %}" class="text-warning text-decoration-none">
+                                    {{ item_rel.jewellery_item.name }}
+                                </a>
+                            </div>
+                            <small class="text-muted">Tag: {{ item_rel.jewellery_item.tag_number|default:"-" }}</small>
+                        </td>
+                        <td><code>{{ item_rel.jewellery_item.item_code }}</code></td>
+                        <td>
+                            <span class="badge bg-dark border border-secondary text-light">
+                                {{ item_rel.jewellery_item.metal_type }} ({{ item_rel.jewellery_item.purity }})
+                            </span>
+                        </td>
+                        <td>{{ item_rel.jewellery_item.net_weight }} g</td>
+                        <td>{{ item_rel.jewellery_item.quantity }}</td>
+                        <td>
+                            <span class="badge bg-warning text-dark fw-bold px-2 py-1 fs-6">
+                                {{ item_rel.quantity }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">No items in this transfer.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 4. Notes & Audit Timeline -->
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="jd-card p-3">
+                <h6 class="text-warning mb-2"><i class="bi bi-chat-left-text me-2"></i>Transfer Notes / Instructions</h6>
+                <p class="text-light mb-0">
+                    {{ transfer.notes|default:"No special transfer notes provided."|linebreaks }}
+                </p>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="jd-card p-3">
+                <h6 class="text-warning mb-3"><i class="bi bi-clock-history me-2"></i>Status & Verification</h6>
+                <div class="small mb-2">
+                    <span class="text-muted">Dispatched by:</span>
+                    <strong class="text-light ms-1">{{ transfer.created_by.get_full_name|default:transfer.created_by.username|default:"Staff" }}</strong>
+                    <div class="text-muted ps-3">{{ transfer.created_at|date:"d M Y, h:i A" }}</div>
+                </div>
+                {% if transfer.received_at %}
+                <div class="small mb-3">
+                    <span class="text-muted">Received & Verified by:</span>
+                    <strong class="text-success ms-1">{{ transfer.received_by.get_full_name|default:transfer.received_by.username|default:"Staff" }}</strong>
+                    <div class="text-muted ps-3">{{ transfer.received_at|date:"d M Y, h:i A" }}</div>
+                </div>
+                {% endif %}
+
+                {% if transfer.status != 'Received' and transfer.status != 'Cancelled' %}
+                <div class="d-flex flex-wrap gap-2 mt-3 pt-3 border-top border-secondary border-opacity-25">
+                    <form method="post" action="{% url 'stock_transfer_complete' transfer.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="jd-btn-gold" onclick="return confirm('Confirm receipt of transfer items at {{ transfer.to_branch.name }}?')">
+                            <i class="bi bi-check2-circle me-1"></i> Receive & Complete
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'stock_transfer_cancel' transfer.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Cancel this stock transfer?')">
+                            <i class="bi bi-x-circle me-1"></i> Cancel Transfer
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

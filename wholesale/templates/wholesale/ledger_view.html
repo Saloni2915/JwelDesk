@@ -24,8 +24,8 @@
     <!-- Filter by Party -->
     <div class="jd-card p-3 mb-4">
         <form method="get" class="row g-2 align-items-center">
-            <div class="col-md-5">
-                <select name="party" class="form-select">
+            <div class="col-lg-6 col-md-7 col-12">
+                <select name="party" class="jd-select">
                     <option value="">-- All Retailer Parties --</option>
                     {% for p in parties %}
                     <option value="{{ p.id }}" {% if selected_party == p.id|stringformat:"s" %}selected{% endif %}>
@@ -34,14 +34,16 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-outline-warning w-100">Filter Ledger</button>
+            <div class="col-lg-3 col-md-5 col-12 d-flex gap-2">
+                <button type="submit" class="jd-btn-gold flex-grow-1 d-inline-flex align-items-center justify-content-center">
+                    <i class="bi bi-funnel me-1"></i> Filter Ledger
+                </button>
+                {% if selected_party %}
+                <a href="{% url 'wholesale:ledger_view' %}" class="jd-btn-ghost d-inline-flex align-items-center justify-content-center text-nowrap" title="Reset Filters">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Show All
+                </a>
+                {% endif %}
             </div>
-            {% if selected_party %}
-            <div class="col-md-2">
-                <a href="{% url 'wholesale:ledger_view' %}" class="btn btn-outline-secondary w-100">Show All</a>
-            </div>
-            {% endif %}
         </form>
     </div>
 

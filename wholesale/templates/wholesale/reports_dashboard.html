@@ -1,95 +1,222 @@
 {% extends 'base.html' %}
 
-{% block title %}Wholesale Reports & Analytics — JewelDesk{% endblock %}
-{% block page_title %}Wholesale Reports &amp; Analytics{% endblock %}
+{% block title %}Wholesale Reports &amp; Performance — JewelDesk{% endblock %}
+{% block page_title %}Wholesale Reports &amp; Performance{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2 no-print">
+    <button type="button" onclick="window.print()" class="jd-btn-ghost btn-sm">
+        <i class="bi bi-printer me-1"></i> Print Report
+    </button>
+    <a href="?export=csv" class="jd-btn-ghost btn-sm">
+        <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
+    </a>
+    <a href="{% url 'wholesale:dashboard' %}" class="jd-btn-gold btn-sm">
+        <i class="bi bi-speedometer2 me-1"></i> Wholesale Dashboard
+    </a>
+</div>
+{% endblock %}
 
 {% block content %}
 <div class="jd-canvas">
-    <div class="jd-header">
-        <div>
-            <div class="jd-badge"><i class="bi bi-bar-chart-line me-1"></i> B2B Analytics</div>
-            <h1 class="jd-title">Wholesale Reports &amp; Performance</h1>
-            <p class="jd-subtitle">Analyze sales by retailer, category performance, order fulfillment, and receivables aging.</p>
-        </div>
-        <div>
-            <a href="{% url 'wholesale:dashboard' %}" class="jd-btn-ghost">
-                <i class="bi bi-speedometer2 me-1"></i> Dashboard
-            </a>
-        </div>
-    </div>
+    <div class="jd-report-view">
 
-    <div class="row g-4">
-        <!-- Top Retailers by Wholesale Sales -->
-        <div class="col-lg-6">
-            <div class="jd-card p-4">
-                <h5 class="fw-bold mb-3"><i class="bi bi-trophy text-gold me-2"></i>Sales by Retailer Party</h5>
-                {% if top_retailers %}
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead>
-                            <tr class="small text-muted">
-                                <th>Retailer Party</th>
-                                <th class="text-end">Orders</th>
-                                <th class="text-end">Total Wholesale Value</th>
-                                <th class="text-end">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for r in top_retailers %}
-                            <tr>
-                                <td class="fw-semibold">
-                                    <a href="{% url 'wholesale:party_detail' r.pk %}" class="text-decoration-none text-gold">
-                                        {{ r.name }}
-                                    </a>
-                                </td>
-                                <td class="text-end font-monospace">{{ r.orders_count }}</td>
-                                <td class="text-end font-monospace fw-bold">₹{{ r.total_sales|floatformat:2 }}</td>
-                                <td class="text-end">
-                                    <a href="{% url 'wholesale:party_ledger_csv' r.pk %}" class="btn btn-sm btn-outline-secondary" title="Export Ledger CSV">
-                                        <i class="bi bi-download"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+        <!-- Top Filter / Control Bar (ByajBatta Style) -->
+        <div class="jd-report-filter-bar no-print d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-3">
+                <div>
+                    <label class="form-label d-block mb-1">Division</label>
+                    <span class="badge bg-primary bg-opacity-20 text-primary border border-primary border-opacity-30 py-1 px-2" style="font-size: 0.8rem;">
+                        <i class="bi bi-buildings me-1"></i> B2B Wholesale &amp; Distribution
+                    </span>
                 </div>
-                {% else %}
-                <p class="text-muted text-center py-4">No wholesale sales recorded yet.</p>
-                {% endif %}
+                <div>
+                    <label class="form-label d-block mb-1">Audit Record</label>
+                    <span class="small fw-semibold" style="color: var(--jd-ivory);">{{ total_parties_count }} Parties &bull; {{ total_orders_count }} Completed Orders</span>
+                </div>
+            </div>
+            <div class="d-flex gap-2 align-items-end">
+                <a href="{% url 'wholesale:reports' %}" class="jd-btn-regenerate text-decoration-none">
+                    <i class="bi bi-arrow-repeat"></i> Regenerate
+                </a>
+                <button type="button" onclick="window.print()" class="btn btn-sm jd-btn-ghost px-2" title="Print Statement">
+                    <i class="bi bi-printer"></i>
+                </button>
+                <a href="?export=csv" class="btn btn-sm jd-btn-ghost px-2" title="Export CSV">
+                    <i class="bi bi-download"></i>
+                </a>
+                <a href="{% url 'wholesale:order_create' %}" class="btn btn-sm jd-btn-gold px-3">
+                    <i class="bi bi-plus-circle me-1"></i> New Order
+                </a>
             </div>
         </div>
 
-        <!-- Sales by Jewellery Category -->
-        <div class="col-lg-6">
-            <div class="jd-card p-4">
-                <h5 class="fw-bold mb-3"><i class="bi bi-pie-chart text-gold me-2"></i>Sales by Category</h5>
-                {% if category_sales %}
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead>
-                            <tr class="small text-muted">
-                                <th>Category</th>
-                                <th class="text-end">Pieces Sold</th>
-                                <th class="text-end">Total Revenue</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for cat in category_sales %}
-                            <tr>
-                                <td class="fw-semibold">{{ cat.name }}</td>
-                                <td class="text-end font-monospace">{{ cat.pieces_sold }} pcs</td>
-                                <td class="text-end font-monospace fw-bold text-gold">₹{{ cat.sales_val|floatformat:2 }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <p class="text-muted text-center py-4">No category sales recorded yet.</p>
-                {% endif %}
+        <!-- Metric KPI Tiles Row (Exact ByajBatta Style) -->
+        <div class="jd-report-kpi-grid">
+            <div class="jd-kpi-card kpi-neutral">
+                <span class="kpi-label">TOTAL ORDERS</span>
+                <span class="kpi-val">{{ total_orders_count }}</span>
+                <span class="kpi-sub text-muted">B2B Trade Invoices</span>
+            </div>
+            <div class="jd-kpi-card kpi-blue">
+                <span class="kpi-label">EXPECTED TURNOVER</span>
+                <span class="kpi-val">₹{{ total_wholesale_sales|floatformat:2 }}</span>
+                <span class="kpi-sub" style="color: #2563EB;">Gross B2B Revenue</span>
+            </div>
+            <div class="jd-kpi-card kpi-green">
+                <span class="kpi-label">ACTIVE PARTIES</span>
+                <span class="kpi-val">{{ total_parties_count }}</span>
+                <span class="kpi-sub" style="color: #16A34A;">Retail Partners</span>
+            </div>
+            <div class="jd-kpi-card kpi-amber">
+                <span class="kpi-label">PIECES DISPATCHED</span>
+                <span class="kpi-val">{{ total_pieces_sold }}</span>
+                <span class="kpi-sub" style="color: #CA8A04;">Stock Units Shipped</span>
+            </div>
+            <div class="jd-kpi-card kpi-purple">
+                <span class="kpi-label">STATUS</span>
+                <span class="kpi-val" style="font-size: 1.15rem; padding-top: 4px;">Active</span>
+                <span class="kpi-sub" style="color: #9333EA;">Audited Portfolio</span>
             </div>
         </div>
+
+        <!-- Officer / Context Subtitle -->
+        <div class="jd-report-meta-bar">
+            <div>
+                Officer: <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+                <span class="mx-2 text-muted">&bull;</span>
+                Division: <strong>B2B Wholesale &amp; Retail Network</strong>
+            </div>
+            <div>
+                Statement As On: <strong>{% now "d M Y, h:i A" %}</strong>
+            </div>
+        </div>
+
+        <!-- Schedule II: Party-Wise Wholesale Register Table -->
+        <div class="jd-report-card">
+            <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="border-color: var(--jd-border) !important;">
+                <h6 class="fw-bold mb-0" style="color: var(--jd-ivory);">
+                    <i class="bi bi-people me-1 text-primary"></i> Retailer Party-Wise Sales Register
+                </h6>
+                <span class="small text-muted font-monospace">{{ top_retailers|length }} Parties Enrolled</span>
+            </div>
+            <div class="table-responsive">
+                <table class="jd-report-table align-middle">
+                    <thead>
+                        <tr>
+                            <th class="text-center" style="width: 5%;">#</th>
+                            <th style="width: 25%;">RETAILER PARTY NAME</th>
+                            <th style="width: 18%;">CONTACT PERSON</th>
+                            <th style="width: 14%;">PHONE</th>
+                            <th style="width: 14%;">CITY / REGION</th>
+                            <th class="text-center" style="width: 8%;">ORDERS</th>
+                            <th class="text-end" style="width: 16%;">TOTAL TURNOVER</th>
+                            <th class="text-center no-print" style="width: 8%;">LEDGER</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in top_retailers %}
+                        <tr>
+                            <td class="text-center text-muted font-monospace">{{ forloop.counter }}</td>
+                            <td>
+                                <a href="{% url 'wholesale:party_detail' r.pk %}" class="fw-semibold text-decoration-none" style="color: var(--jd-ivory);">
+                                    {{ r.name }}
+                                </a>
+                            </td>
+                            <td class="small text-muted">{{ r.contact_person|default:"&mdash;" }}</td>
+                            <td class="font-monospace small text-muted">{{ r.phone|default:"&mdash;" }}</td>
+                            <td class="small">{{ r.city|default:"&mdash;" }}</td>
+                            <td class="text-center font-monospace">{{ r.orders_count }}</td>
+                            <td class="text-end font-monospace fw-bold" style="color: var(--jd-ivory);">₹{{ r.total_sales|floatformat:2 }}</td>
+                            <td class="text-center no-print">
+                                <a href="{% url 'wholesale:party_ledger_csv' r.pk %}" class="btn btn-sm jd-btn-ghost py-0 px-2" title="Export Ledger CSV">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-2 d-block mb-2 text-warning opacity-50"></i>
+                                No wholesale retailer party transactions recorded.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    {% if top_retailers %}
+                    <tfoot>
+                        <tr>
+                            <th colspan="5" class="text-uppercase text-end">Total Wholesale Turnover:</th>
+                            <th class="text-center font-monospace">{{ total_orders_count }} Orders</th>
+                            <th class="text-end font-monospace fs-6" style="color: #2563EB;">₹{{ total_wholesale_sales|floatformat:2 }}</th>
+                            <th class="no-print"></th>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+
+        <!-- Schedule III: Jewellery Category Distribution Table -->
+        <div class="jd-report-card">
+            <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="border-color: var(--jd-border) !important;">
+                <h6 class="fw-bold mb-0" style="color: var(--jd-ivory);">
+                    <i class="bi bi-tags me-1 text-primary"></i> Category-Wise Sales Distribution
+                </h6>
+                <span class="small text-muted font-monospace">{{ category_sales|length }} Categories Listed</span>
+            </div>
+            <div class="table-responsive">
+                <table class="jd-report-table align-middle">
+                    <thead>
+                        <tr>
+                            <th class="text-center" style="width: 6%;">#</th>
+                            <th style="width: 44%;">JEWELLERY CATEGORY</th>
+                            <th class="text-center" style="width: 25%;">PIECES SOLD</th>
+                            <th class="text-end" style="width: 25%;">TOTAL REVENUE</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cat in category_sales %}
+                        <tr>
+                            <td class="text-center text-muted font-monospace">{{ forloop.counter }}</td>
+                            <td class="fw-semibold" style="color: var(--jd-ivory);">{{ cat.name }}</td>
+                            <td class="text-center font-monospace">{{ cat.pieces_sold }} pcs</td>
+                            <td class="text-end font-monospace fw-bold" style="color: var(--jd-ivory);">₹{{ cat.sales_val|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-5 text-muted">
+                                No category distribution records found.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    {% if category_sales %}
+                    <tfoot>
+                        <tr>
+                            <th colspan="2" class="text-uppercase text-end">Grand Total:</th>
+                            <th class="text-center font-monospace">{{ total_pieces_sold }} pcs</th>
+                            <th class="text-end font-monospace fs-6" style="color: #2563EB;">₹{{ total_cat_sales_val|floatformat:2 }}</th>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+
+        <!-- Print Footer -->
+        <div class="print-only-footer">
+            CONFIDENTIAL &bull; FOR WHOLESALE B2B AUDIT ONLY &bull; GENERATED VIA JEWELDESK ERP
+        </div>
+
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('has-atelier-suite');
+    const pc = document.getElementById('page-content');
+    if (pc) pc.classList.add('jd-active');
+});
+</script>
 {% endblock %}

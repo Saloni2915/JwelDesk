@@ -5,14 +5,18 @@ from decimal import Decimal, InvalidOperation
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, PermissionDenied
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction, models
 from django.db.models import Q, Sum, Count, ProtectedError, Case, When, Value, IntegerField
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
-from .models import JewelleryItem, Category, StockMovement, MetalRate, JewelleryItemImage, StockImportBatch
-from .forms import JewelleryItemForm, CategoryForm, StockAdjustmentForm
+from .models import (
+    JewelleryItem, Category, StockMovement, MetalRate,
+    JewelleryItemImage, StockImportBatch, StockTransfer, StockTransferItem
+)
+from .forms import JewelleryItemForm, CategoryForm, StockAdjustmentForm, StockTransferForm
+from team.permissions import check_branch_access
 from . import stock
 from .import_utils import (
     generate_sample_csv,
@@ -76,8 +80,10 @@ def dashboard(request):
     from customers.models import Customer
     from custom_orders.models import CustomOrder
 
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
+
     # ---- Inventory summary & counts (single unified aggregate) -----------
-    summary = stock.inventory_summary(tenant=request.tenant)
+    summary = stock.inventory_summary(tenant=request.tenant, branch=active_b)
     total_items = summary.get('total_items', 0)
     available_items = summary.get('available_stock', 0)
     inventory_value = summary.get('inventory_value')
@@ -85,10 +91,16 @@ def dashboard(request):
     low_stock_design_count = summary.get('low_stock_design_count', 0)
 
     # Sold items count
-    sold_items = JewelleryItem.objects.filter(status='Sold', tenant=request.tenant).count()
+    sold_items_qs = JewelleryItem.objects.filter(status='Sold', tenant=request.tenant)
+    if active_b:
+        sold_items_qs = sold_items_qs.filter(Q(branch=active_b) | Q(branch__isnull=True))
+    sold_items = sold_items_qs.count()
 
     # ---- Sales aggregates (combined in 1 single SQL query) ----------------
-    sales_aggregates = Sale.objects.filter(tenant=request.tenant).aggregate(
+    sales_qs = Sale.objects.filter(tenant=request.tenant)
+    if active_b:
+        sales_qs = sales_qs.filter(Q(branch=active_b) | Q(branch__isnull=True))
+    sales_aggregates = sales_qs.aggregate(
         today_amount=Sum('sale_price', filter=Q(sale_date__date=today)),
         today_count=Count('id', filter=Q(sale_date__date=today)),
         total_amount=Sum('sale_price'),
@@ -100,7 +112,10 @@ def dashboard(request):
     total_sales_count = sales_aggregates['total_count'] or 0
 
     # Outstanding = total sales - total payments (never stored, always derived)
-    payments_total = Payment.objects.filter(tenant=request.tenant).aggregate(
+    payments_qs = Payment.objects.filter(tenant=request.tenant)
+    if active_b:
+        payments_qs = payments_qs.filter(Q(branch=active_b) | Q(branch__isnull=True))
+    payments_total = payments_qs.aggregate(
         total=Sum('amount'))['total'] or Decimal('0.00')
     try:
         outstanding_amount = Decimal(total_sales_amount) - Decimal(payments_total)
@@ -109,7 +124,10 @@ def dashboard(request):
     if outstanding_amount < 0:
         outstanding_amount = Decimal('0.00')
 
-    customer_count = Customer.objects.filter(tenant=request.tenant).count()
+    cust_qs = Customer.objects.filter(tenant=request.tenant)
+    if active_b:
+        cust_qs = cust_qs.filter(Q(branch=active_b) | Q(branch__isnull=True))
+    customer_count = cust_qs.count()
 
     # Pending custom orders = everything not Delivered/Cancelled
     pending_orders_qs = (
@@ -117,14 +135,16 @@ def dashboard(request):
         .select_related('customer', 'category')
         .exclude(status__in=[CustomOrder.STATUS_DELIVERED,
                              CustomOrder.STATUS_CANCELLED])
-        .order_by('-created_at')
     )
+    if active_b:
+        pending_orders_qs = pending_orders_qs.filter(Q(branch=active_b) | Q(branch__isnull=True))
+    pending_orders_qs = pending_orders_qs.order_by('-created_at')
     pending_custom_orders_count = pending_orders_qs.count()
     pending_custom_orders = list(pending_orders_qs[:5])
 
     # ---- Recent sales (latest 5) with prefetched payments (avoids N+1 queries) ---
     recent_sales = (
-        Sale.objects.filter(tenant=request.tenant)
+        sales_qs
         .select_related('customer', 'jewellery_item')
         .prefetch_related('payments')
         .order_by('-sale_date')[:5]
@@ -132,10 +152,15 @@ def dashboard(request):
 
     # ---- 7-day sales overview (CSS/SVG bars, no JS dependency) ------------
     week_start = today - datetime.timedelta(days=6)
+    per_day_qs = Sale.objects.filter(
+        tenant=request.tenant,
+        sale_date__date__gte=week_start,
+        sale_date__date__lte=today
+    )
+    if active_b:
+        per_day_qs = per_day_qs.filter(Q(branch=active_b) | Q(branch__isnull=True))
     per_day = (
-        Sale.objects.filter(tenant=request.tenant,
-                            sale_date__date__gte=week_start,
-                            sale_date__date__lte=today)
+        per_day_qs
         .annotate(day=TruncDate('sale_date'))
         .values('day')
         .annotate(total=Sum('sale_price'), count=Count('id'))
@@ -159,10 +184,13 @@ def dashboard(request):
         row['pct'] = round((value / chart_max * 100)) if chart_max else 0
 
     # Recent enquiries (latest 5)
-    recent_enquiries = Enquiry.objects.filter(tenant=request.tenant).select_related('customer', 'category').order_by('-created_at')[:5]
+    enquiries_qs = Enquiry.objects.filter(tenant=request.tenant)
+    if active_b:
+        enquiries_qs = enquiries_qs.filter(Q(branch=active_b) | Q(branch__isnull=True))
+    recent_enquiries = enquiries_qs.select_related('customer', 'category').order_by('-created_at')[:5]
 
     # Upcoming follow-ups (today or in future, ordered by followup date)
-    upcoming_followups = Enquiry.objects.filter(tenant=request.tenant).select_related('customer', 'category').filter(
+    upcoming_followups = enquiries_qs.select_related('customer', 'category').filter(
         next_followup_date__gte=today
     ).exclude(
         status__in=['Purchased', 'Closed']
@@ -210,12 +238,21 @@ def dashboard(request):
 @login_required
 def inventory_list(request):
     """List all jewellery items with search, filters and stock summary."""
-    items = JewelleryItem.objects.filter(tenant=request.tenant).select_related('category').prefetch_related('images')
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
+    items = JewelleryItem.objects.filter(tenant=request.tenant).select_related('category', 'branch').prefetch_related('images')
+    if active_b:
+        items = items.filter(Q(branch=active_b) | Q(branch__isnull=True))
+
     categories = Category.objects.filter(tenant=request.tenant)
 
     # Low-stock threshold: configurable per request (?threshold=) otherwise
     # taken from settings.INVENTORY_LOW_STOCK_THRESHOLD.
     threshold = stock.get_low_stock_threshold(request.GET.get('threshold'))
+
+    # Branch query parameter filter (e.g. from table filter dropdown)
+    branch_param = request.GET.get('branch', '').strip()
+    if branch_param and branch_param.isdigit():
+        items = items.filter(branch_id=int(branch_param))
 
     # Search filter (tag_number, item_code, name, design_code, huid, category, metal, purity)
     q = request.GET.get('q', '').strip()
@@ -267,7 +304,7 @@ def inventory_list(request):
         items = items.filter(hallmark_status__iexact=hallmark_status)
 
     # Stock summary & low-stock designs (computed once to prevent duplicate GROUP BY queries)
-    inventory_summary = stock.inventory_summary(threshold, tenant=request.tenant)
+    inventory_summary = stock.inventory_summary(threshold, tenant=request.tenant, branch=active_b)
     low_stock_codes = {d['design_code'] for d in inventory_summary.get('low_stock_designs', [])}
 
     # Unified Stock & Status filter
@@ -383,6 +420,7 @@ def inventory_list(request):
 @login_required
 def inventory_add(request):
     """Add a new jewellery item, with optional pre-fill for adding another piece of an existing design."""
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     initial_data = {}
     if 'design_code' in request.GET:
         initial_data['design_code'] = request.GET.get('design_code')
@@ -413,11 +451,13 @@ def inventory_add(request):
             pass
 
     if request.method == 'POST':
-        form = JewelleryItemForm(request.POST, request.FILES, tenant=request.tenant)
+        form = JewelleryItemForm(request.POST, request.FILES, tenant=request.tenant, branch=active_b)
         if form.is_valid():
             with transaction.atomic():
                 item = form.save(commit=False)
                 item.tenant = request.tenant
+                if not item.branch and active_b:
+                    item.branch = active_b
                 item.save()
                 form.save_m2m()
 
@@ -442,7 +482,7 @@ def inventory_add(request):
         else:
             messages.error(request, "Failed to save jewellery piece. Please check the highlighted errors below.")
     else:
-        form = JewelleryItemForm(initial=initial_data, tenant=request.tenant)
+        form = JewelleryItemForm(initial=initial_data, tenant=request.tenant, branch=active_b)
 
     context = {
         'form': form,
@@ -456,10 +496,13 @@ def inventory_add(request):
 def inventory_detail(request, pk):
     """View details of a jewellery item, its stock position and other pieces of the same design."""
     item = get_object_or_404(
-        JewelleryItem.objects.select_related('category').prefetch_related('images'),
+        JewelleryItem.objects.select_related('category', 'branch').prefetch_related('images'),
         pk=pk,
         tenant=request.tenant
     )
+    if not check_branch_access(request, item):
+        raise PermissionDenied("You do not have permission to view jewellery in this branch.")
+
     # Check if item has been sold
     sale = item.sales.select_related('customer').first() if hasattr(item, 'sales') else None
 
@@ -495,8 +538,12 @@ def inventory_detail(request, pk):
 def inventory_edit(request, pk):
     """Edit an existing jewellery item."""
     item = get_object_or_404(JewelleryItem, pk=pk, tenant=request.tenant)
+    if not check_branch_access(request, item):
+        raise PermissionDenied("You do not have permission to edit jewellery in this branch.")
+
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     if request.method == 'POST':
-        form = JewelleryItemForm(request.POST, request.FILES, instance=item, tenant=request.tenant)
+        form = JewelleryItemForm(request.POST, request.FILES, instance=item, tenant=request.tenant, branch=active_b)
         if form.is_valid():
             old_qty = item.quantity or 0
             new_qty = form.cleaned_data.get('quantity')
@@ -526,6 +573,8 @@ def inventory_edit(request, pk):
                 change = new_qty - old_qty
                 m_type = StockMovement.ADDITION if change > 0 else StockMovement.REDUCTION
                 StockMovement.objects.create(
+                    tenant=request.tenant,
+                    branch=item.branch,
                     item=item,
                     movement_type=m_type,
                     quantity_change=change,
@@ -540,7 +589,7 @@ def inventory_edit(request, pk):
         else:
             messages.error(request, "Failed to update jewellery piece. Please check the highlighted errors below.")
     else:
-        form = JewelleryItemForm(instance=item, tenant=request.tenant)
+        form = JewelleryItemForm(instance=item, tenant=request.tenant, branch=active_b)
 
     context = {
         'form': form,
@@ -1561,6 +1610,148 @@ def metal_rates_view(request):
         'silver_rates': silver_rates,
     }
     return render(request, 'inventory/metal_rates.html', context)
+
+
+# ==============================================================================
+# STOCK TRANSFERS (BRANCH-TO-BRANCH)
+# ==============================================================================
+
+@login_required
+def stock_transfer_list(request):
+    """List branch-to-branch stock transfers for current tenant and active branch."""
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
+    transfers = StockTransfer.objects.filter(tenant=request.tenant).select_related(
+        'from_branch', 'to_branch', 'created_by', 'received_by'
+    ).prefetch_related('items__jewellery_item')
+
+    if active_b:
+        transfers = transfers.filter(Q(from_branch=active_b) | Q(to_branch=active_b))
+
+    status_filter = request.GET.get('status', '').strip()
+    if status_filter:
+        transfers = transfers.filter(status__iexact=status_filter)
+
+    paginator = Paginator(transfers, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_title': 'Branch Stock Transfers',
+        'transfers': page_obj,
+        'page_obj': page_obj,
+        'status_filter': status_filter,
+        'status_choices': StockTransfer.STATUS_CHOICES,
+    }
+    return render(request, 'inventory/stock_transfer_list.html', context)
+
+
+@login_required
+def stock_transfer_create(request):
+    """Initiate a stock transfer between branches."""
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
+    if request.method == 'POST':
+        form = StockTransferForm(request.POST, tenant=request.tenant, from_branch=active_b)
+        if form.is_valid():
+            with transaction.atomic():
+                transfer = form.save(commit=False)
+                transfer.tenant = request.tenant
+                transfer.created_by = request.user
+                transfer.save()
+
+                item = form.cleaned_data['item']
+                qty = form.cleaned_data['quantity']
+                StockTransferItem.objects.create(
+                    transfer=transfer,
+                    jewellery_item=item,
+                    quantity=qty
+                )
+
+                action = request.POST.get('action')
+                if action == 'transfer_and_receive':
+                    transfer.complete_transfer(user=request.user)
+                    messages.success(request, f"Stock transfer {transfer.transfer_number} completed. Item relocated to {transfer.to_branch.name}.")
+                else:
+                    transfer.status = StockTransfer.STATUS_IN_TRANSIT
+                    transfer.save(update_fields=['status'])
+                    messages.success(request, f"Stock transfer {transfer.transfer_number} initiated (In Transit).")
+            return redirect('stock_transfer_list')
+        else:
+            messages.error(request, "Failed to initiate transfer. Please check the highlighted errors.")
+    else:
+        form = StockTransferForm(tenant=request.tenant, from_branch=active_b)
+
+    context = {
+        'page_title': 'New Stock Transfer',
+        'form': form,
+    }
+    return render(request, 'inventory/stock_transfer_form.html', context)
+
+
+@login_required
+def stock_transfer_detail(request, pk):
+    """Detail view of a stock transfer with items, status timeline, and audit logs."""
+    transfer = get_object_or_404(
+        StockTransfer.objects.select_related('from_branch', 'to_branch', 'created_by', 'received_by').prefetch_related('items__jewellery_item'),
+        pk=pk,
+        tenant=request.tenant
+    )
+    if not getattr(request, 'can_view_all_branches', False) and not request.user.is_superuser:
+        allowed = getattr(request, 'allowed_branches', None)
+        if allowed is not None:
+            has_from = allowed.filter(id=transfer.from_branch_id).exists()
+            has_to = allowed.filter(id=transfer.to_branch_id).exists()
+            if not has_from and not has_to:
+                raise PermissionDenied("You do not have permission to view this stock transfer.")
+
+    context = {
+        'page_title': f"Transfer {transfer.transfer_number}",
+        'transfer': transfer,
+    }
+    return render(request, 'inventory/stock_transfer_detail.html', context)
+
+
+@login_required
+def stock_transfer_complete(request, pk):
+    """Mark a stock transfer as received/completed at destination branch."""
+    if request.method != 'POST':
+        return redirect('stock_transfer_list')
+    transfer = get_object_or_404(StockTransfer, pk=pk, tenant=request.tenant)
+    if not getattr(request, 'can_view_all_branches', False) and not request.user.is_superuser:
+        allowed = getattr(request, 'allowed_branches', None)
+        if allowed is not None and not allowed.filter(id=transfer.to_branch_id).exists():
+            raise PermissionDenied("Only authorized staff at destination branch or administrators can receive this transfer.")
+
+    if transfer.status == StockTransfer.STATUS_RECEIVED:
+        messages.info(request, f"Transfer {transfer.transfer_number} has already been received.")
+    elif transfer.status == StockTransfer.STATUS_CANCELLED:
+        messages.error(request, f"Cannot complete cancelled transfer {transfer.transfer_number}.")
+    else:
+        transfer.complete_transfer(user=request.user)
+        messages.success(request, f"Transfer {transfer.transfer_number} marked as Received. Pieces relocated to {transfer.to_branch.name}.")
+
+    return redirect('stock_transfer_detail', pk=transfer.pk)
+
+
+@login_required
+def stock_transfer_cancel(request, pk):
+    """Cancel an uncompleted stock transfer."""
+    if request.method != 'POST':
+        return redirect('stock_transfer_list')
+    transfer = get_object_or_404(StockTransfer, pk=pk, tenant=request.tenant)
+    if not getattr(request, 'can_view_all_branches', False) and not request.user.is_superuser:
+        allowed = getattr(request, 'allowed_branches', None)
+        if allowed is not None and not allowed.filter(id=transfer.from_branch_id).exists():
+            raise PermissionDenied("Only authorized staff at source branch or administrators can cancel this transfer.")
+
+    if transfer.status == StockTransfer.STATUS_RECEIVED:
+        messages.error(request, "Cannot cancel a transfer that has already been received.")
+    else:
+        transfer.status = StockTransfer.STATUS_CANCELLED
+        transfer.save(update_fields=['status'])
+        messages.info(request, f"Transfer {transfer.transfer_number} has been cancelled.")
+
+    return redirect('stock_transfer_detail', pk=transfer.pk)
+
 
 
 

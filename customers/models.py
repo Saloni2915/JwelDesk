@@ -1,4 +1,5 @@
 from django.db import models
+from accounts.models import validate_email_address, validate_proper_email
 
 
 class Customer(models.Model):
@@ -12,8 +13,16 @@ class Customer(models.Model):
     )
     name = models.CharField(max_length=150)
     mobile = models.CharField(max_length=15)
-    email = models.EmailField(blank=True, null=True)
+    email = models.EmailField(blank=True, null=True, validators=[validate_email_address])
     address = models.TextField(blank=True)
+    branch = models.ForeignKey(
+        'team.Branch',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='customers',
+        help_text="Showroom branch where this customer was registered"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -21,6 +30,11 @@ class Customer(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.mobile})"
+
+    def clean(self):
+        super().clean()
+        if self.email:
+            self.email = validate_proper_email(self.email, field_label='Customer email', required=False)
 
     @property
     def total_purchases_count(self):

@@ -9,6 +9,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import models
+from accounts.models import validate_email_address, validate_proper_email
 
 
 class PlatformAuditLog(models.Model):
@@ -350,7 +351,8 @@ class PlatformProposal(models.Model):
         help_text="Jewellery Showroom or Business Name"
     )
     client_email = models.EmailField(
-        blank=True
+        blank=True,
+        validators=[validate_email_address]
     )
     client_phone = models.CharField(
         max_length=30,
@@ -494,7 +496,7 @@ class PlatformDemoLead(models.Model):
         max_length=150,
         help_text="Contact person or owner name"
     )
-    email = models.EmailField(blank=True)
+    email = models.EmailField(blank=True, validators=[validate_email_address])
     phone = models.CharField(
         max_length=30,
         help_text="Primary mobile or WhatsApp number"
@@ -694,7 +696,7 @@ class PlatformSupportTicket(models.Model):
         help_text="User who raised the ticket"
     )
     contact_name = models.CharField(max_length=150)
-    contact_email = models.EmailField(blank=True)
+    contact_email = models.EmailField(blank=True, validators=[validate_email_address])
     contact_phone = models.CharField(max_length=30, blank=True)
     category = models.CharField(
         max_length=30,

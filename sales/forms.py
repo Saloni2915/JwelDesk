@@ -21,10 +21,11 @@ class SaleForm(forms.ModelForm):
 
     class Meta:
         model = Sale
-        fields = ['customer', 'jewellery_item', 'sale_price', 'payment_method', 'notes']
+        fields = ['customer', 'jewellery_item', 'branch', 'sale_price', 'payment_method', 'notes']
         widgets = {
             'customer': forms.Select(attrs={'class': 'form-select'}),
             'jewellery_item': forms.Select(attrs={'class': 'form-select'}),
+            'branch': forms.Select(attrs={'class': 'form-select'}),
             'sale_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}),
             'payment_method': forms.Select(attrs={'class': 'form-select jd-pos-select', 'id': 'id_payment_method'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Optional sale notes or bill reference...'}),
@@ -35,9 +36,24 @@ class SaleForm(forms.ModelForm):
             }
         }
 
-    def __init__(self, *args, tenant=None, **kwargs):
+    def __init__(self, *args, tenant=None, branch=None, **kwargs):
         self.tenant = tenant or (kwargs.get('instance').tenant if kwargs.get('instance') else None)
         super().__init__(*args, **kwargs)
+        if 'branch' in self.fields:
+            self.fields['branch'].required = False
+            self.fields['branch'].empty_label = "Select Branch (Showroom / Head Office)"
+            if self.tenant:
+                from team.models import Branch
+                self.fields['branch'].queryset = Branch.objects.filter(tenant=self.tenant, is_active=True).order_by('-is_default', 'name')
+            if not self.instance.pk:
+                if branch:
+                    self.initial['branch'] = branch
+                elif self.tenant:
+                    from team.models import Branch
+                    default_b = Branch.objects.filter(tenant=self.tenant, is_default=True, is_active=True).first()
+                    if default_b:
+                        self.initial['branch'] = default_b
+
         if self.tenant:
             self.fields['customer'].queryset = Customer.objects.filter(tenant=self.tenant)
         self.fields['customer'].empty_label = "- Select a Customer -"
@@ -48,6 +64,8 @@ class SaleForm(forms.ModelForm):
         item_qs = JewelleryItem.objects.all()
         if self.tenant:
             item_qs = item_qs.filter(tenant=self.tenant)
+        if branch and getattr(branch, 'id', None):
+            item_qs = item_qs.filter(branch=branch)
         if self.instance and self.instance.pk:
             # If editing existing sale, include current item as well
             self.fields['jewellery_item'].queryset = item_qs.filter(
@@ -97,10 +115,11 @@ class SaleForm(forms.ModelForm):
 class EnquiryForm(forms.ModelForm):
     class Meta:
         model = Enquiry
-        fields = ['customer', 'category', 'interested_item', 'budget', 'notes', 'status', 'next_followup_date']
+        fields = ['customer', 'category', 'branch', 'interested_item', 'budget', 'notes', 'status', 'next_followup_date']
         widgets = {
             'customer': forms.Select(attrs={'class': 'form-select'}),
             'category': forms.Select(attrs={'class': 'form-select'}),
+            'branch': forms.Select(attrs={'class': 'form-select'}),
             'interested_item': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Solitaire Diamond Ring 1ct or 22K Gold Chain'}),
             'budget': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'Optional budget in ₹'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Customer preferences, design notes, etc.'}),
@@ -108,9 +127,24 @@ class EnquiryForm(forms.ModelForm):
             'next_followup_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
 
-    def __init__(self, *args, tenant=None, **kwargs):
+    def __init__(self, *args, tenant=None, branch=None, **kwargs):
         self.tenant = tenant or (kwargs.get('instance').tenant if kwargs.get('instance') else None)
         super().__init__(*args, **kwargs)
+        if 'branch' in self.fields:
+            self.fields['branch'].required = False
+            self.fields['branch'].empty_label = "Select Branch (Showroom / Head Office)"
+            if self.tenant:
+                from team.models import Branch
+                self.fields['branch'].queryset = Branch.objects.filter(tenant=self.tenant, is_active=True).order_by('-is_default', 'name')
+            if not self.instance.pk:
+                if branch:
+                    self.initial['branch'] = branch
+                elif self.tenant:
+                    from team.models import Branch
+                    default_b = Branch.objects.filter(tenant=self.tenant, is_default=True, is_active=True).first()
+                    if default_b:
+                        self.initial['branch'] = default_b
+
         if self.tenant:
             self.fields['customer'].queryset = Customer.objects.filter(tenant=self.tenant)
             self.fields['category'].queryset = Category.objects.filter(tenant=self.tenant)
@@ -120,12 +154,13 @@ class PaymentForm(forms.ModelForm):
 
     class Meta:
         model = Payment
-        fields = ['amount', 'payment_method', 'reference', 'notes']
+        fields = ['amount', 'payment_method', 'branch', 'reference', 'notes']
         widgets = {
             'amount': forms.NumberInput(attrs={
                 'class': 'form-control', 'step': '0.01', 'min': '0.01',
                 'placeholder': '0.00'}),
             'payment_method': forms.Select(attrs={'class': 'form-select'}),
+            'branch': forms.Select(attrs={'class': 'form-select'}),
             'reference': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Transaction / cheque / UPI reference (optional)'}),
@@ -134,9 +169,20 @@ class PaymentForm(forms.ModelForm):
                 'placeholder': 'Optional notes...'}),
         }
 
-    def __init__(self, *args, sale=None, **kwargs):
+    def __init__(self, *args, sale=None, branch=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.sale = sale
+        if 'branch' in self.fields:
+            self.fields['branch'].required = False
+            tenant = getattr(sale, 'tenant', None)
+            if tenant:
+                from team.models import Branch
+                self.fields['branch'].queryset = Branch.objects.filter(tenant=tenant, is_active=True).order_by('-is_default', 'name')
+            if not self.instance.pk:
+                if branch:
+                    self.initial['branch'] = branch
+                elif sale and getattr(sale, 'branch', None):
+                    self.initial['branch'] = sale.branch
 
     def clean_amount(self):
         amount = self.cleaned_data['amount']
@@ -166,12 +212,13 @@ class StandalonePaymentForm(forms.ModelForm):
 
     class Meta:
         model = Payment
-        fields = ['sale', 'amount', 'payment_method', 'reference', 'notes']
+        fields = ['sale', 'amount', 'payment_method', 'branch', 'reference', 'notes']
         widgets = {
             'amount': forms.NumberInput(attrs={
                 'class': 'form-control', 'step': '0.01', 'min': '0.01',
                 'placeholder': '0.00', 'id': 'id_standalone_amount'}),
             'payment_method': forms.Select(attrs={'class': 'form-select', 'id': 'id_standalone_method'}),
+            'branch': forms.Select(attrs={'class': 'form-select'}),
             'reference': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Transaction ID / UPI ref / Card slip / Cheque No. (optional)',
@@ -182,10 +229,23 @@ class StandalonePaymentForm(forms.ModelForm):
                 'id': 'id_standalone_notes'}),
         }
 
-    def __init__(self, *args, tenant=None, sale_queryset=None, **kwargs):
+    def __init__(self, *args, tenant=None, branch=None, sale_queryset=None, **kwargs):
         self.tenant = tenant or (kwargs.get('instance').tenant if kwargs.get('instance') else None)
         super().__init__(*args, **kwargs)
         self.instance._allow_excess = True
+        if 'branch' in self.fields:
+            self.fields['branch'].required = False
+            if self.tenant:
+                from team.models import Branch
+                self.fields['branch'].queryset = Branch.objects.filter(tenant=self.tenant, is_active=True).order_by('-is_default', 'name')
+            if not self.instance.pk:
+                if branch:
+                    self.initial['branch'] = branch
+                elif self.tenant:
+                    from team.models import Branch
+                    default_b = Branch.objects.filter(tenant=self.tenant, is_default=True, is_active=True).first()
+                    if default_b:
+                        self.initial['branch'] = default_b
         if sale_queryset is not None:
             self.fields['sale'].queryset = sale_queryset
         else:
@@ -284,6 +344,7 @@ class OldGoldExchangeForm(forms.ModelForm):
         model = OldGoldTransaction
         fields = [
             'customer',
+            'branch',
             'metal_type',
             'old_gold_type',
             'item_description',
@@ -297,6 +358,7 @@ class OldGoldExchangeForm(forms.ModelForm):
         ]
         widgets = {
             'customer': forms.Select(attrs={'class': 'form-select', 'id': 'id_customer'}),
+            'branch': forms.Select(attrs={'class': 'form-select', 'id': 'id_branch'}),
             'metal_type': forms.Select(attrs={'class': 'form-select', 'id': 'id_metal_type'}),
             'old_gold_type': forms.Select(attrs={'class': 'form-select', 'id': 'id_old_gold_type'}),
             'item_description': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Broken 22K Bangle (2 pcs)', 'id': 'id_item_description'}),
@@ -309,13 +371,31 @@ class OldGoldExchangeForm(forms.ModelForm):
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Optional internal notes, melting remarks, testing notes...'}),
         }
 
-    def __init__(self, *args, tenant=None, **kwargs):
+    def __init__(self, *args, tenant=None, branch=None, **kwargs):
         self.tenant = tenant or (kwargs.get('instance').tenant if kwargs.get('instance') else None)
         super().__init__(*args, **kwargs)
+        if 'branch' in self.fields:
+            self.fields['branch'].required = False
+            self.fields['branch'].empty_label = "Select Branch (Showroom / Head Office)"
+            if self.tenant:
+                from team.models import Branch
+                self.fields['branch'].queryset = Branch.objects.filter(tenant=self.tenant, is_active=True).order_by('-is_default', 'name')
+            if not self.instance.pk:
+                if branch:
+                    self.initial['branch'] = branch
+                elif self.tenant:
+                    from team.models import Branch
+                    default_b = Branch.objects.filter(tenant=self.tenant, is_default=True, is_active=True).first()
+                    if default_b:
+                        self.initial['branch'] = default_b
+        if 'item_description' in self.fields:
+            self.fields['item_description'].required = False
         item_qs = JewelleryItem.objects.filter(status='Available')
         if self.tenant:
             self.fields['customer'].queryset = Customer.objects.filter(tenant=self.tenant)
             item_qs = item_qs.filter(tenant=self.tenant)
+        if branch and getattr(branch, 'id', None):
+            item_qs = item_qs.filter(Q(branch=branch) | Q(branch__isnull=True))
         self.fields['new_jewellery_item'].queryset = item_qs.select_related('category')
         self.fields['new_jewellery_item'].label_from_instance = (
             lambda obj: f"[{obj.tag_number or obj.item_code}] {obj.name} "
@@ -327,6 +407,8 @@ class OldGoldExchangeForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        if not cleaned_data.get('item_description'):
+            cleaned_data['item_description'] = 'Old Gold Exchange Scrap'
         gross = cleaned_data.get('gross_weight')
         stone = cleaned_data.get('stone_weight') or Decimal('0.000')
         if gross and stone >= gross:
@@ -352,6 +434,7 @@ class OldGoldBuybackForm(forms.ModelForm):
         model = OldGoldTransaction
         fields = [
             'customer',
+            'branch',
             'metal_type',
             'old_gold_type',
             'item_description',
@@ -368,6 +451,7 @@ class OldGoldBuybackForm(forms.ModelForm):
         ]
         widgets = {
             'customer': forms.Select(attrs={'class': 'form-select', 'id': 'id_customer'}),
+            'branch': forms.Select(attrs={'class': 'form-select', 'id': 'id_branch'}),
             'metal_type': forms.Select(attrs={'class': 'form-select', 'id': 'id_metal_type'}),
             'old_gold_type': forms.Select(attrs={'class': 'form-select', 'id': 'id_old_gold_type'}),
             'item_description': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Broken 22K Bangle (2 pcs)', 'id': 'id_item_description'}),
@@ -383,9 +467,28 @@ class OldGoldBuybackForm(forms.ModelForm):
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Testing remarks, customer ID verification notes, purity check...'}),
         }
 
-    def __init__(self, *args, tenant=None, **kwargs):
+    def __init__(self, *args, tenant=None, branch=None, **kwargs):
         self.tenant = tenant or (kwargs.get('instance').tenant if kwargs.get('instance') else None)
         super().__init__(*args, **kwargs)
+        if 'branch' in self.fields:
+            self.fields['branch'].required = False
+            self.fields['branch'].empty_label = "Select Branch (Showroom / Head Office)"
+            if self.tenant:
+                from team.models import Branch
+                self.fields['branch'].queryset = Branch.objects.filter(tenant=self.tenant, is_active=True).order_by('-is_default', 'name')
+            if not self.instance.pk:
+                if branch:
+                    self.initial['branch'] = branch
+                elif self.tenant:
+                    from team.models import Branch
+                    default_b = Branch.objects.filter(tenant=self.tenant, is_default=True, is_active=True).first()
+                    if default_b:
+                        self.initial['branch'] = default_b
+        if self.tenant:
+            self.fields['customer'].queryset = Customer.objects.filter(tenant=self.tenant)
+        if not self.initial.get('applicable_rate'):
+            from inventory.pricing import get_current_metal_rate
+            self.initial['applicable_rate'] = get_current_metal_rate('Gold', tenant=self.tenant)
         if self.tenant:
             self.fields['customer'].queryset = Customer.objects.filter(tenant=self.tenant)
         if not self.initial.get('applicable_rate'):

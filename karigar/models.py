@@ -8,6 +8,7 @@ from django.utils import timezone
 from customers.models import Customer
 from inventory.models import JewelleryItem, StockMovement
 from inventory import pricing
+from accounts.models import validate_email_address, validate_proper_email
 
 
 # ==============================================================================
@@ -135,6 +136,14 @@ class Karigar(models.Model):
         blank=True,
         help_text="Tenant shop employing this artisan"
     )
+    branch = models.ForeignKey(
+        'team.Branch',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='karigars',
+        help_text="Branch employing or managing this artisan"
+    )
     karigar_code = models.CharField(
         max_length=30,
         db_index=True,
@@ -143,7 +152,7 @@ class Karigar(models.Model):
     name = models.CharField(max_length=150, help_text="Artisan / Workshop Name")
     mobile = models.CharField(max_length=20)
     alternate_contact = models.CharField(max_length=20, blank=True)
-    email = models.EmailField(blank=True)
+    email = models.EmailField(blank=True, validators=[validate_email_address])
     address = models.TextField(blank=True, help_text="Workshop / residential address")
     specialization = models.CharField(
         max_length=50,
@@ -217,6 +226,8 @@ class Karigar(models.Model):
         super().clean()
         if self.mobile:
             self.mobile = self.mobile.strip()
+        if self.email:
+            self.email = validate_proper_email(self.email, field_label='Karigar email', required=False)
 
     def get_formatted_bank_details(self):
         parts = []
@@ -382,6 +393,14 @@ class KarigarWorkAssignment(models.Model):
         null=True,
         blank=True,
         help_text="Tenant shop owning this assignment"
+    )
+    branch = models.ForeignKey(
+        'team.Branch',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='karigar_assignments',
+        help_text="Branch where work was issued"
     )
     assignment_number = models.CharField(
         max_length=30,
@@ -749,6 +768,8 @@ class KarigarWorkAssignment(models.Model):
     def save(self, *args, **kwargs):
         if not self.tenant_id and self.karigar_id and getattr(self.karigar, 'tenant_id', None):
             self.tenant_id = self.karigar.tenant_id
+        if not self.branch_id and self.karigar_id and getattr(self.karigar, 'branch_id', None):
+            self.branch_id = self.karigar.branch_id
         if not self.assignment_number:
             self.assignment_number = generate_assignment_number(tenant=self.tenant)
         self.calculate_weights()
@@ -788,6 +809,14 @@ class KarigarSettlement(models.Model):
         null=True,
         blank=True,
         help_text="Tenant shop owning this settlement"
+    )
+    branch = models.ForeignKey(
+        'team.Branch',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='karigar_settlements',
+        help_text="Branch making the settlement"
     )
     settlement_number = models.CharField(
         max_length=30,
@@ -868,6 +897,8 @@ class KarigarSettlement(models.Model):
     def save(self, *args, **kwargs):
         if not self.tenant_id and self.karigar_id and getattr(self.karigar, 'tenant_id', None):
             self.tenant_id = self.karigar.tenant_id
+        if not self.branch_id and self.karigar_id and getattr(self.karigar, 'branch_id', None):
+            self.branch_id = self.karigar.branch_id
         if not self.settlement_number:
             self.settlement_number = generate_settlement_number(tenant=self.tenant)
         super().save(*args, **kwargs)

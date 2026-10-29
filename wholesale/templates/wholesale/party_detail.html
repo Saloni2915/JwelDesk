@@ -10,7 +10,7 @@
         <div>
             <div class="jd-badge"><i class="bi bi-shop me-1"></i> Retailer Statement &amp; Ledger</div>
             <h1 class="jd-title">{{ party.name }}</h1>
-            <p class="jd-subtitle">Attn: {{ party.contact_person|default:"Store Manager" }} &bull; Phone: {{ party.phone }} &bull; GSTIN: {{ party.gstin|default:"URP" }}</p>
+            <p class="jd-subtitle">Attn: {{ party.contact_person|default:"Store Manager" }} &bull; Phone: {{ party.phone }} &bull; GSTIN: {{ party.gstin|default:"URP" }}{% if party.branch %} &bull; Branch: <span class="badge bg-secondary text-light">{{ party.branch.name }}</span>{% endif %}</p>
         </div>
         <div class="d-flex align-items-center gap-2 flex-wrap">
             <a href="{% url 'wholesale:order_create' %}?party={{ party.pk }}" class="jd-btn-gold">

@@ -5,6 +5,7 @@ from decimal import Decimal, InvalidOperation
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 import logging
 import time
@@ -21,7 +22,7 @@ from .forms import (
 from .whatsapp import get_whatsapp_context_for_sale
 from inventory.models import JewelleryItem
 from inventory import stock, pricing
-from team.permissions import require_permission, has_module_perm
+from team.permissions import require_permission, has_module_perm, check_branch_access
 from accounts.models import CompanySettings
 
 
@@ -58,13 +59,16 @@ def sale_list(request):
     t_view_start = time.perf_counter()
     tracker = _QueryExecutionTracker()
 
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     with connection.execute_wrapper(tracker):
         sales = (
             Sale.objects.filter(tenant=request.tenant)
-            .select_related('customer', 'jewellery_item')
+            .select_related('customer', 'jewellery_item', 'branch')
             .prefetch_related('payments')
             .order_by('-sale_date')
         )
+        if active_b:
+            sales = sales.filter(Q(branch=active_b) | Q(branch__isnull=True))
 
         # Search (Customer name or item name/code/tag/design/HUID)
         q = request.GET.get('q', '').strip()
@@ -87,6 +91,8 @@ def sale_list(request):
         t_kpi_start = time.perf_counter()
         q_kpi_before = tracker.count
         all_sales = Sale.objects.filter(tenant=request.tenant)
+        if active_b:
+            all_sales = all_sales.filter(Q(branch=active_b) | Q(branch__isnull=True))
         total_revenue_all = all_sales.aggregate(total=Sum('sale_price'))['total'] or Decimal('0.00')
         total_sales_count = all_sales.count()
 
@@ -151,6 +157,7 @@ def sale_list(request):
 @login_required
 def sale_add(request):
     """Create a new sale with transaction safety and automatic status update."""
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     initial_data = {}
     # Pre-select customer or item if passed in GET params
     if 'customer' in request.GET:
@@ -164,11 +171,15 @@ def sale_add(request):
             pass
 
     if request.method == 'POST':
-        form = SaleForm(request.POST, tenant=request.tenant)
+        form = SaleForm(request.POST, tenant=request.tenant, branch=active_b)
         if form.is_valid():
             with transaction.atomic():
                 sale = form.save(commit=False)
                 sale.tenant = request.tenant
+                if not sale.branch and active_b:
+                    sale.branch = active_b
+                elif not sale.branch and getattr(sale.jewellery_item, 'branch', None):
+                    sale.branch = sale.jewellery_item.branch
                 item = sale.jewellery_item
 
                 # Business rule validation: the item must still be in stock.
@@ -345,7 +356,7 @@ def sale_add(request):
                         f"reduced to {movement.stock_after}.")
                 return redirect('sale_detail', pk=sale.pk)
     else:
-        form = SaleForm(initial=initial_data, tenant=request.tenant)
+        form = SaleForm(initial=initial_data, tenant=request.tenant, branch=active_b)
 
     import json
     from inventory import metal_prices
@@ -427,10 +438,12 @@ def sale_detail(request, pk):
     from .invoice_utils import calculate_invoice_breakdown, get_state_from_gstin
 
     sale = get_object_or_404(
-        Sale.objects.select_related('customer', 'jewellery_item', 'jewellery_item__category'),
+        Sale.objects.select_related('customer', 'jewellery_item', 'jewellery_item__category', 'branch'),
         pk=pk,
         tenant=request.tenant,
     )
+    if not check_branch_access(request, sale):
+        raise PermissionDenied("You do not have access to sales in this branch.")
 
     # Read GST preference from query param ?gst=1 or ?gst=0 (defaults to True)
     gst_param = request.GET.get('gst', '1').strip().lower()
@@ -489,7 +502,10 @@ def sale_invoice_pdf(request, pk):
 @login_required
 def enquiry_list(request):
     """List enquiries with search, status and date filters."""
-    enquiries = Enquiry.objects.filter(tenant=request.tenant).select_related('customer', 'category').order_by('-created_at')
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
+    enquiries = Enquiry.objects.filter(tenant=request.tenant).select_related('customer', 'category', 'branch').order_by('-created_at')
+    if active_b:
+        enquiries = enquiries.filter(Q(branch=active_b) | Q(branch__isnull=True))
 
     # Search (Customer name or interested item)
     q = request.GET.get('q', '').strip()
@@ -535,20 +551,23 @@ def enquiry_list(request):
 @login_required
 def enquiry_add(request):
     """Add a new enquiry."""
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     initial_data = {}
     if 'customer' in request.GET:
         initial_data['customer'] = request.GET.get('customer')
 
     if request.method == 'POST':
-        form = EnquiryForm(request.POST, tenant=request.tenant)
+        form = EnquiryForm(request.POST, tenant=request.tenant, branch=active_b)
         if form.is_valid():
             enquiry = form.save(commit=False)
             enquiry.tenant = request.tenant
+            if not enquiry.branch and active_b:
+                enquiry.branch = active_b
             enquiry.save()
             messages.success(request, f"Enquiry for '{enquiry.customer.name}' recorded successfully.")
             return redirect('enquiry_detail', pk=enquiry.pk)
     else:
-        form = EnquiryForm(initial=initial_data, tenant=request.tenant)
+        form = EnquiryForm(initial=initial_data, tenant=request.tenant, branch=active_b)
 
     context = {
         'form': form,
@@ -561,7 +580,9 @@ def enquiry_add(request):
 @login_required
 def enquiry_detail(request, pk):
     """View enquiry details."""
-    enquiry = get_object_or_404(Enquiry.objects.select_related('customer', 'category'), pk=pk, tenant=request.tenant)
+    enquiry = get_object_or_404(Enquiry.objects.select_related('customer', 'category', 'branch'), pk=pk, tenant=request.tenant)
+    if not check_branch_access(request, enquiry):
+        raise PermissionDenied("You do not have access to enquiries in this branch.")
     context = {
         'enquiry': enquiry,
     }
@@ -572,14 +593,18 @@ def enquiry_detail(request, pk):
 def enquiry_edit(request, pk):
     """Edit an enquiry."""
     enquiry = get_object_or_404(Enquiry, pk=pk, tenant=request.tenant)
+    if not check_branch_access(request, enquiry):
+        raise PermissionDenied("You do not have access to enquiries in this branch.")
+
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     if request.method == 'POST':
-        form = EnquiryForm(request.POST, instance=enquiry, tenant=request.tenant)
+        form = EnquiryForm(request.POST, instance=enquiry, tenant=request.tenant, branch=active_b)
         if form.is_valid():
             enquiry = form.save()
             messages.success(request, f"Enquiry updated successfully.")
             return redirect('enquiry_detail', pk=enquiry.pk)
     else:
-        form = EnquiryForm(instance=enquiry, tenant=request.tenant)
+        form = EnquiryForm(instance=enquiry, tenant=request.tenant, branch=active_b)
 
     context = {
         'form': form,
@@ -594,6 +619,9 @@ def enquiry_edit(request, pk):
 def enquiry_delete(request, pk):
     """Delete an enquiry."""
     enquiry = get_object_or_404(Enquiry, pk=pk, tenant=request.tenant)
+    if not check_branch_access(request, enquiry):
+        raise PermissionDenied("You do not have access to enquiries in this branch.")
+
     if request.method == 'POST':
         enquiry.delete()
         messages.success(request, "Enquiry deleted successfully.")
@@ -670,14 +698,17 @@ def sales_report(request):
         )
         return redirect('sales_report')
 
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     sales = (
         Sale.objects
         .filter(tenant=request.tenant)
-        .select_related('customer', 'jewellery_item')
+        .select_related('customer', 'jewellery_item', 'branch')
         .prefetch_related('payments')
         .filter(sale_date__date__gte=start_date, sale_date__date__lte=end_date)
         .order_by('-sale_date')
     )
+    if active_b:
+        sales = sales.filter(Q(branch=active_b) | Q(branch__isnull=True))
 
     # Totals for the selected range, aggregated in the database.
     totals = sales.aggregate(
@@ -685,19 +716,58 @@ def sales_report(request):
         sales_count=Count('id'),
         items_sold=Count('jewellery_item'),
         average_sale_value=Avg('sale_price'),
+        total_gross_weight=Sum('jewellery_item__gross_weight'),
+        total_net_weight=Sum('jewellery_item__net_weight'),
     )
     total_amount = totals['total_amount'] or Decimal('0.00')
     sales_count = totals['sales_count'] or 0
     items_sold = totals['items_sold'] or 0
     average_sale_value = totals['average_sale_value'] or Decimal('0.00')
+    total_gross_weight = totals['total_gross_weight'] or Decimal('0.000')
+    total_net_weight = totals['total_net_weight'] or Decimal('0.000')
+
+    # Handle formal CSV export
+    if request.GET.get('export') == 'csv':
+        import csv
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="Sales_Register_{start_date}_{end_date}.csv"'
+        writer = csv.writer(response)
+        writer.writerow([
+            'S.No', 'Date & Time', 'Invoice ID', 'Customer Name', 'Customer Mobile',
+            'Jewellery Item', 'Item Code', 'Design Code', 'Metal Type', 'Purity',
+            'Gross Wt (g)', 'Net Wt (g)', 'Sale Price (INR)', 'Payment Method', 'Branch'
+        ])
+        for idx, sale in enumerate(sales, start=1):
+            item = sale.jewellery_item
+            writer.writerow([
+                idx,
+                sale.sale_date.strftime('%Y-%m-%d %H:%M') if sale.sale_date else '',
+                f"#{sale.id}",
+                sale.customer.name if sale.customer else '',
+                sale.customer.mobile if sale.customer else '',
+                item.name if item else '',
+                item.item_code if item else '',
+                item.design_code if item else '',
+                item.metal_type if item else '',
+                item.purity if item else '',
+                f"{item.gross_weight:.3f}" if item and item.gross_weight else '0.000',
+                f"{item.net_weight:.3f}" if item and item.net_weight else '0.000',
+                f"{sale.sale_price:.2f}" if sale.sale_price else '0.00',
+                sale.payment_method or '',
+                sale.branch.name if sale.branch else 'All Showrooms'
+            ])
+        return response
 
     # Old gold transactions in date range (combined in 1 single aggregate query)
-    old_gold_aggr = OldGoldTransaction.objects.filter(
+    old_gold_qs = OldGoldTransaction.objects.filter(
         tenant=request.tenant,
         created_at__date__gte=start_date,
         created_at__date__lte=end_date,
         status=OldGoldTransaction.STATUS_COMPLETED
-    ).aggregate(
+    )
+    if active_b:
+        old_gold_qs = old_gold_qs.filter(Q(branch=active_b) | Q(branch__isnull=True))
+    old_gold_aggr = old_gold_qs.aggregate(
         exchange_count=Count('id', filter=Q(transaction_type=OldGoldTransaction.TYPE_EXCHANGE)),
         exchange_val=Sum('final_value', filter=Q(transaction_type=OldGoldTransaction.TYPE_EXCHANGE)),
         exchange_net_wt=Sum('net_weight', filter=Q(transaction_type=OldGoldTransaction.TYPE_EXCHANGE)),
@@ -731,6 +801,8 @@ def sales_report(request):
         'sales_count': sales_count,
         'items_sold': items_sold,
         'average_sale_value': average_sale_value,
+        'total_gross_weight': total_gross_weight,
+        'total_net_weight': total_net_weight,
         'exchange_count': exchange_count,
         'exchange_value': exchange_value,
         'buyback_count': buyback_count,
@@ -749,6 +821,8 @@ def payment_add(request, pk):
     (amount > 0 and <= remaining due) before saving.
     """
     sale = get_object_or_404(Sale, pk=pk, tenant=request.tenant)
+    if not check_branch_access(request, sale):
+        raise PermissionDenied("You do not have permission to record payments for this branch.")
     if request.method != 'POST':
         return redirect('sale_detail', pk=sale.pk)
 
@@ -757,6 +831,7 @@ def payment_add(request, pk):
         payment = form.save(commit=False)
         payment.sale = sale
         payment.tenant = request.tenant
+        payment.branch = sale.branch
         payment.save()
         messages.success(
             request,
@@ -778,12 +853,15 @@ def payment_list(request):
     Allows viewing all payments, filtering by customer, payment method, date,
     and recording new payments against any sale with pending dues.
     """
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     payments = (
         Payment.objects.filter(tenant=request.tenant)
-        .select_related('sale', 'sale__customer', 'sale__jewellery_item')
+        .select_related('sale', 'sale__customer', 'sale__jewellery_item', 'branch')
         .prefetch_related('sale__payments')
         .order_by('-payment_date', '-id')
     )
+    if active_b:
+        payments = payments.filter(Q(branch=active_b) | Q(branch__isnull=True))
 
     # Search (Customer name, mobile, reference, or invoice ID)
     q = request.GET.get('q', '').strip()
@@ -843,6 +921,8 @@ def payment_list(request):
             computed_due=Greatest(F('sale_price') - F('total_paid'), Decimal('0.00'))
         )
     )
+    if active_b:
+        annotated_sales = annotated_sales.filter(branch=active_b)
 
     # Sales queryset with dues calculation, prioritizing sales with pending dues first
     sale_order = (
@@ -861,11 +941,16 @@ def payment_list(request):
         form = StandalonePaymentForm(
             request.POST,
             tenant=request.tenant,
-            sale_queryset=sale_order
+            sale_queryset=sale_order,
+            branch=active_b
         )
         if form.is_valid():
             payment = form.save(commit=False)
             payment.tenant = request.tenant
+            if not payment.branch and active_b:
+                payment.branch = active_b
+            elif not payment.branch and getattr(payment.sale, 'branch', None):
+                payment.branch = payment.sale.branch
             payment._allow_excess = True
             payment.save()
 
@@ -895,11 +980,14 @@ def payment_list(request):
         form = StandalonePaymentForm(
             initial=initial_data,
             tenant=request.tenant,
-            sale_queryset=sale_order
+            sale_queryset=sale_order,
+            branch=active_b
         )
 
     # KPI Metrics
     all_payments = Payment.objects.filter(tenant=request.tenant)
+    if active_b:
+        all_payments = all_payments.filter(branch=active_b)
     total_collected = all_payments.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
     today_collected = all_payments.filter(payment_date__range=(start_of_today, end_of_today)).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
 
@@ -963,9 +1051,12 @@ def old_gold_list(request):
     Transaction history for Old Gold Exchanges and Buybacks.
     Provides searching, type filtering, status filtering, and aggregate summaries.
     """
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     transactions = OldGoldTransaction.objects.filter(tenant=request.tenant).select_related(
-        'customer', 'new_sale', 'new_sale__jewellery_item', 'processed_by'
+        'customer', 'new_sale', 'new_sale__jewellery_item', 'processed_by', 'branch'
     ).order_by('-created_at', '-id')
+    if active_b:
+        transactions = transactions.filter(Q(branch=active_b) | Q(branch__isnull=True))
 
     # Search (Customer name, mobile, item description, voucher number)
     q = request.GET.get('q', '').strip()
@@ -991,6 +1082,8 @@ def old_gold_list(request):
 
     # Totals across all completed transactions
     completed_txs = OldGoldTransaction.objects.filter(tenant=request.tenant, status=OldGoldTransaction.STATUS_COMPLETED)
+    if active_b:
+        completed_txs = completed_txs.filter(Q(branch=active_b) | Q(branch__isnull=True))
     total_val_all = completed_txs.aggregate(total=Sum('final_value'))['total'] or Decimal('0.00')
     total_net_wt_all = completed_txs.aggregate(total=Sum('net_weight'))['total'] or Decimal('0.000')
     exchange_count_all = completed_txs.filter(transaction_type=OldGoldTransaction.TYPE_EXCHANGE).count()
@@ -1026,6 +1119,7 @@ def old_gold_exchange_create(request):
     - Sells new jewellery piece from showroom inventory.
     - Atomically reduces inventory, creates Sale, logs Exchange Payment credit, and records OldGoldTransaction.
     """
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     initial_data = {}
     if 'customer' in request.GET:
         initial_data['customer'] = request.GET.get('customer')
@@ -1038,7 +1132,7 @@ def old_gold_exchange_create(request):
             pass
 
     if request.method == 'POST':
-        form = OldGoldExchangeForm(request.POST, tenant=request.tenant)
+        form = OldGoldExchangeForm(request.POST, tenant=request.tenant, branch=active_b)
         if form.is_valid():
             with transaction.atomic():
                 # Re-fetch item with select_for_update
@@ -1065,8 +1159,10 @@ def old_gold_exchange_create(request):
                 tx_number = generate_old_gold_number(OldGoldTransaction.TYPE_EXCHANGE, tenant=request.tenant)
 
                 # 1. Create Sale for new jewellery piece
+                item_branch = locked_item.branch or active_b
                 sale = Sale.objects.create(
                     tenant=request.tenant,
+                    branch=item_branch,
                     customer=raw_data['customer'],
                     jewellery_item=locked_item,
                     sale_price=new_price,
@@ -1082,6 +1178,7 @@ def old_gold_exchange_create(request):
                 old_gold_credit = min(sale.sale_price, val['final_value'])
                 Payment.objects.create(
                     tenant=request.tenant,
+                    branch=sale.branch,
                     sale=sale,
                     amount=old_gold_credit,
                     payment_method='Exchange',
@@ -1095,6 +1192,7 @@ def old_gold_exchange_create(request):
                 if diff_amount > 0 and settlement_method:
                     Payment.objects.create(
                         tenant=request.tenant,
+                        branch=sale.branch,
                         sale=sale,
                         amount=diff_amount,
                         payment_method=settlement_method,
@@ -1105,6 +1203,7 @@ def old_gold_exchange_create(request):
                 # 5. Create OldGoldTransaction record
                 og_tx = form.save(commit=False)
                 og_tx.tenant = request.tenant
+                og_tx.branch = sale.branch or active_b
                 og_tx.transaction_number = tx_number
                 og_tx.transaction_type = OldGoldTransaction.TYPE_EXCHANGE
                 og_tx.net_weight = val['net_weight']
@@ -1132,7 +1231,7 @@ def old_gold_exchange_create(request):
                 )
                 return redirect('old_gold_detail', pk=og_tx.pk)
     else:
-        form = OldGoldExchangeForm(initial=initial_data, tenant=request.tenant)
+        form = OldGoldExchangeForm(initial=initial_data, tenant=request.tenant, branch=active_b)
 
     context = {
         'form': form,
@@ -1150,12 +1249,13 @@ def old_gold_buyback_create(request):
     - Records payout method and reference without performing real financial calls.
     - Stores scrap item in Vault Stock.
     """
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     initial_data = {}
     if 'customer' in request.GET:
         initial_data['customer'] = request.GET.get('customer')
 
     if request.method == 'POST':
-        form = OldGoldBuybackForm(request.POST, tenant=request.tenant)
+        form = OldGoldBuybackForm(request.POST, tenant=request.tenant, branch=active_b)
         if form.is_valid():
             with transaction.atomic():
                 raw_data = form.cleaned_data
@@ -1172,6 +1272,8 @@ def old_gold_buyback_create(request):
 
                 og_tx = form.save(commit=False)
                 og_tx.tenant = request.tenant
+                if not og_tx.branch and active_b:
+                    og_tx.branch = active_b
                 og_tx.transaction_number = tx_number
                 og_tx.transaction_type = OldGoldTransaction.TYPE_BUYBACK
                 og_tx.net_weight = val['net_weight']
@@ -1195,7 +1297,7 @@ def old_gold_buyback_create(request):
                 )
                 return redirect('old_gold_detail', pk=og_tx.pk)
     else:
-        form = OldGoldBuybackForm(initial=initial_data, tenant=request.tenant)
+        form = OldGoldBuybackForm(initial=initial_data, tenant=request.tenant, branch=active_b)
 
     context = {
         'form': form,
@@ -1213,11 +1315,13 @@ def old_gold_detail(request, pk):
     transaction_obj = get_object_or_404(
         OldGoldTransaction.objects.select_related(
             'customer', 'new_sale', 'new_sale__jewellery_item',
-            'processed_by', 'cancelled_by'
+            'processed_by', 'cancelled_by', 'branch'
         ),
         pk=pk,
         tenant=request.tenant,
     )
+    if not check_branch_access(request, transaction_obj):
+        raise PermissionDenied("You do not have permission to view old gold transactions for this branch.")
     company = CompanySettings.load(tenant=request.tenant)
     cancel_form = OldGoldCancelForm()
 
@@ -1237,6 +1341,8 @@ def old_gold_cancel(request, pk):
     Safely cancel an Old Gold transaction with mandatory reason and audit logging.
     """
     transaction_obj = get_object_or_404(OldGoldTransaction, pk=pk, tenant=request.tenant)
+    if not check_branch_access(request, transaction_obj):
+        raise PermissionDenied("You do not have permission to cancel old gold transactions for this branch.")
     if request.method != 'POST':
         return redirect('old_gold_detail', pk=transaction_obj.pk)
 

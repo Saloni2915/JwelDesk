@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Initiate Stock Transfer — JewelDesk{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/inventory_atelier.css' %}?v={% now "U" %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="jd-inv-canvas">
+
+    <!-- 1. Header & Actions -->
+    <div class="jd-inv-header">
+        <div class="jd-inv-title-wrap">
+            <h1><i class="bi bi-arrow-left-right text-warning me-2"></i>New Stock Transfer</h1>
+            <p class="jd-inv-subtitle">
+                Relocate jewellery items between showrooms or transfer from Head Office to branch
+            </p>
+        </div>
+        <div class="jd-inv-header-actions">
+            <a href="{% url 'stock_transfer_list' %}" class="jd-btn-ghost">
+                <i class="bi bi-arrow-left"></i> Back to Transfers
+            </a>
+            <a href="{% url 'inventory_list' %}" class="jd-btn-ghost">
+                <i class="bi bi-gem"></i> Inventory List
+            </a>
+        </div>
+    </div>
+
+    <!-- 2. Transfer Form & Guide -->
+    <div class="row g-4">
+        <!-- FORM COLUMN -->
+        <div class="col-lg-7">
+            <div class="jd-form-card">
+                <div class="jd-form-card-header">
+                    <h2>
+                        <i class="bi bi-truck text-warning"></i>
+                        Transfer Information
+                    </h2>
+                </div>
+                <div class="jd-form-card-body">
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger py-2 mb-3 bg-danger bg-opacity-20 border-danger text-light">
+                        {% for error in form.non_field_errors %}
+                        <div class="small"><i class="bi bi-exclamation-triangle-fill me-1"></i> {{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="jd-field-label">From Branch (Source) <span class="text-danger">*</span></label>
+                                {{ form.from_branch }}
+                                {% if form.from_branch.errors %}
+                                <div class="text-danger small mt-1">{{ form.from_branch.errors.0 }}</div>
+                                {% endif %}
+                                <small class="text-muted">Branch currently holding the stock</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="jd-field-label">To Branch (Destination) <span class="text-danger">*</span></label>
+                                {{ form.to_branch }}
+                                {% if form.to_branch.errors %}
+                                <div class="text-danger small mt-1">{{ form.to_branch.errors.0 }}</div>
+                                {% endif %}
+                                <small class="text-muted">Receiving showroom / vault</small>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="jd-field-label">Jewellery Item <span class="text-danger">*</span></label>
+                            {{ form.item }}
+                            {% if form.item.errors %}
+                            <div class="text-danger small mt-1">{{ form.item.errors.0 }}</div>
+                            {% endif %}
+                            <small class="text-muted">Select the piece to be transferred</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="jd-field-label">Quantity to Transfer <span class="text-danger">*</span></label>
+                            {{ form.quantity }}
+                            {% if form.quantity.errors %}
+                            <div class="text-danger small mt-1">{{ form.quantity.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="jd-field-label">Transfer Notes / Waybill Details</label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                            <div class="text-danger small mt-1">{{ form.notes.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 pt-3 border-top border-secondary border-opacity-25">
+                            <button type="submit" name="action" value="dispatch" class="jd-btn-ghost">
+                                <i class="bi bi-send me-1"></i> Initiate Dispatch (In Transit)
+                            </button>
+                            <button type="submit" name="action" value="transfer_and_receive" class="jd-btn-gold">
+                                <i class="bi bi-check2-all me-1"></i> Transfer & Complete Immediately
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- INFO / WORKFLOW COLUMN -->
+        <div class="col-lg-5">
+            <div class="jd-card p-4">
+                <h5 class="text-warning mb-3"><i class="bi bi-shield-check me-2"></i>How Stock Transfers Work</h5>
+                <ol class="text-muted small ps-3 mb-4" style="line-height: 1.8;">
+                    <li><strong class="text-light">Initiate:</strong> The source branch dispatches the piece. The status changes to <span class="badge bg-warning bg-opacity-25 text-warning">In Transit</span>.</li>
+                    <li><strong class="text-light">Receive:</strong> When the package arrives at the destination showroom, authorized staff verify and mark it as <span class="badge bg-success bg-opacity-25 text-success">Received</span>.</li>
+                    <li><strong class="text-light">Automated Ledger:</strong> Dual immutable stock movement records are automatically generated:
+                        <ul class="ps-3 mt-1">
+                            <li><strong class="text-danger">Branch Transfer Out</strong> on source branch.</li>
+                            <li><strong class="text-success">Branch Transfer In</strong> on destination branch.</li>
+                        </ul>
+                    </li>
+                    <li><strong class="text-light">Instant Relocation:</strong> The piece's active branch updates to the destination branch immediately upon completion.</li>
+                </ol>
+
+                <div class="p-3 rounded bg-dark border border-secondary border-opacity-25">
+                    <div class="fw-semibold text-light mb-1"><i class="bi bi-info-circle me-1 text-info"></i> Direct Complete Option</div>
+                    <small class="text-muted">
+                        If the physical piece is already at the destination branch (or for immediate internal adjustments), use <em>"Transfer & Complete Immediately"</em> to complete both steps in one click.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

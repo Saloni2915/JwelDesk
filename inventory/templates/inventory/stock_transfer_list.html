@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Branch Stock Transfers — JewelDesk{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/inventory_atelier.css' %}?v={% now "U" %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="jd-inv-canvas">
+
+    <!-- 1. Header & Actions -->
+    <div class="jd-inv-header">
+        <div class="jd-inv-title-wrap">
+            <h1><i class="bi bi-arrow-left-right text-warning me-2"></i>Stock Transfers</h1>
+            <p class="jd-inv-subtitle">
+                {% if is_all_branches %}
+                    Showing transfers across all branches
+                {% elif active_branch %}
+                    Showing transfers involving <strong>{{ active_branch.name }}</strong>
+                {% else %}
+                    Manage jewellery stock movements between showrooms and head office
+                {% endif %}
+            </p>
+        </div>
+        <div class="jd-inv-header-actions">
+            <a href="{% url 'inventory_list' %}" class="jd-btn-ghost">
+                <i class="bi bi-gem"></i> Inventory List
+            </a>
+            <a href="{% url 'stock_transfer_create' %}" class="jd-btn-gold">
+                <i class="bi bi-plus-circle"></i> + New Transfer
+            </a>
+        </div>
+    </div>
+
+    <!-- 2. Filter Bar -->
+    <div class="jd-inv-filter-card mb-4">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-12 col-md-4">
+                <select name="status" class="jd-inv-select" onchange="this.form.submit()">
+                    <option value="">All Statuses</option>
+                    {% for code, label in status_choices %}
+                        <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-md-auto ms-auto">
+                <a href="{% url 'stock_transfer_list' %}" class="jd-btn-ghost text-nowrap">
+                    <i class="bi bi-x-circle"></i> Clear Filters
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- 3. Transfers Table -->
+    <div class="jd-inv-table-card">
+        <div class="table-responsive">
+            <table class="table jd-inv-table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Transfer #</th>
+                        <th>Date</th>
+                        <th>Source Branch</th>
+                        <th>Destination Branch</th>
+                        <th>Pieces</th>
+                        <th>Status</th>
+                        <th>Dispatched By</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transfers %}
+                    <tr>
+                        <td class="fw-bold">
+                            <a href="{% url 'stock_transfer_detail' t.pk %}" class="text-decoration-none text-warning">
+                                {{ t.transfer_number }}
+                            </a>
+                        </td>
+                        <td>{{ t.created_at|date:"d M Y, h:i A" }}</td>
+                        <td>
+                            <span class="badge bg-dark border border-secondary text-light">
+                                <i class="bi bi-geo-alt me-1 text-danger"></i>{{ t.from_branch.name }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-dark border border-warning text-warning">
+                                <i class="bi bi-geo-alt me-1 text-success"></i>{{ t.to_branch.name }}
+                            </span>
+                        </td>
+                        <td>
+                            {% with first_item=t.items.first %}
+                                {% if first_item %}
+                                    <span class="fw-semibold">{{ first_item.jewellery_item.name }}</span>
+                                    {% if t.items.count > 1 %}
+                                        <small class="text-muted">(+{{ t.items.count|add:"-1" }} more)</small>
+                                    {% endif %}
+                                    <span class="badge bg-secondary ms-1">Qty: {{ first_item.quantity }}</span>
+                                {% else %}
+                                    <span class="text-muted">No items</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>
+                            {% if t.status == 'Received' %}
+                                <span class="badge bg-success bg-opacity-25 text-success border border-success">
+                                    <i class="bi bi-check-circle me-1"></i>Completed
+                                </span>
+                            {% elif t.status == 'In Transit' %}
+                                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning">
+                                    <i class="bi bi-truck me-1"></i>In Transit
+                                </span>
+                            {% elif t.status == 'Pending' %}
+                                <span class="badge bg-info bg-opacity-25 text-info border border-info">
+                                    <i class="bi bi-hourglass-split me-1"></i>Pending
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary bg-opacity-25 text-muted border border-secondary">
+                                    {{ t.status }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ t.created_by.get_full_name|default:t.created_by.username|default:"System" }}</small>
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'stock_transfer_detail' t.pk %}" class="btn btn-sm btn-outline-warning">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="bi bi-arrow-left-right fs-1 d-block mb-3 opacity-50"></i>
+                            <div class="fw-bold fs-5">No Stock Transfers Found</div>
+                            <p class="mb-3">There are no transfer records matching your current filter.</p>
+                            <a href="{% url 'stock_transfer_create' %}" class="jd-btn-gold">
+                                <i class="bi bi-plus-circle me-1"></i> Create First Transfer
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <div class="d-flex justify-content-between align-items-center p-3 border-top border-secondary border-opacity-25">
+            <small class="text-muted">Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} transfers</small>
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">&laquo;</a></li>
+                {% endif %}
+                <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">&raquo;</a></li>
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

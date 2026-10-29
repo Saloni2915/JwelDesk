@@ -17,11 +17,14 @@
             <p class="jd-inv-subtitle">All jewellery stock items, weights, hallmark status, and availability</p>
         </div>
         <div class="jd-inv-header-actions">
+            <a href="{% url 'stock_transfer_list' %}" class="jd-btn-ghost">
+                <i class="bi bi-arrow-left-right text-warning"></i> Transfers
+            </a>
             <a href="{% url 'pricing_calculator' %}" class="jd-btn-ghost">
                 <i class="bi bi-calculator"></i> Price Calculator
             </a>
             <a href="{% url 'stock_movement_list' %}" class="jd-btn-ghost">
-                <i class="bi bi-arrow-left-right"></i> Stock History
+                <i class="bi bi-clock-history"></i> Stock History
             </a>
             <a href="{% url 'category_list' %}" class="jd-btn-ghost">
                 <i class="bi bi-tags"></i> Categories

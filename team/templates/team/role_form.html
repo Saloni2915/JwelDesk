@@ -15,58 +15,199 @@
   <!-- Header -->
   <div class="jd-header">
     <div>
-      <div class="jd-badge"><i class="bi bi-shield-plus me-1"></i> Role Details</div>
+      <div class="jd-badge"><i class="bi bi-shield-lock me-1"></i> Access Control &bull; Role Permissions</div>
       <h1 class="jd-title">{{ form_title }}</h1>
-      <p class="jd-subtitle">Create or edit roles and manage permissions for staff members.</p>
+      <p class="jd-subtitle">Configure module permissions (View, Add, Edit, Delete, Export) and role attributes for your showroom staff.</p>
     </div>
     <div>
       <a href="{% url 'team:role_list' %}" class="jd-btn-ghost">
-        <i class="bi bi-arrow-left me-1"></i> Cancel & Back
+        <i class="bi bi-arrow-left me-1"></i> Cancel &amp; Back
       </a>
     </div>
   </div>
 
-  <div class="row justify-content-center">
-    <div class="col-lg-6">
-      <div class="jd-card p-4 p-md-5">
-        <form method="post" novalidate>
-          {% csrf_token %}
+  <form method="post" id="role-permissions-form" novalidate>
+    {% csrf_token %}
 
-          {% if form.non_field_errors %}
-          <div class="alert alert-danger py-2 mb-4" style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5;">
-            {% for err in form.non_field_errors %}<div>{{ err }}</div>{% endfor %}
-          </div>
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger py-2 mb-4" style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5;">
+      {% for err in form.non_field_errors %}<div>{{ err }}</div>{% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- 1. Role Basic Information Card -->
+    <div class="jd-card p-4 mb-4">
+      <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2" style="border-color: rgba(236,200,106,0.15) !important;">
+        <h5 class="fw-bold mb-0 text-gold d-flex align-items-center gap-2">
+          <i class="bi bi-info-circle"></i> Role Information
+        </h5>
+        {% if role and role.is_builtin %}
+          <span class="badge bg-secondary-subtle text-secondary border"><i class="bi bi-lock me-1"></i> Built-in System Role</span>
+        {% else %}
+          <span class="badge bg-primary-subtle text-primary border"><i class="bi bi-stars me-1"></i> Custom Role</span>
+        {% endif %}
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-5">
+          <label for="{{ form.name.id_for_label }}" class="form-label text-gold small fw-bold">
+            Role Name <span class="text-danger">*</span>
+          </label>
+          {{ form.name }}
+          {% if form.name.errors %}
+            <div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>
           {% endif %}
-
-          <div class="mb-4">
-            <label for="{{ form.name.id_for_label }}" class="form-label text-gold small fw-bold">Role Name <span class="text-danger">*</span></label>
-            {{ form.name }}
-            {% if form.name.errors %}
-              <div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>
-            {% endif %}
-            {% if role and role.is_builtin %}
-              <small class="text-muted d-block mt-1">Built-in roles cannot be renamed.</small>
-            {% endif %}
-          </div>
-
-          <div class="mb-5">
-            <label for="{{ form.description.id_for_label }}" class="form-label text-gold small fw-bold">Role Description</label>
-            {{ form.description }}
-            {% if form.description.errors %}
-              <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>
-            {% endif %}
-          </div>
-
-          <div class="d-flex justify-content-end gap-3 pt-3 border-top" style="border-color: rgba(236,200,106,0.15) !important;">
-            <a href="{% url 'team:role_list' %}" class="jd-btn-ghost">Cancel</a>
-            <button type="submit" class="jd-btn-gold">
-              <i class="bi bi-check-lg me-1"></i> Save Role
-            </button>
-          </div>
-        </form>
+          {% if role and role.is_builtin %}
+            <small class="text-muted d-block mt-1">Built-in role name is standard and cannot be changed.</small>
+          {% endif %}
+        </div>
+        <div class="col-md-7">
+          <label for="{{ form.description.id_for_label }}" class="form-label text-gold small fw-bold">Role Description</label>
+          {{ form.description }}
+          {% if form.description.errors %}
+            <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>
+          {% endif %}
+        </div>
       </div>
     </div>
-  </div>
+
+    <!-- 2. Permissions Matrix Table Card -->
+    <div class="jd-card p-4 mb-4">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3 border-bottom pb-3" style="border-color: rgba(236,200,106,0.15) !important;">
+        <div>
+          <h5 class="fw-bold mb-1 text-gold d-flex align-items-center gap-2">
+            <i class="bi bi-shield-check"></i> Module Permissions Matrix
+          </h5>
+          <p class="text-muted small mb-0">Select granular capabilities for each JewelDesk module. Staff assigned to this role will inherit these rights.</p>
+        </div>
+        <!-- Master Quick Action Toggles -->
+        <div class="d-flex flex-wrap gap-2">
+          <button type="button" class="btn btn-sm btn-outline-success" onclick="setMasterPerms('full')">
+            <i class="bi bi-check-all me-1"></i> Grant All
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-info" onclick="setMasterPerms('view')">
+            <i class="bi bi-eye me-1"></i> View Only All
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-danger" onclick="setMasterPerms('none')">
+            <i class="bi bi-x-circle me-1"></i> Clear All
+          </button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle jd-perm-matrix-table mb-0" style="border-collapse: separate; border-spacing: 0;">
+          <thead class="table-light">
+            <tr>
+              <th style="min-width: 250px;">JEWELDESK MODULE</th>
+              <th class="text-center" style="width: 110px;">
+                <span class="d-block fw-bold">VIEW</span>
+                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small text-muted" onclick="toggleColumnAction('view')">Toggle</button>
+              </th>
+              <th class="text-center" style="width: 110px;">
+                <span class="d-block fw-bold">ADD</span>
+                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small text-muted" onclick="toggleColumnAction('add')">Toggle</button>
+              </th>
+              <th class="text-center" style="width: 110px;">
+                <span class="d-block fw-bold">EDIT</span>
+                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small text-muted" onclick="toggleColumnAction('edit')">Toggle</button>
+              </th>
+              <th class="text-center" style="width: 110px;">
+                <span class="d-block fw-bold">DELETE</span>
+                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small text-muted" onclick="toggleColumnAction('delete')">Toggle</button>
+              </th>
+              <th class="text-center" style="width: 110px;">
+                <span class="d-block fw-bold">EXPORT</span>
+                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small text-muted" onclick="toggleColumnAction('export')">Toggle</button>
+              </th>
+              <th class="text-end" style="width: 160px;">ROW ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in module_rows %}
+            <tr data-module-key="{{ row.key }}">
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 34px; height: 34px; background: rgba(236,200,106,0.12); color: var(--gold-primary);">
+                    <i class="bi {{ row.icon }} fs-6"></i>
+                  </div>
+                  <div>
+                    <span class="fw-bold d-block text-body">{{ row.label }}</span>
+                    <small class="text-muted d-block" style="font-size: 0.76rem;">{{ row.desc }}</small>
+                  </div>
+                </div>
+              </td>
+              {% for act in row.actions %}
+              <td class="text-center">
+                <div class="form-check form-check-inline m-0">
+                  <input type="checkbox"
+                         name="{{ act.name }}"
+                         id="id_{{ act.name }}"
+                         class="form-check-input perm-checkbox perm-col-{{ act.action }} perm-row-{{ row.key }}"
+                         data-module="{{ row.key }}"
+                         data-action="{{ act.action }}"
+                         {% if act.field.value %}checked{% endif %}
+                         style="cursor: pointer; width: 1.15rem; height: 1.15rem;">
+                </div>
+              </td>
+              {% endfor %}
+              <td class="text-end pe-2">
+                <div class="btn-group btn-group-sm">
+                  <button type="button" class="btn btn-outline-secondary py-0 px-2" title="Grant all capabilities for {{ row.label }}" onclick="setRowPerms('{{ row.key }}', 'full')">
+                    All
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary py-0 px-2" title="Grant view-only for {{ row.label }}" onclick="setRowPerms('{{ row.key }}', 'view')">
+                    View
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary py-0 px-2" title="Clear all capabilities for {{ row.label }}" onclick="setRowPerms('{{ row.key }}', 'none')">
+                    None
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 3. Employee Synchronization Card & Form Submit Actions -->
+    <div class="jd-card p-4">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+          {% if employee_count > 0 %}
+          <div class="form-check form-switch mb-0">
+            <input type="checkbox"
+                   name="{{ form.sync_employees.name }}"
+                   id="id_{{ form.sync_employees.name }}"
+                   class="form-check-input"
+                   {% if form.sync_employees.value %}checked{% endif %}
+                   style="cursor: pointer;">
+            <label class="form-check-label fw-bold text-body" for="id_{{ form.sync_employees.name }}">
+              <i class="bi bi-people-fill text-gold me-1"></i> Apply updated permissions to all {{ employee_count }} active employee{{ employee_count|pluralize }} assigned to this role
+            </label>
+            <div class="small text-muted ps-0 mt-1">
+              When checked, existing team members with the "{{ role.name }}" role will immediately receive these updated permissions.
+            </div>
+          </div>
+          {% else %}
+          <div class="text-muted small">
+            <i class="bi bi-info-circle me-1"></i> No staff members currently assigned to this role. Any future employee assigned to this role will automatically inherit these settings.
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="d-flex align-items-center gap-2 ms-auto">
+          <a href="{% url 'team:role_list' %}" class="jd-btn-ghost">
+            Cancel
+          </a>
+          <button type="submit" class="jd-btn-gold">
+            <i class="bi bi-check-lg me-1"></i> Save Role &amp; Permissions
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </form>
 </div>
 
 <script>
@@ -74,6 +215,62 @@ document.addEventListener('DOMContentLoaded', function() {
     document.body.classList.add('has-atelier-suite');
     const pc = document.getElementById('page-content');
     if (pc) pc.classList.add('jd-active');
+
+    // Auto-ensure view is checked if add/edit/delete/export is checked
+    document.querySelectorAll('.perm-checkbox').forEach(function(chk) {
+        chk.addEventListener('change', function() {
+            const mod = this.dataset.module;
+            const act = this.dataset.action;
+            if (this.checked && act !== 'view') {
+                const viewChk = document.querySelector(`.perm-row-${mod}.perm-col-view`);
+                if (viewChk) viewChk.checked = true;
+            } else if (!this.checked && act === 'view') {
+                // If view is unchecked, uncheck add/edit/delete/export
+                document.querySelectorAll(`.perm-row-${mod}`).forEach(function(rowChk) {
+                    if (rowChk.dataset.action !== 'view') {
+                        rowChk.checked = false;
+                    }
+                });
+            }
+        });
+    });
 });
+
+function setMasterPerms(mode) {
+    document.querySelectorAll('.perm-checkbox').forEach(function(chk) {
+        if (mode === 'full') {
+            chk.checked = true;
+        } else if (mode === 'view') {
+            chk.checked = (chk.dataset.action === 'view');
+        } else if (mode === 'none') {
+            chk.checked = false;
+        }
+    });
+}
+
+function setRowPerms(moduleKey, mode) {
+    document.querySelectorAll(`.perm-row-${moduleKey}`).forEach(function(chk) {
+        if (mode === 'full') {
+            chk.checked = true;
+        } else if (mode === 'view') {
+            chk.checked = (chk.dataset.action === 'view');
+        } else if (mode === 'none') {
+            chk.checked = false;
+        }
+    });
+}
+
+function toggleColumnAction(action) {
+    const colBoxes = document.querySelectorAll(`.perm-col-${action}`);
+    if (!colBoxes.length) return;
+    const anyUnchecked = Array.from(colBoxes).some(chk => !chk.checked);
+    colBoxes.forEach(function(chk) {
+        chk.checked = anyUnchecked;
+        if (chk.checked && action !== 'view') {
+            const viewChk = document.querySelector(`.perm-row-${chk.dataset.module}.perm-col-view`);
+            if (viewChk) viewChk.checked = true;
+        }
+    });
+}
 </script>
 {% endblock %}

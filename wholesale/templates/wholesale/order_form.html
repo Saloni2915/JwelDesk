@@ -133,7 +133,7 @@
 
         <div class="d-flex justify-content-end gap-2 mb-5">
             <a href="{% url 'wholesale:order_list' %}" class="btn btn-outline-secondary">Cancel</a>
-            <button type="submit" class="jd-btn-gold">Create Wholesale Order</button>
+            <button type="submit" id="createOrderBtn" class="jd-btn-gold"><i class="bi bi-plus-circle me-1"></i> Create Wholesale Order</button>
         </div>
     </form>
 </div>
@@ -232,6 +232,24 @@ document.addEventListener('DOMContentLoaded', function() {
         newRow.querySelector('.stock-badge').textContent = '-';
         tableBody.appendChild(newRow);
     });
+
+    const orderForm = document.getElementById('orderForm');
+    const submitBtn = document.getElementById('createOrderBtn');
+    let isSubmitting = false;
+
+    if (orderForm) {
+        orderForm.addEventListener('submit', function(e) {
+            if (isSubmitting) {
+                e.preventDefault();
+                return false;
+            }
+            isSubmitting = true;
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Creating Wholesale Order...';
+            }
+        });
+    }
 });
 </script>
 {% endblock %}

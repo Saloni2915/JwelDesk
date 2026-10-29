@@ -16,7 +16,7 @@ from custom_orders.models import CustomOrder
 from inventory.models import JewelleryItem, StockMovement
 from inventory.stock import apply_stock_change
 from team.models import EmployeePermission
-from team.permissions import require_permission
+from team.permissions import require_permission, check_branch_access
 
 from .forms import (
     KarigarCancelSettlementForm,
@@ -39,14 +39,20 @@ PAGE_SIZE = 15
 def dashboard(request):
     """Manufacturing & Karigar operational command center."""
     today = timezone.localdate()
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
 
     # Metrics
-    total_active_karigars = Karigar.objects.filter(tenant=request.tenant, status=Karigar.STATUS_ACTIVE).count()
-    total_karigars = Karigar.objects.filter(tenant=request.tenant).count()
+    karigar_qs = Karigar.objects.filter(tenant=request.tenant)
+    if active_b:
+        karigar_qs = karigar_qs.filter(branch=active_b)
+    total_active_karigars = karigar_qs.filter(status=Karigar.STATUS_ACTIVE).count()
+    total_karigars = karigar_qs.count()
 
     active_assignments = KarigarWorkAssignment.objects.filter(tenant=request.tenant).exclude(
         status__in=[KarigarWorkAssignment.STATUS_RECEIVED, KarigarWorkAssignment.STATUS_CANCELLED]
     )
+    if active_b:
+        active_assignments = active_assignments.filter(branch=active_b)
 
     work_assigned = active_assignments.filter(status=KarigarWorkAssignment.STATUS_ASSIGNED).count()
     work_in_progress = active_assignments.filter(status=KarigarWorkAssignment.STATUS_IN_PROGRESS).count()
@@ -68,17 +74,26 @@ def dashboard(request):
 
     # Total labour dues
     all_valid_works = KarigarWorkAssignment.objects.filter(tenant=request.tenant).exclude(status=KarigarWorkAssignment.STATUS_CANCELLED)
+    settlement_qs = KarigarSettlement.objects.filter(tenant=request.tenant, status='Completed')
+    if active_b:
+        all_valid_works = all_valid_works.filter(branch=active_b)
+        settlement_qs = settlement_qs.filter(branch=active_b)
     total_charges = all_valid_works.aggregate(total=Sum('total_charge'))['total'] or Decimal('0.00')
-    total_paid = KarigarSettlement.objects.filter(tenant=request.tenant, status='Completed').aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    total_paid = settlement_qs.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
     pending_dues = max(Decimal('0.00'), total_charges - total_paid)
 
     # Recent lists
-    recent_assignments = KarigarWorkAssignment.objects.filter(tenant=request.tenant).select_related('karigar', 'customer').order_by('-id')[:8]
-    recent_settlements = KarigarSettlement.objects.filter(tenant=request.tenant).select_related('karigar', 'processed_by').order_by('-id')[:6]
+    assign_qs = KarigarWorkAssignment.objects.filter(tenant=request.tenant)
+    settle_qs = KarigarSettlement.objects.filter(tenant=request.tenant)
+    if active_b:
+        assign_qs = assign_qs.filter(branch=active_b)
+        settle_qs = settle_qs.filter(branch=active_b)
+    recent_assignments = assign_qs.select_related('karigar', 'customer').order_by('-id')[:8]
+    recent_settlements = settle_qs.select_related('karigar', 'processed_by').order_by('-id')[:6]
     overdue_list = overdue_assignments.select_related('karigar', 'customer').order_by('expected_completion_date')[:6]
 
     # Top artisans by active assignments
-    top_karigars = Karigar.objects.filter(tenant=request.tenant, status=Karigar.STATUS_ACTIVE).annotate(
+    top_karigars = karigar_qs.filter(status=Karigar.STATUS_ACTIVE).annotate(
         active_count=Count(
             'assignments',
             filter=Q(assignments__status__in=[
@@ -118,7 +133,8 @@ def dashboard(request):
 @require_permission(EmployeePermission.MODULE_KARIGAR, 'view')
 def karigar_list(request):
     """Artisan directory with search, specialization filters, and status toggle."""
-    queryset = Karigar.objects.filter(tenant=request.tenant).annotate(
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
+    queryset = Karigar.objects.filter(tenant=request.tenant).select_related('branch').annotate(
         active_work_count=Count(
             'assignments',
             filter=Q(assignments__status__in=[
@@ -127,6 +143,8 @@ def karigar_list(request):
             ])
         )
     ).order_by('name')
+    if active_b:
+        queryset = queryset.filter(Q(branch=active_b) | Q(branch__isnull=True))
 
     q = request.GET.get('q', '').strip()
     if q:
@@ -167,16 +185,19 @@ def karigar_list(request):
 @require_permission(EmployeePermission.MODULE_KARIGAR, 'add')
 def karigar_create(request):
     """Add a new Karigar master record."""
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     if request.method == 'POST':
-        form = KarigarForm(request.POST, tenant=request.tenant)
+        form = KarigarForm(request.POST, tenant=request.tenant, branch=active_b)
         if form.is_valid():
             karigar = form.save(commit=False)
             karigar.tenant = request.tenant
+            if not karigar.branch and active_b:
+                karigar.branch = active_b
             karigar.save()
             messages.success(request, f"Karigar '{karigar.name}' ({karigar.karigar_code}) created successfully.")
             return redirect('karigar:karigar_detail', pk=karigar.pk)
     else:
-        form = KarigarForm(tenant=request.tenant)
+        form = KarigarForm(tenant=request.tenant, branch=active_b)
 
     return render(request, 'karigar/karigar_form.html', {
         'page_title': 'Add New Karigar',
@@ -189,7 +210,9 @@ def karigar_create(request):
 @require_permission(EmployeePermission.MODULE_KARIGAR, 'view')
 def karigar_detail(request, pk):
     """Detailed profile of a Karigar with active work, history, and accountability."""
-    karigar = get_object_or_404(Karigar, pk=pk, tenant=request.tenant)
+    karigar = get_object_or_404(Karigar.objects.select_related('branch'), pk=pk, tenant=request.tenant)
+    if not check_branch_access(request, karigar):
+        raise PermissionDenied("You do not have access to Karigars in this branch.")
 
     # Active assignments
     active_works = karigar.assignments.filter(
@@ -240,15 +263,19 @@ def karigar_detail(request, pk):
 @require_permission(EmployeePermission.MODULE_KARIGAR, 'edit')
 def karigar_edit(request, pk):
     """Edit Karigar details."""
-    karigar = get_object_or_404(Karigar, pk=pk, tenant=request.tenant)
+    karigar = get_object_or_404(Karigar.objects.select_related('branch'), pk=pk, tenant=request.tenant)
+    if not check_branch_access(request, karigar):
+        raise PermissionDenied("You do not have access to Karigars in this branch.")
+
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     if request.method == 'POST':
-        form = KarigarForm(request.POST, instance=karigar, tenant=request.tenant)
+        form = KarigarForm(request.POST, instance=karigar, tenant=request.tenant, branch=active_b)
         if form.is_valid():
             karigar = form.save()
             messages.success(request, f"Karigar '{karigar.name}' updated successfully.")
             return redirect('karigar:karigar_detail', pk=karigar.pk)
     else:
-        form = KarigarForm(instance=karigar, tenant=request.tenant)
+        form = KarigarForm(instance=karigar, tenant=request.tenant, branch=active_b)
 
     return render(request, 'karigar/karigar_form.html', {
         'page_title': f"Edit Karigar: {karigar.name}",
@@ -283,9 +310,12 @@ def karigar_toggle_status(request, pk):
 @require_permission(EmployeePermission.MODULE_KARIGAR, 'view')
 def assignment_list(request):
     """List work assignments with multi-factor search and filtering."""
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     queryset = KarigarWorkAssignment.objects.filter(tenant=request.tenant).select_related(
-        'karigar', 'customer', 'custom_order', 'inventory_item'
+        'karigar', 'customer', 'custom_order', 'inventory_item', 'branch'
     ).order_by('-issue_date', '-id')
+    if active_b:
+        queryset = queryset.filter(Q(branch=active_b) | Q(branch__isnull=True))
 
     q = request.GET.get('q', '').strip()
     if q:
@@ -339,17 +369,22 @@ def assignment_list(request):
 def pending_assignments(request):
     """Dedicated dashboard view for pending and overdue jobs."""
     today = timezone.localdate()
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
 
     overdue_qs = KarigarWorkAssignment.objects.filter(
         tenant=request.tenant,
         expected_completion_date__lt=today,
         status__in=[KarigarWorkAssignment.STATUS_ASSIGNED, KarigarWorkAssignment.STATUS_IN_PROGRESS]
-    ).select_related('karigar', 'customer').order_by('expected_completion_date')
+    ).select_related('karigar', 'customer', 'branch').order_by('expected_completion_date')
 
     pending_qs = KarigarWorkAssignment.objects.filter(
         tenant=request.tenant,
         status__in=[KarigarWorkAssignment.STATUS_ASSIGNED, KarigarWorkAssignment.STATUS_IN_PROGRESS, KarigarWorkAssignment.STATUS_COMPLETED]
-    ).select_related('karigar', 'customer').order_by('priority', 'expected_completion_date')
+    ).select_related('karigar', 'customer', 'branch').order_by('priority', 'expected_completion_date')
+
+    if active_b:
+        overdue_qs = overdue_qs.filter(Q(branch=active_b) | Q(branch__isnull=True))
+        pending_qs = pending_qs.filter(Q(branch=active_b) | Q(branch__isnull=True))
 
     context = {
         'page_title': 'Pending & Overdue Work Assignments',
@@ -364,6 +399,7 @@ def pending_assignments(request):
 @require_permission(EmployeePermission.MODULE_KARIGAR, 'add')
 def assignment_create(request):
     """Issue a new work order to a Karigar with inventory and stock integration."""
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     initial_data = {}
 
     karigar_id = request.GET.get('karigar')
@@ -401,11 +437,15 @@ def assignment_create(request):
             pass
 
     if request.method == 'POST':
-        form = KarigarWorkAssignmentForm(request.POST, request.FILES, tenant=request.tenant)
+        form = KarigarWorkAssignmentForm(request.POST, request.FILES, tenant=request.tenant, branch=active_b)
         if form.is_valid():
             with transaction.atomic():
                 assignment = form.save(commit=False)
                 assignment.tenant = request.tenant
+                if not assignment.branch and active_b:
+                    assignment.branch = active_b
+                elif not assignment.branch and getattr(assignment.karigar, 'branch', None):
+                    assignment.branch = assignment.karigar.branch
                 assignment.assigned_by = request.user
 
                 # Inventory Integration: If an existing item is selected and user opted to deduct from stock
@@ -442,7 +482,7 @@ def assignment_create(request):
             messages.success(request, f"Work assignment '{assignment.assignment_number}' issued successfully to {assignment.karigar.name}.")
             return redirect('karigar:assignment_detail', pk=assignment.pk)
     else:
-        form = KarigarWorkAssignmentForm(initial=initial_data, tenant=request.tenant)
+        form = KarigarWorkAssignmentForm(initial=initial_data, tenant=request.tenant, branch=active_b)
 
     return render(request, 'karigar/assignment_form.html', {
         'page_title': 'Issue Work Assignment',
@@ -458,11 +498,13 @@ def assignment_detail(request, pk):
     assignment = get_object_or_404(
         KarigarWorkAssignment.objects.select_related(
             'karigar', 'customer', 'custom_order', 'inventory_item',
-            'assigned_by', 'received_by', 'stock_movement_issued', 'stock_movement_received'
+            'assigned_by', 'received_by', 'stock_movement_issued', 'stock_movement_received', 'branch'
         ),
         pk=pk,
         tenant=request.tenant,
     )
+    if not check_branch_access(request, assignment):
+        raise PermissionDenied("You do not have permission to view work assignments in this branch.")
 
     settlements = assignment.settlements.all().order_by('-payment_date')
 
@@ -478,20 +520,23 @@ def assignment_detail(request, pk):
 @require_permission(EmployeePermission.MODULE_KARIGAR, 'edit')
 def assignment_edit(request, pk):
     """Edit work assignment instructions / parameters before completion."""
-    assignment = get_object_or_404(KarigarWorkAssignment, pk=pk, tenant=request.tenant)
+    assignment = get_object_or_404(KarigarWorkAssignment.objects.select_related('branch'), pk=pk, tenant=request.tenant)
+    if not check_branch_access(request, assignment):
+        raise PermissionDenied("You do not have permission to edit work assignments in this branch.")
 
     if assignment.status in [KarigarWorkAssignment.STATUS_RECEIVED, KarigarWorkAssignment.STATUS_CANCELLED]:
         messages.error(request, f"Cannot edit an assignment with status '{assignment.status}'.")
         return redirect('karigar:assignment_detail', pk=assignment.pk)
 
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     if request.method == 'POST':
-        form = KarigarWorkAssignmentForm(request.POST, request.FILES, instance=assignment, tenant=request.tenant)
+        form = KarigarWorkAssignmentForm(request.POST, request.FILES, instance=assignment, tenant=request.tenant, branch=active_b)
         if form.is_valid():
             assignment = form.save()
             messages.success(request, f"Work assignment '{assignment.assignment_number}' updated successfully.")
             return redirect('karigar:assignment_detail', pk=assignment.pk)
     else:
-        form = KarigarWorkAssignmentForm(instance=assignment, tenant=request.tenant)
+        form = KarigarWorkAssignmentForm(instance=assignment, tenant=request.tenant, branch=active_b)
 
     return render(request, 'karigar/assignment_form.html', {
         'page_title': f"Edit Work Assignment: {assignment.assignment_number}",
@@ -505,7 +550,9 @@ def assignment_edit(request, pk):
 @require_permission(EmployeePermission.MODULE_KARIGAR, 'edit')
 def assignment_status_update(request, pk):
     """Move assignment status (e.g. In Progress, Completed, Cancelled)."""
-    assignment = get_object_or_404(KarigarWorkAssignment, pk=pk, tenant=request.tenant)
+    assignment = get_object_or_404(KarigarWorkAssignment.objects.select_related('branch'), pk=pk, tenant=request.tenant)
+    if not check_branch_access(request, assignment):
+        raise PermissionDenied("You do not have permission to update work assignments in this branch.")
 
     if request.method == 'POST':
         target_status = request.POST.get('status')
@@ -551,7 +598,9 @@ def assignment_status_update(request, pk):
 @require_permission(EmployeePermission.MODULE_KARIGAR, 'edit')
 def assignment_receive(request, pk):
     """Receive completed work from Karigar, perform weight accountability & finalize charges."""
-    assignment = get_object_or_404(KarigarWorkAssignment, pk=pk, tenant=request.tenant)
+    assignment = get_object_or_404(KarigarWorkAssignment.objects.select_related('branch'), pk=pk, tenant=request.tenant)
+    if not check_branch_access(request, assignment):
+        raise PermissionDenied("You do not have permission to receive work assignments in this branch.")
 
     if assignment.status == KarigarWorkAssignment.STATUS_RECEIVED:
         messages.info(request, "This assignment has already been received.")
@@ -629,7 +678,10 @@ def assignment_receive(request, pk):
 @require_permission(EmployeePermission.MODULE_KARIGAR, 'view')
 def settlement_list(request):
     """List labour payment settlements with filter and pagination."""
-    queryset = KarigarSettlement.objects.filter(tenant=request.tenant).select_related('karigar', 'processed_by').order_by('-payment_date', '-id')
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
+    queryset = KarigarSettlement.objects.filter(tenant=request.tenant).select_related('karigar', 'processed_by', 'branch').order_by('-payment_date', '-id')
+    if active_b:
+        queryset = queryset.filter(Q(branch=active_b) | Q(branch__isnull=True))
 
     q = request.GET.get('q', '').strip()
     if q:
@@ -676,15 +728,20 @@ def settlement_list(request):
 @require_permission(EmployeePermission.MODULE_KARIGAR, 'add')
 def settlement_create(request):
     """Record a settlement payment to a Karigar and allocate against assignments."""
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
     karigar_id = request.GET.get('karigar')
     assignment_id = request.GET.get('assignment')
 
     if request.method == 'POST':
-        form = KarigarSettlementForm(request.POST, tenant=request.tenant)
+        form = KarigarSettlementForm(request.POST, tenant=request.tenant, branch=active_b)
         if form.is_valid():
             with transaction.atomic():
                 settlement = form.save(commit=False)
                 settlement.tenant = request.tenant
+                if not settlement.branch and active_b:
+                    settlement.branch = active_b
+                elif not settlement.branch and getattr(settlement.karigar, 'branch', None):
+                    settlement.branch = settlement.karigar.branch
                 settlement.processed_by = request.user
                 settlement.save()
                 form.save_m2m()
@@ -710,7 +767,7 @@ def settlement_create(request):
             )
             return redirect('karigar:settlement_detail', pk=settlement.pk)
     else:
-        form = KarigarSettlementForm(karigar_id=karigar_id, tenant=request.tenant)
+        form = KarigarSettlementForm(karigar_id=karigar_id, tenant=request.tenant, branch=active_b)
         if assignment_id:
             try:
                 asg = KarigarWorkAssignment.objects.filter(tenant=request.tenant).get(pk=assignment_id)
@@ -730,10 +787,13 @@ def settlement_create(request):
 def settlement_detail(request, pk):
     """Settlement voucher display and printable payment receipt."""
     settlement = get_object_or_404(
-        KarigarSettlement.objects.select_related('karigar', 'processed_by', 'cancelled_by'),
+        KarigarSettlement.objects.select_related('karigar', 'processed_by', 'cancelled_by', 'branch'),
         pk=pk,
         tenant=request.tenant,
     )
+    if not check_branch_access(request, settlement):
+        raise PermissionDenied("You do not have permission to view settlements in this branch.")
+
     assignments = settlement.assignments.all()
     from accounts.models import CompanySettings
     from sales.invoice_utils import amount_to_words_inr
@@ -756,10 +816,13 @@ def settlement_detail(request, pk):
 def settlement_receipt_pdf(request, pk):
     """Download or stream official PDF Payment Receipt for a Karigar settlement."""
     settlement = get_object_or_404(
-        KarigarSettlement.objects.select_related('karigar', 'processed_by', 'cancelled_by'),
+        KarigarSettlement.objects.select_related('karigar', 'processed_by', 'cancelled_by', 'branch'),
         pk=pk,
         tenant=request.tenant,
     )
+    if not check_branch_access(request, settlement):
+        raise PermissionDenied("You do not have permission to view settlements in this branch.")
+
     from .receipt_pdf import generate_karigar_receipt_pdf
     pdf_bytes = generate_karigar_receipt_pdf(settlement)
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
@@ -775,7 +838,9 @@ def settlement_receipt_pdf(request, pk):
 @require_permission(EmployeePermission.MODULE_KARIGAR, 'delete')
 def settlement_cancel(request, pk):
     """Safely cancel a settlement voucher and roll back assignment paid balances."""
-    settlement = get_object_or_404(KarigarSettlement, pk=pk, tenant=request.tenant)
+    settlement = get_object_or_404(KarigarSettlement.objects.select_related('branch'), pk=pk, tenant=request.tenant)
+    if not check_branch_access(request, settlement):
+        raise PermissionDenied("You do not have permission to cancel settlements in this branch.")
 
     if settlement.status == KarigarSettlement.STATUS_CANCELLED:
         messages.warning(request, "This settlement is already cancelled.")
@@ -820,9 +885,12 @@ def reports(request):
     start_date = request.GET.get('start_date', '')
     end_date = request.GET.get('end_date', '')
     karigar_id = request.GET.get('karigar', '')
+    active_b = request.branch if not getattr(request, 'is_all_branches', False) else None
 
     # Base assignments
-    assignments = KarigarWorkAssignment.objects.filter(tenant=request.tenant).select_related('karigar', 'customer').order_by('-issue_date')
+    assignments = KarigarWorkAssignment.objects.filter(tenant=request.tenant).select_related('karigar', 'customer', 'branch').order_by('-issue_date')
+    if active_b:
+        assignments = assignments.filter(Q(branch=active_b) | Q(branch__isnull=True))
 
     if karigar_id:
         assignments = assignments.filter(karigar_id=karigar_id)

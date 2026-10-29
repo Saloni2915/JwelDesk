@@ -3,7 +3,7 @@ from decimal import Decimal
 from django import forms
 from django.core.exceptions import ValidationError
 
-from accounts.models import validate_gstin, clean_10_digit_phone
+from accounts.models import validate_gstin, clean_10_digit_phone, validate_proper_email
 from inventory.models import JewelleryItem, Category
 from .models import (
     RetailerParty,
@@ -22,12 +22,13 @@ class RetailerPartyForm(forms.ModelForm):
     class Meta:
         model = RetailerParty
         fields = [
-            'name', 'contact_person', 'phone', 'email',
+            'name', 'branch', 'contact_person', 'phone', 'email',
             'billing_address', 'shipping_address',
             'gstin', 'pan_number', 'credit_limit',
             'payment_terms_days', 'opening_balance', 'is_active', 'notes',
         ]
         widgets = {
+            'branch': forms.Select(attrs={'class': 'form-select'}),
             'billing_address': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
             'shipping_address': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
             'notes': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
@@ -49,9 +50,23 @@ class RetailerPartyForm(forms.ModelForm):
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
-    def __init__(self, *args, tenant=None, **kwargs):
+    def __init__(self, *args, tenant=None, branch=None, **kwargs):
         self.tenant = tenant
         super().__init__(*args, **kwargs)
+        if 'branch' in self.fields:
+            self.fields['branch'].required = False
+            self.fields['branch'].empty_label = "Select Branch (Main Showroom / Depo)"
+            if self.tenant:
+                from team.models import Branch
+                self.fields['branch'].queryset = Branch.objects.filter(tenant=self.tenant, is_active=True).order_by('-is_default', 'name')
+            if not self.instance.pk:
+                if branch:
+                    self.initial['branch'] = branch
+                elif self.tenant:
+                    from team.models import Branch
+                    default_b = Branch.objects.filter(tenant=self.tenant, is_default=True, is_active=True).first()
+                    if default_b:
+                        self.initial['branch'] = default_b
 
     def clean_name(self):
         name = (self.cleaned_data.get('name') or '').strip()
@@ -74,6 +89,12 @@ class RetailerPartyForm(forms.ModelForm):
     def clean_phone(self):
         phone = (self.cleaned_data.get('phone') or '').strip()
         return clean_10_digit_phone(phone, field_label='Phone / Mobile number', required=True)
+
+    def clean_email(self):
+        email = (self.cleaned_data.get('email') or '').strip().lower()
+        if not email:
+            return ''
+        return validate_proper_email(email, field_label='Email address', required=False)
 
 
 class WholesaleOrderForm(forms.ModelForm):

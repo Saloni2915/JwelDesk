@@ -144,6 +144,8 @@ class JewelDeskSignUpForm(UserCreationForm):
         email = (self.cleaned_data.get('email') or '').strip().lower()
         if not email:
             raise forms.ValidationError('Email address is required.')
+        from .models import validate_proper_email
+        email = validate_proper_email(email, field_label='Email address', required=True)
         User = get_user_model()
         if User.objects.filter(email__iexact=email).exists():
             raise forms.ValidationError('An account with this email already exists.')
@@ -253,8 +255,12 @@ class CompanySettingsForm(forms.ModelForm):
         if self.errors:
             return cleaned
 
-        if email and '@' not in email:
-            self.add_error('email', 'Enter a valid email address.')
+        if email:
+            from .models import validate_proper_email
+            try:
+                cleaned['email'] = validate_proper_email(email, field_label='Email address', required=False)
+            except forms.ValidationError as err:
+                self.add_error('email', err.message if hasattr(err, 'message') else str(err))
         if phone:
             from .models import clean_10_digit_phone
             try:
