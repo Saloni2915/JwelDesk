@@ -21,7 +21,16 @@ urlpatterns = [
     path('subscriptions/<int:tenant_id>/update/', views.subscription_update_view, name='subscription_update'),
     path('subscriptions/<int:tenant_id>/record-payment/', views.subscription_record_payment_view, name='subscription_record_payment'),
     
-    # Demo meetings and lead management
+    # Lead Management & Prospective Showrooms
+    path('leads/', views.lead_list_view, name='lead_list'),
+    path('leads/new/', views.lead_create_view, name='lead_create'),
+    path('leads/<int:lead_id>/', views.lead_detail_view, name='lead_detail'),
+    path('leads/<int:lead_id>/edit/', views.lead_edit_view, name='lead_edit'),
+    path('leads/<int:lead_id>/note/', views.lead_add_note_view, name='lead_add_note'),
+    path('leads/<int:lead_id>/status/', views.lead_update_status_view, name='lead_update_status'),
+    path('leads/<int:lead_id>/action/', views.demo_action_view, name='lead_action'),
+
+    # Demo meetings and legacy lead management aliases
     path('demos/', views.demo_list_view, name='demo_list'),
     path('demos/new/', views.demo_create_view, name='demo_create'),
     path('demos/<int:lead_id>/', views.demo_detail_view, name='demo_detail'),

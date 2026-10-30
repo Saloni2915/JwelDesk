@@ -310,6 +310,7 @@ class EmployeePermission(models.Model):
     MODULE_SETTINGS      = 'settings'
     MODULE_KARIGAR       = 'karigar'
     MODULE_WHOLESALE     = 'wholesale'
+    MODULE_GIRVI         = 'girvi'
 
     MODULE_CHOICES = [
         (MODULE_DASHBOARD,     'Dashboard'),
@@ -324,6 +325,7 @@ class EmployeePermission(models.Model):
         (MODULE_SETTINGS,      'Settings'),
         (MODULE_KARIGAR,       'Karigar / Manufacturing'),
         (MODULE_WHOLESALE,     'Wholesale / Supplier'),
+        (MODULE_GIRVI,         'Girvi / Pledge Loans'),
     ]
 
     MODULES = [c[0] for c in MODULE_CHOICES]

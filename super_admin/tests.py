@@ -872,7 +872,7 @@ class SuperAdminPlatformArchitectureTests(TestCase):
         self.assertContains(res, "Dashboard")
         self.assertContains(res, "Businesses")
         self.assertContains(res, "Subscriptions &amp; Plans")
-        self.assertContains(res, "Demo Requests &amp; Leads")
+        self.assertContains(res, "Leads")
         self.assertContains(res, "Support &amp; Feedback")
         self.assertContains(res, "Platform Settings")
 

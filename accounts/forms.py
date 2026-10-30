@@ -184,6 +184,10 @@ class JewelDeskSignUpForm(UserCreationForm):
             tenant = Tenant.objects.create(name=shop_name, owner=user, business_type=b_type)
             CompanySettings.objects.create(tenant=tenant, company_name=shop_name)
 
+            # Auto-provision 15-day Free Trial for newly registered tenant
+            from super_admin.trial_services import create_tenant_trial
+            create_tenant_trial(tenant)
+
             # Create default Tenant Administrator Employee profile for this store owner in their own shop
             from team.models import Employee
             Employee.ensure_tenant_admin(tenant, user)

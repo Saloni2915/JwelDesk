@@ -22,5 +22,8 @@ urlpatterns = [
     path('password-reset/done/', views.password_reset_done_view, name='password_reset_done'),
     path('password-reset/confirm/<uidb64>/<token>/', views.password_reset_confirm_view, name='password_reset_confirm'),
     path('password-reset/complete/', views.password_reset_complete_view, name='password_reset_complete'),
+
+    # Subscription and 15-day Trial Expiry
+    path('trial-expired/', views.trial_expired_view, name='trial_expired'),
 ]
 

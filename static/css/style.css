@@ -1528,40 +1528,41 @@ a.jd-customer-name:hover {
    Applies to phones & tablets (iPad portrait 768-834px)
    -------------------------------------------- */
 @media (max-width: 991.98px) {
-    /* Off-Canvas Navigation Drawer */
+    /* Off-Canvas Navigation Drawer - Full Height Native Mobile Drawer */
     .sidebar {
         position: fixed !important;
-        top: 56px !important;
+        top: 0 !important;
         left: 0 !important;
         bottom: 0 !important;
-        width: 280px !important;
-        max-width: 85vw !important;
-        height: calc(100vh - 56px) !important;
-        max-height: calc(100vh - 56px) !important;
+        width: 285px !important;
+        max-width: 86vw !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
         transform: translateX(-100%) !important;
         transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
         box-shadow: none !important;
-        z-index: 1050 !important;
+        z-index: 1060 !important;
+        background: var(--bg-primary, #110e0a) !important;
     }
 
     body.sidebar-mobile-open .sidebar {
         transform: translateX(0) !important;
-        box-shadow: 6px 0 25px rgba(0, 0, 0, 0.45) !important;
+        box-shadow: 8px 0 32px rgba(0, 0, 0, 0.65) !important;
     }
 
     .sidebar-backdrop {
         display: none;
-        position: fixed;
-        top: 56px;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.55);
-        z-index: 1045;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        background: rgba(0, 0, 0, 0.65) !important;
+        z-index: 1055 !important;
         opacity: 0;
         transition: opacity 0.25s ease;
-        backdrop-filter: blur(2px);
-        -webkit-backdrop-filter: blur(2px);
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
     }
 
     body.sidebar-mobile-open .sidebar-backdrop {
@@ -1574,12 +1575,19 @@ a.jd-customer-name:hover {
         touch-action: none;
     }
 
-    /* Content Area expands to 100% on tablet & mobile */
+    /* Content Area expands to 100% on tablet & mobile with bottom clearance for PWA app bar */
     .main-content {
         margin-left: 0 !important;
         width: 100% !important;
         max-width: 100% !important;
-        padding: 1.25rem 1rem !important;
+        padding: 1.25rem 0.85rem !important;
+        padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    /* Floating support widget stays safely above the mobile bottom bar */
+    #jdSupportWidget {
+        bottom: calc(74px + env(safe-area-inset-bottom, 0px)) !important;
+        right: 14px !important;
     }
 
     /* Dashboard Quick Actions on tablet */
@@ -1958,3 +1966,144 @@ a.jd-customer-name:hover {
     transform: translateY(-1px);
 }
 
+
+/* --------------------------------------------
+   PWA & MOBILE RESPONSIVE ENHANCEMENTS
+   -------------------------------------------- */
+
+/* Sidebar Toggler Button */
+.jd-sidebar-toggle-btn {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    color: var(--accent, #ECC86A) !important;
+    background: rgba(212, 175, 55, 0.12);
+    border: 1px solid rgba(212, 175, 55, 0.28) !important;
+    padding: 0 !important;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s ease, transform 0.12s ease;
+}
+
+.jd-sidebar-toggle-btn:hover,
+.jd-sidebar-toggle-btn:focus {
+    background: rgba(212, 175, 55, 0.24);
+    color: #fff !important;
+}
+
+.jd-sidebar-toggle-btn:active {
+    transform: scale(0.94);
+}
+
+.jd-sidebar-close-btn {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted, #a1a1aa) !important;
+    border-radius: 6px;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+
+.jd-sidebar-close-btn:hover {
+    color: #fff !important;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* Mobile User Avatar Button */
+.jd-mobile-user-avatar-btn {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.jd-mobile-user-avatar-btn:active {
+    transform: scale(0.92);
+}
+
+/* --------------------------------------------
+   PWA MOBILE BOTTOM NAVIGATION BAR (< 992px)
+   -------------------------------------------- */
+.mobile-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 58px;
+    background: var(--bg-primary, #110e0a);
+    border-top: 1px solid var(--border, rgba(212, 175, 55, 0.22));
+    display: flex;
+    align-items: stretch;
+    justify-content: space-around;
+    z-index: 1040;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.42);
+}
+
+[data-theme="light"] .mobile-bottom-nav {
+    background: #ffffff !important;
+    border-top-color: #e2e8f0 !important;
+    box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="gold"] .mobile-bottom-nav {
+    background: #171511 !important;
+    border-top-color: rgba(212, 175, 55, 0.35) !important;
+}
+
+.mobile-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 4px;
+    color: var(--text-muted, #94a3b8);
+    text-decoration: none;
+    font-size: 0.72rem;
+    font-weight: 500;
+    transition: color 0.15s ease, transform 0.15s ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    cursor: pointer;
+}
+
+.mobile-nav-item:hover,
+.mobile-nav-item:focus {
+    color: var(--accent, #ECC86A);
+}
+
+.mobile-nav-item:active {
+    transform: scale(0.92);
+}
+
+.mobile-nav-item.active {
+    color: var(--accent, #ECC86A) !important;
+    font-weight: 700;
+}
+
+.mobile-nav-item.active .mobile-nav-icon {
+    transform: translateY(-1px);
+    color: var(--accent, #ECC86A) !important;
+}
+
+.mobile-nav-icon {
+    font-size: 1.25rem;
+    line-height: 1.1;
+    margin-bottom: 2px;
+}
+
+.mobile-nav-label {
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    font-size: 0.68rem;
+}

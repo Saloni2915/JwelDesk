@@ -1,0 +1,369 @@
+{% extends 'super_admin/base_super_admin.html' %}
+
+{% block title %}Lead Management | Super Admin Portal{% endblock %}
+{% block page_title %}Lead Management{% endblock %}
+
+{% block content %}
+<!-- Top Header & Primary Action Buttons -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <p class="text-muted mb-0" style="font-size: 0.88rem;">
+            Track, qualify, and manage prospective jewellery showroom clients and demo inquiries.
+        </p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="{% url 'super_admin:reports_export_csv' 'leads' %}" class="btn btn-sm btn-outline-secondary text-body">
+            <i class="bi bi-download me-1"></i> Export CSV
+        </a>
+        <a href="{% url 'super_admin:lead_create' %}" class="btn btn-sm btn-gold">
+            <i class="bi bi-person-plus-fill me-1"></i> Add New Lead
+        </a>
+    </div>
+</div>
+
+<!-- Section 1: Dashboard Summary Cards (Database Counts) -->
+<div class="row g-3 mb-4">
+    <!-- Card 1: Total Leads -->
+    <div class="col-6 col-md-4 col-xl-2">
+        <a href="?tab=all" class="text-decoration-none">
+            <div class="sa-card p-3 h-100 transition-all {% if tab == 'all' or not tab and not status_filter %}border-gold shadow-sm{% endif %}" style="cursor: pointer;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="small text-muted fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Total Leads</span>
+                    <i class="bi bi-people-fill" style="color: var(--sa-gold); font-size: 1.1rem;"></i>
+                </div>
+                <div class="h3 fw-bold mb-1" style="color: var(--sa-gold); font-family: 'Cinzel', serif;">{{ total_leads_count }}</div>
+                <div class="small text-muted" style="font-size: 0.75rem;">All registered inquiries</div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Card 2: New Leads -->
+    <div class="col-6 col-md-4 col-xl-2">
+        <a href="?tab=new" class="text-decoration-none">
+            <div class="sa-card p-3 h-100 transition-all {% if tab == 'new' or status_filter == 'new' %}border-info shadow-sm{% endif %}" style="cursor: pointer;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="small text-muted fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">New Leads</span>
+                    <i class="bi bi-sparkles text-info" style="font-size: 1.1rem;"></i>
+                </div>
+                <div class="h3 fw-bold mb-1 text-info" style="font-family: 'Cinzel', serif;">{{ new_leads_count }}</div>
+                <div class="small text-muted" style="font-size: 0.75rem;">Awaiting first outreach</div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Card 3: Contacted Leads -->
+    <div class="col-6 col-md-4 col-xl-2">
+        <a href="?tab=contacted" class="text-decoration-none">
+            <div class="sa-card p-3 h-100 transition-all {% if tab == 'contacted' or status_filter == 'contacted' %}border-primary shadow-sm{% endif %}" style="cursor: pointer;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="small text-muted fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Contacted</span>
+                    <i class="bi bi-telephone-outbound text-primary" style="font-size: 1.1rem;"></i>
+                </div>
+                <div class="h3 fw-bold mb-1 text-primary" style="font-family: 'Cinzel', serif;">{{ contacted_leads_count }}</div>
+                <div class="small text-muted" style="font-size: 0.75rem;">In active discussion</div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Card 4: Interested Leads -->
+    <div class="col-6 col-md-4 col-xl-2">
+        <a href="?tab=interested" class="text-decoration-none">
+            <div class="sa-card p-3 h-100 transition-all {% if tab == 'interested' or status_filter == 'interested' %}border-warning shadow-sm{% endif %}" style="cursor: pointer;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="small text-muted fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Interested</span>
+                    <i class="bi bi-star-fill text-warning" style="font-size: 1.1rem;"></i>
+                </div>
+                <div class="h3 fw-bold mb-1 text-warning" style="font-family: 'Cinzel', serif;">{{ interested_leads_count }}</div>
+                <div class="small text-muted" style="font-size: 0.75rem;">High conversion intent</div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Card 5: Converted Leads -->
+    <div class="col-6 col-md-4 col-xl-2">
+        <a href="?tab=converted" class="text-decoration-none">
+            <div class="sa-card p-3 h-100 transition-all {% if tab == 'converted' or status_filter == 'converted' %}border-success shadow-sm{% endif %}" style="cursor: pointer;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="small text-muted fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Converted</span>
+                    <i class="bi bi-check-circle-fill text-success" style="font-size: 1.1rem;"></i>
+                </div>
+                <div class="h3 fw-bold mb-1 text-success" style="font-family: 'Cinzel', serif;">{{ converted_leads_count }}</div>
+                <div class="small text-muted" style="font-size: 0.75rem;">Showroom customer</div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Card 6: Not Interested Leads -->
+    <div class="col-6 col-md-4 col-xl-2">
+        <a href="?tab=not_interested" class="text-decoration-none">
+            <div class="sa-card p-3 h-100 transition-all {% if tab == 'not_interested' or status_filter == 'not_interested' %}border-secondary shadow-sm{% endif %}" style="cursor: pointer;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="small text-muted fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Not Interested</span>
+                    <i class="bi bi-x-circle text-muted" style="font-size: 1.1rem;"></i>
+                </div>
+                <div class="h3 fw-bold mb-1 text-muted" style="font-family: 'Cinzel', serif;">{{ not_interested_leads_count }}</div>
+                <div class="small text-muted" style="font-size: 0.75rem;">Closed / Lost leads</div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Section 2: Search, Filters & Query Controls -->
+<div class="sa-card mb-4">
+    <form method="get" class="row g-2 align-items-center">
+        {% if tab %}
+        <input type="hidden" name="tab" value="{{ tab }}">
+        {% endif %}
+
+        <!-- Search input (name, shop, phone, email, city) -->
+        <div class="col-12 col-md-4">
+            <div class="input-group">
+                <span class="input-group-text bg-transparent border-secondary text-muted">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" name="q" value="{{ q }}" class="form-control sa-input" placeholder="Search contact, showroom, phone, email, city...">
+            </div>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="col-6 col-md-2">
+            <select name="status" class="form-select sa-input" onchange="this.form.submit()">
+                <option value="all" {% if status_filter == 'all' or not status_filter %}selected{% endif %}>All Statuses</option>
+                {% for code, label in status_choices %}
+                <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Lead Source Filter -->
+        <div class="col-6 col-md-2">
+            <select name="source" class="form-select sa-input" onchange="this.form.submit()">
+                <option value="all" {% if source_filter == 'all' or not source_filter %}selected{% endif %}>All Sources</option>
+                {% for code, label in source_choices %}
+                <option value="{{ code }}" {% if source_filter == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- City Filter -->
+        <div class="col-6 col-md-2">
+            <select name="city" class="form-select sa-input" onchange="this.form.submit()">
+                <option value="all" {% if city_filter == 'all' or not city_filter %}selected{% endif %}>All Cities</option>
+                {% for c in distinct_cities %}
+                <option value="{{ c }}" {% if city_filter == c %}selected{% endif %}>{{ c }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Action / Submit / Reset -->
+        <div class="col-6 col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-gold flex-grow-1">
+                <i class="bi bi-funnel me-1"></i> Filter
+            </button>
+            {% if q or status_filter != 'all' or source_filter != 'all' or city_filter != 'all' or tab %}
+            <a href="{% url 'super_admin:lead_list' %}" class="btn btn-outline-secondary" title="Clear all filters">
+                <i class="bi bi-x-lg"></i>
+            </a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Section 3: Clean, Responsive Leads Table -->
+<div class="sa-card">
+    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+        <div class="small fw-semibold" style="color: var(--sa-text-secondary);">
+            Showing {{ page_obj.start_index|default:0 }}–{{ page_obj.end_index|default:0 }} of {{ total_filtered }} leads
+            {% if tab and tab != 'all' %}
+                <span class="badge bg-gold bg-opacity-20 text-gold ms-1">{{ tab|title }} Filter Active</span>
+            {% endif %}
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="small text-muted">Sorted by Created Date (Newest first)</span>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table sa-table align-middle">
+            <thead>
+                <tr>
+                    <th>Lead Name</th>
+                    <th>Shop / Business Name</th>
+                    <th>Phone Number</th>
+                    <th>Email</th>
+                    <th>City</th>
+                    <th>Lead Source</th>
+                    <th>Lead Status</th>
+                    <th>Created Date</th>
+                    <th>Assigned Person</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lead in page_obj %}
+                <tr>
+                    <!-- Lead Name (Contact person) -->
+                    <td>
+                        <div class="fw-bold" style="color: var(--sa-text); font-size: 0.92rem;">
+                            {{ lead.contact_name }}
+                        </div>
+                        {% if lead.business_size %}
+                        <div class="small text-muted">{{ lead.business_size }}</div>
+                        {% endif %}
+                    </td>
+
+                    <!-- Shop / Business Name -->
+                    <td>
+                        <div class="fw-semibold" style="color: var(--sa-gold); font-size: 0.90rem;">
+                            {{ lead.lead_name }}
+                        </div>
+                        <span class="badge bg-secondary bg-opacity-25 text-body border border-secondary border-opacity-25 mt-1" style="font-size: 0.72rem;">
+                            {{ lead.get_business_type_display }}
+                        </span>
+                        {% if lead.converted_tenant %}
+                        <div class="mt-1">
+                            <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30 small">
+                                <i class="bi bi-shop me-1"></i>{{ lead.converted_tenant.name }}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </td>
+
+                    <!-- Phone Number -->
+                    <td>
+                        <a href="tel:{{ lead.phone }}" class="text-decoration-none fw-semibold" style="color: var(--sa-gold); font-size: 0.88rem;">
+                            <i class="bi bi-telephone-fill me-1 small"></i>{{ lead.phone }}
+                        </a>
+                        {% if lead.phone %}
+                        <div class="mt-1">
+                            <a href="https://wa.me/91{{ lead.phone|cut:'+'|cut:' '|cut:'-' }}" target="_blank" class="badge bg-success bg-opacity-20 text-success text-decoration-none border border-success border-opacity-25" style="font-size: 0.70rem;">
+                                <i class="bi bi-whatsapp me-1"></i>WhatsApp
+                            </a>
+                        </div>
+                        {% endif %}
+                    </td>
+
+                    <!-- Email -->
+                    <td>
+                        {% if lead.email %}
+                        <a href="mailto:{{ lead.email }}" class="small text-decoration-none text-muted text-truncate d-inline-block" style="max-width: 160px;" title="{{ lead.email }}">
+                            <i class="bi bi-envelope me-1"></i>{{ lead.email }}
+                        </a>
+                        {% else %}
+                        <span class="text-muted small">—</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- City -->
+                    <td>
+                        {% if lead.city %}
+                        <span class="small" style="color: var(--sa-text-secondary);">
+                            <i class="bi bi-geo-alt me-1 text-muted"></i>{{ lead.city }}
+                        </span>
+                        {% else %}
+                        <span class="text-muted small">—</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Lead Source -->
+                    <td>
+                        <span class="badge bg-secondary bg-opacity-25 text-body" style="font-size: 0.75rem;">
+                            {{ lead.get_source_display }}
+                        </span>
+                    </td>
+
+                    <!-- Lead Status Badge -->
+                    <td>
+                        {% if lead.status == 'new' %}
+                        <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-30">New</span>
+                        {% elif lead.status == 'contacted' %}
+                        <span class="badge bg-primary bg-opacity-20 text-primary border border-primary border-opacity-30">Contacted</span>
+                        {% elif lead.status == 'interested' %}
+                        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30">Interested</span>
+                        {% elif lead.status == 'scheduled' %}
+                        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30">Scheduled</span>
+                        {% elif lead.status == 'completed' %}
+                        <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30">Completed</span>
+                        {% elif lead.status == 'converted' %}
+                        <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30"><i class="bi bi-check-circle me-1"></i>Converted</span>
+                        {% elif lead.status == 'rescheduled' %}
+                        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30">Rescheduled</span>
+                        {% elif lead.status == 'cancelled' %}
+                        <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-30">Cancelled</span>
+                        {% elif lead.status == 'not_interested' %}
+                        <span class="badge bg-secondary bg-opacity-25 text-muted border border-secondary border-opacity-25">Not Interested</span>
+                        {% else %}
+                        <span class="badge bg-secondary bg-opacity-25 text-body">{{ lead.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Created Date -->
+                    <td>
+                        <div class="small fw-semibold" style="color: var(--sa-text);">
+                            {{ lead.created_at|date:"d M Y" }}
+                        </div>
+                        <div class="small text-muted" style="font-size: 0.72rem;">
+                            {{ lead.created_at|time:"h:i A" }}
+                        </div>
+                    </td>
+
+                    <!-- Assigned Person -->
+                    <td>
+                        {% if lead.assigned_staff %}
+                        <span class="small fw-semibold" style="color: var(--sa-text-secondary);">
+                            <i class="bi bi-person me-1 text-gold"></i>{{ lead.assigned_staff.get_full_name|default:lead.assigned_staff.username }}
+                        </span>
+                        {% else %}
+                        <span class="text-muted small">Unassigned</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Actions -->
+                    <td class="text-end">
+                        <div class="d-flex align-items-center justify-content-end gap-1">
+                            <a href="{% url 'super_admin:lead_detail' lead.id %}" class="btn btn-sm btn-outline-gold py-1 px-2" title="View Lead Details & Timeline" style="font-size: 0.78rem;">
+                                <span>Manage</span>
+                                <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                            <a href="{% url 'super_admin:lead_edit' lead.id %}" class="btn btn-sm btn-outline-secondary py-1 px-2 text-body" title="Edit Lead Information" style="font-size: 0.78rem;">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="10" class="text-center py-5 text-muted">
+                        <i class="bi bi-person-x fs-1 d-block mb-2 text-warning opacity-50"></i>
+                        No leads found matching the criteria.
+                        <div class="mt-2">
+                            <a href="{% url 'super_admin:lead_create' %}" class="btn btn-sm btn-gold">
+                                <i class="bi bi-person-plus-fill me-1"></i> Add First Lead
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    {% if page_obj.has_other_pages %}
+    <div class="d-flex justify-content-center align-items-center gap-2 mt-4 flex-wrap">
+        {% if page_obj.has_previous %}
+        <a href="?page=1&tab={{ tab }}&q={{ q }}&status={{ status_filter }}&source={{ source_filter }}&city={{ city_filter }}" class="btn btn-sm btn-outline-secondary">« First</a>
+        <a href="?page={{ page_obj.previous_page_number }}&tab={{ tab }}&q={{ q }}&status={{ status_filter }}&source={{ source_filter }}&city={{ city_filter }}" class="btn btn-sm btn-outline-secondary">‹ Prev</a>
+        {% endif %}
+
+        <span class="text-muted small px-2">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&tab={{ tab }}&q={{ q }}&status={{ status_filter }}&source={{ source_filter }}&city={{ city_filter }}" class="btn btn-sm btn-outline-secondary">Next ›</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}&tab={{ tab }}&q={{ q }}&status={{ status_filter }}&source={{ source_filter }}&city={{ city_filter }}" class="btn btn-sm btn-outline-secondary">Last »</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

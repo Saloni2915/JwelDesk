@@ -127,6 +127,7 @@ INSTALLED_APPS = [
     'outstation',
     'wholesale',
     'coupons',
+    'girvi',
 ]
 
 MIDDLEWARE = [
@@ -140,6 +141,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'accounts.middleware.TenantMiddleware',
     'super_admin.middleware.SuperAdminImpersonationMiddleware',
+    'accounts.middleware.TenantTrialMiddleware',
     'team.middleware.BranchMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]

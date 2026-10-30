@@ -840,9 +840,9 @@
                 <i class="bi bi-credit-card-2-front"></i>
                 <span>Subscriptions &amp; Plans</span>
             </a>
-            <a href="{% url 'super_admin:demo_list' %}" class="sa-nav-item {% if 'demo' in request.resolver_match.url_name %}active{% endif %}">
-                <i class="bi bi-calendar-event"></i>
-                <span>Demo Requests &amp; Leads</span>
+            <a href="{% url 'super_admin:lead_list' %}" class="sa-nav-item {% if 'lead' in request.resolver_match.url_name or 'demo' in request.resolver_match.url_name %}active{% endif %}">
+                <i class="bi bi-person-lines-fill"></i>
+                <span>Leads</span>
             </a>
             <a href="{% url 'super_admin:ticket_list' %}" class="sa-nav-item {% if 'ticket' in request.resolver_match.url_name %}active{% endif %}">
                 <i class="bi bi-headset"></i>

@@ -1101,3 +1101,35 @@ def set_language_view(request):
     return res
 
 
+def trial_expired_view(request):
+    """
+    Render professional Trial Expired page for showroom tenants whose 15-day trial has concluded.
+    Displays clear explanation, reassurance of data safety, and direct renewal contact actions.
+    """
+    user = getattr(request, 'user', None)
+    if not user or not user.is_authenticated:
+        return redirect('accounts:login')
+
+    tenant = getattr(request, 'tenant', None)
+    if not tenant:
+        return redirect('accounts:login')
+
+    sub = getattr(tenant, 'subscription', None)
+
+    # If subscription is active and unexpired, redirect to dashboard
+    from super_admin.trial_services import is_tenant_subscription_active
+    if is_tenant_subscription_active(tenant):
+        return redirect('dashboard')
+
+    is_owner = (tenant.owner_id == user.id)
+
+    context = {
+        'tenant': tenant,
+        'subscription': sub,
+        'is_owner': is_owner,
+        'support_phone': '+91 98765 43210',
+        'support_email': 'support@jweldesk.com',
+        'whatsapp_number': '+91 98765 43210',
+    }
+    return render(request, 'accounts/trial_expired.html', context)
+

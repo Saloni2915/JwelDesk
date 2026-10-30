@@ -9,6 +9,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from accounts.models import validate_email_address, validate_proper_email
 
 
@@ -28,6 +29,10 @@ class PlatformAuditLog(models.Model):
     ACTION_DEMO_UPDATE         = 'DEMO_UPDATE'
     ACTION_DEMO_COMPLETE       = 'DEMO_COMPLETE'
     ACTION_DEMO_CONVERT        = 'DEMO_CONVERT'
+    ACTION_LEAD_CREATE         = 'LEAD_CREATE'
+    ACTION_LEAD_UPDATE         = 'LEAD_UPDATE'
+    ACTION_LEAD_NOTE           = 'LEAD_NOTE'
+    ACTION_LEAD_STATUS_UPDATE  = 'LEAD_STATUS_UPDATE'
     ACTION_TICKET_CREATE       = 'TICKET_CREATE'
     ACTION_TICKET_UPDATE       = 'TICKET_UPDATE'
     ACTION_TICKET_RESOLVE      = 'TICKET_RESOLVE'
@@ -48,6 +53,10 @@ class PlatformAuditLog(models.Model):
         (ACTION_DEMO_UPDATE,         'Updated Demo Lead / Meeting'),
         (ACTION_DEMO_COMPLETE,       'Completed Demo Meeting'),
         (ACTION_DEMO_CONVERT,        'Converted Lead to Tenant'),
+        (ACTION_LEAD_CREATE,         'Created Lead'),
+        (ACTION_LEAD_UPDATE,         'Updated Lead'),
+        (ACTION_LEAD_NOTE,           'Added Lead Follow-up Note'),
+        (ACTION_LEAD_STATUS_UPDATE,  'Updated Lead Status'),
         (ACTION_TICKET_CREATE,       'Created Support Ticket'),
         (ACTION_TICKET_UPDATE,       'Updated Support Ticket'),
         (ACTION_TICKET_RESOLVE,      'Resolved Support Ticket'),
@@ -129,7 +138,7 @@ class TenantSubscription(models.Model):
     PLAN_ENTERPRISE = 'enterprise'
 
     PLAN_CHOICES = [
-        (PLAN_TRIAL,      '14-Day Free Trial'),
+        (PLAN_TRIAL,      '15-Day Free Trial'),
         (PLAN_CORE,       'Core Showroom Standard Tier'),
         (PLAN_PRO,        'Pro Atelier Suite'),
         (PLAN_ENTERPRISE, 'Custom Enterprise Tier'),
@@ -148,13 +157,15 @@ class TenantSubscription(models.Model):
     STATUS_GRACE_PERIOD = 'grace_period'
     STATUS_OVERDUE      = 'overdue'
     STATUS_SUSPENDED    = 'suspended'
+    STATUS_EXPIRED      = 'expired'
 
     STATUS_CHOICES = [
         (STATUS_ACTIVE,       'Active (Paid)'),
-        (STATUS_TRIAL,        'Free Trial'),
+        (STATUS_TRIAL,        'Free Trial (Active)'),
         (STATUS_GRACE_PERIOD, 'Grace Period'),
         (STATUS_OVERDUE,      'Payment Overdue'),
         (STATUS_SUSPENDED,    'Suspended'),
+        (STATUS_EXPIRED,      'Trial Expired'),
     ]
 
     PAYMENT_PAID    = 'paid'
@@ -215,6 +226,18 @@ class TenantSubscription(models.Model):
     notes = models.TextField(
         blank=True
     )
+    trial_extended = models.BooleanField(
+        default=False,
+        help_text="Whether this trial has been extended by platform administration"
+    )
+    trial_extended_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+    trial_extension_days = models.PositiveIntegerField(
+        default=0,
+        help_text="Cumulative number of days added via extensions"
+    )
     created_at = models.DateTimeField(
         auto_now_add=True
     )
@@ -229,6 +252,58 @@ class TenantSubscription(models.Model):
 
     def __str__(self):
         return f"{self.tenant.name} - {self.get_plan_name_display()} ({self.get_status_display()})"
+
+    @property
+    def is_trial(self):
+        """Return True if this subscription is a trial plan or in trial status."""
+        return self.plan_name == self.PLAN_TRIAL or self.status == self.STATUS_TRIAL
+
+    @property
+    def is_trial_extended(self):
+        """Return True if this trial has been extended beyond the initial 15 days or explicitly marked extended."""
+        if not self.is_trial:
+            return False
+        if getattr(self, 'trial_extended', False):
+            return True
+        if self.notes and 'extend' in self.notes.lower():
+            return True
+        if self.expires_at and self.started_at:
+            duration = self.expires_at - self.started_at
+            if duration.total_seconds() > 15.5 * 86400:
+                return True
+        if self.days_remaining is not None and self.days_remaining > 15:
+            return True
+        return False
+
+    @property
+    def is_expired(self):
+        """Check whether this subscription has expired based on current server-time."""
+        if not self.expires_at:
+            return False
+        return timezone.now() > self.expires_at
+
+    @property
+    def days_remaining(self):
+        """Number of full days remaining in trial or subscription."""
+        if not self.expires_at:
+            return None
+        now = timezone.now()
+        if now >= self.expires_at:
+            return 0
+        diff = self.expires_at - now
+        return max(0, diff.days + (1 if diff.seconds > 0 else 0))
+
+    @property
+    def is_valid_active(self):
+        """
+        Check if subscription allows active operations.
+        Returns False if expired, suspended, or inactive.
+        """
+        if self.status in (self.STATUS_SUSPENDED, self.STATUS_EXPIRED):
+            return False
+        if self.is_expired:
+            return False
+        return self.status in (self.STATUS_ACTIVE, self.STATUS_TRIAL, self.STATUS_GRACE_PERIOD)
 
     @property
     def total_revenue_collected(self):
@@ -295,6 +370,18 @@ class SubscriptionPayment(models.Model):
     )
     notes = models.TextField(
         blank=True
+    )
+    trial_extended = models.BooleanField(
+        default=False,
+        help_text="Whether this trial has been extended by platform administration"
+    )
+    trial_extended_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+    trial_extension_days = models.PositiveIntegerField(
+        default=0,
+        help_text="Cumulative number of days added via extensions"
     )
     created_at = models.DateTimeField(
         auto_now_add=True
@@ -444,8 +531,10 @@ class PlatformDemoLead(models.Model):
 
     STATUS_NEW            = 'new'
     STATUS_CONTACTED      = 'contacted'
+    STATUS_INTERESTED     = 'interested'
     STATUS_SCHEDULED      = 'scheduled'
     STATUS_COMPLETED      = 'completed'
+    STATUS_CONVERTED      = 'converted'
     STATUS_RESCHEDULED    = 'rescheduled'
     STATUS_CANCELLED      = 'cancelled'
     STATUS_NOT_INTERESTED = 'not_interested'
@@ -453,8 +542,10 @@ class PlatformDemoLead(models.Model):
     STATUS_CHOICES = [
         (STATUS_NEW,            'New Lead / Enquiry'),
         (STATUS_CONTACTED,      'Contacted / In Discussion'),
+        (STATUS_INTERESTED,     'Interested'),
         (STATUS_SCHEDULED,      'Demo Scheduled'),
         (STATUS_COMPLETED,      'Demo Completed'),
+        (STATUS_CONVERTED,      'Converted'),
         (STATUS_RESCHEDULED,    'Rescheduled'),
         (STATUS_CANCELLED,      'Cancelled'),
         (STATUS_NOT_INTERESTED, 'Not Interested / Lost'),
@@ -470,22 +561,26 @@ class PlatformDemoLead(models.Model):
         (MODE_IN_PERSON, 'In-Person Showroom Visit'),
     ]
 
-    SOURCE_WEBSITE    = 'website'
-    SOURCE_BROCHURE   = 'brochure'
-    SOURCE_REFERRAL   = 'referral'
-    SOURCE_WHATSAPP   = 'whatsapp'
-    SOURCE_EXHIBITION = 'exhibition'
-    SOURCE_COLD_CALL  = 'cold_call'
-    SOURCE_OTHER      = 'other'
+    SOURCE_WEBSITE        = 'website'
+    SOURCE_REFERRAL       = 'referral'
+    SOURCE_SOCIAL_MEDIA   = 'social_media'
+    SOURCE_DIRECT_CONTACT = 'direct_contact'
+    SOURCE_WHATSAPP       = 'whatsapp'
+    SOURCE_BROCHURE       = 'brochure'
+    SOURCE_EXHIBITION     = 'exhibition'
+    SOURCE_COLD_CALL      = 'cold_call'
+    SOURCE_OTHER          = 'other'
 
     SOURCE_CHOICES = [
-        (SOURCE_WEBSITE,    'Website Landing Page'),
-        (SOURCE_BROCHURE,   'Product Brochure Download'),
-        (SOURCE_REFERRAL,   'Jeweller Referral'),
-        (SOURCE_WHATSAPP,   'WhatsApp / Phone Inquiry'),
-        (SOURCE_EXHIBITION, 'Trade Exhibition / Expo'),
-        (SOURCE_COLD_CALL,  'Direct Outreach'),
-        (SOURCE_OTHER,      'Other'),
+        (SOURCE_WEBSITE,        'Website'),
+        (SOURCE_REFERRAL,       'Referral'),
+        (SOURCE_SOCIAL_MEDIA,   'Social Media'),
+        (SOURCE_DIRECT_CONTACT, 'Direct Contact / Visit'),
+        (SOURCE_WHATSAPP,       'WhatsApp'),
+        (SOURCE_BROCHURE,       'Product Brochure Download'),
+        (SOURCE_EXHIBITION,     'Trade Exhibition / Expo'),
+        (SOURCE_COLD_CALL,      'Direct Outreach'),
+        (SOURCE_OTHER,          'Other'),
     ]
 
     lead_name = models.CharField(
@@ -502,6 +597,7 @@ class PlatformDemoLead(models.Model):
         help_text="Primary mobile or WhatsApp number"
     )
     city = models.CharField(max_length=100, blank=True)
+    address = models.TextField(blank=True, help_text="Full showroom/business street address")
     business_type = models.CharField(
         max_length=20,
         choices=[
@@ -603,7 +699,38 @@ class PlatformDemoLead(models.Model):
 
     @property
     def is_converted(self):
-        return self.converted_tenant_id is not None
+        return self.converted_tenant_id is not None or self.status in (self.STATUS_CONVERTED, self.STATUS_COMPLETED)
+
+
+class PlatformLeadNote(models.Model):
+    """Timestamped follow-up note and interaction log for a demo lead."""
+
+    lead = models.ForeignKey(
+        PlatformDemoLead,
+        on_delete=models.CASCADE,
+        related_name='followup_notes'
+    )
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='lead_notes',
+        help_text="Platform staff member who logged this note"
+    )
+    note = models.TextField(help_text="Details of interaction, call notes, or customer response")
+    follow_up_date = models.DateField(null=True, blank=True, help_text="Next scheduled follow-up date")
+    status_at_note = models.CharField(max_length=30, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Platform Lead Note'
+        verbose_name_plural = 'Platform Lead Notes'
+
+    def __str__(self):
+        author_name = self.author.username if self.author else 'System'
+        return f"Note on {self.lead.lead_name} by {author_name} at {self.created_at:%Y-%m-%d %H:%M}"
 
 
 # ============================================================================

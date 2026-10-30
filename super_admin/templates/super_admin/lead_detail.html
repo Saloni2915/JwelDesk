@@ -1,0 +1,497 @@
+{% extends 'super_admin/base_super_admin.html' %}
+
+{% block title %}Lead: {{ lead.contact_name }} ({{ lead.lead_name }}) | Super Admin Portal{% endblock %}
+{% block page_title %}Lead Details & Follow-up History{% endblock %}
+
+{% block content %}
+<!-- Top Header & Action Controls -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+        <a href="{% url 'super_admin:lead_list' %}" class="btn btn-sm btn-outline-secondary text-body">
+            <i class="bi bi-arrow-left me-1"></i> Back to Leads
+        </a>
+        <h4 class="mb-0 fw-bold" style="color: var(--sa-text); font-family: 'Cinzel', serif;">
+            {{ lead.contact_name }} <span class="text-muted fw-normal" style="font-size: 1.1rem; font-family: sans-serif;">— {{ lead.lead_name }}</span>
+        </h4>
+
+        <!-- Status Badge -->
+        {% if lead.status == 'new' %}
+        <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-30">New Lead</span>
+        {% elif lead.status == 'contacted' %}
+        <span class="badge bg-primary bg-opacity-20 text-primary border border-primary border-opacity-30">Contacted</span>
+        {% elif lead.status == 'interested' %}
+        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30">Interested</span>
+        {% elif lead.status == 'scheduled' %}
+        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30">Demo Scheduled</span>
+        {% elif lead.status == 'completed' %}
+        <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30">Demo Completed</span>
+        {% elif lead.status == 'converted' %}
+        <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30"><i class="bi bi-check-circle me-1"></i>Converted</span>
+        {% elif lead.status == 'rescheduled' %}
+        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30">Rescheduled</span>
+        {% elif lead.status == 'cancelled' %}
+        <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-30">Cancelled</span>
+        {% elif lead.status == 'not_interested' %}
+        <span class="badge bg-secondary bg-opacity-25 text-muted border border-secondary border-opacity-25">Not Interested</span>
+        {% else %}
+        <span class="badge bg-secondary bg-opacity-25 text-body">{{ lead.get_status_display }}</span>
+        {% endif %}
+    </div>
+
+    <!-- Toolbar Buttons -->
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <a href="{% url 'super_admin:lead_edit' lead.id %}" class="btn btn-sm btn-outline-secondary text-body">
+            <i class="bi bi-pencil me-1"></i> Edit Lead
+        </a>
+        <button type="button" class="btn btn-sm btn-outline-gold" data-bs-toggle="modal" data-bs-target="#updateStatusModal">
+            <i class="bi bi-tag me-1"></i> Change Status
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-bs-toggle="modal" data-bs-target="#scheduleMeetingModal">
+            <i class="bi bi-calendar-event me-1"></i> Demo Schedule
+        </button>
+        <a href="#addNoteSection" class="btn btn-sm btn-gold">
+            <i class="bi bi-plus-lg me-1"></i> Add Note
+        </a>
+    </div>
+</div>
+
+<!-- Phase 3 Conversion Readiness Notice Card -->
+<div class="sa-card mb-4" style="background: linear-gradient(135deg, rgba(212, 175, 55, 0.05) 0%, rgba(20, 20, 20, 0.6) 100%); border-left: 4px solid var(--sa-gold);">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div class="d-flex align-items-start gap-3">
+            <div class="p-2 rounded-circle mt-1" style="background: rgba(212, 175, 55, 0.15); color: var(--sa-gold); font-size: 1.25rem;">
+                <i class="bi bi-shield-lock-fill"></i>
+            </div>
+            <div>
+                <div class="d-flex align-items-center gap-2">
+                    <h6 class="mb-0 fw-bold" style="color: var(--sa-gold);">Showroom Tenant Conversion &amp; Free Trial System</h6>
+                    <span class="badge bg-secondary bg-opacity-25 text-warning border border-warning border-opacity-25 small" style="font-size: 0.72rem;">Coming in Phase 3</span>
+                </div>
+                <p class="text-muted small mb-0 mt-1" style="max-width: 760px; line-height: 1.5;">
+                    Automatic showroom tenant provisioning, login credential dispatch, and account-level 15-day free trial enforcement will be activated in <strong>Phase 3</strong>. In this Phase 1 stage, prospective showrooms are qualified, tracked with timestamped notes, and prepared for conversion.
+                </p>
+            </div>
+        </div>
+        <div>
+            {% if lead.converted_tenant %}
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30 p-2">
+                    <i class="bi bi-check-circle-fill me-1"></i> Linked Showroom: {{ lead.converted_tenant.name }}
+                </span>
+                <a href="{% url 'super_admin:showroom_detail' lead.converted_tenant.id %}" class="btn btn-sm btn-outline-success">
+                    View Showroom Account
+                </a>
+            </div>
+            {% else %}
+            <button type="button" class="btn btn-sm btn-outline-secondary disabled" title="Tenant and 15-day Free Trial provisioning will be unlocked in Phase 3" style="cursor: not-allowed; opacity: 0.65;">
+                <i class="bi bi-lock me-1"></i> Convert to Showroom Account (Phase 3)
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Lead & Showroom Identity -->
+    <div class="col-12 col-lg-7 d-flex flex-column gap-4">
+        <!-- Showroom Information Card -->
+        <div class="sa-card mb-0">
+            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-15">
+                <h6 class="mb-0 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold); font-size: 0.95rem;">
+                    <i class="bi bi-building"></i> Prospect Showroom Information
+                </h6>
+                <a href="{% url 'super_admin:lead_edit' lead.id %}" class="btn btn-sm btn-link text-decoration-none p-0 text-muted" title="Edit Information">
+                    <i class="bi bi-pencil me-1"></i>Edit
+                </a>
+            </div>
+
+            <div class="row g-3">
+                <!-- Contact Person Name -->
+                <div class="col-sm-6">
+                    <div class="sa-label small">Contact Person (Owner)</div>
+                    <div class="fw-bold" style="color: var(--sa-text); font-size: 0.95rem;">
+                        {{ lead.contact_name }}
+                    </div>
+                </div>
+
+                <!-- Shop / Business Name -->
+                <div class="col-sm-6">
+                    <div class="sa-label small">Shop / Business Name</div>
+                    <div class="fw-semibold" style="color: var(--sa-gold); font-size: 0.95rem;">
+                        {{ lead.lead_name }}
+                    </div>
+                </div>
+
+                <!-- Mobile / WhatsApp -->
+                <div class="col-sm-6">
+                    <div class="sa-label small">Phone / WhatsApp Number</div>
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="tel:{{ lead.phone }}" class="fw-semibold text-decoration-none" style="color: var(--sa-gold);">
+                            <i class="bi bi-telephone-fill me-1 small"></i>{{ lead.phone }}
+                        </a>
+                        {% if lead.phone %}
+                        <a href="https://wa.me/91{{ lead.phone|cut:'+'|cut:' '|cut:'-' }}" target="_blank" class="badge bg-success bg-opacity-20 text-success text-decoration-none border border-success border-opacity-25" style="font-size: 0.70rem;">
+                            <i class="bi bi-whatsapp me-1"></i>WhatsApp
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Email Address -->
+                <div class="col-sm-6">
+                    <div class="sa-label small">Email Address</div>
+                    {% if lead.email %}
+                    <div>
+                        <a href="mailto:{{ lead.email }}" class="text-decoration-none" style="color: var(--sa-text-secondary);">
+                            <i class="bi bi-envelope me-1"></i>{{ lead.email }}
+                        </a>
+                    </div>
+                    {% else %}
+                    <span class="text-muted small">Not provided</span>
+                    {% endif %}
+                </div>
+
+                <!-- City / Market -->
+                <div class="col-sm-6">
+                    <div class="sa-label small">City / Location</div>
+                    <div style="color: var(--sa-text-secondary);">
+                        {% if lead.city %}
+                        <i class="bi bi-geo-alt me-1 text-muted"></i>{{ lead.city }}
+                        {% else %}
+                        <span class="text-muted small">Not specified</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Business Type -->
+                <div class="col-sm-6">
+                    <div class="sa-label small">Business Type</div>
+                    <div>
+                        <span class="badge bg-secondary bg-opacity-25 text-body border border-secondary border-opacity-25">
+                            {{ lead.get_business_type_display }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Address -->
+                <div class="col-12">
+                    <div class="sa-label small">Showroom Street Address</div>
+                    <div style="color: var(--sa-text-secondary);">
+                        {{ lead.address|default:"Not specified"|linebreaksbr }}
+                    </div>
+                </div>
+
+                <!-- Business Size -->
+                <div class="col-sm-6">
+                    <div class="sa-label small">Showroom Size / Counters</div>
+                    <div style="color: var(--sa-text-secondary);">
+                        {{ lead.business_size|default:"Not specified" }}
+                    </div>
+                </div>
+
+                <!-- Lead Source -->
+                <div class="col-sm-6">
+                    <div class="sa-label small">Lead Source</div>
+                    <div>
+                        <span class="badge bg-secondary bg-opacity-25 text-body">
+                            {{ lead.get_source_display }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Assigned Specialist -->
+                <div class="col-sm-6">
+                    <div class="sa-label small">Assigned Sales Specialist</div>
+                    <div style="color: var(--sa-text-secondary);">
+                        {% if lead.assigned_staff %}
+                        <i class="bi bi-person me-1 text-gold"></i>{{ lead.assigned_staff.get_full_name|default:lead.assigned_staff.username }}
+                        {% else %}
+                        <span class="text-muted small">Unassigned</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Registration Date -->
+                <div class="col-sm-6">
+                    <div class="sa-label small">Created Date</div>
+                    <div style="color: var(--sa-text-secondary);">
+                        {{ lead.created_at|date:"d M Y, h:i A" }}
+                    </div>
+                </div>
+
+                <!-- Follow-up Date -->
+                <div class="col-sm-6">
+                    <div class="sa-label small">Next Follow-up Date</div>
+                    <div>
+                        {% if lead.follow_up_date %}
+                        <span class="{% if lead.is_overdue_followup %}text-danger fw-bold{% else %}text-warning fw-semibold{% endif %}">
+                            <i class="bi bi-clock me-1"></i>{{ lead.follow_up_date|date:"d M Y" }}
+                            {% if lead.is_overdue_followup %} (Overdue){% endif %}
+                        </span>
+                        {% else %}
+                        <span class="text-muted small">No follow-up set</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Next Action -->
+                <div class="col-sm-6">
+                    <div class="sa-label small">Next Action Required</div>
+                    <div class="text-warning fw-semibold">
+                        {{ lead.next_action|default:"—" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Meeting & Demo Logistics Card (if scheduled) -->
+        <div class="sa-card mb-0">
+            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-15">
+                <h6 class="mb-0 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold); font-size: 0.95rem;">
+                    <i class="bi bi-calendar-check"></i> Demo Walkthrough Logistics
+                </h6>
+                <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 text-muted" data-bs-toggle="modal" data-bs-target="#scheduleMeetingModal">
+                    <i class="bi bi-gear me-1"></i>Manage
+                </button>
+            </div>
+            <div class="row g-3">
+                <div class="col-sm-6">
+                    <div class="sa-label small">Demo Date & Time</div>
+                    <div class="fw-bold" style="color: var(--sa-text);">
+                        {% if lead.requested_datetime %}
+                        {{ lead.requested_datetime|date:"l, d F Y @ h:i A" }}
+                        {% else %}
+                        <span class="text-muted">Not scheduled yet</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="sa-label small">Meeting Mode</div>
+                    <div>
+                        <span class="badge bg-dark border border-secondary text-muted">{{ lead.get_meeting_mode_display }}</span>
+                    </div>
+                </div>
+                {% if lead.meeting_link %}
+                <div class="col-12">
+                    <div class="sa-label small">Meeting Link / Address</div>
+                    <div class="font-monospace p-2 rounded small" style="background: var(--sa-code-bg); color: var(--sa-gold); word-break: break-all;">
+                        <a href="{{ lead.meeting_link }}" target="_blank" class="text-decoration-none" style="color: var(--sa-gold);">
+                            {{ lead.meeting_link }} <i class="bi bi-box-arrow-up-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Follow-up Activity & Timestamped Notes -->
+    <div class="col-12 col-lg-5 d-flex flex-column gap-4">
+        <!-- Section: Add Follow-up Note Form -->
+        <div class="sa-card mb-0" id="addNoteSection">
+            <h6 class="mb-3 fw-bold d-flex align-items-center gap-2 pb-2 border-bottom border-secondary border-opacity-15" style="color: var(--sa-gold); font-size: 0.95rem;">
+                <i class="bi bi-pencil-square"></i> Log Follow-up Note
+            </h6>
+            <form action="{% url 'super_admin:lead_add_note' lead.id %}" method="POST">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="sa-label small mb-1" for="{{ note_form.note.id_for_label }}">
+                        Discussion Notes / Client Feedback <span class="text-danger">*</span>
+                    </label>
+                    {{ note_form.note }}
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="sa-label small mb-1" for="{{ note_form.status_at_note.id_for_label }}">
+                            Update Lead Status
+                        </label>
+                        {{ note_form.status_at_note }}
+                    </div>
+                    <div class="col-6">
+                        <label class="sa-label small mb-1" for="{{ note_form.follow_up_date.id_for_label }}">
+                            Next Follow-up Date
+                        </label>
+                        {{ note_form.follow_up_date }}
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-sm btn-gold">
+                        <i class="bi bi-plus-circle me-1"></i> Save Follow-up Note
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Section: Follow-up History Timeline -->
+        <div class="sa-card flex-grow-1 mb-0">
+            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-15">
+                <h6 class="mb-0 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold); font-size: 0.95rem;">
+                    <i class="bi bi-clock-history"></i> Follow-up History &amp; Timeline
+                </h6>
+                <span class="badge bg-secondary bg-opacity-25 text-body small">{{ notes.count }} note{{ notes.count|pluralize }}</span>
+            </div>
+
+            <!-- Notes List -->
+            <div class="d-flex flex-column gap-3" style="max-height: 520px; overflow-y: auto; padding-right: 4px;">
+                {% for n in notes %}
+                <div class="p-3 rounded-3" style="background: var(--sa-bg); border: 1px solid var(--sa-border);">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center text-gold fw-bold" style="width: 26px; height: 26px; background: rgba(212, 175, 55, 0.15); font-size: 0.75rem;">
+                                {{ n.author.username|slice:":1"|upper|default:"S" }}
+                            </div>
+                            <span class="small fw-semibold" style="color: var(--sa-text);">
+                                {{ n.author.get_full_name|default:n.author.username|default:"System" }}
+                            </span>
+                        </div>
+                        <span class="text-muted small" style="font-size: 0.75rem;">
+                            {{ n.created_at|date:"d M Y, h:i A" }}
+                        </span>
+                    </div>
+
+                    <div style="font-size: 0.86rem; color: var(--sa-text-secondary); white-space: pre-wrap; line-height: 1.5;">
+                        {{ n.note }}
+                    </div>
+
+                    {% if n.status_at_note or n.follow_up_date %}
+                    <div class="mt-2 pt-2 border-top border-secondary border-opacity-10 d-flex flex-wrap gap-2 align-items-center">
+                        {% if n.status_at_note %}
+                        <span class="badge bg-secondary bg-opacity-25 text-body small" style="font-size: 0.70rem;">
+                            Status: {{ n.status_at_note|title }}
+                        </span>
+                        {% endif %}
+                        {% if n.follow_up_date %}
+                        <span class="badge bg-warning bg-opacity-15 text-warning small" style="font-size: 0.70rem;">
+                            <i class="bi bi-clock me-1"></i>Next: {{ n.follow_up_date|date:"d M Y" }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                    {% if not lead.notes %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-journal-x fs-2 d-block mb-2 text-warning opacity-50"></i>
+                        No follow-up notes logged yet.
+                        <div class="small mt-1">Use the form above to record your first client interaction.</div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Initial Registration Note (if present) -->
+                {% if lead.notes %}
+                <div class="p-3 rounded-3" style="background: rgba(212, 175, 55, 0.05); border: 1px dashed rgba(212, 175, 55, 0.25);">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <span class="badge bg-gold bg-opacity-20 text-gold small" style="font-size: 0.70rem;">
+                            <i class="bi bi-bookmark-fill me-1"></i>Initial Requirements / Intake Note
+                        </span>
+                        <span class="text-muted small" style="font-size: 0.72rem;">{{ lead.created_at|date:"d M Y" }}</span>
+                    </div>
+                    <div style="font-size: 0.84rem; color: var(--sa-text-secondary); white-space: pre-wrap; line-height: 1.5;">
+                        {{ lead.notes }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 1: Quick Status Update Modal -->
+<div class="modal fade" id="updateStatusModal" tabindex="-1" aria-labelledby="updateStatusModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: var(--sa-card); border: 1px solid var(--sa-border); color: var(--sa-text);">
+            <form action="{% url 'super_admin:lead_update_status' lead.id %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-header border-secondary border-opacity-25">
+                    <h6 class="modal-title fw-bold" id="updateStatusModalLabel" style="color: var(--sa-gold);">
+                        <i class="bi bi-tag me-1"></i> Quick Status Update
+                    </h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">
+                        Select new pipeline status for <strong>{{ lead.contact_name }}</strong> ({{ lead.lead_name }}).
+                    </p>
+                    <div class="mb-3">
+                        <label class="sa-label small mb-1">Lead Status <span class="text-danger">*</span></label>
+                        <select name="status" class="form-select sa-input" required>
+                            {% for code, label in status_choices %}
+                            <option value="{{ code }}" {% if lead.status == code %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary border-opacity-25">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-gold">
+                        <i class="bi bi-check2 me-1"></i> Update Status
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 2: Meeting Logistics & Demo Schedule Modal -->
+<div class="modal fade" id="scheduleMeetingModal" tabindex="-1" aria-labelledby="scheduleMeetingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: var(--sa-card); border: 1px solid var(--sa-border); color: var(--sa-text);">
+            <form action="{% url 'super_admin:lead_action' lead.id %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-header border-secondary border-opacity-25">
+                    <h6 class="modal-title fw-bold" id="scheduleMeetingModalLabel" style="color: var(--sa-gold);">
+                        <i class="bi bi-calendar-event me-1"></i> Schedule Demo &amp; Next Action
+                    </h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="sa-label small mb-1">Meeting Action <span class="text-danger">*</span></label>
+                        {{ schedule_form.action_type }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="sa-label small mb-1">Meeting Date &amp; Time</label>
+                        {{ schedule_form.meeting_datetime }}
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="sa-label small mb-1">Mode</label>
+                            {{ schedule_form.meeting_mode }}
+                        </div>
+                        <div class="col-6">
+                            <label class="sa-label small mb-1">Assigned Specialist</label>
+                            {{ schedule_form.assigned_staff }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="sa-label small mb-1">Meeting Link or Location</label>
+                        {{ schedule_form.meeting_link }}
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="sa-label small mb-1">Follow-up Date</label>
+                            {{ schedule_form.follow_up_date }}
+                        </div>
+                        <div class="col-6">
+                            <label class="sa-label small mb-1">Next Action</label>
+                            {{ schedule_form.next_action }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="sa-label small mb-1">Log Interaction Note</label>
+                        {{ schedule_form.notes }}
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary border-opacity-25">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-gold">
+                        <i class="bi bi-check-lg me-1"></i> Update Schedule
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

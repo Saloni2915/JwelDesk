@@ -5,6 +5,8 @@ from pathlib import Path
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import connection, models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 def save_logo_blob(filename, content_bytes, content_type='image/png'):
@@ -272,6 +274,52 @@ class Tenant(models.Model):
                 idx += 1
             self.slug = slug
         super().save(*args, **kwargs)
+
+    @property
+    def subscription_plan(self):
+        sub = getattr(self, 'subscription', None)
+        return sub.plan_name if sub else None
+
+    @property
+    def has_active_subscription(self):
+        sub = getattr(self, 'subscription', None)
+        if not sub:
+            return False
+        return sub.is_valid_active
+
+    @property
+    def is_trial_active(self):
+        sub = getattr(self, 'subscription', None)
+        if not sub:
+            return False
+        return sub.is_trial and sub.is_valid_active
+
+    @property
+    def is_trial_extended(self):
+        sub = getattr(self, 'subscription', None)
+        if not sub:
+            return False
+        return getattr(sub, 'is_trial_extended', False)
+
+    @property
+    def is_trial_expired(self):
+        sub = getattr(self, 'subscription', None)
+        if not sub:
+            return False
+        return sub.is_trial and sub.is_expired
+
+    @property
+    def trial_days_remaining(self):
+        sub = getattr(self, 'subscription', None)
+        if not sub:
+            return 0
+        return sub.days_remaining or 0
+
+
+    def create_trial(self):
+        """Explicitly provision a 15-day free trial for this tenant if not already present."""
+        from super_admin.trial_services import create_tenant_trial
+        return create_tenant_trial(self)
 
 
 class CompanySettings(models.Model):

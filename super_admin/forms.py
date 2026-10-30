@@ -19,6 +19,7 @@ from .models import (
     CouponDesignTemplate,
     CouponPrintBatch,
     PlatformDemoLead,
+    PlatformLeadNote,
     PlatformSupportTicket,
     TenantSubscription,
 )
@@ -39,38 +40,55 @@ class PlatformDemoLeadForm(forms.ModelForm):
         fields = [
             'lead_name',
             'contact_name',
-            'email',
             'phone',
+            'email',
             'city',
+            'address',
+            'source',
+            'status',
+            'notes',
+            'follow_up_date',
             'business_type',
             'business_size',
-            'source',
+            'assigned_staff',
             'requested_datetime',
             'meeting_mode',
             'meeting_link',
-            'assigned_staff',
-            'status',
-            'follow_up_date',
             'next_action',
-            'notes',
         ]
+        labels = {
+            'contact_name': 'Contact Person Name',
+            'lead_name': 'Shop / Business Name',
+            'phone': 'Phone Number',
+            'email': 'Email Address',
+            'city': 'City',
+            'address': 'Full Address',
+            'source': 'Lead Source',
+            'status': 'Lead Status',
+            'notes': 'Notes / Requirements',
+            'follow_up_date': 'Follow-up Date',
+            'assigned_staff': 'Assigned Person',
+            'business_type': 'Business Type',
+            'business_size': 'Showroom Size / Counters',
+        }
         widgets = {
-            'lead_name': forms.TextInput(attrs={'class': 'form-control sa-input', 'placeholder': 'e.g. Mahalaxmi Jewellers'}),
             'contact_name': forms.TextInput(attrs={'class': 'form-control sa-input', 'placeholder': 'e.g. Ramesh Soni'}),
+            'lead_name': forms.TextInput(attrs={'class': 'form-control sa-input', 'placeholder': 'e.g. Mahalaxmi Jewellers'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control sa-input', 'placeholder': 'e.g. 9876543210'}),
             'email': forms.EmailInput(attrs={'class': 'form-control sa-input', 'placeholder': 'owner@jewellers.com'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control sa-input', 'placeholder': '+91 98765 43210'}),
             'city': forms.TextInput(attrs={'class': 'form-control sa-input', 'placeholder': 'e.g. Mumbai, Jaipur, Rajkot'}),
+            'address': forms.Textarea(attrs={'class': 'form-control sa-input', 'rows': 2, 'placeholder': 'Showroom street address / market...'}),
+            'source': forms.Select(attrs={'class': 'form-select sa-input'}),
+            'status': forms.Select(attrs={'class': 'form-select sa-input'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control sa-input', 'rows': 3, 'placeholder': 'Specific showroom requirements, software needs, timeline...'}),
+            'follow_up_date': forms.DateInput(attrs={'class': 'form-control sa-input', 'type': 'date'}),
             'business_type': forms.Select(attrs={'class': 'form-select sa-input'}),
             'business_size': forms.TextInput(attrs={'class': 'form-control sa-input', 'placeholder': 'e.g. 2 Counters, 5 Staff'}),
-            'source': forms.Select(attrs={'class': 'form-select sa-input'}),
+            'assigned_staff': forms.Select(attrs={'class': 'form-select sa-input'}),
             'requested_datetime': forms.DateTimeInput(attrs={'class': 'form-control sa-input', 'type': 'datetime-local'}),
             'meeting_mode': forms.Select(attrs={'class': 'form-select sa-input'}),
             'meeting_link': forms.TextInput(attrs={'class': 'form-control sa-input', 'placeholder': 'https://meet.google.com/xyz or showroom address'}),
-            'assigned_staff': forms.Select(attrs={'class': 'form-select sa-input'}),
-            'status': forms.Select(attrs={'class': 'form-select sa-input'}),
-            'follow_up_date': forms.DateInput(attrs={'class': 'form-control sa-input', 'type': 'date'}),
-            'next_action': forms.TextInput(attrs={'class': 'form-control sa-input', 'placeholder': 'e.g. Send Core Plan Proposal'}),
-            'notes': forms.Textarea(attrs={'class': 'form-control sa-input', 'rows': 4, 'placeholder': 'Discussion summary, specific showroom requirements, timeline...'}),
+            'next_action': forms.TextInput(attrs={'class': 'form-control sa-input', 'placeholder': 'e.g. Call regarding inventory module demo'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -79,10 +97,57 @@ class PlatformDemoLeadForm(forms.ModelForm):
         self.fields['assigned_staff'].queryset = User.objects.filter(is_superuser=True) | User.objects.filter(is_staff=True)
         self.fields['assigned_staff'].required = False
         self.fields['email'].required = False
+        self.fields['contact_name'].required = True
+        self.fields['lead_name'].required = True
+        self.fields['meeting_mode'].required = False
+        if not self.initial.get('meeting_mode'):
+            self.fields['meeting_mode'].initial = PlatformDemoLead.MODE_ONLINE
+
+    def clean_meeting_mode(self):
+        mode = self.cleaned_data.get('meeting_mode')
+        return mode or PlatformDemoLead.MODE_ONLINE
 
     def clean_phone(self):
         phone = (self.cleaned_data.get('phone') or '').strip()
         return clean_10_digit_phone(phone, field_label='Phone number', required=True)
+
+    def clean_email(self):
+        email = (self.cleaned_data.get('email') or '').strip().lower()
+        if email:
+            return validate_proper_email(email, field_label='Email address', required=False)
+        return ''
+
+
+class PlatformLeadNoteForm(forms.ModelForm):
+    """Form for recording a new follow-up note on a prospective lead."""
+
+    class Meta:
+        model = PlatformLeadNote
+        fields = ['note', 'status_at_note', 'follow_up_date']
+        labels = {
+            'note': 'Follow-up Notes / Discussion Details',
+            'status_at_note': 'Update Lead Status',
+            'follow_up_date': 'Next Follow-up Date',
+        }
+        widgets = {
+            'note': forms.Textarea(attrs={
+                'class': 'form-control sa-input',
+                'rows': 3,
+                'placeholder': 'Enter discussion summary, customer questions, interest level, requirements...',
+                'required': True,
+            }),
+            'status_at_note': forms.Select(attrs={'class': 'form-select sa-input'}),
+            'follow_up_date': forms.DateInput(attrs={'class': 'form-control sa-input', 'type': 'date'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        lead_status = kwargs.pop('lead_status', None)
+        super().__init__(*args, **kwargs)
+        self.fields['status_at_note'].choices = [('', 'Keep Current Status')] + list(PlatformDemoLead.STATUS_CHOICES)
+        if lead_status:
+            self.fields['status_at_note'].initial = lead_status
+        self.fields['status_at_note'].required = False
+        self.fields['follow_up_date'].required = False
 
 
 

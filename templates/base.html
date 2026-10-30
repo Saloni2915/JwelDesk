@@ -41,14 +41,14 @@
     <nav class="navbar navbar-expand navbar-dark bg-dark fixed-top top-navbar">
         <div class="container-fluid px-2 px-sm-3 d-flex align-items-center justify-content-between flex-nowrap min-w-0">
             <!-- Left Top Corner: Sidebar Toggler + Brand -->
-            <div class="d-flex align-items-center flex-shrink-1 min-w-0 me-2 overflow-hidden">
+            <div class="d-flex align-items-center flex-shrink-0 me-auto min-w-0">
                 <!-- Mobile/Tablet Sidebar Toggler (active < 992px) -->
-                <button class="btn btn-link d-lg-none me-1 me-sm-2 p-1 border-0 flex-shrink-0" id="sidebarToggle" type="button" aria-label="Toggle navigation">
-                    <i class="bi bi-list fs-4"></i>
+                <button class="btn btn-link d-lg-none me-2 p-1 border-0 flex-shrink-0 jd-sidebar-toggle-btn" id="sidebarToggle" type="button" aria-label="Toggle navigation">
+                    <i class="bi bi-list fs-2 text-warning"></i>
                 </button>
-                <a class="navbar-brand d-inline-flex align-items-center text-truncate min-w-0 p-0 m-0 overflow-hidden" href="{% if request.tenant and not request.tenant.is_retail %}{% url 'wholesale:dashboard' %}{% else %}{% url 'dashboard' %}{% endif %}" style="line-height: 1.2;">
+                <a class="navbar-brand d-inline-flex align-items-center text-truncate min-w-0 p-0 m-0" href="{% if request.tenant and not request.tenant.is_retail %}{% url 'wholesale:dashboard' %}{% else %}{% url 'dashboard' %}{% endif %}" style="line-height: 1.2;">
                     {% if company.logo_url %}
-                    <img src="{{ company.logo_url }}" alt="{{ company.name }}" class="me-1 me-sm-2 rounded flex-shrink-0 navbar-brand-logo" style="height: 34px; max-height: 38px; width: auto; max-width: 130px; object-fit: contain; background: #ffffff; padding: 2px 5px; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.18);" onerror="this.onerror=null; this.src='{% static 'icons/favicon-32x32.png' %}';">
+                    <img src="{{ company.logo_url }}" alt="{{ company.name }}" class="me-1 me-sm-2 rounded flex-shrink-0 navbar-brand-logo" style="height: 32px; max-height: 36px; width: auto; max-width: 110px; object-fit: contain; background: #ffffff; padding: 2px 5px; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.18);" onerror="this.onerror=null; this.src='{% static 'icons/favicon-32x32.png' %}';">
                     {% else %}
                     <img src="{% static 'icons/favicon-32x32.png' %}" alt="JewelDesk" class="me-1 me-sm-2 rounded flex-shrink-0 navbar-brand-icon" style="width: 26px; height: 26px; object-fit: cover;">
                     {% endif %}
@@ -57,7 +57,7 @@
             </div>
 
             <!-- Right Top Corner: Branch Selector + Language Switcher + User Profile + Logout -->
-            <div class="ms-auto d-flex align-items-center gap-2 flex-shrink-0">
+            <div class="ms-auto d-flex align-items-center gap-1 gap-sm-2 flex-shrink-0">
 
                 {% if user.is_authenticated and request.tenant %}
                 <!-- Branch Switcher Dropdown in Header -->
@@ -66,13 +66,22 @@
                             type="button" id="headerBranchDropdown" data-bs-toggle="dropdown" aria-expanded="false"
                             title="Active Branch: {% if is_all_branches %}All Branches (Consolidated){% elif active_branch %}{{ active_branch.name }}{% else %}Default Branch{% endif %}">
                         <i class="bi bi-geo-alt-fill"></i>
-                        <span class="d-inline-block fw-semibold" style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle;">
+                        <span class="d-none d-sm-inline-block fw-semibold text-truncate" style="max-width: 130px; vertical-align: middle;">
                             {% if is_all_branches %}
                                 All Branches
                             {% elif active_branch %}
                                 {{ active_branch.name }}
                             {% else %}
                                 Branch
+                            {% endif %}
+                        </span>
+                        <span class="d-inline-block d-sm-none fw-semibold" style="max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; font-size: 0.78rem;">
+                            {% if is_all_branches %}
+                                ALL
+                            {% elif active_branch %}
+                                {{ active_branch.code|default:active_branch.name|truncatechars:6 }}
+                            {% else %}
+                                BR
                             {% endif %}
                         </span>
                         {% if is_all_branches %}
@@ -143,8 +152,8 @@
                 </div>
                 {% endif %}
 
-                <!-- Raise Ticket & AI Assistant Quick Action Buttons in Top Navbar (Visible on all pages) -->
-                <div class="d-inline-flex align-items-center gap-1">
+                <!-- Raise Ticket & AI Assistant Quick Action Buttons in Top Navbar (Desktop >= 992px) -->
+                <div class="d-none d-lg-inline-flex align-items-center gap-1">
                     <button type="button" class="btn btn-warning btn-sm d-inline-flex align-items-center gap-1 fw-bold py-1 px-2 text-dark shadow-sm"
                             style="border-radius: 9999px; font-size: 0.8rem; background: linear-gradient(135deg, #ECC86A 0%, #D4AF37 100%); border: none;"
                             onclick="if(window.jdOpenSupportWidget){window.jdOpenSupportWidget('ticket');}else{var l=document.getElementById('jdSupportLauncher'); if(l) l.click();}"
@@ -173,7 +182,7 @@
                             type="button" id="navLanguageDropdown" data-bs-toggle="dropdown" aria-expanded="false"
                             title="Switch Language / भाषा बदलें">
                         <i class="bi bi-translate text-warning"></i>
-                        <span class="d-none d-sm-inline fw-semibold">{% if is_hindi %}🇮🇳 हिंदी{% else %}🇬🇧 EN{% endif %}</span>
+                        <span class="d-none d-md-inline fw-semibold">{% if is_hindi %}🇮🇳 हिंदी{% else %}🇬🇧 EN{% endif %}</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow border-0 jd-dropdown-menu" aria-labelledby="navLanguageDropdown">
                         <li>
@@ -198,6 +207,7 @@
                         </li>
                     </ul>
                 </div>
+
                 {% if is_impersonating %}
                 <!-- Impersonation Quick Exit in Navbar -->
                 <form method="post" action="{% url 'super_admin:impersonate_exit' %}" class="d-inline-flex m-0 p-0 align-items-center">
@@ -208,52 +218,125 @@
                     </button>
                 </form>
                 {% elif is_platform_admin %}
-                <!-- Super Admin Link (Only visible to verified platform admins, never ordinary users) -->
+                <!-- Super Admin Link (Desktop >= 768px; also in mobile user dropdown) -->
                 <a href="{% url 'super_admin:dashboard' %}" class="btn jd-nav-admin-btn btn-sm d-none d-md-inline-flex align-items-center gap-1" title="Go to Platform Super Admin Portal">
                     <i class="bi bi-shield-lock-fill"></i>
                     <span>{% if is_hindi %}सुपर एडमिन{% else %}Super Admin{% endif %}</span>
                 </a>
                 {% endif %}
 
-                {% if user.is_authenticated %}
-                <!-- User Profile Pill in Right Top Corner -->
-                <div class="navbar-user-pill d-inline-flex align-items-center" title="Logged in as {{ user.first_name|default:user.username }} ({% if user.is_superuser %}{% if is_hindi %}सुपर एडमिन{% else %}Super Admin{% endif %}{% elif request.tenant and request.tenant.owner_id == user.id %}{% if is_hindi %}स्टोर एडमिन{% else %}Tenant Admin{% endif %}{% else %}{% if is_hindi %}स्टोर एडमिन{% else %}Tenant Admin{% endif %}{% endif %})">
-                    <div class="navbar-user-avatar rounded-circle d-flex align-items-center justify-content-center flex-shrink-0">
-                        <i class="bi bi-person-fill"></i>
-                    </div>
-                    <div class="d-none d-sm-inline-flex flex-column min-w-0 justify-content-center ms-2" style="line-height: 1.15;">
-                        <div class="d-flex align-items-center gap-1">
-                            <span class="fw-semibold navbar-username text-truncate">{{ user.first_name|default:user.username }}</span>
-                            {% if user.is_superuser %}
-                            <span class="badge navbar-user-badge navbar-user-badge-admin">{% if is_hindi %}सुपर एडमिन{% else %}Super Admin{% endif %}</span>
-                            {% elif request.tenant and request.tenant.owner_id == user.id %}
-                            <span class="badge navbar-user-badge navbar-user-badge-admin">{% if is_hindi %}स्टोर एडमिन{% else %}Tenant Admin{% endif %}</span>
-                            {% elif request.tenant and user.employee_profile and user.employee_profile.role.name in 'Tenant Administrator,Tenant Admin,Admin' %}
-                            <span class="badge navbar-user-badge navbar-user-badge-admin">{% if is_hindi %}स्टोर एडमिन{% else %}Tenant Admin{% endif %}</span>
-                            {% elif request.tenant and user.employee_profile %}
-                            <span class="badge navbar-user-badge navbar-user-badge-staff">{{ user.employee_profile.role.name }}</span>
-                            {% else %}
-                            <span class="badge navbar-user-badge navbar-user-badge-admin">{% if is_hindi %}स्टोर एडमिन{% else %}Tenant Admin{% endif %}</span>
-                            {% endif %}
-                        </div>
-                        <span class="navbar-user-role">
-                            {% if user.is_superuser %}{% if is_hindi %}सुपर एडमिन{% else %}Super Admin{% endif %}{% elif request.tenant and request.tenant.owner_id == user.id %}{{ request.tenant.get_business_type_display }}{% elif request.tenant and user.employee_profile and user.employee_profile.role.name in 'Tenant Administrator,Tenant Admin,Admin' %}{% if is_hindi %}एडमिन{% else %}Admin{% endif %} &bull; {{ request.tenant.get_business_type_display }}{% elif request.tenant and user.employee_profile %}{{ user.employee_profile.role.name }} &bull; {{ request.tenant.get_business_type_display }}{% else %}{% if is_hindi %}स्टोर एडमिन{% else %}Tenant Admin{% endif %}{% endif %}
-                        </span>
-                    </div>
-                    <!-- On mobile / PWA screens, show compact truncated username -->
-                    <span class="d-inline-block d-sm-none fw-semibold navbar-username-mobile text-truncate ms-1">
-                        {{ user.first_name|default:user.username }}
+                {% if request.tenant and not user.is_superuser %}
+                    {% if request.tenant.is_trial_active %}
+                    <!-- Active Trial Badge Indicator -->
+                    <span class="badge d-inline-flex align-items-center gap-1 py-1 px-2 text-warning border border-warning border-opacity-30 small" style="background: rgba(236, 200, 106, 0.14); font-size: 0.78rem;" title="{% if request.tenant.is_trial_extended %}Free Trial Extended{% else %}15-Day Free Trial Active{% endif %}">
+                        <i class="bi bi-clock-history"></i>
+                        <span>{% if request.tenant.is_trial_extended %}Trial Extended{% else %}15 Days Free Trial{% endif %}: {{ request.tenant.trial_days_remaining }}d left</span>
                     </span>
+                    {% elif request.tenant.is_trial_expired %}
+                    <!-- Expired Trial Badge Indicator -->
+                    <span class="badge d-inline-flex align-items-center gap-1 py-1 px-2 text-danger border border-danger border-opacity-30 small" style="background: rgba(220, 53, 69, 0.18); font-size: 0.78rem;" title="Trial Expired — Contact Account Manager">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <span>Trial Expired &bull; Contact Account Manager</span>
+                    </span>
+                    {% endif %}
+                {% endif %}
+
+                {% if user.is_authenticated %}
+                <!-- Desktop User Profile Pill & Logout (>= 768px) -->
+                <div class="d-none d-md-inline-flex align-items-center gap-2">
+                    <div class="navbar-user-pill d-inline-flex align-items-center" title="Logged in as {{ user.first_name|default:user.username }} ({% if user.is_superuser %}{% if is_hindi %}सुपर एडमिन{% else %}Super Admin{% endif %}{% elif request.tenant and request.tenant.owner_id == user.id %}{% if is_hindi %}स्टोर एडमिन{% else %}Tenant Admin{% endif %}{% else %}{% if is_hindi %}स्टोर एडमिन{% else %}Tenant Admin{% endif %}{% endif %})">
+                        <div class="navbar-user-avatar rounded-circle d-flex align-items-center justify-content-center flex-shrink-0">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                        <div class="d-inline-flex flex-column min-w-0 justify-content-center ms-2" style="line-height: 1.15;">
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="fw-semibold navbar-username text-truncate">{{ user.first_name|default:user.username }}</span>
+                                {% if user.is_superuser %}
+                                <span class="badge navbar-user-badge navbar-user-badge-admin">{% if is_hindi %}सुपर एडमिन{% else %}Super Admin{% endif %}</span>
+                                {% elif request.tenant and request.tenant.owner_id == user.id %}
+                                <span class="badge navbar-user-badge navbar-user-badge-admin">{% if is_hindi %}स्टोर एडमिन{% else %}Tenant Admin{% endif %}</span>
+                                {% elif request.tenant and user.employee_profile and user.employee_profile.role.name in 'Tenant Administrator,Tenant Admin,Admin' %}
+                                <span class="badge navbar-user-badge navbar-user-badge-admin">{% if is_hindi %}स्टोर एडमिन{% else %}Tenant Admin{% endif %}</span>
+                                {% elif request.tenant and user.employee_profile %}
+                                <span class="badge navbar-user-badge navbar-user-badge-staff">{{ user.employee_profile.role.name }}</span>
+                                {% else %}
+                                <span class="badge navbar-user-badge navbar-user-badge-admin">{% if is_hindi %}स्टोर एडमिन{% else %}Tenant Admin{% endif %}</span>
+                                {% endif %}
+                            </div>
+                            <span class="navbar-user-role">
+                                {% if user.is_superuser %}{% if is_hindi %}सुपर एडमिन{% else %}Super Admin{% endif %}{% elif request.tenant and request.tenant.owner_id == user.id %}{{ request.tenant.get_business_type_display }}{% elif request.tenant and user.employee_profile and user.employee_profile.role.name in 'Tenant Administrator,Tenant Admin,Admin' %}{% if is_hindi %}एडमिन{% else %}Admin{% endif %} &bull; {{ request.tenant.get_business_type_display }}{% elif request.tenant and user.employee_profile %}{{ user.employee_profile.role.name }} &bull; {{ request.tenant.get_business_type_display }}{% else %}{% if is_hindi %}स्टोर एडमिन{% else %}Tenant Admin{% endif %}{% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Desktop Logout Button -->
+                    <form method="post" action="{% url 'accounts:logout' %}" class="d-inline-flex m-0 p-0 align-items-center">
+                        {% csrf_token %}
+                        <button type="submit" class="btn navbar-logout-btn" title="Logout / लॉग आउट ({{ user.first_name|default:user.username }})" aria-label="Logout">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span class="d-none d-lg-inline ms-1">{% if is_hindi %}लॉग आउट{% else %}Logout{% endif %}</span>
+                        </button>
+                    </form>
                 </div>
 
-                <!-- Logout Button -->
-                <form method="post" action="{% url 'accounts:logout' %}" class="d-inline-flex m-0 p-0 align-items-center">
-                    {% csrf_token %}
-                    <button type="submit" class="btn navbar-logout-btn" title="Logout / लॉग आउट ({{ user.first_name|default:user.username }})" aria-label="Logout">
-                        <i class="bi bi-box-arrow-right"></i>
-                        <span class="d-none d-md-inline ms-1">{% if is_hindi %}लॉग आउट{% else %}Logout{% endif %}</span>
+                <!-- Mobile User Avatar Menu (< 768px) -->
+                <div class="dropdown d-inline-flex d-md-none">
+                    <button class="btn btn-sm p-0 rounded-circle d-flex align-items-center justify-content-center jd-mobile-user-avatar-btn"
+                            type="button" id="mobileUserDropdown" data-bs-toggle="dropdown" aria-expanded="false"
+                            style="width: 36px; height: 36px; background: rgba(212, 175, 55, 0.15); border: 1.5px solid rgba(212, 175, 55, 0.45); color: #ECC86A;"
+                            aria-label="User Account">
+                        <i class="bi bi-person-fill fs-5"></i>
                     </button>
-                </form>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 jd-dropdown-menu" aria-labelledby="mobileUserDropdown" style="min-width: 230px;">
+                        <li class="px-3 py-2 border-bottom border-secondary border-opacity-25">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle bg-warning bg-opacity-25 text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="fw-bold text-truncate" style="color: var(--accent, #D4AF37); font-size: 0.9rem;">{{ user.first_name|default:user.username }}</div>
+                                    <div class="text-muted text-truncate" style="font-size: 0.72rem;">
+                                        {% if user.is_superuser %}Super Admin{% elif request.tenant and user.employee_profile %}{{ user.employee_profile.role.name }}{% else %}Store Admin{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                        {% if is_platform_admin %}
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'super_admin:dashboard' %}">
+                                <i class="bi bi-shield-lock-fill text-warning"></i> <span>Super Admin Portal</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'support_customer:ticket_list' %}">
+                                <i class="bi bi-ticket-perforated text-warning"></i> <span>{% if is_hindi %}मेरे टिकट{% else %}My Tickets{% endif %}</span>
+                            </a>
+                        </li>
+                        {% if user.is_authenticated and not user.is_superuser %}
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'accounts:company_settings' %}">
+                                <i class="bi bi-gear-fill text-warning"></i> <span>{% if is_hindi %}कंपनी सेटिंग्स{% else %}Company Settings{% endif %}</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                        <li>
+                            <button type="button" class="dropdown-item d-flex align-items-center gap-2" onclick="if(window.jdOpenSupportWidget){window.jdOpenSupportWidget('chat');}else{var l=document.getElementById('jdSupportLauncher'); if(l) l.click();}">
+                                <i class="bi bi-robot text-warning"></i> <span>{% if is_hindi %}एआई असिस्टेंट चैट{% else %}AI Assistant Chat{% endif %}</span>
+                            </button>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form method="post" action="{% url 'accounts:logout' %}" class="m-0 p-0">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item text-danger d-flex align-items-center gap-2">
+                                    <i class="bi bi-box-arrow-right"></i>
+                                    <span>{% if is_hindi %}लॉग आउट (Logout){% else %}Logout{% endif %}</span>
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
                 {% endif %}
             </div>
         </div>
@@ -268,10 +351,14 @@
                 <div class="rounded-circle bg-warning bg-opacity-25 text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px; font-size: 0.95rem;">
                     <i class="bi bi-person-fill"></i>
                 </div>
-                <div class="d-flex flex-column min-w-0" style="line-height: 1.2;">
+                <div class="d-flex flex-column min-w-0 me-auto" style="line-height: 1.2;">
                     <span class="sidebar-username fw-semibold text-truncate small" title="{{ user.first_name|default:user.username }}">{{ user.first_name|default:user.username }}</span>
                     <span class="text-muted text-truncate" style="font-size: 0.7rem;">{% if user.is_superuser %}{% if is_hindi %}सुपर एडमिन{% else %}Super Admin{% endif %}{% elif request.tenant and request.tenant.owner_id == user.id %}{{ request.tenant.get_business_type_display }}{% elif request.tenant and user.employee_profile %}{{ user.employee_profile.role.name }} &bull; {{ request.tenant.get_business_type_display }}{% else %}{% if is_hindi %}स्टोर एडमिन{% else %}Tenant Admin{% endif %}{% endif %}</span>
                 </div>
+                <!-- Mobile Drawer Close Button -->
+                <button type="button" class="btn btn-sm btn-link text-white-50 p-1 d-lg-none flex-shrink-0 ms-auto jd-sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close sidebar">
+                    <i class="bi bi-x-lg fs-5"></i>
+                </button>
             </div>
             {% endif %}
 
@@ -1034,6 +1121,62 @@
             </div>
             {% endif %}
 
+            <!-- 15-Day Free Trial & Expiry Global Banner -->
+            {% if request.tenant and not user.is_superuser %}
+                {% if request.tenant.is_trial_active %}
+                <div class="jd-trial-global-banner mb-3 p-2 px-3 rounded-2 d-flex align-items-center justify-content-between flex-wrap gap-2"
+                     style="background: linear-gradient(90deg, rgba(236, 200, 106, 0.16) 0%, rgba(20, 16, 9, 0.7) 100%); border: 1px solid rgba(236, 200, 106, 0.35);">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        {% if request.tenant.is_trial_extended %}
+                        <span class="badge bg-warning text-dark fw-bold px-2 py-1" style="font-size: 0.72rem; letter-spacing: 0.4px;">TRIAL EXTENDED</span>
+                        <span class="small fw-semibold text-light">
+                            {% if is_hindi %}
+                                आपका <strong>फ्री ट्रायल एक्सटेंड</strong> किया गया है — <strong>{{ request.tenant.trial_days_remaining }} दिन शेष</strong>
+                            {% else %}
+                                Your <strong>Free Trial has been extended</strong> — <strong>{{ request.tenant.trial_days_remaining }} day{{ request.tenant.trial_days_remaining|pluralize }} remaining</strong>
+                            {% endif %}
+                        </span>
+                        {% else %}
+                        <span class="badge bg-warning text-dark fw-bold px-2 py-1" style="font-size: 0.72rem; letter-spacing: 0.4px;">15-DAY FREE TRIAL</span>
+                        <span class="small fw-semibold text-light">
+                            {% if is_hindi %}
+                                आपका <strong>15 दिनों का फ्री ट्रायल</strong> सक्रिय है — <strong>{{ request.tenant.trial_days_remaining }} दिन शेष</strong>
+                            {% else %}
+                                <strong>15-Day Free Trial Active</strong> — <strong>{{ request.tenant.trial_days_remaining }} day{{ request.tenant.trial_days_remaining|pluralize }} remaining</strong>
+                            {% endif %}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex align-items-center gap-2 ms-auto">
+                        <a href="tel:+919876543210" class="btn btn-sm btn-outline-warning text-warning fw-semibold py-1 px-2 d-inline-flex align-items-center gap-1" style="font-size: 0.78rem;">
+                            <i class="bi bi-telephone-outbound"></i>
+                            <span>{% if is_hindi %}अकाउंट मैनेजर से संपर्क करें{% else %}Contact Account Manager{% endif %}</span>
+                        </a>
+                    </div>
+                </div>
+                {% elif request.tenant.is_trial_expired %}
+                <div class="jd-trial-global-banner mb-3 p-2 px-3 rounded-2 d-flex align-items-center justify-content-between flex-wrap gap-2"
+                     style="background: rgba(220, 53, 69, 0.16); border: 1px solid rgba(220, 53, 69, 0.45);">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="badge bg-danger text-white fw-bold px-2 py-1" style="font-size: 0.72rem;">TRIAL EXPIRED</span>
+                        <span class="small fw-semibold text-danger">
+                            {% if is_hindi %}
+                                ⚠️ आपका 15 दिनों का ट्रायल समाप्त हो गया है — कृपया आगे उपयोग जारी रखने के लिए अपने अकाउंट मैनेजर से संपर्क करें।
+                            {% else %}
+                                ⚠️ Your 15-Day Free Trial has expired — Please contact your Account Manager to continue.
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 ms-auto">
+                        <a href="tel:+919876543210" class="btn btn-sm btn-danger fw-bold py-1 px-3 d-inline-flex align-items-center gap-1" style="font-size: 0.8rem;">
+                            <i class="bi bi-telephone-fill"></i>
+                            <span>Contact Account Manager (+91 98765 43210)</span>
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            {% endif %}
+
             <!-- Breadcrumb / Page Header -->
             <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4 page-header-wrapper">
                 <h4 class="mb-0 fw-semibold page-header-title">
@@ -1061,6 +1204,52 @@
         </div>
     </div>
 
+    <!-- Mobile PWA Bottom App Bar (< 992px) -->
+    <nav class="mobile-bottom-nav d-lg-none" id="mobileBottomNav" aria-label="Mobile Navigation">
+        {% if request.tenant and not request.tenant.is_retail %}
+            <!-- Wholesale Tenant Bottom App Bar -->
+            <a href="{% url 'wholesale:dashboard' %}" class="mobile-nav-item {% if request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                <i class="bi bi-speedometer2 mobile-nav-icon"></i>
+                <span class="mobile-nav-label">Home</span>
+            </a>
+            <a href="{% url 'inventory_list' %}" class="mobile-nav-item {% if request.resolver_match.app_name == 'inventory' or '/inventory/' in request.path %}active{% endif %}">
+                <i class="bi bi-gem mobile-nav-icon"></i>
+                <span class="mobile-nav-label">Stock</span>
+            </a>
+            <a href="{% url 'wholesale:order_list' %}" class="mobile-nav-item {% if 'order' in request.resolver_match.url_name or '/wholesale/orders/' in request.path %}active{% endif %}">
+                <i class="bi bi-bag-check mobile-nav-icon"></i>
+                <span class="mobile-nav-label">Orders</span>
+            </a>
+            <a href="{% url 'wholesale:party_list' %}" class="mobile-nav-item {% if 'party' in request.resolver_match.url_name or '/wholesale/parties/' in request.path %}active{% endif %}">
+                <i class="bi bi-people mobile-nav-icon"></i>
+                <span class="mobile-nav-label">Parties</span>
+            </a>
+        {% else %}
+            <!-- Retail Tenant / Default Bottom App Bar -->
+            <a href="{% url 'dashboard' %}" class="mobile-nav-item {% if request.resolver_match.url_name == 'dashboard' and request.resolver_match.app_name != 'karigar' and request.resolver_match.app_name != 'wholesale' %}active{% endif %}">
+                <i class="bi bi-speedometer2 mobile-nav-icon"></i>
+                <span class="mobile-nav-label">Home</span>
+            </a>
+            <a href="{% url 'inventory_list' %}" class="mobile-nav-item {% if request.resolver_match.app_name == 'inventory' or '/inventory/' in request.path %}active{% endif %}">
+                <i class="bi bi-gem mobile-nav-icon"></i>
+                <span class="mobile-nav-label">Stock</span>
+            </a>
+            <a href="{% url 'sale_list' %}" class="mobile-nav-item {% if request.resolver_match.app_name == 'sales' or '/sales/' in request.path %}active{% endif %}">
+                <i class="bi bi-receipt mobile-nav-icon"></i>
+                <span class="mobile-nav-label">Sales</span>
+            </a>
+            <a href="{% url 'customer_list' %}" class="mobile-nav-item {% if 'customer' in request.resolver_match.url_name or '/customers/' in request.path %}active{% endif %}">
+                <i class="bi bi-people mobile-nav-icon"></i>
+                <span class="mobile-nav-label">Customers</span>
+            </a>
+        {% endif %}
+        <!-- Universal 5th Item: Full Drawer Trigger -->
+        <button type="button" class="mobile-nav-item mobile-nav-trigger border-0 bg-transparent" id="mobileMenuTrigger" aria-label="Open full menu">
+            <i class="bi bi-grid-fill mobile-nav-icon"></i>
+            <span class="mobile-nav-label">Menu</span>
+        </button>
+    </nav>
+
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Global theme helper: apply + persist the theme without a page reload -->
@@ -1084,6 +1273,8 @@
         (function() {
             // 1. Mobile & Tablet (< 992px) Sidebar Toggle & Drawer
             var toggleBtn = document.getElementById('sidebarToggle');
+            var closeBtn = document.getElementById('sidebarCloseBtn');
+            var mobileMenuTrigger = document.getElementById('mobileMenuTrigger');
             var backdrop = document.getElementById('sidebarBackdrop');
 
             function closeMobileSidebar() {
@@ -1096,14 +1287,31 @@
                 document.body.style.overflow = 'hidden';
             }
 
-            if (toggleBtn) {
-                toggleBtn.addEventListener('click', function(e) {
+            function toggleMobileSidebar(e) {
+                if (e) {
+                    e.preventDefault();
                     e.stopPropagation();
-                    if (document.body.classList.contains('sidebar-mobile-open')) {
-                        closeMobileSidebar();
-                    } else {
-                        openMobileSidebar();
+                }
+                if (document.body.classList.contains('sidebar-mobile-open')) {
+                    closeMobileSidebar();
+                } else {
+                    openMobileSidebar();
+                }
+            }
+
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', toggleMobileSidebar);
+            }
+            if (mobileMenuTrigger) {
+                mobileMenuTrigger.addEventListener('click', toggleMobileSidebar);
+            }
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function(e) {
+                    if (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
                     }
+                    closeMobileSidebar();
                 });
             }
 

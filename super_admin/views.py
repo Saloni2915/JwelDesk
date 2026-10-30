@@ -31,6 +31,7 @@ from .models import (
     SubscriptionPayment,
     PlatformProposal,
     PlatformDemoLead,
+    PlatformLeadNote,
     PlatformSupportTicket,
     PlatformTicketMessage,
     CouponDesignTemplate,
@@ -39,6 +40,7 @@ from .models import (
 )
 from .forms import (
     PlatformDemoLeadForm,
+    PlatformLeadNoteForm,
     DemoMeetingScheduleForm,
     PublicDemoRequestForm,
     PlatformSupportTicketForm,
@@ -787,7 +789,11 @@ def subscription_update_view(request, tenant_id):
             import datetime
             d = parse_date(expires_at_raw)
             if d:
-                sub.expires_at = timezone.make_aware(datetime.datetime.combine(d, datetime.time(23, 59, 59)))
+                new_expires_at = timezone.make_aware(datetime.datetime.combine(d, datetime.time(23, 59, 59)))
+                if sub.is_trial and sub.expires_at and new_expires_at > sub.expires_at:
+                    sub.trial_extended = True
+                    sub.trial_extended_at = timezone.now()
+                sub.expires_at = new_expires_at
         except Exception as e:
             logger.warning("Error parsing expires_at: %s", e)
 
@@ -1230,16 +1236,29 @@ def settings_view(request):
 # ============================================================================
 
 @super_admin_required
-def demo_list_view(request):
-    """Searchable, filterable list of prospective showroom demo leads."""
+def lead_list_view(request):
+    """
+    Lead Management Dashboard and searchable, filterable list of prospective showroom leads.
+    Provides database-driven metric summary cards and multi-parameter filtering.
+    """
     qs = PlatformDemoLead.objects.select_related('assigned_staff', 'converted_tenant').order_by('-created_at')
 
-    # Tab filters
+    # Tab / Quick status filters
     tab = request.GET.get('tab', 'all').strip().lower()
     now = timezone.now()
     today = timezone.localdate()
 
-    if tab == 'upcoming':
+    if tab == 'new':
+        qs = qs.filter(status=PlatformDemoLead.STATUS_NEW)
+    elif tab == 'contacted':
+        qs = qs.filter(status=PlatformDemoLead.STATUS_CONTACTED)
+    elif tab == 'interested':
+        qs = qs.filter(status=PlatformDemoLead.STATUS_INTERESTED)
+    elif tab == 'converted':
+        qs = qs.filter(Q(status=PlatformDemoLead.STATUS_CONVERTED) | Q(converted_tenant__isnull=False))
+    elif tab == 'not_interested':
+        qs = qs.filter(status=PlatformDemoLead.STATUS_NOT_INTERESTED)
+    elif tab == 'upcoming':
         qs = qs.filter(status=PlatformDemoLead.STATUS_SCHEDULED, requested_datetime__gte=now).order_by('requested_datetime')
     elif tab == 'followup':
         qs = qs.filter(follow_up_date__lt=today).exclude(
@@ -1249,14 +1268,8 @@ def demo_list_view(request):
         qs = qs.filter(status=PlatformDemoLead.STATUS_SCHEDULED)
     elif tab == 'completed':
         qs = qs.filter(status=PlatformDemoLead.STATUS_COMPLETED)
-    elif tab == 'converted':
-        qs = qs.filter(converted_tenant__isnull=False)
-    elif tab == 'lost':
-        qs = qs.filter(status=PlatformDemoLead.STATUS_NOT_INTERESTED)
-    elif tab == 'new':
-        qs = qs.filter(status=PlatformDemoLead.STATUS_NEW)
 
-    # Search filter
+    # Search filter: Lead Name (contact_name), Shop Name (lead_name), Phone, Email, City
     q = request.GET.get('q', '').strip()
     if q:
         qs = qs.filter(
@@ -1267,29 +1280,40 @@ def demo_list_view(request):
             Q(city__icontains=q)
         )
 
-    # Status filter
+    # Status dropdown filter
     status = request.GET.get('status', 'all').strip()
     if status != 'all' and status:
         qs = qs.filter(status=status)
 
-    # Business type filter
-    business_type = request.GET.get('business_type', 'all').strip().upper()
-    if business_type != 'ALL' and business_type:
-        qs = qs.filter(business_type=business_type)
-
-    # Source filter
+    # Source dropdown filter
     source = request.GET.get('source', 'all').strip()
     if source != 'all' and source:
         qs = qs.filter(source=source)
 
-    # Counts for tabs
-    all_count = PlatformDemoLead.objects.count()
-    upcoming_count = PlatformDemoLead.objects.filter(status=PlatformDemoLead.STATUS_SCHEDULED, requested_datetime__gte=now).count()
-    followup_count = PlatformDemoLead.objects.filter(follow_up_date__lt=today).exclude(
-        status__in=[PlatformDemoLead.STATUS_COMPLETED, PlatformDemoLead.STATUS_CANCELLED, PlatformDemoLead.STATUS_NOT_INTERESTED]
+    # City dropdown filter
+    city = request.GET.get('city', 'all').strip()
+    if city != 'all' and city:
+        qs = qs.filter(city__iexact=city)
+
+    # Business type filter (backward compatibility)
+    business_type = request.GET.get('business_type', 'all').strip().upper()
+    if business_type != 'ALL' and business_type:
+        qs = qs.filter(business_type=business_type)
+
+    # Exact database counts for summary cards
+    total_leads_count = PlatformDemoLead.objects.count()
+    new_leads_count = PlatformDemoLead.objects.filter(status=PlatformDemoLead.STATUS_NEW).count()
+    contacted_leads_count = PlatformDemoLead.objects.filter(status=PlatformDemoLead.STATUS_CONTACTED).count()
+    interested_leads_count = PlatformDemoLead.objects.filter(status=PlatformDemoLead.STATUS_INTERESTED).count()
+    converted_leads_count = PlatformDemoLead.objects.filter(
+        Q(status=PlatformDemoLead.STATUS_CONVERTED) | Q(converted_tenant__isnull=False)
     ).count()
-    completed_count = PlatformDemoLead.objects.filter(status=PlatformDemoLead.STATUS_COMPLETED).count()
-    converted_count = PlatformDemoLead.objects.filter(converted_tenant__isnull=False).count()
+    not_interested_leads_count = PlatformDemoLead.objects.filter(status=PlatformDemoLead.STATUS_NOT_INTERESTED).count()
+
+    # Distinct cities list for filter dropdown
+    distinct_cities = list(
+        PlatformDemoLead.objects.exclude(city='').values_list('city', flat=True).distinct().order_by('city')
+    )
 
     paginator = Paginator(qs, 20)
     page_number = request.GET.get('page')
@@ -1300,16 +1324,20 @@ def demo_list_view(request):
         'tab': tab,
         'q': q,
         'status_filter': status,
-        'business_type_filter': business_type,
         'source_filter': source,
+        'city_filter': city,
+        'business_type_filter': business_type,
         'total_filtered': paginator.count,
-        'all_count': all_count,
-        'upcoming_count': upcoming_count,
-        'followup_count': followup_count,
-        'completed_count': completed_count,
-        'converted_count': converted_count,
+        # Metric counts for dashboard summary cards
+        'total_leads_count': total_leads_count,
+        'new_leads_count': new_leads_count,
+        'contacted_leads_count': contacted_leads_count,
+        'interested_leads_count': interested_leads_count,
+        'converted_leads_count': converted_leads_count,
+        'not_interested_leads_count': not_interested_leads_count,
+        # Filter choices
+        'distinct_cities': distinct_cities,
         'status_choices': PlatformDemoLead.STATUS_CHOICES,
-        'mode_choices': PlatformDemoLead.MODE_CHOICES,
         'source_choices': PlatformDemoLead.SOURCE_CHOICES,
         'business_type_choices': [
             ('RETAIL', 'Retail Showroom'),
@@ -1318,42 +1346,44 @@ def demo_list_view(request):
             ('OTHER', 'Other'),
         ],
     }
-    return render(request, 'super_admin/demo_list.html', context)
+    return render(request, 'super_admin/lead_list.html', context)
 
 
 @super_admin_required
-def demo_create_view(request):
-    """Create a new demo lead record manually."""
+def lead_create_view(request):
+    """Create a new prospective showroom lead record."""
     if request.method == 'POST':
         form = PlatformDemoLeadForm(request.POST)
         if form.is_valid():
             lead = form.save()
             PlatformAuditLog.objects.create(
                 actor=request.user,
-                action='DEMO_CREATE',
-                reason=f"Created demo lead for '{lead.lead_name}' ({lead.contact_name})",
+                action=PlatformAuditLog.ACTION_LEAD_CREATE,
+                reason=f"Created lead #{lead.id} '{lead.lead_name}' ({lead.contact_name})",
                 ip_address=get_client_ip(request),
                 user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]
             )
-            messages.success(request, f"Demo lead for '{lead.lead_name}' recorded successfully.")
-            return redirect('super_admin:demo_detail', lead_id=lead.id)
+            messages.success(request, f"Lead '{lead.lead_name}' ({lead.contact_name}) recorded successfully.")
+            return redirect('super_admin:lead_detail', lead_id=lead.id)
     else:
-        form = PlatformDemoLeadForm(initial={'meeting_mode': 'online', 'status': 'new'})
+        form = PlatformDemoLeadForm(initial={'meeting_mode': 'online', 'status': PlatformDemoLead.STATUS_NEW})
 
     context = {
         'form': form,
-        'page_title': 'Add New Demo Lead / Meeting',
+        'page_title': 'Add New Prospective Lead',
     }
-    return render(request, 'super_admin/demo_form.html', context)
+    return render(request, 'super_admin/lead_form.html', context)
 
 
 @super_admin_required
-def demo_detail_view(request, lead_id):
-    """View details of a single demo lead, meetings, and interaction timeline."""
+def lead_detail_view(request, lead_id):
+    """View details of a lead, follow-up history timeline, notes, and Phase 3 readiness."""
     lead = get_object_or_404(
         PlatformDemoLead.objects.select_related('assigned_staff', 'converted_tenant'),
         pk=lead_id
     )
+    notes = lead.followup_notes.select_related('author').order_by('-created_at')
+    note_form = PlatformLeadNoteForm(lead_status=lead.status)
     schedule_form = DemoMeetingScheduleForm(initial={
         'action_type': 'schedule' if lead.status == PlatformDemoLead.STATUS_NEW else 'reschedule',
         'meeting_datetime': lead.requested_datetime,
@@ -1364,20 +1394,23 @@ def demo_detail_view(request, lead_id):
         'next_action': lead.next_action,
     })
 
-    # Available tenants for manual conversion linkage
+    # Available tenants for legacy link if needed
     tenants = Tenant.objects.filter(is_active=True).order_by('name')[:100]
 
     context = {
         'lead': lead,
+        'notes': notes,
+        'note_form': note_form,
         'schedule_form': schedule_form,
         'tenants': tenants,
+        'status_choices': PlatformDemoLead.STATUS_CHOICES,
     }
-    return render(request, 'super_admin/demo_detail.html', context)
+    return render(request, 'super_admin/lead_detail.html', context)
 
 
 @super_admin_required
-def demo_edit_view(request, lead_id):
-    """Edit lead details and contact information."""
+def lead_edit_view(request, lead_id):
+    """Edit prospective lead details, contact information, and business attributes."""
     lead = get_object_or_404(PlatformDemoLead, pk=lead_id)
     if request.method == 'POST':
         form = PlatformDemoLeadForm(request.POST, instance=lead)
@@ -1385,13 +1418,13 @@ def demo_edit_view(request, lead_id):
             form.save()
             PlatformAuditLog.objects.create(
                 actor=request.user,
-                action='DEMO_UPDATE',
-                reason=f"Updated demo lead #{lead.id} ({lead.lead_name})",
+                action=PlatformAuditLog.ACTION_LEAD_UPDATE,
+                reason=f"Updated lead #{lead.id} '{lead.lead_name}' ({lead.contact_name})",
                 ip_address=get_client_ip(request),
                 user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]
             )
             messages.success(request, f"Lead '{lead.lead_name}' updated successfully.")
-            return redirect('super_admin:demo_detail', lead_id=lead.id)
+            return redirect('super_admin:lead_detail', lead_id=lead.id)
     else:
         form = PlatformDemoLeadForm(instance=lead)
 
@@ -1400,7 +1433,86 @@ def demo_edit_view(request, lead_id):
         'lead': lead,
         'page_title': f"Edit Lead — {lead.lead_name}",
     }
-    return render(request, 'super_admin/demo_form.html', context)
+    return render(request, 'super_admin/lead_form.html', context)
+
+
+@super_admin_required
+@require_POST
+def lead_add_note_view(request, lead_id):
+    """Add a timestamped follow-up note to a lead and optionally update status/follow-up date."""
+    lead = get_object_or_404(PlatformDemoLead, pk=lead_id)
+    form = PlatformLeadNoteForm(request.POST)
+    if form.is_valid():
+        note_obj = form.save(commit=False)
+        note_obj.lead = lead
+        note_obj.author = request.user
+        note_obj.save()
+
+        updated_fields = ['updated_at']
+        new_status = form.cleaned_data.get('status_at_note')
+        if new_status and new_status != lead.status:
+            lead.status = new_status
+            updated_fields.append('status')
+        new_follow_up = form.cleaned_data.get('follow_up_date')
+        if new_follow_up:
+            lead.follow_up_date = new_follow_up
+            updated_fields.append('follow_up_date')
+
+        lead.save(update_fields=updated_fields)
+
+        PlatformAuditLog.objects.create(
+            actor=request.user,
+            action=PlatformAuditLog.ACTION_LEAD_NOTE,
+            reason=f"Added follow-up note to lead #{lead.id} '{lead.lead_name}'. Status: {lead.get_status_display()}",
+            ip_address=get_client_ip(request),
+            user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]
+        )
+        messages.success(request, "Follow-up note logged successfully.")
+    else:
+        messages.error(request, "Please enter a valid note.")
+
+    return redirect('super_admin:lead_detail', lead_id=lead.id)
+
+
+@super_admin_required
+@require_POST
+def lead_update_status_view(request, lead_id):
+    """Quickly update lead status and record in activity log."""
+    lead = get_object_or_404(PlatformDemoLead, pk=lead_id)
+    new_status = request.POST.get('status', '').strip()
+    status_choices_dict = dict(PlatformDemoLead.STATUS_CHOICES)
+
+    if new_status in status_choices_dict:
+        old_status_display = lead.get_status_display()
+        lead.status = new_status
+        lead.save(update_fields=['status', 'updated_at'])
+
+        PlatformLeadNote.objects.create(
+            lead=lead,
+            author=request.user,
+            note=f"Status changed from '{old_status_display}' to '{status_choices_dict[new_status]}'.",
+            status_at_note=new_status
+        )
+
+        PlatformAuditLog.objects.create(
+            actor=request.user,
+            action=PlatformAuditLog.ACTION_LEAD_STATUS_UPDATE,
+            reason=f"Status of lead #{lead.id} '{lead.lead_name}' changed to {status_choices_dict[new_status]}",
+            ip_address=get_client_ip(request),
+            user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]
+        )
+        messages.success(request, f"Lead status updated to '{status_choices_dict[new_status]}'.")
+    else:
+        messages.error(request, "Invalid status choice selected.")
+
+    return redirect('super_admin:lead_detail', lead_id=lead.id)
+
+
+# Aliases for backward compatibility
+demo_list_view = lead_list_view
+demo_create_view = lead_create_view
+demo_detail_view = lead_detail_view
+demo_edit_view = lead_edit_view
 
 
 @super_admin_required
@@ -1943,7 +2055,7 @@ def reports_export_csv_view(request, report_type):
                 t.created_at.strftime('%Y-%m-%d %H:%M') if t.created_at else 'N/A'
             ])
 
-    elif report_type == 'demos':
+    elif report_type in ('demos', 'leads'):
         response['Content-Disposition'] = f'attachment; filename="JewelDesk_Demo_Leads_{now.strftime("%Y%m%d")}.csv"'
         writer.writerow(['Lead ID', 'Showroom Name', 'Contact Person', 'Phone', 'Email', 'City', 'Business Type', 'Source', 'Status', 'Meeting Date', 'Follow Up', 'Created Date'])
         for d in PlatformDemoLead.objects.order_by('-created_at'):

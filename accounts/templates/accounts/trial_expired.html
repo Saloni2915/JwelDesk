@@ -1,0 +1,316 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trial Expired — {{ tenant.name }} | JewelDesk</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts: Cinzel & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Shared theme tokens -->
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+
+    <style>
+        :root {
+            --te-bg: #141009;
+            --te-card-bg: #1c1710;
+            --te-border: #3d3121;
+            --te-gold: #ECC86A;
+            --te-gold-hover: #f5d77f;
+            --te-text: #FAF4EA;
+            --te-muted: #b8a690;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            min-height: 100dvh;
+            background-color: var(--te-bg);
+            color: var(--te-text);
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .te-header {
+            background: rgba(20, 16, 9, 0.95);
+            border-bottom: 1px solid var(--te-border);
+            padding: 1rem 1.5rem;
+            backdrop-filter: blur(8px);
+        }
+
+        .te-brand {
+            font-family: 'Cinzel', serif;
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--te-gold);
+            letter-spacing: 0.5px;
+            text-decoration: none;
+        }
+
+        .te-card {
+            background: var(--te-card-bg);
+            border: 1px solid var(--te-border);
+            border-radius: 14px;
+            padding: 2.25rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+        }
+
+        .te-contact-box {
+            background: rgba(236, 200, 106, 0.04);
+            border: 1px solid rgba(236, 200, 106, 0.2);
+            border-radius: 10px;
+            padding: 1.25rem;
+            transition: all 0.2s ease-in-out;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .te-contact-box:hover {
+            border-color: var(--te-gold);
+            background: rgba(236, 200, 106, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .btn-te-gold {
+            background: var(--te-gold);
+            color: #141009;
+            font-weight: 700;
+            border: none;
+            padding: 0.65rem 1.5rem;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-te-gold:hover {
+            background: var(--te-gold-hover);
+            color: #000;
+            box-shadow: 0 4px 14px rgba(236, 200, 106, 0.35);
+        }
+
+        .btn-te-outline {
+            border: 1px solid var(--te-border);
+            color: var(--te-text);
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 0.65rem 1.25rem;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-te-outline:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--te-gold);
+            color: var(--te-gold);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navigation Bar -->
+    <header class="te-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-3">
+            <a href="/" class="te-brand d-flex align-items-center gap-2">
+                <i class="bi bi-gem"></i>
+                <span>JwelDesk</span>
+            </a>
+            <span class="badge bg-secondary bg-opacity-25 text-body border border-secondary border-opacity-25 d-none d-sm-inline-block">
+                <i class="bi bi-shop me-1"></i>{{ tenant.name }}
+            </span>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <span class="small text-muted d-none d-md-inline">
+                Signed in as <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+            </span>
+            <form action="{% url 'accounts:logout' %}" method="post" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-secondary text-body">
+                    <i class="bi bi-box-arrow-right me-1"></i> Sign Out
+                </button>
+            </form>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow-1 d-flex align-items-center justify-content-center py-5 px-3">
+        <div class="container" style="max-width: 820px;">
+            <div class="te-card">
+                <!-- Status Header -->
+                <div class="text-center mb-4">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 72px; height: 72px; background: rgba(236, 200, 106, 0.12); color: var(--te-gold); border: 2px solid rgba(236, 200, 106, 0.35); font-size: 2rem;">
+                        <i class="bi bi-hourglass-bottom"></i>
+                    </div>
+                    <div class="mb-2">
+                        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30 px-3 py-1 fw-bold text-uppercase" style="letter-spacing: 0.5px;">
+                            15-Day Free Trial Concluded &bull; 15 दिन का ट्रायल समाप्त
+                        </span>
+                    </div>
+                    <h2 class="fw-bold mb-2" style="font-family: 'Cinzel', serif; color: var(--te-gold); font-size: 1.85rem;">
+                        Trial समाप्त हो गया है — कृपया अकाउंट मैनेजर से संपर्क करें
+                    </h2>
+                    <p class="text-light mb-0" style="font-size: 0.95rem; max-width: 650px; margin: 0 auto; line-height: 1.6; opacity: 0.9;">
+                        The 15-day complimentary trial period for <strong style="color: var(--te-gold);">{{ tenant.name }}</strong>
+                        {% if subscription.expires_at %}
+                        concluded on <strong>{{ subscription.expires_at|date:"d F Y @ h:i A" }}</strong>.
+                        {% else %}
+                        has concluded.
+                        {% endif %}
+                        <br>
+                        आगे उपयोग जारी रखने के लिए तुरंत अपने अकाउंट मैनेजर से संपर्क करें।
+                    </p>
+                </div>
+
+                <!-- Prominent Account Manager Action Banner -->
+                <div class="p-3 p-md-4 rounded-3 mb-4 text-center" style="background: linear-gradient(135deg, rgba(236, 200, 106, 0.18) 0%, rgba(30, 24, 15, 0.95) 100%); border: 2px solid var(--te-gold); box-shadow: 0 6px 25px rgba(0, 0, 0, 0.45);">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-2" style="width: 52px; height: 52px; background: rgba(236, 200, 106, 0.2); color: var(--te-gold); font-size: 1.6rem; border: 1px solid var(--te-gold);">
+                        <i class="bi bi-person-lines-fill"></i>
+                    </div>
+                    <h4 class="fw-bold mb-1" style="color: var(--te-gold); font-family: 'Cinzel', serif;">
+                        अकाउंट मैनेजर से संपर्क करें (Contact Account Manager)
+                    </h4>
+                    <p class="mb-3 text-light small mx-auto" style="max-width: 600px; line-height: 1.55;">
+                        आपका 15 दिनों का फ्री ट्रायल पूरा हो गया है। अपने शोरूम का सॉफ्टवेयर तुरंत चालू (Activate) कराने के लिए नीचे दिए गए बटन से अपने अकाउंट मैनेजर को कॉल या व्हाट्सएप करें।
+                    </p>
+                    <div class="d-flex justify-content-center flex-wrap gap-3">
+                        <a href="tel:{{ support_phone }}" class="btn btn-te-gold px-4 py-2 fw-bold d-inline-flex align-items-center gap-2 shadow">
+                            <i class="bi bi-telephone-fill"></i> Call Account Manager ({{ support_phone }})
+                        </a>
+                        <a href="https://wa.me/91{{ support_phone|cut:'+'|cut:' '|cut:'-' }}?text=Hello%20JwelDesk%2C%20our%2015-day%20free%20trial%20for%20{{ tenant.name|urlencode }}%20(Tenant%20ID%20{{ tenant.id }})%20has%20expired.%20Please%20help%20us%20activate%20our%20account." target="_blank" class="btn btn-success px-4 py-2 fw-bold d-inline-flex align-items-center gap-2 shadow">
+                            <i class="bi bi-whatsapp"></i> Chat on WhatsApp
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Guarantee Banner: Business Data Safety -->
+                <div class="p-3 rounded-3 mb-4" style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25);">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="text-success fs-3 flex-shrink-0 mt-1">
+                            <i class="bi bi-shield-check"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-success mb-1" style="font-size: 0.95rem;">
+                                Your Business Data Is 100% Safe &amp; Preserved
+                            </div>
+                            <div class="small" style="color: var(--te-text); line-height: 1.5; opacity: 0.9;">
+                                All your jewellery inventory items, bullion and gemstone rates, invoices, customer directories, custom orders, and Karigar ledgers remain securely stored and encrypted in PostgreSQL cloud storage. No data will ever be deleted or altered upon trial expiry.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Renewal Contact Options Grid -->
+                <div class="mb-4">
+                    <h5 class="fw-bold mb-3 d-flex align-items-center gap-2" style="color: var(--te-gold); font-size: 1.05rem;">
+                        <i class="bi bi-telephone-outbound"></i> Choose Renewal &amp; Activation Channel
+                    </h5>
+                    <div class="row g-3">
+                        <!-- Channel 1: Phone -->
+                        <div class="col-12 col-md-4">
+                            <div class="te-contact-box">
+                                <div>
+                                    <div class="d-flex align-items-center gap-2 mb-2" style="color: var(--te-gold);">
+                                        <i class="bi bi-telephone-fill"></i>
+                                        <span class="fw-bold small text-uppercase">Phone Call</span>
+                                    </div>
+                                    <div class="small text-muted mb-3" style="font-size: 0.82rem;">
+                                        Speak directly with your dedicated jewellery software account manager.
+                                    </div>
+                                </div>
+                                <a href="tel:{{ support_phone }}" class="btn btn-sm btn-te-gold w-100">
+                                    <i class="bi bi-telephone-forward me-1"></i> Call Support
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Channel 2: WhatsApp -->
+                        <div class="col-12 col-md-4">
+                            <div class="te-contact-box">
+                                <div>
+                                    <div class="d-flex align-items-center gap-2 mb-2 text-success">
+                                        <i class="bi bi-whatsapp"></i>
+                                        <span class="fw-bold small text-uppercase">WhatsApp Chat</span>
+                                    </div>
+                                    <div class="small text-muted mb-3" style="font-size: 0.82rem;">
+                                        Instant assistance, plan pricing brochures, and payment activation QR code.
+                                    </div>
+                                </div>
+                                <a href="https://wa.me/91{{ support_phone|cut:'+'|cut:' '|cut:'-' }}?text=Hello%20JwelDesk%20Team%2C%20our%20free%20trial%20for%20{{ tenant.name|urlencode }}%20(ID%20{{ tenant.id }})%20has%20expired.%20Please%20help%20us%20activate%20our%20subscription." target="_blank" class="btn btn-sm btn-success w-100 fw-bold">
+                                    <i class="bi bi-whatsapp me-1"></i> Chat on WhatsApp
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Channel 3: Email -->
+                        <div class="col-12 col-md-4">
+                            <div class="te-contact-box">
+                                <div>
+                                    <div class="d-flex align-items-center gap-2 mb-2 text-info">
+                                        <i class="bi bi-envelope-fill"></i>
+                                        <span class="fw-bold small text-uppercase">Official Email</span>
+                                    </div>
+                                    <div class="small text-muted mb-3" style="font-size: 0.82rem;">
+                                        Request customized enterprise pricing or formal invoicing documentation.
+                                    </div>
+                                </div>
+                                <a href="mailto:{{ support_email }}?subject=Subscription%20Renewal%20-%20{{ tenant.name|urlencode }}%20(Tenant%20ID%20{{ tenant.id }})&body=Hi%20JwelDesk%20Team%2C%0A%0AOur%2015-day%20free%20trial%20for%20{{ tenant.name|urlencode }}%20has%20concluded.%20Please%20contact%20us%20to%20activate%20our%20account%20license." class="btn btn-sm btn-te-outline w-100">
+                                    <i class="bi bi-send me-1"></i> Email Desk
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Employee Notice (if user is not owner) -->
+                {% if not is_owner %}
+                <div class="p-3 rounded-3 mb-4" style="background: rgba(236, 200, 106, 0.05); border: 1px dashed rgba(236, 200, 106, 0.25);">
+                    <div class="d-flex align-items-center gap-2 text-warning small mb-1 fw-bold">
+                        <i class="bi bi-info-circle-fill"></i> Staff Member Notice
+                    </div>
+                    <div class="small text-muted" style="line-height: 1.5;">
+                        You are signed in as an employee of <strong>{{ tenant.name }}</strong>. All branches and employee accounts share the shop's trial license. Please notify your store owner
+                        {% if tenant.owner %}
+                        (<strong>{{ tenant.owner.get_full_name|default:tenant.owner.username }}</strong>)
+                        {% endif %}
+                        to complete the subscription activation.
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Footer Actions -->
+                <div class="pt-3 border-top border-secondary border-opacity-15 d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div class="small text-muted">
+                        Need immediate help? Hotline: <a href="tel:{{ support_phone }}" class="text-warning text-decoration-none fw-bold">{{ support_phone }}</a>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <form action="{% url 'accounts:logout' %}" method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-te-outline">
+                                <i class="bi bi-box-arrow-right me-1"></i> Switch Account / Log Out
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-3 text-center text-muted small border-top border-secondary border-opacity-10">
+        &copy; {% now "Y" %} JwelDesk — Complete Jewellery Management System. All rights reserved.
+    </footer>
+
+</body>
+</html>
+
