@@ -86,9 +86,29 @@ def get_sales_crm_stage_counts():
     except Exception as e:
         import logging
         logging.getLogger(__name__).warning("Error calculating sales crm counts: %s", e)
+        try:
+            leads_fallback = PlatformDemoLead.objects.filter(status__in=['new', 'contacted', 'pending']).count()
+        except Exception:
+            leads_fallback = 0
+        try:
+            customers_fallback = Tenant.objects.filter(is_active=True).count()
+        except Exception:
+            customers_fallback = 0
+        try:
+            subscribers_fallback = TenantSubscription.objects.filter(status='active').exclude(plan_name='trial').count()
+        except Exception:
+            subscribers_fallback = 0
         return {
-            'leads': 0, 'interested': 0, 'meetings': 0, 'trial': 0, 'proposals': 0,
-            'orders': 0, 'customers': 0, 'subscribers': 0, 'renewals': 0, 'lost': 0
+            'leads': leads_fallback,
+            'interested': 0,
+            'meetings': 0,
+            'trial': 0,
+            'proposals': 0,
+            'orders': 0,
+            'customers': customers_fallback,
+            'subscribers': subscribers_fallback,
+            'renewals': 0,
+            'lost': 0
         }
 
 
