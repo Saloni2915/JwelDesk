@@ -1441,3 +1441,88 @@ body.has-cockpit .sidebar {
 [data-theme="light"] .jd-msc-amount {
     color: #B48516 !important;
 }
+
+/* Dark Theme Mobile Overrides (Obsidian Midnight / Deep Titanium Slate) */
+[data-theme="dark"] .jd-card {
+    background: #121620 !important;
+    border: 1px solid rgba(148, 163, 184, 0.18) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45) !important;
+}
+
+[data-theme="dark"] .jd-card-header {
+    background: #171D2A !important;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.16) !important;
+}
+
+[data-theme="dark"] .jd-card-title-group h3 {
+    color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .jd-card-title-group h3 i {
+    color: #38BDF8 !important;
+}
+
+[data-theme="dark"] .jd-card-header-link {
+    color: #38BDF8 !important;
+    background: rgba(56, 189, 248, 0.12) !important;
+    border: 1px solid rgba(56, 189, 248, 0.3) !important;
+}
+
+[data-theme="dark"] .jd-card-header-link:hover,
+[data-theme="dark"] .jd-card-header-link:active {
+    background: rgba(56, 189, 248, 0.24) !important;
+    color: #7DD3FC !important;
+}
+
+[data-theme="dark"] .jd-app-quick-dock {
+    background: #121620 !important;
+    border: 1px solid rgba(148, 163, 184, 0.2) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="dark"] .jd-dock-gold {
+    background: linear-gradient(135deg, #38BDF8 0%, #2563EB 100%) !important;
+    color: #FFFFFF !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+}
+
+[data-theme="dark"] .jd-app-dock-label {
+    color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .jd-mobile-sale-card {
+    background: #171D2A !important;
+    border: 1px solid rgba(148, 163, 184, 0.16) !important;
+}
+
+[data-theme="dark"] .jd-mobile-sale-card:active {
+    background: #1C2332 !important;
+    border-color: rgba(56, 189, 248, 0.4) !important;
+}
+
+[data-theme="dark"] .jd-msc-invoice {
+    color: #38BDF8 !important;
+    background: rgba(56, 189, 248, 0.12) !important;
+    border: 1px solid rgba(56, 189, 248, 0.28) !important;
+}
+
+[data-theme="dark"] .jd-msc-customer,
+[data-theme="dark"] .jd-msc-empty-title {
+    color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .jd-msc-amount {
+    color: #38BDF8 !important;
+}
+
+[data-theme="dark"] .jd-msc-empty-icon {
+    background: rgba(56, 189, 248, 0.12) !important;
+    border: 1px solid rgba(56, 189, 248, 0.28) !important;
+    color: #38BDF8 !important;
+}
+
+[data-theme="dark"] .jd-msc-empty-btn {
+    background: linear-gradient(135deg, #38BDF8 0%, #2563EB 100%) !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;
+}

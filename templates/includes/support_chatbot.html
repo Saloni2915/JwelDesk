@@ -112,10 +112,6 @@ html:not([data-theme="dark"]):not([data-theme="gold"]) #jdSupportWidget {
     width: 58px;
     height: 58px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #ECC86A 0%, #D4AF37 50%, #A88420 100%);
-    color: #141009;
-    border: 2px solid rgba(255, 255, 255, 0.25);
-    box-shadow: 0 8px 24px rgba(212, 175, 55, 0.4), 0 2px 6px rgba(0,0,0,0.3);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -125,11 +121,17 @@ html:not([data-theme="dark"]):not([data-theme="gold"]) #jdSupportWidget {
     position: relative;
     user-select: none;
 }
-#jdSupportLauncher:hover {
-    transform: scale(1.08) translateY(-2px);
-    box-shadow: 0 12px 30px rgba(212, 175, 55, 0.55), 0 4px 10px rgba(0,0,0,0.35);
+
+/* Gold Theme (Default) */
+#jdSupportLauncher,
+[data-theme="gold"] #jdSupportLauncher {
+    background: linear-gradient(135deg, #ECC86A 0%, #D4AF37 50%, #A88420 100%);
+    color: #141009;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 8px 24px rgba(212, 175, 55, 0.4), 0 2px 6px rgba(0,0,0,0.3);
 }
-#jdSupportLauncher .jd-pulse-ring {
+#jdSupportLauncher .jd-pulse-ring,
+[data-theme="gold"] #jdSupportLauncher .jd-pulse-ring {
     position: absolute;
     width: 100%;
     height: 100%;
@@ -137,6 +139,45 @@ html:not([data-theme="dark"]):not([data-theme="gold"]) #jdSupportWidget {
     border: 2px solid #ECC86A;
     animation: jdLauncherPulse 2.5s infinite;
     pointer-events: none;
+}
+
+/* Dark Theme (Obsidian Midnight / Sky Blue) */
+[data-theme="dark"] #jdSupportLauncher {
+    background: linear-gradient(135deg, #38BDF8 0%, #0284C7 50%, #0369A1 100%) !important;
+    color: #0A0D14 !important;
+    border: 2px solid rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 8px 24px rgba(56, 189, 248, 0.45), 0 2px 6px rgba(0,0,0,0.4) !important;
+}
+[data-theme="dark"] #jdSupportLauncher .jd-pulse-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid #38BDF8 !important;
+    animation: jdLauncherPulse 2.5s infinite;
+    pointer-events: none;
+}
+
+/* Light Theme (Clean Atelier) */
+[data-theme="light"] #jdSupportLauncher {
+    background: linear-gradient(135deg, #ECC86A 0%, #B48516 100%) !important;
+    color: #0F172A !important;
+    border: 2px solid rgba(255, 255, 255, 0.4) !important;
+    box-shadow: 0 8px 20px rgba(180, 133, 22, 0.35) !important;
+}
+[data-theme="light"] #jdSupportLauncher .jd-pulse-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid #B48516 !important;
+    animation: jdLauncherPulse 2.5s infinite;
+    pointer-events: none;
+}
+
+#jdSupportLauncher:hover {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), 0 4px 10px rgba(0,0,0,0.35);
 }
 @keyframes jdLauncherPulse {
     0% { transform: scale(1); opacity: 0.8; }

@@ -13,18 +13,63 @@
     gap: 0.5rem !important;
     margin-bottom: 1.15rem !important;
     padding: 0.85rem 0.5rem !important;
-    background: #14110C !important;
-    border: 1px solid rgba(212, 175, 55, 0.16) !important;
     border-radius: 16px !important;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4) !important;
     box-sizing: border-box !important;
     list-style: none !important;
 }
 
+/* Gold Theme (Default) */
+.jd-app-quick-dock,
+[data-theme="gold"] .jd-app-quick-dock {
+    background: #14110C !important;
+    border: 1px solid rgba(212, 175, 55, 0.22) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4) !important;
+}
+.jd-dock-gold,
+[data-theme="gold"] .jd-dock-gold {
+    background: linear-gradient(135deg, #ECC86A 0%, #D4AF37 50%, #A88420 100%) !important;
+    color: #141009 !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+.jd-app-dock-label,
+[data-theme="gold"] .jd-app-dock-label {
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    color: #FAF4EA !important;
+    letter-spacing: -0.01em !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    text-decoration: none !important;
+}
+
+/* Dark Theme (Obsidian Midnight / Deep Titanium Slate) */
+[data-theme="dark"] .jd-app-quick-dock {
+    background: #121620 !important;
+    border: 1px solid rgba(148, 163, 184, 0.2) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5) !important;
+}
+[data-theme="dark"] .jd-dock-gold {
+    background: linear-gradient(135deg, #38BDF8 0%, #2563EB 100%) !important;
+    color: #FFFFFF !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+}
+[data-theme="dark"] .jd-app-dock-label {
+    color: #F8FAFC !important;
+}
+
+/* Light Theme (Clean Atelier) */
 [data-theme="light"] .jd-app-quick-dock {
     background: #FFFFFF !important;
-    border-color: #E2E8F0 !important;
+    border: 1px solid #E2E8F0 !important;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06) !important;
+}
+[data-theme="light"] .jd-dock-gold {
+    background: linear-gradient(135deg, #C99A27 0%, #B48516 100%) !important;
+    color: #FFFFFF !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+[data-theme="light"] .jd-app-dock-label {
+    color: #0F172A !important;
 }
 
 .jd-app-dock-item {
@@ -62,12 +107,6 @@
     transform: scale(0.92) !important;
 }
 
-.jd-dock-gold {
-    background: linear-gradient(135deg, #ECC86A 0%, #D4AF37 50%, #A88420 100%) !important;
-    color: #141009 !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-}
-
 .jd-dock-emerald {
     background: linear-gradient(135deg, #34D399 0%, #059669 100%) !important;
     color: #FFFFFF !important;
@@ -84,20 +123,6 @@
     background: linear-gradient(135deg, #C084FC 0%, #7C3AED 100%) !important;
     color: #FFFFFF !important;
     border: 1px solid rgba(255, 255, 255, 0.25) !important;
-}
-
-.jd-app-dock-label {
-    font-size: 0.72rem !important;
-    font-weight: 600 !important;
-    color: #FAF4EA !important;
-    letter-spacing: -0.01em !important;
-    text-align: center !important;
-    white-space: nowrap !important;
-    text-decoration: none !important;
-}
-
-[data-theme="light"] .jd-app-dock-label {
-    color: #0F172A !important;
 }
 </style>
 {% endblock %}
@@ -200,31 +225,30 @@
     </div>
 
     <!-- Native Mobile App Quick Action Dock (< 768px) -->
-    <div class="jd-app-quick-dock d-md-none" role="navigation" aria-label="Quick App Actions"
-         style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 1.15rem; padding: 0.85rem 0.5rem; background: #14110C; border: 1px solid rgba(212, 175, 55, 0.16); border-radius: 16px; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4); list-style: none;">
-        <a href="{% url 'sale_add' %}" class="jd-app-dock-item" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none !important; gap: 0.35rem; color: inherit;">
-            <div class="jd-app-dock-icon jd-dock-gold" style="width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; background: linear-gradient(135deg, #ECC86A 0%, #D4AF37 50%, #A88420 100%); color: #141009; border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);">
+    <div class="jd-app-quick-dock d-md-none" role="navigation" aria-label="Quick App Actions">
+        <a href="{% url 'sale_add' %}" class="jd-app-dock-item">
+            <div class="jd-app-dock-icon jd-dock-gold">
                 <i class="bi bi-cart-plus"></i>
             </div>
-            <span class="jd-app-dock-label" style="font-size: 0.72rem; font-weight: 600; color: #FAF4EA; text-align: center; white-space: nowrap; text-decoration: none !important;">New Sale</span>
+            <span class="jd-app-dock-label">New Sale</span>
         </a>
-        <a href="{% url 'inventory_add' %}" class="jd-app-dock-item" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none !important; gap: 0.35rem; color: inherit;">
-            <div class="jd-app-dock-icon jd-dock-emerald" style="width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; background: linear-gradient(135deg, #34D399 0%, #059669 100%); color: #FFFFFF; border: 1px solid rgba(255, 255, 255, 0.25); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);">
+        <a href="{% url 'inventory_add' %}" class="jd-app-dock-item">
+            <div class="jd-app-dock-icon jd-dock-emerald">
                 <i class="bi bi-gem"></i>
             </div>
-            <span class="jd-app-dock-label" style="font-size: 0.72rem; font-weight: 600; color: #FAF4EA; text-align: center; white-space: nowrap; text-decoration: none !important;">Add Stock</span>
+            <span class="jd-app-dock-label">Add Stock</span>
         </a>
-        <a href="{% url 'customer_add' %}" class="jd-app-dock-item" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none !important; gap: 0.35rem; color: inherit;">
-            <div class="jd-app-dock-icon jd-dock-cyan" style="width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; background: linear-gradient(135deg, #38BDF8 0%, #0284C7 100%); color: #FFFFFF; border: 1px solid rgba(255, 255, 255, 0.25); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);">
+        <a href="{% url 'customer_add' %}" class="jd-app-dock-item">
+            <div class="jd-app-dock-icon jd-dock-cyan">
                 <i class="bi bi-person-plus"></i>
             </div>
-            <span class="jd-app-dock-label" style="font-size: 0.72rem; font-weight: 600; color: #FAF4EA; text-align: center; white-space: nowrap; text-decoration: none !important;">+ Customer</span>
+            <span class="jd-app-dock-label">+ Customer</span>
         </a>
-        <a href="{% url 'custom_orders:custom_order_add' %}" class="jd-app-dock-item" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none !important; gap: 0.35rem; color: inherit;">
-            <div class="jd-app-dock-icon jd-dock-purple" style="width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; background: linear-gradient(135deg, #C084FC 0%, #7C3AED 100%); color: #FFFFFF; border: 1px solid rgba(255, 255, 255, 0.25); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);">
+        <a href="{% url 'custom_orders:custom_order_add' %}" class="jd-app-dock-item">
+            <div class="jd-app-dock-icon jd-dock-purple">
                 <i class="bi bi-hammer"></i>
             </div>
-            <span class="jd-app-dock-label" style="font-size: 0.72rem; font-weight: 600; color: #FAF4EA; text-align: center; white-space: nowrap; text-decoration: none !important;">Order</span>
+            <span class="jd-app-dock-label">Order</span>
         </a>
     </div>
 

@@ -104,37 +104,27 @@
                             </span>
                         </td>
                         <td>
-                            {% if ticket.priority == 'urgent' or ticket.priority == 'high' %}
-                            <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-25">
-                                {{ ticket.get_priority_display }}
-                            </span>
-                            {% elif ticket.priority == 'medium' %}
-                            <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-25">
-                                Medium
-                            </span>
+                            {% if ticket.priority == 'urgent' %}
+                            <span class="sa-badge-pill sa-priority-urgent"><i class="bi bi-exclamation-triangle-fill"></i> Urgent</span>
+                            {% elif ticket.priority == 'high' %}
+                            <span class="sa-badge-pill sa-priority-high"><i class="bi bi-arrow-up-circle-fill"></i> High</span>
+                            {% elif ticket.priority == 'low' %}
+                            <span class="sa-badge-pill sa-priority-low"><i class="bi bi-arrow-down-circle"></i> Low</span>
                             {% else %}
-                            <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-25">
-                                Low
-                            </span>
+                            <span class="sa-badge-pill sa-priority-medium"><i class="bi bi-dash-circle"></i> Medium</span>
                             {% endif %}
                         </td>
                         <td>
-                            {% if ticket.status == 'resolved' or ticket.status == 'closed' %}
-                            <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30 d-inline-flex align-items-center gap-1">
-                                <i class="bi bi-check-circle-fill"></i> {{ ticket.get_status_display }}
-                            </span>
+                            {% if ticket.status == 'resolved' %}
+                            <span class="sa-badge-pill sa-status-resolved"><span class="sa-status-dot"></span> Resolved</span>
+                            {% elif ticket.status == 'closed' %}
+                            <span class="sa-badge-pill sa-status-closed"><span class="sa-status-dot"></span> Closed</span>
                             {% elif ticket.status == 'waiting_customer' %}
-                            <span class="badge bg-danger bg-opacity-20 text-warning border border-warning border-opacity-30 d-inline-flex align-items-center gap-1">
-                                <i class="bi bi-clock-history"></i> Awaiting Your Reply
-                            </span>
+                            <span class="sa-badge-pill sa-status-awaiting"><span class="sa-status-dot"></span> Awaiting Your Reply</span>
                             {% elif ticket.status == 'in_progress' %}
-                            <span class="badge bg-primary bg-opacity-20 text-info border border-info border-opacity-30 d-inline-flex align-items-center gap-1">
-                                <i class="bi bi-arrow-repeat"></i> In Progress
-                            </span>
+                            <span class="sa-badge-pill sa-status-in-progress"><span class="sa-status-dot"></span> In Progress</span>
                             {% else %}
-                            <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30">
-                                Open
-                            </span>
+                            <span class="sa-badge-pill sa-status-open"><span class="sa-status-dot"></span> Open</span>
                             {% endif %}
                         </td>
                         <td>

@@ -19,7 +19,7 @@
             </p>
         </div>
         <div class="jd-header-actions">
-            <a href="{% url 'accounts:menu_settings' %}" class="jd-btn-secondary">
+            <a href="{% url 'accounts:menu_settings' %}" class="jd-btn-gold">
                 <i class="bi bi-layout-sidebar-inset" aria-hidden="true"></i> Menu Bar Settings
             </a>
             <a href="{% url 'dashboard' %}" class="jd-btn-ghost">
@@ -32,15 +32,15 @@
         <div class="col-xl-9 col-lg-10">
 
             <!-- Menu Bar Settings Quick Link Card -->
-            <div class="jd-card mb-4" style="background: linear-gradient(135deg, rgba(21, 19, 14, 0.95), rgba(32, 28, 20, 0.9)); border: 1px solid rgba(236, 200, 106, 0.25);">
+            <div class="jd-card jd-menu-banner mb-4">
                 <div class="p-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
                     <div class="d-flex align-items-center gap-3">
-                        <div class="jd-kpi-icon" style="width: 40px; height: 40px; font-size: 1.2rem; background: rgba(236, 200, 106, 0.15); color: var(--jd-gold);">
+                        <div class="jd-kpi-icon jd-menu-banner-icon">
                             <i class="bi bi-layout-sidebar-inset"></i>
                         </div>
                         <div>
-                            <div class="fw-bold" style="color: #FAF4EA; font-size: 0.95rem;">Sidebar Menu Bar Customisation</div>
-                            <small class="text-muted">Turn on "Hide" for any sidebar module (Sales, Karigar, Reports, etc.) to hide it, or unhide it anytime.</small>
+                            <div class="fw-bold jd-menu-banner-title">Sidebar Menu Bar Customisation</div>
+                            <small class="jd-menu-banner-sub">Turn on "Hide" for any sidebar module (Sales, Karigar, Reports, etc.) to hide it, or unhide it anytime.</small>
                         </div>
                     </div>
                     <a href="{% url 'accounts:menu_settings' %}" class="jd-btn-gold btn-sm d-inline-flex align-items-center gap-2">
@@ -85,14 +85,17 @@
                                 {% endfor %}
                             </div>
 
-                            <!-- Business Type -->
+                            <!-- Business Type (Uneditable at Showroom Level) -->
                             <div class="col-md-6">
-                                <label class="jd-label fw-semibold" for="{{ form.business_type.id_for_label }}">
-                                    Business Operations Model
+                                <label class="jd-label fw-semibold d-flex align-items-center justify-content-between" for="{{ form.business_type.id_for_label }}">
+                                    <span>Business Operations Model</span>
+                                    <span class="badge bg-secondary bg-opacity-25 text-body border border-secondary border-opacity-25 small" style="font-size: 0.72rem;">
+                                        <i class="bi bi-lock-fill me-1 text-warning"></i>Locked
+                                    </span>
                                 </label>
                                 {{ form.business_type }}
-                                <div class="form-text" style="color: #9E9171; font-size: 0.78rem;">
-                                    Choose Retail (B2C Showroom), Wholesale (B2B Supplier), or Hybrid.
+                                <div class="form-text" style="color: var(--jd-muted, #9E9171); font-size: 0.78rem;">
+                                    <i class="bi bi-shield-lock me-1"></i>Core business model is locked to your account setup. Contact platform support to change.
                                 </div>
                                 {% for e in form.business_type.errors %}
                                     <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>
@@ -194,7 +197,7 @@
                                         <button type="submit" class="jd-btn-gold btn-sm d-inline-flex align-items-center gap-1" id="btn-quick-save-logo">
                                             <i class="bi bi-cloud-arrow-up-fill me-1"></i> Save &amp; Apply New Logo
                                         </button>
-                                        <button type="submit" name="reset_default_logo" value="1" class="btn btn-outline-warning btn-sm d-inline-flex align-items-center gap-1" id="btn-reset-default-logo" onclick="return confirm('Restore default JewelDesk logo?');" style="border-color: rgba(236, 200, 106, 0.5); color: var(--jd-gold);">
+                                        <button type="submit" name="reset_default_logo" value="1" class="btn btn-outline-warning btn-sm d-inline-flex align-items-center gap-1" id="btn-reset-default-logo" onclick="return confirm('Restore default JewelDesk logo?');">
                                             <i class="bi bi-arrow-counterclockwise me-1"></i> Restore JewelDesk Logo
                                         </button>
                                         <span class="text-muted small" style="font-size: 0.78rem;">Updates logo across top navigation, sidebar, and GST tax invoice PDFs.</span>

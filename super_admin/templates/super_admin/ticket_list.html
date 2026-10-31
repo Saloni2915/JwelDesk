@@ -168,13 +168,13 @@
                     </td>
                     <td>
                         {% if tk.priority == 'urgent' %}
-                        <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-30">Urgent</span>
+                        <span class="sa-badge-pill sa-priority-urgent"><i class="bi bi-exclamation-triangle-fill"></i> Urgent</span>
                         {% elif tk.priority == 'high' %}
-                        <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-30">High</span>
+                        <span class="sa-badge-pill sa-priority-high"><i class="bi bi-arrow-up-circle-fill"></i> High</span>
                         {% elif tk.priority == 'low' %}
-                        <span class="badge bg-secondary bg-opacity-25 text-muted border border-secondary border-opacity-25">Low</span>
+                        <span class="sa-badge-pill sa-priority-low"><i class="bi bi-arrow-down-circle"></i> Low</span>
                         {% else %}
-                        <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-25">Medium</span>
+                        <span class="sa-badge-pill sa-priority-medium"><i class="bi bi-dash-circle"></i> Medium</span>
                         {% endif %}
                     </td>
                     <td>
@@ -187,17 +187,17 @@
                     </td>
                     <td>
                         {% if tk.status == 'open' %}
-                        <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-25">Open</span>
+                        <span class="sa-badge-pill sa-status-open"><span class="sa-status-dot"></span> Open</span>
                         {% elif tk.status == 'in_progress' %}
-                        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-25">In Progress</span>
+                        <span class="sa-badge-pill sa-status-in-progress"><span class="sa-status-dot"></span> In Progress</span>
                         {% elif tk.status == 'waiting_customer' %}
-                        <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-25">Awaiting Reply</span>
+                        <span class="sa-badge-pill sa-status-awaiting"><span class="sa-status-dot"></span> Awaiting Reply</span>
                         {% elif tk.status == 'resolved' %}
-                        <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-25">Resolved</span>
+                        <span class="sa-badge-pill sa-status-resolved"><span class="sa-status-dot"></span> Resolved</span>
                         {% elif tk.status == 'closed' %}
-                        <span class="badge bg-secondary bg-opacity-25 text-muted border border-secondary border-opacity-25">Closed</span>
+                        <span class="sa-badge-pill sa-status-closed"><span class="sa-status-dot"></span> Closed</span>
                         {% else %}
-                        <span class="badge bg-secondary">{{ tk.get_status_display }}</span>
+                        <span class="sa-badge-pill sa-status-closed">{{ tk.get_status_display }}</span>
                         {% endif %}
                     </td>
                     <td>

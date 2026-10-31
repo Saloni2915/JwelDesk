@@ -217,8 +217,14 @@ class CompanySettingsForm(forms.ModelForm):
     business_type = forms.ChoiceField(
         choices=Tenant.BUSINESS_TYPE_CHOICES,
         required=False,
+        disabled=True,
         label="Business Model / Operations Type",
-        widget=forms.Select(attrs={'class': 'form-control'})
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'disabled': 'disabled',
+            'style': 'cursor: not-allowed; opacity: 0.85;',
+            'title': 'Business Operations Model is fixed and uneditable at showroom level.'
+        })
     )
 
     class Meta:
@@ -235,6 +241,7 @@ class CompanySettingsForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.instance and getattr(self.instance, 'tenant', None):
             self.fields['business_type'].initial = self.instance.tenant.business_type
+        self.fields['business_type'].disabled = True
         for name in ('company_name', 'gstin', 'phone', 'email', 'business_type', 'language'):
             if name in self.fields:
                 self.fields[name].widget.attrs.setdefault('class', 'form-control')
@@ -245,10 +252,7 @@ class CompanySettingsForm(forms.ModelForm):
 
     def save(self, commit=True):
         obj = super().save(commit=commit)
-        b_type = self.cleaned_data.get('business_type')
-        if b_type and getattr(obj, 'tenant', None) and obj.tenant.business_type != b_type:
-            obj.tenant.business_type = b_type
-            obj.tenant.save(update_fields=['business_type', 'updated_at'])
+        # Business operations model is uneditable by tenant
         return obj
 
     def clean_logo(self):

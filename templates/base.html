@@ -30,6 +30,10 @@
             var t = (queryTheme && ['light','dark','gold'].indexOf(queryTheme) !== -1 ? queryTheme : null) || (cookieMatch && cookieMatch[1]) || localStorage.getItem('jd-theme') || 'light';
             document.documentElement.setAttribute('data-theme', t);
             document.documentElement.setAttribute('data-bs-theme', t === 'light' ? 'light' : 'dark');
+            var metaThemeColor = document.querySelector('meta[name="theme-color"]');
+            if (metaThemeColor) {
+                metaThemeColor.setAttribute('content', t === 'dark' ? '#0A0D14' : (t === 'gold' ? '#160F09' : '#FFFFFF'));
+            }
             try { localStorage.setItem('jd-theme', t); } catch(e) {}
             document.cookie = 'jd-theme=' + t + '; path=/; max-age=31536000; SameSite=Lax';
         })();
@@ -44,7 +48,7 @@
             <div class="d-flex align-items-center flex-shrink-0 me-auto min-w-0">
                 <!-- Mobile/Tablet Sidebar Toggler (active < 992px) -->
                 <button class="btn btn-link d-lg-none me-2 p-1 border-0 flex-shrink-0 jd-sidebar-toggle-btn" id="sidebarToggle" type="button" aria-label="Toggle navigation">
-                    <i class="bi bi-list fs-2 text-warning"></i>
+                    <i class="bi bi-list fs-2"></i>
                 </button>
                 <a class="navbar-brand d-inline-flex align-items-center text-truncate min-w-0 p-0 m-0" href="{% if request.tenant and not request.tenant.is_retail %}{% url 'wholesale:dashboard' %}{% else %}{% url 'dashboard' %}{% endif %}" style="line-height: 1.2;">
                     {% if company.logo_url %}
@@ -254,7 +258,6 @@
                 <div class="dropdown d-inline-flex d-md-none">
                     <button class="btn btn-sm p-0 rounded-circle d-flex align-items-center justify-content-center jd-mobile-user-avatar-btn"
                             type="button" id="mobileUserDropdown" data-bs-toggle="dropdown" aria-expanded="false"
-                            style="width: 32px; height: 32px; background: rgba(212, 175, 55, 0.18); border: 1.5px solid rgba(212, 175, 55, 0.5); color: #ECC86A;"
                             aria-label="User Account">
                         <i class="bi bi-person-fill fs-6"></i>
                     </button>
@@ -1255,7 +1258,7 @@
             <div class="sidebar-company">
                 <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
                     <div class="min-w-0">
-                        <div class="sidebar-company-name text-truncate">{{ company.name }}</div>
+                        <div class="sidebar-company-name">{{ company.name }}</div>
                         <div class="sidebar-company-meta text-truncate">
                             {% if company.gstin %}GSTIN: {{ company.gstin|default:"—" }}{% else %}GSTIN: not set{% endif %}
                         </div>
@@ -1451,6 +1454,10 @@
         window.jdApplyTheme = function (theme) {
             document.documentElement.setAttribute('data-theme', theme);
             document.documentElement.setAttribute('data-bs-theme', theme === 'light' ? 'light' : 'dark');
+            var metaThemeColor = document.querySelector('meta[name="theme-color"]');
+            if (metaThemeColor) {
+                metaThemeColor.setAttribute('content', theme === 'dark' ? '#0A0D14' : (theme === 'gold' ? '#160F09' : '#FFFFFF'));
+            }
             try { localStorage.setItem('jd-theme', theme); } catch (e) {}
             document.cookie = 'jd-theme=' + theme + '; path=/; max-age=31536000; SameSite=Lax';
         };
@@ -1461,6 +1468,10 @@
             var t = (queryTheme && ['light','dark','gold'].indexOf(queryTheme) !== -1 ? queryTheme : null) || (cookieMatch && cookieMatch[1]) || localStorage.getItem('jd-theme') || 'light';
             document.documentElement.setAttribute('data-theme', t);
             document.documentElement.setAttribute('data-bs-theme', t === 'light' ? 'light' : 'dark');
+            var metaThemeColor = document.querySelector('meta[name="theme-color"]');
+            if (metaThemeColor) {
+                metaThemeColor.setAttribute('content', t === 'dark' ? '#0A0D14' : (t === 'gold' ? '#160F09' : '#FFFFFF'));
+            }
         })();
 
         // Navigation & Sidebar Enhancements

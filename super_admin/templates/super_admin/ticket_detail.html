@@ -11,24 +11,34 @@
         </a>
         <h4 class="mb-0 fw-bold" style="color: var(--sa-text);">{{ ticket.ticket_number }}</h4>
         {% if ticket.priority == 'urgent' %}
-        <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-30">Urgent</span>
+        <span class="sa-badge-pill sa-priority-urgent"><i class="bi bi-exclamation-triangle-fill"></i> Urgent</span>
         {% elif ticket.priority == 'high' %}
-        <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-30">High</span>
+        <span class="sa-badge-pill sa-priority-high"><i class="bi bi-arrow-up-circle-fill"></i> High</span>
+        {% elif ticket.priority == 'low' %}
+        <span class="sa-badge-pill sa-priority-low"><i class="bi bi-arrow-down-circle"></i> Low</span>
         {% else %}
-        <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-25">{{ ticket.get_priority_display }}</span>
+        <span class="sa-badge-pill sa-priority-medium"><i class="bi bi-dash-circle"></i> Medium</span>
         {% endif %}
 
-        {% if ticket.status == 'resolved' or ticket.status == 'closed' %}
-        <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30">
-            <i class="bi bi-check-circle-fill me-1"></i> {{ ticket.get_status_display }}
+        {% if ticket.status == 'resolved' %}
+        <span class="sa-badge-pill sa-status-resolved">
+            <span class="sa-status-dot"></span> {{ ticket.get_status_display }}
+        </span>
+        {% elif ticket.status == 'closed' %}
+        <span class="sa-badge-pill sa-status-closed">
+            <span class="sa-status-dot"></span> Closed
         </span>
         {% elif ticket.status == 'waiting_customer' %}
-        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30">
-            <i class="bi bi-clock-history me-1"></i> Waiting for Customer
+        <span class="sa-badge-pill sa-status-awaiting">
+            <span class="sa-status-dot"></span> Waiting for Customer
+        </span>
+        {% elif ticket.status == 'in_progress' %}
+        <span class="sa-badge-pill sa-status-in-progress">
+            <span class="sa-status-dot"></span> In Progress
         </span>
         {% else %}
-        <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-30">
-            {{ ticket.get_status_display }}
+        <span class="sa-badge-pill sa-status-open">
+            <span class="sa-status-dot"></span> Open
         </span>
         {% endif %}
     </div>
