@@ -1,0 +1,292 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Girvi Dashboard — JewelDesk{% endblock %}
+{% block page_title %}Girvi Management{% endblock %}
+
+{% block content %}
+<div class="jd-canvas">
+
+    <!-- Header & Action CTAs -->
+    <div class="jd-header">
+        <div>
+            <div class="jd-badge mb-1">
+                <i class="bi bi-safe me-1"></i> {% if is_hindi %}गिरवी प्रबंधन{% else %}Girvi &amp; Loan Management{% endif %}
+            </div>
+            <h1 class="jd-title">{% if is_hindi %}गिरवी डैशबोर्ड{% else %}Girvi Dashboard{% endif %}</h1>
+            <p class="jd-subtitle">
+                {% if is_hindi %}
+                    सोना/चांदी गिरवी ऋण, संचित ब्याज, भुगतान और लॉकर तिजोरी में रखे जेवरों का रीयल-टाइम रिकॉर्ड।
+                {% else %}
+                    Real-time overview of pledged gold/silver loans, accrued interest, payments, and vault collateral.
+                {% endif %}
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            {% if user_perms.girvi.can_add %}
+            <a href="{% url 'girvi:loan_create' %}" class="jd-btn-gold">
+                <i class="bi bi-plus-circle-fill me-1"></i> {% if is_hindi %}नया गिरवी ऋण (New Girvi){% else %}New Girvi Loan{% endif %}
+            </a>
+            {% endif %}
+            <a href="{% url 'girvi:loan_list' %}" class="jd-btn-ghost">
+                <i class="bi bi-list-check me-1"></i> {% if is_hindi %}सभी गिरवी रिकॉर्ड्स{% else %}All Girvi Records{% endif %}
+            </a>
+            {% if user_perms.girvi.can_edit or user_perms.is_admin %}
+            <a href="{% url 'girvi:settings' %}" class="jd-btn-ghost" title="Girvi Settings">
+                <i class="bi bi-gear-fill me-1"></i> {% if is_hindi %}सेटिंग्स{% else %}Settings{% endif %}
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- KPI Summary Grid -->
+    <div class="jd-kpi-grid mb-4">
+        <!-- 1. Total Active Loans -->
+        <div class="jd-kpi-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="jd-kpi-label">{% if is_hindi %}सक्रिय ऋण{% else %}Active Loans{% endif %}</div>
+                <div class="jd-kpi-icon text-warning"><i class="bi bi-journal-bookmark-fill"></i></div>
+            </div>
+            <div class="jd-kpi-val text-warning">{{ total_active_count }}</div>
+            <div class="mt-2 small text-muted">
+                <a href="{% url 'girvi:loan_list' %}?status=active" class="text-gold text-decoration-none">
+                    {% if is_hindi %}सक्रिय खाते देखें &rarr;{% else %}View Active &rarr;{% endif %}
+                </a>
+            </div>
+        </div>
+
+        <!-- 2. Total Outstanding Principal -->
+        <div class="jd-kpi-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="jd-kpi-label">{% if is_hindi %}बकाया मूलधन (Principal){% else %}Outstanding Principal{% endif %}</div>
+                <div class="jd-kpi-icon text-info"><i class="bi bi-cash-stack"></i></div>
+            </div>
+            <div class="jd-kpi-val text-info">₹{{ total_outstanding_principal|floatformat:2 }}</div>
+            <div class="mt-2 small text-muted">
+                <span>{% if is_hindi %}बाजार में फंसा मूलधन{% else %}Total disbursed principal unpaid{% endif %}</span>
+            </div>
+        </div>
+
+        <!-- 3. Total Accrued Interest Due -->
+        <div class="jd-kpi-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="jd-kpi-label">{% if is_hindi %}कुल संचित ब्याज (Interest Due){% else %}Total Interest Due{% endif %}</div>
+                <div class="jd-kpi-icon text-success"><i class="bi bi-graph-up-arrow"></i></div>
+            </div>
+            <div class="jd-kpi-val text-success">₹{{ total_interest_accrued|floatformat:2 }}</div>
+            <div class="mt-2 small text-muted">
+                <span>{% if is_hindi %}आज तक का कुल ब्याज{% else %}Accrued interest across loans{% endif %}</span>
+            </div>
+        </div>
+
+        <!-- 4. Grand Total Outstanding Balance -->
+        <div class="jd-kpi-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="jd-kpi-label">{% if is_hindi %}कुल बकाया राशि (Total Due){% else %}Total Outstanding Balance{% endif %}</div>
+                <div class="jd-kpi-icon text-gold"><i class="bi bi-wallet2"></i></div>
+            </div>
+            <div class="jd-kpi-val text-gold">₹{{ total_outstanding_balance|floatformat:2 }}</div>
+            <div class="mt-2 small text-muted">
+                <span>Principal + Interest + Charges</span>
+            </div>
+        </div>
+
+        <!-- 5. Overdue Loans -->
+        <div class="jd-kpi-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="jd-kpi-label">{% if is_hindi %}अवधि समाप्त (Overdue){% else %}Overdue Loans{% endif %}</div>
+                <div class="jd-kpi-icon text-danger"><i class="bi bi-exclamation-triangle-fill"></i></div>
+            </div>
+            <div class="jd-kpi-val {% if total_overdue_count > 0 %}text-danger{% else %}text-muted{% endif %}">
+                {{ total_overdue_count }}
+            </div>
+            <div class="mt-2 small text-muted">
+                {% if total_overdue_count > 0 %}
+                <a href="{% url 'girvi:loan_list' %}?status=overdue" class="text-danger text-decoration-none">
+                    <i class="bi bi-arrow-right-circle"></i> {% if is_hindi %}अतिदेय खाते देखें{% else %}Action Required &rarr;{% endif %}
+                </a>
+                {% else %}
+                <span>{% if is_hindi %}कोई अतिदेय खाता नहीं{% else %}Zero overdue loans{% endif %}</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 6. Pledged Vault Collateral Weight -->
+        <div class="jd-kpi-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="jd-kpi-label">{% if is_hindi %}तिजोरी में कुल सोना / चांदी{% else %}Pledged Vault Gold / Silver{% endif %}</div>
+                <div class="jd-kpi-icon text-warning"><i class="bi bi-gem"></i></div>
+            </div>
+            <div class="jd-kpi-val text-light" style="font-size: 1.25rem;">
+                <span class="text-warning">{{ gold_net_weight|floatformat:3 }}g Gold</span>
+                <span class="text-muted fs-6 d-block mt-1">{{ silver_net_weight|floatformat:3 }}g Silver</span>
+            </div>
+            <div class="mt-2 small text-muted">
+                <span>Gross: {{ gold_gross_weight|floatformat:3 }}g Gold</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loans Due Soon Section (Next 15 Days) -->
+    {% if due_soon_loans %}
+    <div class="card jd-card mb-4 border-warning border-opacity-35">
+        <div class="card-header d-flex align-items-center justify-content-between bg-warning bg-opacity-10 py-3">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-alarm text-warning fs-5"></i>
+                <h5 class="mb-0 fw-bold text-warning" style="font-size: 1.05rem;">
+                    {% if is_hindi %}निकटतम परिपक्वता (Due in Next 15 Days){% else %}Maturity Alert: Loans Due Soon (Next 15 Days){% endif %}
+                </h5>
+            </div>
+            <span class="badge bg-warning text-dark fw-bold">{{ due_soon_loans|length }} Loan{{ due_soon_loans|length|pluralize }}</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table jd-table mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>{% if is_hindi %}ऋण सं.{% else %}Loan #{% endif %}</th>
+                        <th>{% if is_hindi %}ग्राहक का नाम{% else %}Customer{% endif %}</th>
+                        <th>{% if is_hindi %}शाखा{% else %}Branch{% endif %}</th>
+                        <th>{% if is_hindi %}मूलधन{% else %}Principal{% endif %}</th>
+                        <th>{% if is_hindi %}संचित ब्याज{% else %}Accrued Interest{% endif %}</th>
+                        <th>{% if is_hindi %}कुल बकाया{% else %}Total Due{% endif %}</th>
+                        <th>{% if is_hindi %}परिपक्वता तिथि{% else %}Maturity Date{% endif %}</th>
+                        <th class="text-end">{% if is_hindi %}कार्रवाई{% else %}Action{% endif %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in due_soon_loans %}
+                    <tr>
+                        <td class="fw-bold">
+                            <a href="{% url 'girvi:loan_detail' item.loan.id %}" class="text-gold text-decoration-none">
+                                {{ item.loan.loan_number }}
+                            </a>
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-light">{{ item.loan.customer.name }}</div>
+                            <small class="text-muted">{{ item.loan.customer.phone }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary bg-opacity-25 text-light">{{ item.loan.branch.name }}</span>
+                        </td>
+                        <td class="fw-semibold">₹{{ item.financials.remaining_principal|floatformat:2 }}</td>
+                        <td class="text-warning">₹{{ item.financials.remaining_interest|floatformat:2 }}</td>
+                        <td class="fw-bold text-gold">₹{{ item.financials.outstanding_balance|floatformat:2 }}</td>
+                        <td>
+                            <span class="badge bg-warning bg-opacity-25 text-warning">
+                                {{ item.loan.maturity_date|date:"d M Y" }} ({{ item.days_left }}d left)
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'girvi:loan_detail' item.loan.id %}" class="btn btn-sm btn-outline-warning py-1 px-2">
+                                <i class="bi bi-eye"></i> Details
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recently Booked Loans Table -->
+    <div class="card jd-card mb-4">
+        <div class="card-header d-flex align-items-center justify-content-between py-3">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-clock-history text-gold fs-5"></i>
+                <h5 class="mb-0 fw-bold text-light" style="font-size: 1.05rem;">
+                    {% if is_hindi %}हाल के गिरवी ऋण (Recently Booked Loans){% else %}Recently Booked Girvi Loans{% endif %}
+                </h5>
+            </div>
+            <a href="{% url 'girvi:loan_list' %}" class="btn btn-sm btn-outline-secondary py-1 px-2 text-light">
+                {% if is_hindi %}सभी देखें{% else %}View All{% endif %} &rarr;
+            </a>
+        </div>
+        <div class="table-responsive">
+            <table class="table jd-table mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>{% if is_hindi %}ऋण सं.{% else %}Loan #{% endif %}</th>
+                        <th>{% if is_hindi %}दिनांक{% else %}Date{% endif %}</th>
+                        <th>{% if is_hindi %}ग्राहक का नाम{% else %}Customer{% endif %}</th>
+                        <th>{% if is_hindi %}शाखा{% else %}Branch{% endif %}</th>
+                        <th>{% if is_hindi %}गिरवी जेवर{% else %}Collateral Pieces{% endif %}</th>
+                        <th>{% if is_hindi %}मूलधन{% else %}Principal{% endif %}</th>
+                        <th>{% if is_hindi %}ब्याज दर{% else %}Rate{% endif %}</th>
+                        <th>{% if is_hindi %}कुल बकाया{% else %}Outstanding Due{% endif %}</th>
+                        <th>{% if is_hindi %}स्थिति{% else %}Status{% endif %}</th>
+                        <th class="text-end">{% if is_hindi %}कार्रवाई{% else %}Action{% endif %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in recent_loans %}
+                    <tr>
+                        <td class="fw-bold">
+                            <a href="{% url 'girvi:loan_detail' item.loan.id %}" class="text-gold text-decoration-none">
+                                {{ item.loan.loan_number }}
+                            </a>
+                        </td>
+                        <td>{{ item.loan.loan_date|date:"d M Y" }}</td>
+                        <td>
+                            <div class="fw-semibold text-light">{{ item.loan.customer.name }}</div>
+                            <small class="text-muted">{{ item.loan.customer.phone }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary bg-opacity-25 text-light">{{ item.loan.branch.name }}</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-dark border border-secondary text-light">
+                                <i class="bi bi-gem me-1 text-warning"></i>{{ item.loan.items.count }} Item{{ item.loan.items.count|pluralize }}
+                            </span>
+                        </td>
+                        <td class="fw-semibold">₹{{ item.loan.principal_amount|floatformat:2 }}</td>
+                        <td>
+                            <span class="badge bg-warning bg-opacity-15 text-warning">
+                                {{ item.loan.interest_rate_percent }}% / {{ item.loan.interest_period }}
+                            </span>
+                        </td>
+                        <td class="fw-bold text-gold">₹{{ item.financials.outstanding_balance|floatformat:2 }}</td>
+                        <td>
+                            {% if item.loan.status == 'active' %}
+                            <span class="badge bg-warning text-dark fw-bold">Active</span>
+                            {% elif item.loan.status == 'overdue' %}
+                            <span class="badge bg-danger text-white fw-bold">Overdue</span>
+                            {% elif item.loan.status == 'settled' %}
+                            <span class="badge bg-info text-dark fw-bold">Settled</span>
+                            {% elif item.loan.status == 'released' %}
+                            <span class="badge bg-success text-white fw-bold">Released</span>
+                            {% else %}
+                            <span class="badge bg-secondary text-white">{{ item.loan.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'girvi:loan_detail' item.loan.id %}" class="btn btn-outline-warning py-1 px-2" title="View Loan">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'girvi:loan_print' item.loan.id %}" target="_blank" class="btn btn-outline-secondary py-1 px-2 text-light" title="Print Agreement">
+                                    <i class="bi bi-printer"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center py-5 text-muted">
+                            <i class="bi bi-safe fs-1 d-block mb-2 text-secondary"></i>
+                            <p class="mb-2">{% if is_hindi %}अभी तक कोई गिरवी ऋण दर्ज नहीं किया गया है।{% else %}No Girvi loans recorded yet.{% endif %}</p>
+                            {% if user_perms.girvi.can_add %}
+                            <a href="{% url 'girvi:loan_create' %}" class="btn btn-sm btn-warning fw-bold">
+                                <i class="bi bi-plus-circle me-1"></i> {% if is_hindi %}पहला गिरवी ऋण बनाएं{% else %}Book First Girvi Loan{% endif %}
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

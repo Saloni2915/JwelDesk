@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Girvi Loans Directory — JewelDesk{% endblock %}
+{% block page_title %}Girvi Loans{% endblock %}
+
+{% block content %}
+<div class="jd-canvas">
+
+    <!-- Header & Action CTAs -->
+    <div class="jd-header">
+        <div>
+            <div class="jd-badge mb-1">
+                <i class="bi bi-safe me-1"></i> {% if is_hindi %}गिरवी खाता बही{% else %}Girvi Loan Ledger{% endif %}
+            </div>
+            <h1 class="jd-title">{% if is_hindi %}सभी गिरवी रिकॉर्ड्स{% else %}Girvi Loans Directory{% endif %}</h1>
+            <p class="jd-subtitle">
+                {% if is_hindi %}
+                    शाखा-वार गिरवी ऋण, संचित ब्याज, बकाया राशि और गिरवी रखे जेवरों की संपूर्ण सूची।
+                {% else %}
+                    Searchable directory of all pledge loan agreements, accrued interest, and collateral status.
+                {% endif %}
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            {% if user_perms.girvi.can_add %}
+            <a href="{% url 'girvi:loan_create' %}" class="jd-btn-gold">
+                <i class="bi bi-plus-circle-fill me-1"></i> {% if is_hindi %}नया गिरवी ऋण (New Girvi){% else %}New Girvi Loan{% endif %}
+            </a>
+            {% endif %}
+            <a href="{% url 'girvi:dashboard' %}" class="jd-btn-ghost">
+                <i class="bi bi-speedometer2 me-1"></i> {% if is_hindi %}डैशबोर्ड{% else %}Dashboard{% endif %}
+            </a>
+            {% if user_perms.girvi.can_edit or user_perms.is_admin %}
+            <a href="{% url 'girvi:settings' %}" class="jd-btn-ghost" title="Girvi Settings">
+                <i class="bi bi-gear-fill me-1"></i> {% if is_hindi %}सेटिंग्स{% else %}Settings{% endif %}
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div class="card jd-card mb-4">
+        <div class="card-body p-3">
+            <form method="get" class="row g-2 align-items-center">
+                <!-- Status Filter Pills -->
+                <div class="col-12 mb-2 pb-2 border-bottom border-secondary border-opacity-25 d-flex align-items-center gap-1 flex-wrap">
+                    <span class="text-muted small me-2"><i class="bi bi-funnel"></i> Status:</span>
+                    <a href="?status=all{% if q %}&q={{ q }}{% endif %}{% if selected_branch_id %}&branch={{ selected_branch_id }}{% endif %}"
+                       class="btn btn-sm {% if status_filter == 'all' or not status_filter %}btn-warning fw-bold text-dark{% else %}btn-outline-secondary text-light{% endif %} py-1 px-3">
+                        All Records
+                    </a>
+                    <a href="?status=active{% if q %}&q={{ q }}{% endif %}{% if selected_branch_id %}&branch={{ selected_branch_id }}{% endif %}"
+                       class="btn btn-sm {% if status_filter == 'active' %}btn-warning fw-bold text-dark{% else %}btn-outline-secondary text-light{% endif %} py-1 px-3">
+                        Active Loans
+                    </a>
+                    <a href="?status=overdue{% if q %}&q={{ q }}{% endif %}{% if selected_branch_id %}&branch={{ selected_branch_id }}{% endif %}"
+                       class="btn btn-sm {% if status_filter == 'overdue' %}btn-danger fw-bold text-white{% else %}btn-outline-secondary text-light{% endif %} py-1 px-3">
+                        Overdue
+                    </a>
+                    <a href="?status=settled{% if q %}&q={{ q }}{% endif %}{% if selected_branch_id %}&branch={{ selected_branch_id }}{% endif %}"
+                       class="btn btn-sm {% if status_filter == 'settled' %}btn-info fw-bold text-dark{% else %}btn-outline-secondary text-light{% endif %} py-1 px-3">
+                        Settled (Paid in Full)
+                    </a>
+                    <a href="?status=released{% if q %}&q={{ q }}{% endif %}{% if selected_branch_id %}&branch={{ selected_branch_id }}{% endif %}"
+                       class="btn btn-sm {% if status_filter == 'released' %}btn-success fw-bold text-white{% else %}btn-outline-secondary text-light{% endif %} py-1 px-3">
+                        Jewellery Released
+                    </a>
+                </div>
+
+                <!-- Hidden Status to preserve selected tab during search -->
+                <input type="hidden" name="status" value="{{ status_filter }}">
+
+                <!-- Search Input -->
+                <div class="col-md-4 col-sm-6">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-dark border-secondary text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" name="q" value="{{ q }}" class="form-control bg-dark border-secondary text-light"
+                               placeholder="Search loan #, customer name, phone, safe...">
+                    </div>
+                </div>
+
+                <!-- Branch Filter -->
+                {% if has_multiple_branches %}
+                <div class="col-md-3 col-sm-6">
+                    <select name="branch" class="form-select form-select-sm bg-dark border-secondary text-light">
+                        <option value="">All Branches</option>
+                        {% for b in branches %}
+                        <option value="{{ b.id }}" {% if selected_branch_id == b.id|stringformat:"s" %}selected{% endif %}>
+                            {{ b.name }} {% if b.code %}({{ b.code }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <!-- Date Range -->
+                <div class="col-md-2 col-sm-6">
+                    <input type="date" name="start_date" value="{{ start_date }}" class="form-control form-control-sm bg-dark border-secondary text-light" title="From Loan Date">
+                </div>
+                <div class="col-md-2 col-sm-6">
+                    <input type="date" name="end_date" value="{{ end_date }}" class="form-control form-control-sm bg-dark border-secondary text-light" title="To Loan Date">
+                </div>
+
+                <!-- Submit / Clear Actions -->
+                <div class="col-md-1 col-12 d-flex gap-1">
+                    <button type="submit" class="btn btn-sm btn-warning w-100 fw-bold">
+                        Filter
+                    </button>
+                    {% if q or selected_branch_id or start_date or end_date or status_filter != 'all' %}
+                    <a href="{% url 'girvi:loan_list' %}" class="btn btn-sm btn-outline-secondary" title="Reset Filters">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loans Registry Table -->
+    <div class="card jd-card mb-4">
+        <div class="table-responsive">
+            <table class="table jd-table mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>{% if is_hindi %}ऋण सं.{% else %}Loan #{% endif %}</th>
+                        <th>{% if is_hindi %}दिनांक{% else %}Date{% endif %}</th>
+                        <th>{% if is_hindi %}ग्राहक का विवरण{% else %}Customer{% endif %}</th>
+                        <th>{% if is_hindi %}शाखा{% else %}Branch{% endif %}</th>
+                        <th>{% if is_hindi %}गिरवी जेवर{% else %}Collateral Pieces{% endif %}</th>
+                        <th>{% if is_hindi %}मूलधन (₹){% else %}Principal (₹){% endif %}</th>
+                        <th>{% if is_hindi %}ब्याज दर{% else %}Interest Terms{% endif %}</th>
+                        <th>{% if is_hindi %}संचित ब्याज (₹){% else %}Accrued Int. (₹){% endif %}</th>
+                        <th>{% if is_hindi %}कुल बकाया (₹){% else %}Outstanding Due (₹){% endif %}</th>
+                        <th>{% if is_hindi %}परिपक्वता{% else %}Maturity{% endif %}</th>
+                        <th>{% if is_hindi %}स्थिति{% else %}Status{% endif %}</th>
+                        <th class="text-end">{% if is_hindi %}कार्रवाई{% else %}Action{% endif %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in loan_rows %}
+                    <tr>
+                        <td class="fw-bold">
+                            <a href="{% url 'girvi:loan_detail' row.loan.id %}" class="text-gold text-decoration-none" title="View loan details">
+                                {{ row.loan.loan_number }}
+                            </a>
+                        </td>
+                        <td class="text-nowrap">{{ row.loan.loan_date|date:"d M Y" }}</td>
+                        <td>
+                            <div class="fw-semibold text-light text-truncate" style="max-width: 170px;">{{ row.loan.customer.name }}</div>
+                            <small class="text-muted"><i class="bi bi-telephone"></i> {{ row.loan.customer.phone }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary bg-opacity-25 text-light">{{ row.loan.branch.name }}</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-dark border border-secondary text-light">
+                                <i class="bi bi-gem me-1 text-warning"></i>{{ row.items_count }} Item{{ row.items_count|pluralize }}
+                            </span>
+                            <small class="d-block text-muted mt-1">{{ row.total_net_weight|floatformat:3 }}g Net</small>
+                        </td>
+                        <td class="fw-semibold">₹{{ row.loan.principal_amount|floatformat:2 }}</td>
+                        <td>
+                            <span class="badge bg-warning bg-opacity-15 text-warning">
+                                {{ row.loan.interest_rate_percent }}% / {{ row.loan.get_interest_period_display }}
+                            </span>
+                            <small class="d-block text-muted mt-1">{{ row.loan.get_interest_calculation_type_display }}</small>
+                        </td>
+                        <td class="text-warning fw-semibold">₹{{ row.financials.remaining_interest|floatformat:2 }}</td>
+                        <td class="fw-bold text-gold" style="font-size: 0.98rem;">₹{{ row.financials.outstanding_balance|floatformat:2 }}</td>
+                        <td class="text-nowrap">
+                            {% if row.loan.maturity_date %}
+                            <div>{{ row.loan.maturity_date|date:"d M Y" }}</div>
+                            {% if row.financials.is_overdue %}
+                            <span class="badge bg-danger text-white py-0 px-1" style="font-size: 0.68rem;">
+                                {{ row.financials.days_overdue }}d Overdue
+                            </span>
+                            {% endif %}
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if row.loan.status == 'active' %}
+                            <span class="badge bg-warning text-dark fw-bold">Active</span>
+                            {% elif row.loan.status == 'overdue' %}
+                            <span class="badge bg-danger text-white fw-bold">Overdue</span>
+                            {% elif row.loan.status == 'settled' %}
+                            <span class="badge bg-info text-dark fw-bold">Settled</span>
+                            {% elif row.loan.status == 'released' %}
+                            <span class="badge bg-success text-white fw-bold">Released</span>
+                            {% else %}
+                            <span class="badge bg-secondary text-white">{{ row.loan.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end text-nowrap">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'girvi:loan_detail' row.loan.id %}" class="btn btn-outline-warning py-1 px-2" title="View Dossier">
+                                    <i class="bi bi-eye"></i> Details
+                                </a>
+                                <a href="{% url 'girvi:loan_print' row.loan.id %}" target="_blank" class="btn btn-outline-secondary py-1 px-2 text-light" title="Print Agreement Voucher">
+                                    <i class="bi bi-printer"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="12" class="text-center py-5 text-muted">
+                            <i class="bi bi-journal-x fs-1 d-block mb-2 text-secondary"></i>
+                            <p class="mb-2">No Girvi loans matched your search or filters.</p>
+                            {% if user_perms.girvi.can_add %}
+                            <a href="{% url 'girvi:loan_create' %}" class="btn btn-sm btn-warning fw-bold">
+                                <i class="bi bi-plus-circle me-1"></i> Book New Girvi Loan
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        {% if page_obj.has_other_pages %}
+        <div class="card-footer bg-transparent border-top border-secondary border-opacity-25 d-flex justify-content-between align-items-center flex-wrap gap-2 py-3">
+            <span class="small text-muted">
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} loans
+            </span>
+            <ul class="pagination pagination-sm m-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link bg-dark border-secondary text-light" href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if selected_branch_id %}&branch={{ selected_branch_id }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">
+                        &laquo; Prev
+                    </a>
+                </li>
+                {% endif %}
+                <li class="page-item active">
+                    <span class="page-link bg-warning text-dark border-warning fw-bold">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link bg-dark border-secondary text-light" href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if selected_branch_id %}&branch={{ selected_branch_id }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">
+                        Next &raquo;
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
+

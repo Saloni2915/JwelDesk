@@ -185,8 +185,20 @@ class JewelDeskSignUpForm(UserCreationForm):
             CompanySettings.objects.create(tenant=tenant, company_name=shop_name)
 
             # Auto-provision 15-day Free Trial for newly registered tenant
-            from super_admin.trial_services import create_tenant_trial
-            create_tenant_trial(tenant)
+            try:
+                from super_admin.trial_services import create_tenant_trial
+                create_tenant_trial(tenant)
+            except Exception as e:
+                import logging
+                logging.getLogger('accounts').error("Error provisioning free trial for tenant %s: %s", tenant.id, e)
+
+            # Seed standard jewellery categories for this store
+            try:
+                from inventory.models import ensure_default_categories
+                ensure_default_categories(tenant)
+            except Exception as e:
+                import logging
+                logging.getLogger('accounts').warning("Error seeding categories for tenant %s: %s", tenant.id, e)
 
             # Create default Tenant Administrator Employee profile for this store owner in their own shop
             from team.models import Employee

@@ -521,16 +521,29 @@ html:not([data-theme="dark"]):not([data-theme="gold"]) .jd-send-btn {
     40% { transform: scale(1); opacity: 1; }
 }
 
-@media (max-width: 576px) {
+@media (max-width: 991.98px) {
     #jdSupportWidget {
-        bottom: 18px;
-        right: 18px;
+        bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
+        right: 14px !important;
     }
     #jdSupportPanel {
-        bottom: 68px;
-        right: 0;
-        width: calc(100vw - 32px);
-        height: calc(100vh - 120px);
+        bottom: calc(134px + env(safe-area-inset-bottom, 0px)) !important;
+        right: 0 !important;
+        width: calc(100vw - 28px) !important;
+        max-width: 400px !important;
+        height: calc(100vh - 160px) !important;
+    }
+}
+@media (max-width: 576px) {
+    #jdSupportWidget {
+        bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
+        right: 12px !important;
+    }
+    #jdSupportPanel {
+        bottom: calc(134px + env(safe-area-inset-bottom, 0px)) !important;
+        right: 0 !important;
+        width: calc(100vw - 24px) !important;
+        height: calc(100vh - 150px) !important;
     }
 }
 </style>

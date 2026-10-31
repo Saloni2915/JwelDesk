@@ -13,7 +13,8 @@ from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from .models import (
     JewelleryItem, Category, StockMovement, MetalRate,
-    JewelleryItemImage, StockImportBatch, StockTransfer, StockTransferItem
+    JewelleryItemImage, StockImportBatch, StockTransfer, StockTransferItem,
+    ensure_default_categories
 )
 from .forms import JewelleryItemForm, CategoryForm, StockAdjustmentForm, StockTransferForm
 from team.permissions import check_branch_access
@@ -792,7 +793,9 @@ def stock_movement_list(request):
 @login_required
 def category_list(request):
     """List all categories with item count and inline create form."""
-    categories = Category.objects.filter(tenant=request.tenant).annotate(items_count=Count('items')).all()
+    if request.tenant:
+        ensure_default_categories(request.tenant)
+    categories = Category.objects.filter(tenant=request.tenant).annotate(items_count=Count('items')).order_by('name')
     form = CategoryForm(tenant=request.tenant)
 
     context = {
@@ -870,6 +873,51 @@ def category_delete(request, pk):
         'category': category,
     }
     return render(request, 'inventory/category_confirm_delete.html', context)
+
+
+@login_required
+def category_quick_add(request):
+    """
+    AJAX endpoint to quickly create a category from the add/edit item form.
+    Returns JSON {success: True, category: {id: ..., name: ...}}
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
+
+    name = (request.POST.get('name') or '').strip()
+    description = (request.POST.get('description') or '').strip()
+
+    if not name:
+        return JsonResponse({'success': False, 'error': 'Category name cannot be empty.'}, status=400)
+
+    try:
+        # Check if already exists (case-insensitive) for this tenant
+        existing = Category.objects.filter(tenant=request.tenant, name__iexact=name).first()
+        if existing:
+            return JsonResponse({
+                'success': True,
+                'already_exists': True,
+                'category': {
+                    'id': existing.id,
+                    'name': existing.name,
+                }
+            })
+
+        category = Category.objects.create(
+            tenant=request.tenant,
+            name=name,
+            description=description,
+        )
+        return JsonResponse({
+            'success': True,
+            'category': {
+                'id': category.id,
+                'name': category.name,
+            }
+        })
+    except Exception as exc:
+        logger.exception("Error in category_quick_add: %s", exc)
+        return JsonResponse({'success': False, 'error': str(exc)}, status=500)
 
 
 # ==============================================================================

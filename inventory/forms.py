@@ -1,7 +1,7 @@
 import os
 from decimal import Decimal, ROUND_HALF_UP
 from django import forms
-from .models import JewelleryItem, Category, StockMovement
+from .models import JewelleryItem, Category, StockMovement, ensure_default_categories
 
 
 class SanitizedDecimalField(forms.DecimalField):
@@ -172,7 +172,8 @@ class JewelleryItemForm(forms.ModelForm):
                 except Exception:
                     pass
         if self.tenant:
-            self.fields['category'].queryset = Category.objects.filter(tenant=self.tenant)
+            ensure_default_categories(self.tenant)
+            self.fields['category'].queryset = Category.objects.filter(tenant=self.tenant).order_by('name')
         if self.instance and self.instance.pk:
             if self.instance.quantity is not None:
                 self.fields['quantity'].initial = self.instance.quantity

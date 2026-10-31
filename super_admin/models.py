@@ -371,18 +371,6 @@ class SubscriptionPayment(models.Model):
     notes = models.TextField(
         blank=True
     )
-    trial_extended = models.BooleanField(
-        default=False,
-        help_text="Whether this trial has been extended by platform administration"
-    )
-    trial_extended_at = models.DateTimeField(
-        null=True,
-        blank=True
-    )
-    trial_extension_days = models.PositiveIntegerField(
-        default=0,
-        help_text="Cumulative number of days added via extensions"
-    )
     created_at = models.DateTimeField(
         auto_now_add=True
     )

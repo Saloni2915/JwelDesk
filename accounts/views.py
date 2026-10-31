@@ -561,6 +561,14 @@ SIDEBAR_MENU_OPTIONS = (
                 'desc_hi': 'टैग, वज़न और शुद्धता के साथ स्टॉक सूची',
             },
             {
+                'key': 'sub_inventory_categories',
+                'name': 'Categories / Collections',
+                'name_hi': 'श्रेणियाँ / संग्रह',
+                'icon': 'bi-tags',
+                'desc': 'Organize jewellery pieces into categories (Rings, Necklaces, etc.)',
+                'desc_hi': 'आभूषणों को श्रेणियों में व्यवस्थित करें (अंगूठियां, हार, आदि)',
+            },
+            {
                 'key': 'sub_inventory_history',
                 'name': 'Stock History',
                 'name_hi': 'स्टॉक गतिविधि इतिहास',

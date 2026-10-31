@@ -1,0 +1,587 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Girvi Loan #{{ loan.loan_number }} — JewelDesk{% endblock %}
+{% block page_title %}Girvi Loan Dossier{% endblock %}
+
+{% block content %}
+<div class="jd-canvas">
+
+    <!-- Header & Action CTAs -->
+    <div class="jd-header mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                <span class="jd-badge"><i class="bi bi-safe me-1"></i> Girvi Agreement</span>
+                {% if loan.status == 'active' %}
+                <span class="badge bg-warning text-dark fw-bold px-2 py-1">Active Loan</span>
+                {% elif loan.status == 'overdue' %}
+                <span class="badge bg-danger text-white fw-bold px-2 py-1">Overdue</span>
+                {% elif loan.status == 'settled' %}
+                <span class="badge bg-info text-dark fw-bold px-2 py-1">Settled (Paid in Full)</span>
+                {% elif loan.status == 'released' %}
+                <span class="badge bg-success text-white fw-bold px-2 py-1">Jewellery Released</span>
+                {% else %}
+                <span class="badge bg-secondary text-white">{{ loan.get_status_display }}</span>
+                {% endif %}
+            </div>
+            <h1 class="jd-title mb-0">Loan #{{ loan.loan_number }}</h1>
+            <p class="jd-subtitle">
+                Borrower: <strong>{{ loan.customer.name }}</strong> ({{ loan.customer.phone }}) &bull;
+                Branch: <strong>{{ loan.branch.name }}</strong> &bull;
+                Executed on: <strong>{{ loan.loan_date|date:"d M Y" }}</strong>
+            </p>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <!-- Print Pledge Voucher -->
+            <a href="{% url 'girvi:loan_print' loan.id %}" target="_blank" class="btn btn-sm btn-outline-secondary py-2 px-3 text-light d-inline-flex align-items-center gap-1">
+                <i class="bi bi-printer"></i>
+                <span>Print Voucher</span>
+            </a>
+
+            {% if loan.status != 'released' %}
+                <!-- Record Payment CTA -->
+                <button type="button" class="btn btn-sm btn-warning fw-bold py-2 px-3 d-inline-flex align-items-center gap-1 text-dark shadow-sm"
+                        data-bs-toggle="modal" data-bs-target="#recordPaymentModal">
+                    <i class="bi bi-cash-stack"></i>
+                    <span>Record Payment</span>
+                </button>
+
+                <!-- Release Collateral CTA (Active if settled) -->
+                {% if financials.is_settled %}
+                <a href="{% url 'girvi:collateral_release' loan.id %}" class="btn btn-sm btn-success fw-bold py-2 px-3 d-inline-flex align-items-center gap-1 shadow-sm">
+                    <i class="bi bi-box-arrow-up-right"></i>
+                    <span>Release Jewellery</span>
+                </a>
+                {% else %}
+                <button type="button" class="btn btn-sm btn-outline-secondary py-2 px-3 text-muted" disabled title="Cannot release: Outstanding balance remaining">
+                    <i class="bi bi-lock-fill"></i>
+                    <span>Release Jewellery (Pending Balance)</span>
+                </button>
+                {% endif %}
+
+                <!-- Authorized Waiver Button -->
+                {% if is_admin or user_perms.girvi.can_edit %}
+                <button type="button" class="btn btn-sm btn-outline-info py-2 px-3 d-inline-flex align-items-center gap-1"
+                        data-bs-toggle="modal" data-bs-target="#waiverModal">
+                    <i class="bi bi-tag-fill"></i>
+                    <span>Waiver / Discount</span>
+                </button>
+                {% endif %}
+            {% else %}
+                <span class="badge bg-success bg-opacity-25 text-success border border-success py-2 px-3 fs-6">
+                    <i class="bi bi-check-circle-fill me-1"></i> Collateral Released on {{ loan.release_date|date:"d M Y" }}
+                </span>
+                <a href="{% url 'girvi:release_receipt_print' loan.id %}" target="_blank" class="btn btn-sm btn-outline-success py-2 px-3">
+                    <i class="bi bi-receipt"></i> Release Voucher
+                </a>
+            {% endif %}
+
+            <a href="{% url 'girvi:loan_list' %}" class="btn btn-sm btn-outline-secondary py-2 px-3 text-light">
+                <i class="bi bi-arrow-left"></i> All Loans
+            </a>
+        </div>
+    </div>
+
+    <!-- Financial Position & Overview Card -->
+    <div class="row g-3 mb-4">
+        <!-- Grand Total Outstanding Balance Card -->
+        <div class="col-lg-4 col-md-6">
+            <div class="card jd-card h-100 border-warning border-opacity-40" style="background: linear-gradient(135deg, rgba(236,200,106,0.12) 0%, rgba(20,16,9,0.7) 100%);">
+                <div class="card-body p-4 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="text-gold small fw-bold text-uppercase mb-1">
+                            <i class="bi bi-wallet2 me-1"></i> Current Outstanding Balance
+                        </div>
+                        <div class="display-6 fw-bold text-gold mb-2">
+                            ₹{{ financials.outstanding_balance|floatformat:2 }}
+                        </div>
+                        <div class="small text-muted mb-3">
+                            {% if financials.is_settled %}
+                                <span class="badge bg-success text-white">Full Settlement Reached</span>
+                            {% else %}
+                                Principal: <strong>₹{{ financials.remaining_principal|floatformat:2 }}</strong> &bull;
+                                Accrued Int: <strong>₹{{ financials.remaining_interest|floatformat:2 }}</strong>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="pt-3 border-top border-secondary border-opacity-25 d-flex justify-content-between small text-muted">
+                        <span>Calculated As Of:</span>
+                        <strong class="text-light">{{ financials.as_of_date|date:"d M Y" }} ({{ financials.days_elapsed }} days elapsed)</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contract Terms Breakdown -->
+        <div class="col-lg-4 col-md-6">
+            <div class="card jd-card h-100">
+                <div class="card-header bg-dark bg-opacity-40 py-2">
+                    <span class="small fw-bold text-light"><i class="bi bi-info-circle me-1 text-gold"></i> Contractual Terms (Snapshotted)</span>
+                </div>
+                <div class="card-body p-3 small">
+                    <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+                        <span class="text-muted">Original Principal:</span>
+                        <strong class="text-light">₹{{ loan.principal_amount|floatformat:2 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+                        <span class="text-muted">Interest Rate:</span>
+                        <strong class="text-warning">{{ loan.interest_rate_percent }}% / {{ loan.get_interest_period_display }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+                        <span class="text-muted">Calculation Method:</span>
+                        <span class="text-light">{{ loan.get_interest_calculation_type_display }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+                        <span class="text-muted">Loan Duration:</span>
+                        <span class="text-light">{{ loan.loan_duration_months }} Months</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+                        <span class="text-muted">Maturity Date:</span>
+                        <strong class="text-light">{{ loan.maturity_date|date:"d M Y"|default:"—" }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between py-1">
+                        <span class="text-muted">Grace Period:</span>
+                        <span class="text-light">{{ loan.grace_period_days }} Days</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payments & Waivers Ledger Summary -->
+        <div class="col-lg-4 col-md-12">
+            <div class="card jd-card h-100">
+                <div class="card-header bg-dark bg-opacity-40 py-2">
+                    <span class="small fw-bold text-light"><i class="bi bi-cash-stack me-1 text-success"></i> Settlement &amp; Recoveries</span>
+                </div>
+                <div class="card-body p-3 small">
+                    <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+                        <span class="text-muted">Total Accrued Interest:</span>
+                        <strong class="text-warning">₹{{ financials.accrued_interest|floatformat:2 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+                        <span class="text-muted">Principal Recovered:</span>
+                        <strong class="text-success">₹{{ financials.principal_paid|floatformat:2 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+                        <span class="text-muted">Interest Recovered:</span>
+                        <strong class="text-success">₹{{ financials.interest_paid|floatformat:2 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+                        <span class="text-muted">Total Money Received:</span>
+                        <strong class="text-gold">₹{{ financials.total_paid|floatformat:2 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between py-1">
+                        <span class="text-muted">Authorized Waivers:</span>
+                        <strong class="text-info">₹{{ financials.total_waived|floatformat:2 }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pledged Jewellery Collateral Section -->
+    <div class="card jd-card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center py-3 bg-dark bg-opacity-50">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-gem text-gold fs-5"></i>
+                <h5 class="mb-0 fw-bold text-light" style="font-size: 1.05rem;">
+                    Pledged Jewellery Collateral Pieces ({{ items.count }})
+                </h5>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-secondary bg-opacity-25 text-light">
+                    <i class="bi bi-safe me-1"></i> Custody: {{ loan.custody_location|default:"Shop Safe Vault" }}
+                </span>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table jd-table mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>Piece Description</th>
+                        <th>Category</th>
+                        <th>Metal &amp; Purity</th>
+                        <th>Qty</th>
+                        <th>Gross Wt</th>
+                        <th>Stone Wt</th>
+                        <th>Net Wt</th>
+                        <th>Fine Wt</th>
+                        <th>Valuation (₹)</th>
+                        <th>Custody Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td class="text-muted">{{ forloop.counter }}</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                {% if item.item_photo %}
+                                <a href="{{ item.item_photo.url }}" target="_blank">
+                                    <img src="{{ item.item_photo.url }}" alt="{{ item.item_name }}" class="rounded" style="width: 38px; height: 38px; object-fit: cover; border: 1px solid #444;">
+                                </a>
+                                {% else %}
+                                <div class="rounded d-flex align-items-center justify-content-center text-secondary bg-dark border border-secondary" style="width: 38px; height: 38px;">
+                                    <i class="bi bi-gem"></i>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <span class="fw-semibold text-light">{{ item.item_name }}</span>
+                                    {% if item.huid %}<small class="d-block text-warning" style="font-size: 0.72rem;">HUID: {{ item.huid }}</small>{% endif %}
+                                    {% if item.description %}<small class="d-block text-muted" style="font-size: 0.72rem;">{{ item.description }}</small>{% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ item.category.name|default:"—" }}</td>
+                        <td>
+                            <span class="badge bg-warning bg-opacity-15 text-warning">{{ item.metal_type }} {{ item.purity }}</span>
+                        </td>
+                        <td>{{ item.quantity }}</td>
+                        <td class="fw-semibold">{{ item.gross_weight|floatformat:3 }}g</td>
+                        <td class="text-muted">{{ item.stone_weight|floatformat:3 }}g</td>
+                        <td class="fw-bold text-gold">{{ item.net_weight|floatformat:3 }}g</td>
+                        <td class="text-info">{{ item.fine_weight|floatformat:3 }}g</td>
+                        <td class="fw-semibold">₹{{ item.market_value|floatformat:2 }}</td>
+                        <td>
+                            {% if item.custody_status == 'in_vault' %}
+                            <span class="badge bg-warning text-dark"><i class="bi bi-safe me-1"></i> In Vault Safe</span>
+                            {% elif item.custody_status == 'released_to_borrower' %}
+                            <span class="badge bg-success text-white"><i class="bi bi-check-circle me-1"></i> Handed Over</span>
+                            {% else %}
+                            <span class="badge bg-secondary text-white">{{ item.get_custody_status_display }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="11" class="text-center py-4 text-muted">No collateral pieces recorded.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="table-dark fw-bold border-top border-secondary">
+                        <td colspan="5" class="text-end text-muted small">Collateral Totals:</td>
+                        <td>{{ loan.total_weight|floatformat:3 }}g Gross</td>
+                        <td>—</td>
+                        <td class="text-gold">{{ loan.total_net_weight|floatformat:3 }}g Net</td>
+                        <td>—</td>
+                        <td class="text-light">₹{{ loan.valuation_total|floatformat:2 }}</td>
+                        <td>—</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- Payments Ledger & Receipts Section -->
+    <div class="card jd-card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center py-3 bg-dark bg-opacity-50">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-receipt text-gold fs-5"></i>
+                <h5 class="mb-0 fw-bold text-light" style="font-size: 1.05rem;">
+                    Payment History &amp; Receipts ({{ payments.count }})
+                </h5>
+            </div>
+            {% if loan.status != 'released' %}
+            <button type="button" class="btn btn-sm btn-outline-warning py-1 px-3 d-inline-flex align-items-center gap-1"
+                    data-bs-toggle="modal" data-bs-target="#recordPaymentModal">
+                <i class="bi bi-plus-circle"></i>
+                <span>Record Payment</span>
+            </button>
+            {% endif %}
+        </div>
+
+        <div class="table-responsive">
+            <table class="table jd-table mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>Receipt #</th>
+                        <th>Payment Date</th>
+                        <th>Total Received</th>
+                        <th>Principal Portion</th>
+                        <th>Interest Portion</th>
+                        <th>Charges Portion</th>
+                        <th>Method</th>
+                        <th>Ref Number</th>
+                        <th>Received By</th>
+                        <th>Status</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in payments %}
+                    <tr {% if p.is_reversal %}class="opacity-50 text-decoration-line-through"{% endif %}>
+                        <td class="fw-bold">
+                            <a href="{% url 'girvi:payment_receipt_print' p.id %}" target="_blank" class="text-gold text-decoration-none">
+                                {{ p.receipt_number }}
+                            </a>
+                        </td>
+                        <td>{{ p.payment_date|date:"d M Y" }}</td>
+                        <td class="fw-bold text-gold">₹{{ p.total_amount_received|floatformat:2 }}</td>
+                        <td class="text-success">₹{{ p.principal_portion|floatformat:2 }}</td>
+                        <td class="text-warning">₹{{ p.interest_portion|floatformat:2 }}</td>
+                        <td class="text-muted">₹{{ p.charges_portion|floatformat:2 }}</td>
+                        <td><span class="badge bg-secondary bg-opacity-25 text-light">{{ p.payment_method }}</span></td>
+                        <td><small class="text-muted">{{ p.reference_number|default:"—" }}</small></td>
+                        <td><small class="text-light">{{ p.received_by.get_full_name|default:p.received_by.username }}</small></td>
+                        <td>
+                            {% if p.is_reversal %}
+                            <span class="badge bg-danger text-white">Reversed</span>
+                            {% else %}
+                            <span class="badge bg-success text-white">Valid</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'girvi:payment_receipt_print' p.id %}" target="_blank" class="btn btn-outline-secondary py-1 px-2 text-light" title="Print Receipt">
+                                    <i class="bi bi-printer"></i>
+                                </a>
+                                {% if not p.is_reversal and loan.status != 'released' and is_admin %}
+                                <button type="button" class="btn btn-outline-danger py-1 px-2"
+                                        data-bs-toggle="modal" data-bs-target="#reversePaymentModal{{ p.id }}" title="Reverse Payment">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+
+                            <!-- Reversal Modal for this payment -->
+                            {% if not p.is_reversal %}
+                            <div class="modal fade text-start" id="reversePaymentModal{{ p.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content bg-dark border-danger text-light">
+                                        <form method="post" action="{% url 'girvi:payment_reverse' p.id %}">
+                                            {% csrf_token %}
+                                            <div class="modal-header border-danger">
+                                                <h5 class="modal-title fw-bold text-danger">
+                                                    <i class="bi bi-exclamation-triangle-fill me-1"></i> Reverse Payment Voucher #{{ p.receipt_number }}
+                                                </h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p class="small text-muted mb-3">
+                                                    Reversing this payment of <strong>₹{{ p.total_amount_received }}</strong> will restore the loan's outstanding balance and create an immutable audit record.
+                                                </p>
+                                                <div class="mb-3">
+                                                    <label class="form-label small fw-semibold">Mandatory Reason for Reversal <span class="text-danger">*</span></label>
+                                                    <textarea name="reason" class="form-control form-control-sm bg-dark border-secondary text-light" rows="3" required placeholder="State why this payment is being reversed (e.g. Bounced cheque, entry error, customer request)..."></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer border-secondary">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-sm btn-danger fw-bold">
+                                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Confirm Reversal
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="11" class="text-center py-4 text-muted">No payments recorded yet for this loan.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Waivers Applied Section (if any) -->
+    {% if waivers %}
+    <div class="card jd-card mb-4">
+        <div class="card-header py-3 bg-dark bg-opacity-50 d-flex align-items-center gap-2">
+            <i class="bi bi-tag-fill text-info fs-5"></i>
+            <h5 class="mb-0 fw-bold text-light" style="font-size: 1.05rem;">Authorized Waivers &amp; Adjustments</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table jd-table mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>Date &amp; Time</th>
+                        <th>Waiver Type</th>
+                        <th>Amount Waived</th>
+                        <th>Reason / Justification</th>
+                        <th>Authorized By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for w in waivers %}
+                    <tr>
+                        <td>{{ w.created_at|date:"d M Y H:i" }}</td>
+                        <td><span class="badge bg-info text-dark fw-bold">{{ w.get_waiver_type_display }}</span></td>
+                        <td class="fw-bold text-info">₹{{ w.amount|floatformat:2 }}</td>
+                        <td class="text-light">{{ w.reason }}</td>
+                        <td>{{ w.authorized_by.get_full_name|default:w.authorized_by.username }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Audit Log Timeline Section -->
+    <div class="card jd-card mb-4">
+        <div class="card-header py-3 bg-dark bg-opacity-50 d-flex align-items-center gap-2">
+            <i class="bi bi-clock-history text-secondary fs-5"></i>
+            <h5 class="mb-0 fw-bold text-light" style="font-size: 1.05rem;">Lifecycle Audit Trail</h5>
+        </div>
+        <div class="card-body p-3">
+            <ul class="list-unstyled mb-0" style="font-size: 0.85rem;">
+                {% for log in audit_logs %}
+                <li class="d-flex align-items-start gap-2 py-2 border-bottom border-secondary border-opacity-25">
+                    <span class="badge bg-dark border border-secondary text-gold px-2 py-1 flex-shrink-0" style="font-size: 0.75rem;">
+                        {{ log.created_at|date:"d M Y H:i" }}
+                    </span>
+                    <div class="flex-grow-1">
+                        <span class="fw-bold text-light">{{ log.action }}</span>
+                        <span class="text-muted">by {{ log.user.get_full_name|default:log.user.username|default:"System" }}</span>
+                        <div class="text-muted mt-1">{{ log.details }}</div>
+                    </div>
+                </li>
+                {% empty %}
+                <li class="text-muted">No audit trail logs recorded.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+</div>
+
+<!-- Record Payment Modal -->
+<div class="modal fade" id="recordPaymentModal" tabindex="-1" aria-labelledby="recordPaymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-secondary text-light">
+            <form method="post" action="{% url 'girvi:payment_create' loan.id %}">
+                {% csrf_token %}
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title fw-bold text-gold" id="recordPaymentModalLabel">
+                        <i class="bi bi-cash-stack me-1"></i> Record Loan Payment
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Current Position Callout -->
+                    <div class="alert alert-dark border-secondary p-2 small mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Accrued Interest Due:</span>
+                            <strong class="text-warning">₹{{ financials.remaining_interest|floatformat:2 }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Remaining Principal:</span>
+                            <strong class="text-light">₹{{ financials.remaining_principal|floatformat:2 }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between border-top border-secondary pt-1">
+                            <span class="text-gold fw-bold">Total Due Today:</span>
+                            <strong class="text-gold fw-bold">₹{{ financials.outstanding_balance|floatformat:2 }}</strong>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Payment Date <span class="text-danger">*</span></label>
+                        {{ payment_form.payment_date }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Total Amount Received (₹) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark border-secondary text-gold fw-bold">₹</span>
+                            {{ payment_form.total_amount_received }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Payment Mode <span class="text-danger">*</span></label>
+                        {{ payment_form.payment_method }}
+                    </div>
+
+                    <!-- Breakdown Allocations -->
+                    <div class="p-2 rounded bg-black bg-opacity-40 border border-secondary border-opacity-30 mb-3">
+                        <span class="d-block small text-muted mb-2">Optional: Specify custom breakdown (defaults to paying interest first, then principal):</span>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label small text-warning mb-1">Interest Portion (₹)</label>
+                                {{ payment_form.interest_portion }}
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-success mb-1">Principal Portion (₹)</label>
+                                {{ payment_form.principal_portion }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small">Reference / Transaction ID</label>
+                        {{ payment_form.reference_number }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small">Notes</label>
+                        {{ payment_form.notes }}
+                    </div>
+                </div>
+
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-warning fw-bold">
+                        <i class="bi bi-check-circle-fill me-1"></i> Save Payment &amp; Print Receipt
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Authorized Waiver Modal -->
+<div class="modal fade" id="waiverModal" tabindex="-1" aria-labelledby="waiverModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-secondary text-light">
+            <form method="post" action="{% url 'girvi:waiver_create' loan.id %}">
+                {% csrf_token %}
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title fw-bold text-info" id="waiverModalLabel">
+                        <i class="bi bi-tag-fill me-1"></i> Authorize Financial Waiver / Discount
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">
+                        Waivers provide an explicit, authorized accounting reduction to outstanding interest or fees without silently altering historical loan calculations.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Waiver Category <span class="text-danger">*</span></label>
+                        {{ waiver_form.waiver_type }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Waiver Amount (₹) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark border-secondary text-info fw-bold">₹</span>
+                            {{ waiver_form.amount }}
+                        </div>
+                        <small class="text-muted">Max applicable interest waiver: ₹{{ financials.remaining_interest|floatformat:2 }}</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Mandatory Reason / Justification <span class="text-danger">*</span></label>
+                        {{ waiver_form.reason }}
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-info fw-bold text-dark">
+                        <i class="bi bi-check-circle-fill me-1"></i> Authorize Waiver
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+

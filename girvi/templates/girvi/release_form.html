@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Release Pledged Jewellery — Loan #{{ loan.loan_number }}{% endblock %}
+{% block page_title %}Jewellery Release{% endblock %}
+
+{% block content %}
+<div class="jd-canvas">
+
+    <!-- Header -->
+    <div class="jd-header mb-4">
+        <div>
+            <div class="jd-badge mb-1">
+                <i class="bi bi-box-arrow-up-right me-1"></i> Collateral Release &amp; Discharge
+            </div>
+            <h1 class="jd-title">Release Pledged Jewellery</h1>
+            <p class="jd-subtitle">
+                Loan #<strong>{{ loan.loan_number }}</strong> &bull; Borrower: <strong>{{ loan.customer.name }}</strong> ({{ loan.customer.phone }})
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'girvi:loan_detail' loan.id %}" class="jd-btn-ghost">
+                <i class="bi bi-arrow-left me-1"></i> Back to Loan Dossier
+            </a>
+        </div>
+    </div>
+
+    <!-- Settlement Verification Banner -->
+    {% if financials.is_settled %}
+    <div class="alert alert-success d-flex align-items-center gap-3 p-3 rounded-3 mb-4 border-success">
+        <i class="bi bi-check-circle-fill fs-3 text-success"></i>
+        <div>
+            <div class="fw-bold fs-6">Full Financial Settlement Verified</div>
+            <div class="small">
+                This loan has zero outstanding balance (Outstanding Balance: ₹0.00). All required principal and interest amounts have been satisfied.
+                You may safely release the collateral articles from the safe vault to the borrower.
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-danger d-flex align-items-center gap-3 p-3 rounded-3 mb-4 border-danger">
+        <i class="bi bi-exclamation-triangle-fill fs-3 text-danger"></i>
+        <div>
+            <div class="fw-bold fs-6">Settlement Required Before Release</div>
+            <div class="small">
+                Loan #{{ loan.loan_number }} still has an outstanding balance of <strong>₹{{ financials.outstanding_balance|floatformat:2 }}</strong>
+                (Principal: ₹{{ financials.remaining_principal|floatformat:2 }}, Interest: ₹{{ financials.remaining_interest|floatformat:2 }}).
+                Jewellery articles cannot be released until the full balance is paid or an authorized waiver is applied.
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row g-4">
+        <!-- Collateral Pieces to be Handed Over -->
+        <div class="col-lg-7">
+            <div class="card jd-card mb-4">
+                <div class="card-header bg-dark bg-opacity-50 py-3">
+                    <h5 class="mb-0 fw-bold text-light" style="font-size: 1.05rem;">
+                        <i class="bi bi-gem me-1 text-gold"></i> Collateral Articles to be Handed Over ({{ items.count }})
+                    </h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table jd-table mb-0 align-middle">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Item Description</th>
+                                <th>Metal &amp; Purity</th>
+                                <th>Gross Wt</th>
+                                <th>Net Wt</th>
+                                <th>Custody</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        {% if item.item_photo %}
+                                        <img src="{{ item.item_photo.url }}" class="rounded" style="width: 34px; height: 34px; object-fit: cover;">
+                                        {% endif %}
+                                        <div>
+                                            <span class="fw-semibold text-light">{{ item.item_name }}</span>
+                                            {% if item.huid %}<small class="d-block text-warning" style="font-size: 0.72rem;">HUID: {{ item.huid }}</small>{% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ item.metal_type }} {{ item.purity }}</td>
+                                <td>{{ item.gross_weight|floatformat:3 }}g</td>
+                                <td class="fw-bold text-gold">{{ item.net_weight|floatformat:3 }}g</td>
+                                <td>
+                                    <span class="badge bg-warning text-dark">{{ item.get_custody_status_display }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-dark fw-bold border-top border-secondary">
+                                <td colspan="3" class="text-end text-muted small">Total Pledged Weights:</td>
+                                <td>{{ loan.total_weight|floatformat:3 }}g Gross</td>
+                                <td class="text-gold">{{ loan.total_net_weight|floatformat:3 }}g Net</td>
+                                <td>—</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Release Confirmation Form -->
+        <div class="col-lg-5">
+            <div class="card jd-card">
+                <div class="card-header bg-dark bg-opacity-60 py-3 border-bottom border-success border-opacity-30">
+                    <h5 class="mb-0 fw-bold text-success" style="font-size: 1.05rem;">
+                        <i class="bi bi-shield-check me-1"></i> Handover Authorization
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if financials.is_settled %}
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-light">Released By (Staff User)</label>
+                            <input type="text" class="form-control form-control-sm bg-dark border-secondary text-light" value="{{ request.user.get_full_name|default:request.user.username }}" readonly>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-light">Borrower Identification / Handover Notes</label>
+                            {{ form.notes }}
+                            <small class="text-muted">Record ID verified (Aadhaar/Voter/PAN), original pawn voucher collected, etc.</small>
+                        </div>
+
+                        <div class="p-3 mb-4 rounded-2 bg-dark bg-opacity-75 border border-success border-opacity-35">
+                            <div class="form-check">
+                                {{ form.confirm_handover }}
+                                <label class="form-check-label small fw-bold text-light" for="{{ form.confirm_handover.id_for_label }}">
+                                    I confirm that all {{ items.count }} jewellery articles have been physically removed from the vault safe, weighed, inspected, and handed over to the customer.
+                                </label>
+                            </div>
+                            {% if form.confirm_handover.errors %}
+                            <div class="text-danger small mt-1">{{ form.confirm_handover.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-2">
+                                <i class="bi bi-check-circle-fill"></i>
+                                <span>Complete Release &amp; Print Handover Voucher</span>
+                            </button>
+                            <a href="{% url 'girvi:loan_detail' loan.id %}" class="btn btn-outline-secondary py-2 text-light">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-lock-fill fs-1 text-danger d-block mb-3"></i>
+                        <p class="mb-3">Release is locked because this loan has an outstanding balance.</p>
+                        <a href="{% url 'girvi:loan_detail' loan.id %}" class="btn btn-sm btn-warning fw-bold">
+                            <i class="bi bi-cash-stack me-1"></i> Record Payment to Settle
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+

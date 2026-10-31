@@ -87,11 +87,22 @@
                                 <div class="jd-field-help">Shared design code for duplicate pieces (e.g. DSN-RN-001).</div>
                             </div>
                             <div>
-                                <label class="jd-field-label">Category / Collection <span class="text-danger">*</span></label>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="jd-field-label m-0" for="id_category">Category / Collection <span class="text-danger">*</span></label>
+                                    <button type="button" class="btn btn-sm text-warning p-0 fw-semibold text-decoration-none" id="btnOpenCategoryModal" data-bs-toggle="modal" data-bs-target="#quickAddCategoryModal" title="Add a new category or collection">
+                                        <i class="bi bi-plus-circle me-1"></i>+ Add Category
+                                    </button>
+                                </div>
                                 {{ form.category }}
                                 {% if form.category.errors %}
                                 <div class="text-danger small mt-1">{{ form.category.errors.0 }}</div>
                                 {% endif %}
+                                <div class="jd-field-help d-flex justify-content-between">
+                                    <span>Select existing or create new collection.</span>
+                                    <a href="{% url 'category_list' %}" target="_blank" class="text-warning text-decoration-none small">
+                                        <i class="bi bi-gear me-1"></i>Manage All
+                                    </a>
+                                </div>
                             </div>
                         </div>
 
@@ -401,6 +412,67 @@
         </div>
     </form>
 
+    <!-- Quick Add Category Modal -->
+    <div class="modal fade" id="quickAddCategoryModal" tabindex="-1" aria-labelledby="quickAddCategoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border" style="background: var(--jd-inv-card, #14120e); border-color: var(--jd-inv-border, rgba(212, 175, 55, 0.25)) !important; color: var(--jd-inv-ivory, #f5f0eb);">
+                <div class="modal-header border-bottom" style="border-color: var(--jd-inv-border, rgba(212, 175, 55, 0.2)) !important;">
+                    <h5 class="modal-title fw-bold" id="quickAddCategoryModalLabel">
+                        <i class="bi bi-tags text-warning me-2"></i>Add Jewellery Category
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="quickAddCategoryForm" novalidate>
+                    {% csrf_token %}
+                    <div class="modal-body p-4">
+                        <div id="quickCatModalAlert" class="alert alert-danger py-2 small d-none mb-3"></div>
+
+                        <!-- Quick Pick Suggestions -->
+                        <div class="mb-3">
+                            <label class="small text-muted mb-2 d-block">Quick Pick Popular Categories:</label>
+                            <div class="d-flex flex-wrap gap-2" id="quickCatChipsContainer">
+                                <button type="button" class="btn btn-sm btn-outline-secondary text-light py-1 px-2 border-secondary quick-cat-chip" data-name="Rings">Rings</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary text-light py-1 px-2 border-secondary quick-cat-chip" data-name="Necklaces">Necklaces</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary text-light py-1 px-2 border-secondary quick-cat-chip" data-name="Chains">Chains</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary text-light py-1 px-2 border-secondary quick-cat-chip" data-name="Bangles & Kadas">Bangles &amp; Kadas</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary text-light py-1 px-2 border-secondary quick-cat-chip" data-name="Earrings">Earrings</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary text-light py-1 px-2 border-secondary quick-cat-chip" data-name="Bracelets">Bracelets</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary text-light py-1 px-2 border-secondary quick-cat-chip" data-name="Mangalsutra">Mangalsutra</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary text-light py-1 px-2 border-secondary quick-cat-chip" data-name="Pendants & Lockets">Pendants &amp; Lockets</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary text-light py-1 px-2 border-secondary quick-cat-chip" data-name="Nosepins">Nosepins</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary text-light py-1 px-2 border-secondary quick-cat-chip" data-name="Payal & Anklets">Payal &amp; Anklets</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary text-light py-1 px-2 border-secondary quick-cat-chip" data-name="Coins & Bars">Coins &amp; Bars</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary text-light py-1 px-2 border-secondary quick-cat-chip" data-name="Silver Articles">Silver Articles</button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="jd-field-label" for="modalCatName">Category Name <span class="text-danger">*</span></label>
+                            <input type="text" id="modalCatName" name="name" class="form-control" placeholder="e.g. Bridal Sets, Diamond Bangles" required>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="jd-field-label" for="modalCatDesc">Description <span class="text-muted small fw-normal">(Optional)</span></label>
+                            <textarea id="modalCatDesc" name="description" class="form-control" rows="2" placeholder="Optional notes about this collection..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top d-flex justify-content-between" style="border-color: var(--jd-inv-border, rgba(212, 175, 55, 0.2)) !important;">
+                        <a href="{% url 'category_list' %}" target="_blank" class="text-muted small text-decoration-none">
+                            <i class="bi bi-box-arrow-up-right me-1"></i>Manage all categories
+                        </a>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-sm btn-warning text-dark fw-bold px-3" id="btnSaveQuickCategory">
+                                <span class="spinner-border spinner-border-sm me-1 d-none" id="saveCatSpinner" role="status"></span>
+                                <i class="bi bi-check-circle-fill me-1" id="saveCatIcon"></i> Save &amp; Select
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
@@ -536,6 +608,119 @@
         if (huidInput) {
             huidInput.addEventListener('input', function() {
                 this.value = this.value.toUpperCase();
+            });
+        }
+
+        // Quick Add Category Modal Logic
+        const quickCatModal = document.getElementById('quickAddCategoryModal');
+        const quickCatForm = document.getElementById('quickAddCategoryForm');
+        const modalCatName = document.getElementById('modalCatName');
+        const modalCatDesc = document.getElementById('modalCatDesc');
+        const alertEl = document.getElementById('quickCatModalAlert');
+        const spinner = document.getElementById('saveCatSpinner');
+        const icon = document.getElementById('saveCatIcon');
+        const submitBtn = document.getElementById('btnSaveQuickCategory');
+        const categorySelect = document.getElementById('id_category');
+
+        if (quickCatModal) {
+            quickCatModal.addEventListener('shown.bs.modal', function() {
+                if (modalCatName) {
+                    modalCatName.focus();
+                }
+            });
+            quickCatModal.addEventListener('hidden.bs.modal', function() {
+                if (alertEl) alertEl.classList.add('d-none');
+                if (quickCatForm) quickCatForm.reset();
+            });
+        }
+
+        // Quick pick chip click fills the category name
+        document.querySelectorAll('.quick-cat-chip').forEach(chip => {
+            chip.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (modalCatName) {
+                    modalCatName.value = this.dataset.name;
+                    modalCatName.focus();
+                }
+            });
+        });
+
+        if (quickCatForm) {
+            quickCatForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const name = (modalCatName ? modalCatName.value : '').trim();
+                const desc = (modalCatDesc ? modalCatDesc.value : '').trim();
+
+                if (!name) {
+                    if (alertEl) {
+                        alertEl.textContent = 'Please enter a category name.';
+                        alertEl.classList.remove('d-none');
+                    }
+                    if (modalCatName) modalCatName.focus();
+                    return;
+                }
+
+                if (alertEl) alertEl.classList.add('d-none');
+                if (spinner) spinner.classList.remove('d-none');
+                if (icon) icon.classList.add('d-none');
+                if (submitBtn) submitBtn.disabled = true;
+
+                try {
+                    const formData = new FormData();
+                    formData.append('name', name);
+                    formData.append('description', desc);
+
+                    const csrfToken = quickCatForm.querySelector('[name=csrfmiddlewaretoken]') ? quickCatForm.querySelector('[name=csrfmiddlewaretoken]').value : '';
+
+                    const res = await fetch("{% url 'category_quick_add' %}", {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: formData
+                    });
+
+                    const data = await res.json();
+                    if (data.success && data.category) {
+                        if (categorySelect) {
+                            let optionFound = false;
+                            for (let i = 0; i < categorySelect.options.length; i++) {
+                                if (categorySelect.options[i].value == data.category.id) {
+                                    categorySelect.options[i].selected = true;
+                                    optionFound = true;
+                                    break;
+                                }
+                            }
+                            if (!optionFound) {
+                                const newOpt = new Option(data.category.name, data.category.id, true, true);
+                                categorySelect.add(newOpt);
+                            }
+                            categorySelect.dispatchEvent(new Event('change'));
+                        }
+
+                        // Close modal
+                        const modalInstance = bootstrap.Modal.getInstance(quickCatModal) || new bootstrap.Modal(quickCatModal);
+                        if (modalInstance) {
+                            modalInstance.hide();
+                        }
+                        quickCatForm.reset();
+                    } else {
+                        if (alertEl) {
+                            alertEl.textContent = data.error || 'Failed to save category.';
+                            alertEl.classList.remove('d-none');
+                        }
+                    }
+                } catch (err) {
+                    if (alertEl) {
+                        alertEl.textContent = 'A network error occurred. Please try again.';
+                        alertEl.classList.remove('d-none');
+                    }
+                } finally {
+                    if (spinner) spinner.classList.add('d-none');
+                    if (icon) icon.classList.remove('d-none');
+                    if (submitBtn) submitBtn.disabled = false;
+                }
             });
         }
 

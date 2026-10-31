@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Girvi Loan Voucher #{{ loan.loan_number }} — {{ company.company_name|default:"JewelDesk" }}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            color: #111;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-size: 13px;
+        }
+        .voucher-card {
+            background: #fff;
+            max-width: 850px;
+            margin: 30px auto;
+            border: 1px solid #ddd;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .voucher-header {
+            border-bottom: 2px solid #222;
+            padding: 24px;
+        }
+        .voucher-body {
+            padding: 24px;
+        }
+        .meta-box {
+            background: #fdfdfd;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 12px 16px;
+        }
+        .table-voucher th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            border-bottom: 1px solid #cbd5e1;
+        }
+        .table-voucher td {
+            font-size: 13px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .terms-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 11px;
+            line-height: 1.5;
+            color: #475569;
+        }
+        .signature-line {
+            border-top: 1px dashed #64748b;
+            margin-top: 50px;
+            padding-top: 6px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        @media print {
+            body {
+                background: #fff;
+                font-size: 12px;
+            }
+            .voucher-card {
+                border: none;
+                box-shadow: none;
+                margin: 0;
+                max-width: 100%;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Print / Close Bar -->
+    <div class="container text-center py-3 no-print">
+        <button onclick="window.print()" class="btn btn-warning fw-bold px-4 shadow-sm">
+            <i class="bi bi-printer-fill me-1"></i> Print Loan Agreement Voucher
+        </button>
+        <button onclick="window.close()" class="btn btn-outline-secondary px-3 ms-2">
+            Close
+        </button>
+    </div>
+
+    <div class="voucher-card">
+        <!-- Showroom Branding & Agreement Title -->
+        <div class="voucher-header">
+            <div class="row align-items-center">
+                <div class="col-7">
+                    <h3 class="fw-bold mb-1 text-dark">{{ company.company_name|default:loan.tenant.name }}</h3>
+                    <div class="text-muted small">
+                        {% if company.tagline %}{{ company.tagline }}<br>{% endif %}
+                        {% if company.address %}{{ company.address }}<br>{% endif %}
+                        {% if company.phone %}Phone: {{ company.phone }}{% endif %}
+                        {% if company.gstin %} &bull; GSTIN: {{ company.gstin }}{% endif %}
+                    </div>
+                </div>
+                <div class="col-5 text-end">
+                    <span class="badge bg-dark text-warning fs-6 px-3 py-1 mb-2 text-uppercase">
+                        Girvi / Pledge Agreement
+                    </span>
+                    <div class="fw-bold fs-5 text-dark">#{{ loan.loan_number }}</div>
+                    <div class="small text-muted">Date: {{ loan.loan_date|date:"d M Y" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="voucher-body">
+            <!-- Borrower & Loan Meta Grid -->
+            <div class="row g-3 mb-4">
+                <div class="col-6">
+                    <div class="meta-box h-100">
+                        <span class="text-uppercase small fw-bold text-muted d-block mb-1">Borrower / Pledgor Details</span>
+                        <div class="fw-bold fs-6 text-dark">{{ loan.customer.name }}</div>
+                        <div class="small text-muted"><i class="bi bi-telephone"></i> {{ loan.customer.phone }}</div>
+                        {% if loan.customer.address %}<div class="small text-muted">{{ loan.customer.address }}, {{ loan.customer.city }}</div>{% endif %}
+                        {% if loan.customer.aadhaar_number %}<div class="small text-muted">Aadhaar: {{ loan.customer.aadhaar_number }}</div>{% endif %}
+                        {% if loan.customer.pan_number %}<div class="small text-muted">PAN: {{ loan.customer.pan_number }}</div>{% endif %}
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="meta-box h-100">
+                        <span class="text-uppercase small fw-bold text-muted d-block mb-1">Loan &amp; Interest Parameters</span>
+                        <div class="d-flex justify-content-between small py-1 border-bottom">
+                            <span>Principal Disbursed:</span>
+                            <strong class="fs-6 text-dark">₹{{ loan.principal_amount|floatformat:2 }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between small py-1 border-bottom">
+                            <span>Interest Rate:</span>
+                            <strong>{{ loan.interest_rate_percent }}% / {{ loan.get_interest_period_display }} ({{ loan.get_interest_calculation_type_display }})</strong>
+                        </div>
+                        <div class="d-flex justify-content-between small py-1 border-bottom">
+                            <span>Contract Maturity:</span>
+                            <strong>{{ loan.maturity_date|date:"d M Y"|default:"12 Months" }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between small pt-1">
+                            <span>Vault Custody Location:</span>
+                            <strong>{{ loan.custody_location|default:"Shop Safe Vault" }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Itemized Collateral Table -->
+            <h6 class="fw-bold text-dark mb-2 text-uppercase" style="font-size: 12px; letter-spacing: 0.5px;">
+                <i class="bi bi-gem me-1"></i> Pledged Jewellery Articles Held Under Custody
+            </h6>
+            <div class="table-responsive mb-4">
+                <table class="table table-voucher align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">#</th>
+                            <th>Description</th>
+                            <th>Metal / Purity</th>
+                            <th>Qty</th>
+                            <th class="text-end">Gross Wt</th>
+                            <th class="text-end">Stone Wt</th>
+                            <th class="text-end">Net Fine Wt</th>
+                            <th class="text-end">Est. Valuation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                <strong>{{ item.item_name }}</strong>
+                                {% if item.huid %}<small class="d-block text-muted">HUID: {{ item.huid }}</small>{% endif %}
+                                {% if item.description %}<small class="d-block text-muted">{{ item.description }}</small>{% endif %}
+                            </td>
+                            <td>{{ item.metal_type }} {{ item.purity }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td class="text-end fw-semibold">{{ item.gross_weight|floatformat:3 }}g</td>
+                            <td class="text-end text-muted">{{ item.stone_weight|floatformat:3 }}g</td>
+                            <td class="text-end fw-bold">{{ item.net_weight|floatformat:3 }}g</td>
+                            <td class="text-end">₹{{ item.market_value|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="fw-bold bg-light">
+                            <td colspan="4" class="text-end">Total Collateral Pledged:</td>
+                            <td class="text-end">{{ loan.total_weight|floatformat:3 }}g</td>
+                            <td class="text-end">—</td>
+                            <td class="text-end">{{ loan.total_net_weight|floatformat:3 }}g Net</td>
+                            <td class="text-end">₹{{ loan.valuation_total|floatformat:2 }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Standard Legal Terms & Disclaimer -->
+            <div class="terms-box mb-4">
+                <div class="fw-bold text-dark mb-1">Terms &amp; Conditions / शर्तें एवं नियम:</div>
+                <div style="white-space: pre-line;">{{ loan.terms_conditions|default:settings.standard_terms_conditions }}</div>
+            </div>
+
+            <!-- Signatures Grid -->
+            <div class="row pt-4 text-center">
+                <div class="col-4">
+                    <div class="signature-line">
+                        Borrower / Pledgor Signature<br>
+                        <small class="text-muted fw-normal">(ऋणी / ग्राहक के हस्ताक्षर)</small>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="signature-line">
+                        Verifier / Appraiser<br>
+                        <small class="text-muted fw-normal">(वजन व शुद्धता जांचकर्ता)</small>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="signature-line">
+                        For {{ company.company_name|default:loan.tenant.name }}<br>
+                        <small class="text-muted fw-normal">(अधिकृत हस्ताक्षरकर्ता)</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer print timestamp -->
+            <div class="text-center text-muted small mt-4 pt-2 border-top" style="font-size: 10px;">
+                Computer generated Girvi agreement voucher powered by JewelDesk Jewellery ERP &bull; Printed: {{ print_time|date:"d M Y, h:i A" }}
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
+

@@ -2038,26 +2038,41 @@ a.jd-customer-name:hover {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 58px;
-    background: var(--bg-primary, #110e0a);
-    border-top: 1px solid var(--border, rgba(212, 175, 55, 0.22));
+    height: 60px;
+    background: rgba(18, 14, 10, 0.96) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border-top: 1px solid rgba(212, 175, 55, 0.25) !important;
     display: flex;
     align-items: stretch;
     justify-content: space-around;
     z-index: 1040;
     padding-bottom: env(safe-area-inset-bottom, 0px);
-    box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.42);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.52) !important;
 }
 
 [data-theme="light"] .mobile-bottom-nav {
-    background: #ffffff !important;
+    background: rgba(255, 255, 255, 0.96) !important;
     border-top-color: #e2e8f0 !important;
     box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.08) !important;
 }
 
 [data-theme="gold"] .mobile-bottom-nav {
-    background: #171511 !important;
+    background: rgba(23, 21, 17, 0.98) !important;
     border-top-color: rgba(212, 175, 55, 0.35) !important;
+}
+
+.mobile-bottom-nav a,
+.mobile-bottom-nav a:hover,
+.mobile-bottom-nav a:focus,
+.mobile-bottom-nav a:visited,
+.mobile-bottom-nav a:active,
+.mobile-nav-item,
+.mobile-nav-item:hover,
+.mobile-nav-item:focus,
+.mobile-nav-item:visited,
+.mobile-nav-item:active {
+    text-decoration: none !important;
 }
 
 .mobile-nav-item {
@@ -2066,12 +2081,13 @@ a.jd-customer-name:hover {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 6px 4px;
-    color: var(--text-muted, #94a3b8);
-    text-decoration: none;
+    padding: 6px 2px;
+    color: #94a3b8 !important;
+    text-decoration: none !important;
     font-size: 0.72rem;
     font-weight: 500;
-    transition: color 0.15s ease, transform 0.15s ease;
+    position: relative;
+    transition: all 0.2s ease;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
     cursor: pointer;
@@ -2079,7 +2095,8 @@ a.jd-customer-name:hover {
 
 .mobile-nav-item:hover,
 .mobile-nav-item:focus {
-    color: var(--accent, #ECC86A);
+    color: #ECC86A !important;
+    text-decoration: none !important;
 }
 
 .mobile-nav-item:active {
@@ -2087,23 +2104,87 @@ a.jd-customer-name:hover {
 }
 
 .mobile-nav-item.active {
-    color: var(--accent, #ECC86A) !important;
+    color: #ECC86A !important;
     font-weight: 700;
 }
 
 .mobile-nav-item.active .mobile-nav-icon {
-    transform: translateY(-1px);
-    color: var(--accent, #ECC86A) !important;
+    transform: translateY(-2px);
+    color: #ECC86A !important;
+}
+
+.mobile-nav-item.active::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 28px;
+    height: 3px;
+    background: linear-gradient(90deg, #ECC86A, #D4AF37);
+    border-radius: 0 0 3px 3px;
+    box-shadow: 0 2px 8px rgba(236, 200, 106, 0.5);
 }
 
 .mobile-nav-icon {
     font-size: 1.25rem;
-    line-height: 1.1;
-    margin-bottom: 2px;
+    line-height: 1;
+    margin-bottom: 3px;
+    transition: transform 0.2s ease;
 }
 
 .mobile-nav-label {
     letter-spacing: 0.02em;
     white-space: nowrap;
     font-size: 0.68rem;
+    text-decoration: none !important;
+}
+
+/* Sidebar Logout Button - Pinned to Left Under Corner */
+.sidebar-logout-container {
+    width: 100%;
+}
+.jd-sidebar-logout-btn {
+    background: rgba(220, 53, 69, 0.12) !important;
+    border: 1px solid rgba(220, 53, 69, 0.35) !important;
+    color: #ff6b7d !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    padding: 0.45rem 0.75rem !important;
+    border-radius: 6px !important;
+    transition: all 0.2s ease !important;
+    text-align: center;
+}
+.jd-sidebar-logout-btn:hover,
+.jd-sidebar-logout-btn:focus {
+    background: #dc3545 !important;
+    border-color: #dc3545 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(220, 53, 69, 0.4) !important;
+}
+[data-theme="light"] .jd-sidebar-logout-btn {
+    background: rgba(220, 53, 69, 0.08) !important;
+    border-color: rgba(220, 53, 69, 0.25) !important;
+    color: #dc3545 !important;
+}
+[data-theme="light"] .jd-sidebar-logout-btn:hover {
+    background: #dc3545 !important;
+    color: #ffffff !important;
+}
+
+/* Ensure mobile main content never gets blocked by the mobile bottom bar */
+@media (max-width: 991.98px) {
+    .main-content,
+    #page-content,
+    .jd-inv-canvas {
+        padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+    .top-navbar .company-name {
+        max-width: 130px;
+    }
+}
+@media (max-width: 575.98px) {
+    .top-navbar .company-name {
+        max-width: 105px;
+    }
 }

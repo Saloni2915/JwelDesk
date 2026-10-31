@@ -37,6 +37,10 @@ class Customer(models.Model):
             self.email = validate_proper_email(self.email, field_label='Customer email', required=False)
 
     @property
+    def phone(self):
+        return self.mobile
+
+    @property
     def total_purchases_count(self):
         return self.sales.count()
 

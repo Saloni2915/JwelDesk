@@ -36,13 +36,9 @@ def create_tenant_trial(tenant):
     if not tenant:
         return None
 
-    # Fast check: If tenant already has a subscription loaded in memory
-    try:
-        existing_sub = getattr(tenant, 'subscription', None)
-        if existing_sub is not None:
-            return existing_sub
-    except Exception:
-        pass
+    # Check if subscription is already cached in memory
+    if hasattr(tenant, '_subscription_cache') and tenant._subscription_cache is not None:
+        return tenant._subscription_cache
 
     from super_admin.models import TenantSubscription
 

@@ -40,6 +40,7 @@ urlpatterns = [
     path('inventory/categories/add/', views.category_add, name='category_add'),
     path('inventory/categories/<int:pk>/edit/', views.category_edit, name='category_edit'),
     path('inventory/categories/<int:pk>/delete/', views.category_delete, name='category_delete'),
+    path('inventory/api/categories/quick-add/', views.category_quick_add, name='category_quick_add'),
 
     # Branch-to-Branch Stock Transfers
     path('inventory/transfers/', views.stock_transfer_list, name='stock_transfer_list'),

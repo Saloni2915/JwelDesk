@@ -38,6 +38,42 @@ class Category(models.Model):
         return self.name
 
 
+DEFAULT_JEWELLERY_CATEGORIES = [
+    "Rings",
+    "Necklaces",
+    "Chains",
+    "Bangles & Kadas",
+    "Bracelets",
+    "Earrings",
+    "Pendants & Lockets",
+    "Mangalsutra",
+    "Nosepins",
+    "Payal & Anklets",
+    "Coins & Bars",
+    "Silver Articles",
+]
+
+
+def ensure_default_categories(tenant):
+    """
+    Ensure the tenant showroom has standard jewellery categories available.
+    If the tenant currently has 0 categories, automatically seeds the standard categories.
+    Returns the queryset of categories for this tenant.
+    """
+    if not tenant:
+        return Category.objects.none()
+    try:
+        if not Category.objects.filter(tenant=tenant).exists():
+            objs = [
+                Category(tenant=tenant, name=name, description=f"Standard {name} collection")
+                for name in DEFAULT_JEWELLERY_CATEGORIES
+            ]
+            Category.objects.bulk_create(objs, ignore_conflicts=True)
+    except Exception as exc:
+        logger.warning("Could not ensure default categories for tenant %s: %s", getattr(tenant, 'id', None), exc)
+    return Category.objects.filter(tenant=tenant).order_by('name')
+
+
 class ItemSequence(models.Model):
     """
     Atomic monotonic sequence tracker for jewellery tag numbers (e.g. JWL-000001).
