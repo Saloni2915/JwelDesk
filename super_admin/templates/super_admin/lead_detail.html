@@ -332,7 +332,7 @@
                                         <span class="fw-bold small" style="color: var(--sa-text);">{{ act.title }}</span>
                                     </div>
                                     <div class="text-muted small">
-                                        Assigned to <strong>{{ act.assigned_to.first_name|default:act.assigned_to.username|default:"Unassigned" }}</strong>
+                                        Assigned to <strong>{% if act.assigned_to %}{{ act.assigned_to.first_name|default:act.assigned_to.username }}{% else %}Unassigned{% endif %}</strong>
                                         &bull; {{ act.created_at|date:"d M Y, h:i A" }}
                                     </div>
                                     {% if act.outcome_notes %}
@@ -386,7 +386,7 @@
                                     Plan: {{ neg.get_target_plan_display }}
                                 </span>
                                 <span class="text-muted small ms-2">
-                                    by {{ neg.conducted_by.first_name|default:neg.conducted_by.username|default:"Staff" }} on {{ neg.created_at|date:"d M Y" }}
+                                    by {% if neg.conducted_by %}{{ neg.conducted_by.first_name|default:neg.conducted_by.username }}{% else %}Staff{% endif %} on {{ neg.created_at|date:"d M Y" }}
                                 </span>
                             </div>
                             <span class="fw-bold text-warning">Budget: ₹{{ neg.budget|floatformat:0 }}</span>
@@ -489,7 +489,7 @@
                                 <td class="small">{{ hist.created_at|date:"d M Y, h:i A" }}</td>
                                 <td><span class="badge bg-secondary bg-opacity-20 text-body small">{{ hist.from_stage }}</span></td>
                                 <td><span class="badge bg-warning bg-opacity-20 text-warning small">{{ hist.to_stage }}</span></td>
-                                <td class="small">{{ hist.changed_by.first_name|default:hist.changed_by.username|default:"System" }}</td>
+                                <td class="small">{% if hist.changed_by %}{{ hist.changed_by.first_name|default:hist.changed_by.username }}{% else %}System{% endif %}</td>
                                 <td class="small text-muted">{{ hist.reason|default:"—" }}</td>
                             </tr>
                             {% empty %}
@@ -524,7 +524,7 @@
                             {% for n in notes %}
                             <div class="p-2 rounded border small" style="background: var(--sa-surface); border-color: var(--sa-border) !important;">
                                 <div class="d-flex justify-content-between text-muted mb-1" style="font-size: 0.75rem;">
-                                    <strong>{{ n.author.first_name|default:n.author.username|default:"Staff" }}</strong>
+                                    <strong>{% if n.author %}{{ n.author.first_name|default:n.author.username }}{% else %}Staff{% endif %}</strong>
                                     <span>{{ n.created_at|date:"d M Y, h:i A" }}</span>
                                 </div>
                                 <div style="color: var(--sa-text-secondary); white-space: pre-wrap;">{{ n.note }}</div>

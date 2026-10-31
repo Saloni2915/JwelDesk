@@ -126,7 +126,7 @@
                                 </div>
                                 <div>
                                     <span class="fw-bold" style="font-size: 0.9rem; color: var(--jd-ivory);">
-                                        {{ msg.sender.get_full_name|default:msg.sender.username }}
+                                        {% if msg.sender %}{{ msg.sender.get_full_name|default:msg.sender.username }}{% else %}Customer{% endif %}
                                     </span>
                                     <span class="badge ms-1" style="font-size: 0.68rem; background: var(--jd-card-high); color: var(--jd-muted); border: 1px solid var(--jd-border);">Customer</span>
                                 </div>

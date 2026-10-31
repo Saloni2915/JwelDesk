@@ -140,7 +140,7 @@
                                     <div class="small text-muted d-flex align-items-center gap-1 flex-wrap mt-1">
                                         <span class="sa-slug-pill">/{{ sub.tenant.slug }}</span>
                                         <span>•</span>
-                                        <span class="text-truncate" style="max-width: 170px;" title="{{ sub.tenant.owner.email }}">{{ sub.tenant.owner.email|default:sub.tenant.owner.username }}</span>
+                                        <span class="text-truncate" style="max-width: 170px;" title="{{ sub.tenant.owner.email|default:'' }}">{% if sub.tenant.owner %}{{ sub.tenant.owner.email|default:sub.tenant.owner.username }}{% else %}No owner{% endif %}</span>
                                     </div>
                                 </div>
                             </div>

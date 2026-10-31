@@ -119,11 +119,21 @@ class SalesCRMModuleTests(TestCase):
         self.assertNotContains(resp_lost, "Shree Ganesh Jewellers")
 
     def test_pipeline_kanban_view(self):
-        """Kanban pipeline displays columns with categorized leads."""
+        """Kanban pipeline displays columns with categorized leads, including unassigned leads."""
+        PlatformDemoLead.objects.create(
+            lead_name="Unassigned Lead Test",
+            contact_name="Ramesh",
+            phone="9111222333",
+            city="Delhi",
+            stage=PlatformDemoLead.STAGE_NEW,
+            assigned_staff=None
+        )
         url = reverse('super_admin:sales_pipeline')
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "Sales Pipeline Board")
+        self.assertContains(resp, "Unassigned Lead Test")
+        self.assertContains(resp, "Unassigned")
         self.assertIn('columns', resp.context)
 
     def test_sales_stage_transition(self):

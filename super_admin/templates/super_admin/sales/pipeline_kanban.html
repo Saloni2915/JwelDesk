@@ -101,12 +101,21 @@
                         <!-- Card Footer -->
                         <div class="d-flex align-items-center justify-content-between pt-2 border-top mt-2" style="border-color: var(--sa-border) !important;">
                             <div class="d-flex align-items-center gap-1">
+                                {% if lead.assigned_staff %}
                                 <span class="rounded-circle bg-warning bg-opacity-20 text-warning d-inline-flex align-items-center justify-content-center fw-bold" style="width: 22px; height: 22px; font-size: 0.65rem;">
-                                    {{ lead.assigned_staff.first_name|default:lead.assigned_staff.username|default:"U"|slice:":1"|upper }}
+                                    {{ lead.assigned_staff.first_name|default:lead.assigned_staff.username|slice:":1"|upper }}
                                 </span>
                                 <span class="text-muted small text-truncate" style="max-width: 80px; font-size: 0.75rem;">
-                                    {{ lead.assigned_staff.first_name|default:lead.assigned_staff.username|default:"Unassigned" }}
+                                    {{ lead.assigned_staff.first_name|default:lead.assigned_staff.username }}
                                 </span>
+                                {% else %}
+                                <span class="rounded-circle bg-secondary bg-opacity-20 text-muted d-inline-flex align-items-center justify-content-center fw-bold" style="width: 22px; height: 22px; font-size: 0.65rem;">
+                                    U
+                                </span>
+                                <span class="text-muted small text-truncate" style="max-width: 80px; font-size: 0.75rem;">
+                                    Unassigned
+                                </span>
+                                {% endif %}
                             </div>
                             <div class="d-flex align-items-center gap-1">
                                 {% if lead.phone %}

@@ -116,10 +116,10 @@
                     </td>
                     <td>
                         <div class="d-flex align-items-center gap-1">
-                            <span class="fw-semibold" style="color: var(--sa-text);">{{ t.owner.get_full_name|default:t.owner.username }}</span>
+                            <span class="fw-semibold" style="color: var(--sa-text);">{% if t.owner %}{{ t.owner.get_full_name|default:t.owner.username }}{% else %}No owner assigned{% endif %}</span>
                             <span class="sa-admin-pill">Admin</span>
                         </div>
-                        <div class="small text-muted" style="font-size: 0.78rem;">{{ t.owner.email|default:"No email" }}</div>
+                        <div class="small text-muted" style="font-size: 0.78rem;">{% if t.owner and t.owner.email %}{{ t.owner.email }}{% else %}No email{% endif %}</div>
                     </td>
                     <td>
                         <span class="sa-staff-pill">

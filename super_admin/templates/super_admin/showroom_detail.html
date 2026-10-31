@@ -135,12 +135,12 @@
             <div class="row g-2 small mb-3">
                 <div class="col-4 sa-label">Tenant Admin:</div>
                 <div class="col-8 fw-semibold" style="color: var(--sa-text);">
-                    {{ tenant.owner.get_full_name|default:tenant.owner.username }}
+                    {% if tenant.owner %}{{ tenant.owner.get_full_name|default:tenant.owner.username }}{% else %}No owner assigned{% endif %}
                     <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50 px-2 py-0 ms-1 small">Tenant Admin</span>
                 </div>
 
                 <div class="col-4 sa-label">Username:</div>
-                <div class="col-8"><code>{{ tenant.owner.username }}</code></div>
+                <div class="col-8"><code>{{ tenant.owner.username|default:"—" }}</code></div>
 
                 <div class="col-4 sa-label">Login Email:</div>
                 <div class="col-8" style="color: var(--sa-text);">{{ tenant.owner.email|default:"No email registered" }}</div>
