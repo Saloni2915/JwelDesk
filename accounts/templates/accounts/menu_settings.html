@@ -10,15 +10,22 @@
     <!-- Page Header -->
     <header class="jd-header mb-4">
         <div class="jd-header-left">
-            <span class="jd-badge-pill">
-                <i class="bi bi-layout-sidebar-inset" aria-hidden="true"></i> {% if is_hindi %}नेविगेशन सेटिंग्स{% else %}Navigation Settings{% endif %}
-            </span>
+            <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                <span class="jd-badge-pill">
+                    <i class="bi bi-layout-sidebar-inset" aria-hidden="true"></i> {% if is_hindi %}नेविगेशन सेटिंग्स{% else %}Navigation Settings{% endif %}
+                </span>
+                {% if request.tenant %}
+                <span class="badge bg-warning text-dark fw-bold px-2 py-1 shadow-sm" style="font-size: 0.8rem; letter-spacing: 0.3px;">
+                    <i class="bi bi-shop me-1"></i>{{ request.tenant.get_business_type_display }}
+                </span>
+                {% endif %}
+            </div>
             <h1 class="jd-title">{% if is_hindi %}मेनू बार दृश्यता एवं उप-विकल्प अनुकूलन{% else %}Menu Bar &amp; Sub-Options Visibility{% endif %}</h1>
             <p class="jd-subtitle">
                 {% if is_hindi %}
-                चुनें कि कौन से मेनू मॉड्यूल और उनके उप-विकल्प (Sub-options) आपके साइडबार नेविगेशन में दिखाई देंगे। किसी भी विकल्प को छिपाने के लिए "Hide Option" <strong>ON</strong> करें, या वापस दिखाने के लिए <strong>OFF</strong> करें।
+                चुनें कि कौन से मेनू मॉड्यूल और उनके उप-विकल्प (Sub-options) आपके साइडबार नेविगेशन में दिखाई देंगे। यह विकल्प आपके व्यापार मॉडल (<strong>{{ request.tenant.get_business_type_display|default:"General" }}</strong>) के अनुसार उपलब्ध कराए गए हैं।
                 {% else %}
-                Choose which menu modules and individual sub-options appear in your sidebar navigation. Turn "Hide Option" <strong>ON</strong> to hide any module or sub-item, or turn it <strong>OFF</strong> to unhide and restore it.
+                Choose which menu modules and individual sub-options appear in your sidebar navigation. Menu options are tailored to your store's business model (<strong>{{ request.tenant.get_business_type_display|default:"General" }}</strong>). Turn "Hide Option" <strong>ON</strong> to hide any module or sub-item, or turn it <strong>OFF</strong> to unhide it.
                 {% endif %}
             </p>
         </div>

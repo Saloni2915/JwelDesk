@@ -777,7 +777,7 @@ body:not([data-theme="dark"]):not([data-theme="gold"]) .pwa-update-mini-pill,
         // 1. Root-scoped Progressive Web App Service Worker Registration
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                navigator.serviceWorker.register('/sw.js?v=2.4.2', { scope: '/' })
                     .then(function(reg) {
                         swRegistration = reg;
 

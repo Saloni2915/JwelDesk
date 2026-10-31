@@ -342,9 +342,33 @@ def themes(request):
     return response
 
 
+def is_menu_allowed_for_tenant(business_type_attr, tenant, user=None):
+    """
+    Check if a menu item or sub-item with business_type ('retail', 'wholesale', or 'all')
+    is applicable to the current tenant's business model (RETAIL, WHOLESALE, BOTH).
+    If no tenant is specified, all options are allowed.
+    """
+    if not business_type_attr or business_type_attr == 'all':
+        return True
+
+    if not tenant:
+        return True
+
+    is_retail = getattr(tenant, 'is_retail', True)
+    is_wholesale = getattr(tenant, 'is_wholesale', False)
+
+    if business_type_attr == 'retail':
+        return bool(is_retail)
+    elif business_type_attr == 'wholesale':
+        return bool(is_wholesale)
+
+    return True
+
+
 SIDEBAR_MENU_OPTIONS = (
     {
         'key': 'dashboard',
+        'business_type': 'all',
         'name': 'Dashboard',
         'name_hi': 'डैशबोर्ड',
         'icon': 'bi-speedometer2',
@@ -356,6 +380,7 @@ SIDEBAR_MENU_OPTIONS = (
     },
     {
         'key': 'sales',
+        'business_type': 'retail',
         'name': 'Sales & Exchange',
         'name_hi': 'बिक्री एवं एक्सचेंज',
         'icon': 'bi-receipt',
@@ -366,6 +391,7 @@ SIDEBAR_MENU_OPTIONS = (
         'sub_items': [
             {
                 'key': 'sub_sales_add',
+                'business_type': 'retail',
                 'name': 'New Sale (POS)',
                 'name_hi': 'नई बिक्री (POS)',
                 'icon': 'bi-cart-plus',
@@ -374,6 +400,7 @@ SIDEBAR_MENU_OPTIONS = (
             },
             {
                 'key': 'sub_sales_list',
+                'business_type': 'retail',
                 'name': 'All Sales & Bills',
                 'name_hi': 'सभी बिक्री एवं बिल',
                 'icon': 'bi-receipt',
@@ -382,6 +409,7 @@ SIDEBAR_MENU_OPTIONS = (
             },
             {
                 'key': 'sub_sales_payments',
+                'business_type': 'retail',
                 'name': 'Payments & Receipts',
                 'name_hi': 'भुगतान एवं रसीदें',
                 'icon': 'bi-cash-coin',
@@ -390,6 +418,7 @@ SIDEBAR_MENU_OPTIONS = (
             },
             {
                 'key': 'sub_sales_og_exchange',
+                'business_type': 'retail',
                 'name': 'Old Gold Exchange',
                 'name_hi': 'पुराना सोना एक्सचेंज',
                 'icon': 'bi-arrow-repeat',
@@ -398,6 +427,7 @@ SIDEBAR_MENU_OPTIONS = (
             },
             {
                 'key': 'sub_sales_og_buyback',
+                'business_type': 'retail',
                 'name': 'Old Gold Buyback',
                 'name_hi': 'पुराना सोना बायबैक',
                 'icon': 'bi-cash-stack',
@@ -406,6 +436,7 @@ SIDEBAR_MENU_OPTIONS = (
             },
             {
                 'key': 'sub_sales_og_history',
+                'business_type': 'retail',
                 'name': 'Old Gold History',
                 'name_hi': 'पुराना सोना इतिहास',
                 'icon': 'bi-journal-text',
@@ -416,6 +447,7 @@ SIDEBAR_MENU_OPTIONS = (
     },
     {
         'key': 'wholesale',
+        'business_type': 'wholesale',
         'name': 'Wholesale & B2B',
         'name_hi': 'थोक व्यापार (B2B)',
         'icon': 'bi-buildings',
@@ -426,432 +458,549 @@ SIDEBAR_MENU_OPTIONS = (
         'sub_items': [
             {
                 'key': 'sub_wholesale_dashboard',
+                'business_type': 'wholesale',
                 'name': 'Wholesale Dashboard',
                 'name_hi': 'थोक डैशबोर्ड',
                 'icon': 'bi-speedometer2',
-                'desc': 'B2B overview, orders, and merchant KPIs',
-                'desc_hi': 'थोक व्यापार सारांश और केपीआई आंकड़े',
+                'desc': 'Executive wholesale operations telemetry and order pipelines',
+                'desc_hi': 'थोक व्यापार संचालन टेलीमेट्री और ऑर्डर पाइपलाइन',
             },
             {
                 'key': 'sub_wholesale_parties',
-                'name': 'Retailers / Parties',
-                'name_hi': 'खुदरा विक्रेता / पार्टियां',
-                'icon': 'bi-shop',
-                'desc': 'Wholesale merchant accounts and store parties',
-                'desc_hi': 'थोक व्यापारी खाते और खुदरा स्टोर पार्टियां',
+                'business_type': 'wholesale',
+                'name': 'Retailer Parties',
+                'name_hi': 'व्यापारी पार्टियां',
+                'icon': 'bi-people',
+                'desc': 'B2B customer master, credit limits, and contact directory',
+                'desc_hi': 'B2B ग्राहक मास्टर, क्रेडिट सीमा और संपर्क निर्देशिका',
             },
             {
                 'key': 'sub_wholesale_catalogue',
-                'name': 'Products & Pricing',
-                'name_hi': 'उत्पाद एवं मूल्य निर्धारण',
-                'icon': 'bi-gem',
-                'desc': 'Wholesale catalogue and tiered discount rules',
-                'desc_hi': 'थोक उत्पाद कैटलॉग और मूल्य नियम',
+                'business_type': 'wholesale',
+                'name': 'B2B Catalogue',
+                'name_hi': 'B2B कैटलॉग',
+                'icon': 'bi-grid-3x3-gap',
+                'desc': 'Wholesale jewellery design catalogue with weight matrices',
+                'desc_hi': 'वजन मैट्रिक्स के साथ थोक आभूषण डिज़ाइन कैटलॉग',
             },
             {
                 'key': 'sub_wholesale_orders',
+                'business_type': 'wholesale',
                 'name': 'Wholesale Orders',
                 'name_hi': 'थोक ऑर्डर्स',
                 'icon': 'bi-bag-check',
-                'desc': 'Bulk merchant bookings and production status',
-                'desc_hi': 'थोक व्यापार बुकिंग और उत्पादन स्थिति',
+                'desc': 'Bulk purchase orders booked by retail partners',
+                'desc_hi': 'खुदरा भागीदारों द्वारा बुक किए गए थोक खरीद ऑर्डर',
             },
             {
                 'key': 'sub_wholesale_dispatches',
-                'name': 'Dispatches & Shipping',
-                'name_hi': 'प्रेषण एवं शिपिंग',
+                'business_type': 'wholesale',
+                'name': 'Outward Dispatches',
+                'name_hi': 'बाहरी प्रेषण',
                 'icon': 'bi-truck',
-                'desc': 'Parcel dispatches, logistics, and delivery slips',
-                'desc_hi': 'पार्सल प्रेषण, लॉजिस्टिक्स और डिलीवरी रसीदें',
+                'desc': 'Track parcels, delivery challans, and courier manifests',
+                'desc_hi': 'पार्सल, डिलीवरी चालान और कूरियर घोषणापत्र ट्रैक करें',
             },
             {
                 'key': 'sub_wholesale_invoices',
+                'business_type': 'wholesale',
                 'name': 'Wholesale Invoices',
                 'name_hi': 'थोक बिल / इनवॉइस',
                 'icon': 'bi-receipt',
-                'desc': 'B2B tax invoices and GST delivery challans',
-                'desc_hi': 'थोक जीएसटी बिल और डिलीवरी चालान',
+                'desc': 'Tax invoices, bullion settlement rate, and making breakdown',
+                'desc_hi': 'टैक्स इनवॉइस, बुलियन निपटान दर और मेकिंग विवरण',
             },
             {
                 'key': 'sub_wholesale_payments',
-                'name': 'Payments Received',
-                'name_hi': 'प्राप्त भुगतान',
-                'icon': 'bi-cash-stack',
-                'desc': 'B2B payment collections and bank receipts',
-                'desc_hi': 'थोक वसूली और बैंक भुगतान रसीदें',
+                'business_type': 'wholesale',
+                'name': 'Wholesale Payments',
+                'name_hi': 'थोक भुगतान',
+                'icon': 'bi-cash-coin',
+                'desc': 'Record multi-mode B2B payments, NEFT, and RTGS deposits',
+                'desc_hi': 'मल्टी-मोड B2B भुगतान, NEFT और RTGS जमा रिकॉर्ड करें',
             },
             {
                 'key': 'sub_wholesale_ledger',
-                'name': 'Party Ledger',
-                'name_hi': 'पार्टी खाता बही',
-                'icon': 'bi-journal-text',
-                'desc': 'Retailer party outstanding balance and statements',
-                'desc_hi': 'पार्टी बकाया उधारी और विस्तृत खाता विवरण',
+                'business_type': 'wholesale',
+                'name': 'Wholesale Khata Ledger',
+                'name_hi': 'थोक खाता लेज़र',
+                'icon': 'bi-journal-bookmark',
+                'desc': 'Running metal balance and currency khata statement per merchant',
+                'desc_hi': 'प्रत्येक व्यापारी का रनिंग मेटल बैलेंस और मुद्रा खाता विवरण',
             },
             {
                 'key': 'sub_wholesale_returns',
-                'name': 'Returns & Credit Notes',
-                'name_hi': 'वापसी एवं क्रेडिट नोट',
+                'business_type': 'wholesale',
+                'name': 'Wholesale Returns',
+                'name_hi': 'थोक वापसी',
                 'icon': 'bi-arrow-return-left',
-                'desc': 'Goods returns and wholesale credit notes',
-                'desc_hi': 'माल वापसी और क्रेडिट नोट जारी करना',
+                'desc': 'Process credit notes and stock returns from retailers',
+                'desc_hi': 'क्रेडिट नोट और खुदरा विक्रेताओं से स्टॉक वापसी संसाधित करें',
             },
         ],
     },
     {
         'key': 'outstation',
+        'business_type': 'all',
         'name': 'Outstation Sales',
         'name_hi': 'आउटस्टेशन बिक्री',
-        'icon': 'bi-airplane-engines',
+        'icon': 'bi-airplane',
         'category': 'Sales & Billing',
         'category_hi': 'बिक्री एवं बिलिंग',
         'desc': 'Outstation sales trips, travelling representative orders, and exhibition expos.',
-        'desc_hi': 'आउटस्टेशन बिक्री यात्राएं, प्रतिनिधि ऑर्डर्स और आभूषण प्रदर्शनी एक्सपो।',
+        'desc_hi': 'आउटस्टेशन बिक्री यात्राएं, यात्रा विक्रेता ऑर्डर और प्रदर्शनी एक्सपो।',
         'sub_items': [
             {
                 'key': 'sub_outstation_trips',
-                'name': 'All Trips & Dashboard',
-                'name_hi': 'सभी यात्राएं एवं डैशबोर्ड',
-                'icon': 'bi-briefcase',
-                'desc': 'Sales agent trips, samples carried and tour summary',
-                'desc_hi': 'प्रतिनिधि दौरे, सैंपल स्टॉक और यात्रा सारांश',
+                'business_type': 'all',
+                'name': 'Sales Trips',
+                'name_hi': 'बिक्री यात्राएं',
+                'icon': 'bi-compass',
+                'desc': 'Tour schedules, luggage tracking, and field orders',
+                'desc_hi': 'दौरा कार्यक्रम, सामान ट्रैकिंग और फ़ील्ड ऑर्डर',
             },
             {
                 'key': 'sub_outstation_new_trip',
-                'name': 'New Trip',
-                'name_hi': 'नई यात्रा',
+                'business_type': 'all',
+                'name': 'Create Sales Trip',
+                'name_hi': 'नई यात्रा शुरू करें',
                 'icon': 'bi-plus-circle',
-                'desc': 'Create new outstation route and issue jewellery box',
-                'desc_hi': 'नया आउटस्टेशन दौरा दर्ज करें और बॉक्स जारी करें',
+                'desc': 'Initialize outward travel trunk with stock manifest',
+                'desc_hi': 'स्टॉक घोषणापत्र के साथ यात्रा ट्रंक प्रारंभ करें',
             },
             {
                 'key': 'sub_outstation_exhibitions',
+                'business_type': 'all',
                 'name': 'Exhibitions & Expos',
                 'name_hi': 'प्रदर्शनी एवं एक्सपो',
-                'icon': 'bi-building',
-                'desc': 'Jewellery exhibitions, stall orders, and trade expos',
-                'desc_hi': 'आभूषण प्रदर्शनियां, स्टॉल और एक्सपो ऑर्डर्स',
+                'icon': 'bi-easel2',
+                'desc': 'Trade shows, B2B booths, and stall sales accounting',
+                'desc_hi': 'ट्रेड शो, B2B बूथ और स्टॉल बिक्री लेखांकन',
             },
             {
                 'key': 'sub_outstation_new_exhibition',
-                'name': 'Register Exhibition',
-                'name_hi': 'नई प्रदर्शनी दर्ज करें',
-                'icon': 'bi-plus-square',
-                'desc': 'Register upcoming jewellery expo participation',
-                'desc_hi': 'आगामी आभूषण प्रदर्शनी में भागीदारी दर्ज करें',
+                'business_type': 'all',
+                'name': 'Add Exhibition',
+                'name_hi': 'नई प्रदर्शनी जोड़ें',
+                'icon': 'bi-calendar-plus',
+                'desc': 'Register new jewellery exhibition booth',
+                'desc_hi': 'नया आभूषण प्रदर्शनी बूथ पंजीकृत करें',
             },
         ],
     },
     {
         'key': 'inventory',
+        'business_type': 'all',
         'name': 'Jewellery Stock',
         'name_hi': 'आभूषण स्टॉक',
         'icon': 'bi-gem',
         'category': 'Inventory & Catalog',
         'category_hi': 'इन्वेंट्री एवं कैटलॉग',
         'desc': 'Physical stock items, weights, purity grades, BIS hallmarks, HUIDs & AI Photo Studio.',
-        'desc_hi': 'भौतिक स्टॉक आभूषण, वज़न, शुद्धता ग्रेड, बीआईएस हॉलमार्क, एचयूआईडी और एआई फोटो स्टूडियो।',
+        'desc_hi': 'भौतिक स्टॉक आभूषण, वजन, शुद्धता ग्रेड, बीआईएस हॉलमार्क, HUIDs और AI फोटो स्टूडियो।',
         'sub_items': [
             {
                 'key': 'sub_inventory_items',
+                'business_type': 'all',
                 'name': 'All Stock Items',
-                'name_hi': 'सभी स्टॉक आभूषण',
+                'name_hi': 'सभी स्टॉक आइटम',
                 'icon': 'bi-gem',
-                'desc': 'Catalog of live ornaments with tags and purity',
-                'desc_hi': 'टैग, वज़न और शुद्धता के साथ स्टॉक सूची',
+                'desc': 'Complete inventory stock register with barcode labels',
+                'desc_hi': 'बारकोड लेबल के साथ पूर्ण इन्वेंट्री स्टॉक रजिस्टर',
             },
             {
                 'key': 'sub_inventory_categories',
-                'name': 'Categories / Collections',
-                'name_hi': 'श्रेणियाँ / संग्रह',
-                'icon': 'bi-tags',
-                'desc': 'Organize jewellery pieces into categories (Rings, Necklaces, etc.)',
-                'desc_hi': 'आभूषणों को श्रेणियों में व्यवस्थित करें (अंगूठियां, हार, आदि)',
+                'business_type': 'all',
+                'name': 'Category Management',
+                'name_hi': 'कैटगरी प्रबंधन',
+                'icon': 'bi-tag',
+                'desc': 'Organize showroom jewellery into custom collections and categories',
+                'desc_hi': 'शोरूम आभूषणों को कस्टम श्रेणियों और संग्रहों में व्यवस्थित करें',
             },
             {
                 'key': 'sub_inventory_history',
-                'name': 'Stock History',
-                'name_hi': 'स्टॉक गतिविधि इतिहास',
-                'icon': 'bi-arrow-left-right',
-                'desc': 'Stock additions, adjustments, inward and outward logs',
-                'desc_hi': 'स्टॉक आगमन, निकासी और परिवर्तन इतिहास',
+                'business_type': 'all',
+                'name': 'Stock Audit Log',
+                'name_hi': 'स्टॉक ऑडिट लॉग',
+                'icon': 'bi-clock-history',
+                'desc': 'Timestamped audit trail of stock modifications',
+                'desc_hi': 'स्टॉक संशोधनों का समयबद्ध ऑडिट ट्रेल',
             },
             {
                 'key': 'sub_inventory_import',
-                'name': 'Import Stock',
-                'name_hi': 'स्टॉक आयात',
-                'icon': 'bi-upload',
-                'desc': 'Bulk upload jewellery items via Excel/CSV spreadsheet',
-                'desc_hi': 'एक्सेल/सीएसवी से थोक स्टॉक आयात करें',
+                'business_type': 'all',
+                'name': 'Import Excel / CSV',
+                'name_hi': 'एक्सेल/सीएसवी आयात',
+                'icon': 'bi-file-earmark-spreadsheet',
+                'desc': 'Bulk upload jewellery stock catalog from spreadsheet',
+                'desc_hi': 'स्प्रेडशीट से थोक आभूषण स्टॉक कैटलॉग अपलोड करें',
             },
             {
                 'key': 'sub_inventory_photo_studio',
+                'business_type': 'all',
                 'name': 'AI Photo Studio',
-                'name_hi': 'एआई फोटो स्टूडियो',
-                'icon': 'bi-camera-fill',
-                'desc': 'AI jewellery photography background enhancer',
-                'desc_hi': 'आभूषणों के लिए एआई फोटो बैकग्राउंड स्टूडियो',
+                'name_hi': 'AI फोटो स्टूडियो',
+                'icon': 'bi-camera',
+                'desc': 'AI jewellery background enhancement and digital showroom rendering',
+                'desc_hi': 'AI आभूषण बैकग्राउंड संवर्धन और डिजिटल रेंडरिंग',
             },
         ],
     },
     {
         'key': 'pricing',
+        'business_type': 'all',
         'name': 'Pricing & Rates',
-        'name_hi': 'मूल्य एवं दरें',
-        'icon': 'bi-calculator',
+        'name_hi': 'मूल्य निर्धारण एवं दरें',
+        'icon': 'bi-currency-rupee',
         'category': 'Inventory & Catalog',
         'category_hi': 'इन्वेंट्री एवं कैटलॉग',
         'desc': 'Live gold & silver bullion market rates, making charges, and retail price calculator.',
-        'desc_hi': 'सोना एवं चांदी के लाइव बाजार भाव, मेकिंग चार्ज नियम और खुदरा मूल्य कैलकुलेटर।',
+        'desc_hi': 'लाइव सोना और चांदी बुलियन बाजार दरें, मेकिंग चार्ज और खुदरा मूल्य कैलकुलेटर।',
         'sub_items': [
             {
                 'key': 'sub_pricing_calculator',
+                'business_type': 'all',
                 'name': 'Price Calculator',
                 'name_hi': 'मूल्य कैलकुलेटर',
                 'icon': 'bi-calculator',
-                'desc': 'Estimate live jewellery retail sale price and taxes',
-                'desc_hi': 'लाइव धातु भाव और बनाई के साथ अनुमानित मूल्य',
+                'desc': 'Real-time retail price estimator based on current metal rates',
+                'desc_hi': 'वर्तमान धातु दरों के आधार पर वास्तविक समय खुदरा मूल्य अनुमानक',
             },
             {
                 'key': 'sub_pricing_rates',
-                'name': 'Metal Rates',
-                'name_hi': 'धातु के भाव (Metal Rates)',
-                'icon': 'bi-coin',
-                'desc': 'Daily gold and silver market buying/selling rates',
-                'desc_hi': 'दैनिक सोना और चांदी के क्रय-विक्रय बाजार भाव',
+                'business_type': 'all',
+                'name': 'Live Bullion Rates',
+                'name_hi': 'लाइव बुलियन दरें',
+                'icon': 'bi-graph-up',
+                'desc': 'Showroom gold, silver, and platinum daily base rates',
+                'desc_hi': 'शोरूम सोना, चांदी और प्लैटिनम दैनिक आधार दरें',
             },
         ],
     },
     {
         'key': 'customers',
+        'business_type': 'retail',
         'name': 'Customers',
-        'name_hi': 'ग्राहक (कस्टमर)',
+        'name_hi': 'ग्राहक',
         'icon': 'bi-people',
         'category': 'CRM & Relationship',
-        'category_hi': 'ग्राहक संबंध (CRM)',
+        'category_hi': 'ग्राहक संबंध',
         'desc': 'Customer profiles, loyalty directory, outstanding credit khata, and sales enquiries.',
-        'desc_hi': 'ग्राहक प्रोफ़ाइल, लॉयल्टी डायरेक्टरी, बकाया उधारी खाता और बिक्री पूछताछ।',
+        'desc_hi': 'ग्राहक प्रोफाइल, लॉयल्टी डायरेक्टरी, बकाया उधारी खाता और बिक्री पूछताछ।',
         'sub_items': [
             {
                 'key': 'sub_customers_list',
-                'name': 'All Customers',
-                'name_hi': 'सभी ग्राहक',
-                'icon': 'bi-people',
-                'desc': 'Customer database, contact directory and balance khata',
-                'desc_hi': 'ग्राहक संपर्क सूची और उधारी/जमा खाता',
+                'business_type': 'retail',
+                'name': 'Customer Directory',
+                'name_hi': 'ग्राहक निर्देशिका',
+                'icon': 'bi-person-lines-fill',
+                'desc': 'Customer ledger accounts, KYC records, and reward points',
+                'desc_hi': 'ग्राहक खाता विवरण, केवाईसी रिकॉर्ड और रिवॉर्ड पॉइंट्स',
             },
             {
                 'key': 'sub_customers_enquiries',
-                'name': 'Customer Enquiries',
-                'name_hi': 'ग्राहक पूछताछ',
+                'business_type': 'retail',
+                'name': 'Sales Enquiries & Leads',
+                'name_hi': 'बिक्री पूछताछ एवं लीड्स',
                 'icon': 'bi-chat-left-text',
-                'desc': 'Follow up showroom leads, requests and wedding quotes',
-                'desc_hi': 'दुकान पूछताछ, लीड्स और शादी के कोटेशन',
+                'desc': 'Track visitor enquiries, callbacks, and interest pipeline',
+                'desc_hi': 'आगंतुक पूछताछ, कॉलबैक और रुचि पाइपलाइन ट्रैक करें',
+            },
+        ],
+    },
+    {
+        'key': 'marketing',
+        'business_type': 'retail',
+        'name': 'Marketing & Offers',
+        'name_hi': 'मार्केटिंग एवं कूपन',
+        'icon': 'bi-tag-fill',
+        'category': 'CRM & Relationship',
+        'category_hi': 'ग्राहक संबंध',
+        'desc': 'Promotional campaigns, customer discount coupons, and festive offer vouchers.',
+        'desc_hi': 'प्रमोशनल अभियान, ग्राहक डिस्काउंट कूपन और त्योहारी ऑफर वाउचर्स।',
+        'sub_items': [
+            {
+                'key': 'sub_marketing_coupons',
+                'business_type': 'retail',
+                'name': 'All Coupons & Offers',
+                'name_hi': 'सभी कूपन एवं ऑफर्स',
+                'icon': 'bi-tags',
+                'desc': 'Directory of active and upcoming discount coupons',
+                'desc_hi': 'सक्रिय और आगामी डिस्काउंट कूपनों की सूची',
+            },
+            {
+                'key': 'sub_marketing_create',
+                'business_type': 'retail',
+                'name': 'Create Offer',
+                'name_hi': 'नया कूपन ऑफर',
+                'icon': 'bi-plus-circle',
+                'desc': 'Create new promotional discount or festive coupon',
+                'desc_hi': 'नया प्रचारक डिस्काउंट या फेस्टिव कूपन बनाएं',
+            },
+            {
+                'key': 'sub_marketing_reports',
+                'business_type': 'retail',
+                'name': 'Offer Reports',
+                'name_hi': 'अभियान रिपोर्ट्स',
+                'icon': 'bi-graph-up-arrow',
+                'desc': 'Redemption telemetry and campaign performance',
+                'desc_hi': 'कूपन उपयोग और अभियान प्रदर्शन आंकड़े',
             },
         ],
     },
     {
         'key': 'custom_orders',
+        'business_type': 'retail',
         'name': 'Custom Orders',
         'name_hi': 'कस्टम ऑर्डर्स',
         'icon': 'bi-hammer',
         'category': 'Workshop & Manufacturing',
-        'category_hi': 'वर्कशॉप एवं निर्माण',
+        'category_hi': 'कारीगर एवं निर्माण',
         'desc': 'Bespoke ornament customer orders, custom designs, CAD milestones, and delivery tracking.',
-        'desc_hi': 'कस्टम आभूषण ऑर्डर्स, विशेष डिज़ाइन, सीएडी चरण और डिलीवरी ट्रैकिंग।',
+        'desc_hi': 'कस्टम आभूषण ग्राहक ऑर्डर, विशेष डिज़ाइन, सीएडी चरण और डिलीवरी ट्रैकिंग।',
         'sub_items': [
             {
                 'key': 'sub_custom_orders_list',
+                'business_type': 'retail',
                 'name': 'All Custom Orders',
                 'name_hi': 'सभी कस्टम ऑर्डर्स',
-                'icon': 'bi-hammer',
-                'desc': 'Directory of bespoke orders with milestones and due dates',
-                'desc_hi': 'कस्टम आभूषण ऑर्डर्स और डिलीवरी तारीखें',
+                'icon': 'bi-list-task',
+                'desc': 'Order pipeline from CAD stage to final showroom delivery',
+                'desc_hi': 'सीएडी चरण से अंतिम शोरूम डिलीवरी तक ऑर्डर पाइपलाइन',
             },
             {
                 'key': 'sub_custom_orders_add',
+                'business_type': 'retail',
                 'name': 'New Custom Order',
                 'name_hi': 'नया कस्टम ऑर्डर',
                 'icon': 'bi-plus-circle',
-                'desc': 'Book bespoke jewellery order with design reference',
-                'desc_hi': 'डिज़ाइन और अग्रिम भुगतान के साथ नया ऑर्डर लें',
+                'desc': 'Book new custom jewellery order with gold advance',
+                'desc_hi': 'सोना अग्रिम के साथ नया कस्टम आभूषण ऑर्डर बुक करें',
             },
         ],
     },
     {
         'key': 'karigar',
+        'business_type': 'all',
         'name': 'Karigar & Workshop',
-        'name_hi': 'कारीगर एवं कार्यशाला',
-        'icon': 'bi-person-workspace',
+        'name_hi': 'कारीगर एवं वर्कशॉप',
+        'icon': 'bi-tools',
         'category': 'Workshop & Manufacturing',
-        'category_hi': 'वर्कशॉप एवं निर्माण',
+        'category_hi': 'कारीगर एवं निर्माण',
         'desc': 'Artisan job cards, gold issue/receive weights, scrap recovery, and karigar wage settlements.',
-        'desc_hi': 'कारीगर जॉब कार्ड, सोना जारी/प्राप्ति वज़न, छीलन रिकवरी और मजदूरी भुगतान।',
+        'desc_hi': 'कारीगर जॉब कार्ड, सोना जारी/प्राप्ति वजन, छीलन रिकवरी और मजदूरी भुगतान।',
         'sub_items': [
             {
                 'key': 'sub_karigar_dashboard',
-                'name': 'Karigar Dashboard',
-                'name_hi': 'कारीगर डैशबोर्ड',
+                'business_type': 'all',
+                'name': 'Workshop Dashboard',
+                'name_hi': 'वर्कशॉप डैशबोर्ड',
                 'icon': 'bi-speedometer2',
-                'desc': 'Artisan workshop overview, active gold and pending jobs',
-                'desc_hi': 'वर्कशॉप सारांश, कारीगरों के पास सोना और सक्रिय कार्य',
+                'desc': 'Manufacturing telemetry, pending pieces, and artisan capacity',
+                'desc_hi': 'निर्माण टेलीमेट्री, लंबित आभूषण और कारीगर कार्यक्षमता',
             },
             {
                 'key': 'sub_karigar_list',
-                'name': 'Karigar List',
-                'name_hi': 'कारीगर सूची',
+                'business_type': 'all',
+                'name': 'Artisans Directory',
+                'name_hi': 'कारीगर निर्देशिका',
                 'icon': 'bi-person-workspace',
-                'desc': 'Master directory of goldsmiths, artisans and workshops',
-                'desc_hi': 'कारीगरों की मास्टर सूची एवं संपर्क विवरण',
+                'desc': 'Artisans profile, skills, metal purity ledger, and contacts',
+                'desc_hi': 'कारीगर प्रोफाइल, कौशल, धातु शुद्धता लेज़र और संपर्क',
             },
             {
                 'key': 'sub_karigar_assignments',
-                'name': 'Karigar Jobs',
-                'name_hi': 'कारीगर जॉब्स',
-                'icon': 'bi-clipboard2-check',
-                'desc': 'Job cards with gold issue weight and design deadline',
-                'desc_hi': 'जॉब कार्ड, सोना जारी वज़न और निर्माण अवधि',
+                'business_type': 'all',
+                'name': 'Active Job Cards',
+                'name_hi': 'सक्रिय जॉब कार्ड्स',
+                'icon': 'bi-journal-check',
+                'desc': 'Live assignments with issued gold/silver bullion weights',
+                'desc_hi': 'जारी सोना/चांदी बुलियन वजन के साथ सक्रिय असाइनमेंट',
             },
             {
                 'key': 'sub_karigar_pending',
-                'name': 'Pending & Overdue',
-                'name_hi': 'लंबित एवं बकाया कार्य',
+                'business_type': 'all',
+                'name': 'Pending Deliveries',
+                'name_hi': 'लंबित निर्माण डिलीवरी',
                 'icon': 'bi-hourglass-split',
-                'desc': 'Urgent jobs past target completion deadline',
-                'desc_hi': 'समय सीमा पार कर चुके जरूरी आभूषण कार्य',
+                'desc': 'Jobs due for delivery from artisans to showroom vault',
+                'desc_hi': 'कारीगरों से शोरूम वॉल्ट तक डिलीवरी के लिए लंबित कार्य',
             },
             {
                 'key': 'sub_karigar_settlements',
-                'name': 'Karigar Payments',
-                'name_hi': 'कारीगर भुगतान',
-                'icon': 'bi-cash-stack',
-                'desc': 'Wages calculation, scrap reconciliation and settlements',
-                'desc_hi': 'मजदूरी हिसाब, छीलन कटौती और भुगतान',
+                'business_type': 'all',
+                'name': 'Wage Settlements',
+                'name_hi': 'मजदूरी निपटान',
+                'icon': 'bi-cash-coin',
+                'desc': 'Making wage calculation, metal balance settlement, and receipts',
+                'desc_hi': 'मेकिंग मजदूरी गणना, धातु संतुलन निपटान और रसीदें',
+            },
+        ],
+    },
+    {
+        'key': 'girvi',
+        'business_type': 'all',
+        'name': 'Girvi Management',
+        'name_hi': 'गिरवी प्रबंधन',
+        'icon': 'bi-safe',
+        'category': 'Financial Services',
+        'category_hi': 'वित्तीय सेवाएं',
+        'desc': 'Pledged jewellery loans, collateral tracking, interest calculation, and pledge release.',
+        'desc_hi': 'गिरवी सोने के ऋण, बंधक आभूषण ट्रैकिंग, ब्याज गणना और गिरवी छुड़ाना।',
+        'sub_items': [
+            {
+                'key': 'sub_girvi_dashboard',
+                'business_type': 'all',
+                'name': 'Girvi Dashboard',
+                'name_hi': 'गिरवी डैशबोर्ड',
+                'icon': 'bi-speedometer2',
+                'desc': 'Overview of active girvi loans, interest due, and collateral',
+                'desc_hi': 'सक्रिय गिरवी ऋणों, देय ब्याज और बंधक आभूषणों का विवरण',
+            },
+            {
+                'key': 'sub_girvi_create',
+                'business_type': 'all',
+                'name': 'New Girvi Loan',
+                'name_hi': 'नया गिरवी ऋण',
+                'icon': 'bi-plus-circle',
+                'desc': 'Issue a new pledged jewellery loan record',
+                'desc_hi': 'नया बंधक आभूषण ऋण दर्ज करें',
             },
         ],
     },
     {
         'key': 'team',
+        'business_type': 'all',
         'name': 'Team & HR',
-        'name_hi': 'टीम एवं कर्मचारी',
-        'icon': 'bi-people-fill',
+        'name_hi': 'टीम एवं एचआर',
+        'icon': 'bi-person-badge',
         'category': 'Administration',
-        'category_hi': 'प्रशासन (Admin)',
+        'category_hi': 'प्रशासनिक सेटिंग्स',
         'desc': 'Counter sales staff, store employees, role-based module permissions, and showroom branches.',
-        'desc_hi': 'काउंटर सेल्स स्टाफ, दुकान कर्मचारी, भूमिका-आधारित अनुमतियां और शाखाएं।',
+        'desc_hi': 'काउंटर सेल्स स्टाफ, स्टोर कर्मचारी, भूमिका-आधारित अनुमतियां और शोरूम शाखाएं।',
         'sub_items': [
             {
                 'key': 'sub_team_employees',
-                'name': 'Employees',
-                'name_hi': 'कर्मचारी सूची',
-                'icon': 'bi-people-fill',
-                'desc': 'Staff profiles, designated branch and permissions',
-                'desc_hi': 'कर्मचारी प्रोफ़ाइल, शाखा और असाइन की गई भूमिकाएं',
+                'business_type': 'all',
+                'name': 'Staff Directory',
+                'name_hi': 'स्टाफ निर्देशिका',
+                'icon': 'bi-people',
+                'desc': 'Active staff roster, login accounts, and branch assignment',
+                'desc_hi': 'सक्रिय स्टाफ रोस्टर, लॉगिन खाते और शाखा असाइनमेंट',
             },
             {
                 'key': 'sub_team_add_employee',
-                'name': 'Add Employee',
+                'business_type': 'all',
+                'name': 'Add Staff Member',
                 'name_hi': 'नया कर्मचारी जोड़ें',
-                'icon': 'bi-person-plus-fill',
-                'desc': 'Register new staff member login and showroom branch',
-                'desc_hi': 'नया स्टाफ खाता बनाएं और शाखा आवंटित करें',
+                'icon': 'bi-person-plus',
+                'desc': 'Onboard new counter sales, karigar manager, or cashier',
+                'desc_hi': 'नया काउंटर सेल्स, कारीगर मैनेजर या कैशियर ऑनबोर्ड करें',
             },
             {
                 'key': 'sub_team_roles',
+                'business_type': 'all',
                 'name': 'Roles & Permissions',
                 'name_hi': 'भूमिकाएं एवं अनुमतियां',
-                'icon': 'bi-shield-lock-fill',
-                'desc': 'Manage role access matrix (Sales, Accounts, Karigar)',
-                'desc_hi': 'मॉड्यूल पहुंच अनुमतियां और अधिकार मैट्रिक्स',
+                'icon': 'bi-shield-check',
+                'desc': 'Granular feature permissions for cashier, manager, and staff',
+                'desc_hi': 'कैशियर, मैनेजर और कर्मचारियों के लिए विस्तृत अनुमतियां',
             },
             {
                 'key': 'sub_team_branches',
-                'name': 'Branches',
-                'name_hi': 'दुकान शाखाएं',
-                'icon': 'bi-shop',
-                'desc': 'Store branches, locations and inventory warehouses',
-                'desc_hi': 'दुकान की शाखाएं, स्थान और स्टॉक गोदाम',
+                'business_type': 'all',
+                'name': 'Showroom Branches',
+                'name_hi': 'शोरूम शाखाएं',
+                'icon': 'bi-building',
+                'desc': 'Manage multiple physical retail outlets and stock vaults',
+                'desc_hi': 'कई खुदरा स्टोर और स्टॉक वॉल्ट प्रबंधित करें',
             },
         ],
     },
     {
         'key': 'reports',
+        'business_type': 'all',
         'name': 'Reports & Analytics',
         'name_hi': 'रिपोर्ट्स एवं विश्लेषण',
         'icon': 'bi-bar-chart-line',
         'category': 'Administration',
-        'category_hi': 'प्रशासन (Admin)',
+        'category_hi': 'प्रशासनिक सेटिंग्स',
         'desc': 'Comprehensive retail GST invoices, wholesale turnover ledgers, and artisan workshop reports.',
-        'desc_hi': 'विस्तृत खुदरा जीएसटी बिल, थोक टर्नओवर लेज़र और कारीगर वर्कशॉप रिपोर्ट्स।',
+        'desc_hi': 'विस्तृत खुदरा जीएसटी इनवॉइस, थोक कारोबार लेज़र और कारीगर वर्कशॉप रिपोर्ट।',
         'sub_items': [
             {
                 'key': 'sub_reports_retail',
+                'business_type': 'retail',
                 'name': 'Retail Sales Report',
                 'name_hi': 'खुदरा बिक्री रिपोर्ट',
                 'icon': 'bi-receipt',
-                'desc': 'Detailed GST retail sales ledger and daily counter receipts',
-                'desc_hi': 'जीएसटी बिक्री लेज़र और दैनिक काउंटर बिक्री रिपोर्ट',
+                'desc': 'Counter sales bills and GST breakdown',
+                'desc_hi': 'काउंटर बिक्री बिल और जीएसटी रिपोर्ट',
             },
             {
                 'key': 'sub_reports_wholesale',
+                'business_type': 'wholesale',
                 'name': 'Wholesale Reports',
                 'name_hi': 'थोक व्यापार रिपोर्ट',
                 'icon': 'bi-bar-chart-line',
-                'desc': 'B2B turnover, dispatch reports and party balances',
-                'desc_hi': 'थोक व्यापार टर्नओवर और पार्टी बैलेंस रिपोर्ट',
+                'desc': 'B2B turnover, dispatch ledgers, and pending bills',
+                'desc_hi': 'B2B टर्नओवर, प्रेषण लेज़र और बकाया बिल',
             },
             {
                 'key': 'sub_reports_karigar',
-                'name': 'Karigar Reports',
-                'name_hi': 'कारीगर रिपोर्ट्स',
-                'icon': 'bi-hammer',
-                'desc': 'Artisan job cards, gold issue/recovery, and karigar wage settlements',
-                'desc_hi': 'कारीगर जॉब कार्ड, सोना जारी/प्राप्ति और मजदूरी भुगतान रिपोर्ट्स',
+                'business_type': 'all',
+                'name': 'Karigar Workshop Reports',
+                'name_hi': 'कारीगर वर्कशॉप रिपोर्ट',
+                'icon': 'bi-tools',
+                'desc': 'Metal issue/receipt ledgers and wastage telemetry',
+                'desc_hi': 'सोना जारी/प्राप्ति लेज़र और छीलन रिपोर्ट',
             },
         ],
     },
     {
         'key': 'settings',
+        'business_type': 'all',
         'name': 'Settings',
         'name_hi': 'सेटिंग्स',
         'icon': 'bi-gear',
         'category': 'Administration',
-        'category_hi': 'प्रशासन (Admin)',
+        'category_hi': 'प्रशासनिक सेटिंग्स',
         'desc': 'Company branding, invoice settings, themes and menu bar customization.',
-        'desc_hi': 'दुकान ब्रांडिंग, बिल सेटिंग्स, थीम्स और मेनू बार अनुकूलन।',
-        'is_locked': True,
+        'desc_hi': 'कंपनी ब्रांडिंग, इनवॉइस सेटिंग्स, थीम्स और मेनू बार कस्टमाइज़ेशन।',
         'sub_items': [
             {
                 'key': 'sub_settings_company',
+                'business_type': 'all',
                 'name': 'Company Settings',
-                'name_hi': 'दुकान सेटिंग्स',
-                'icon': 'bi-building',
-                'desc': 'Shop profile, GSTIN, invoice address and logo',
-                'desc_hi': 'दुकान प्रोफ़ाइल, जीएसटी नंबर, पता और बिल लोगो',
+                'name_hi': 'कंपनी सेटिंग्स',
+                'icon': 'bi-building-gear',
+                'desc': 'Store name, GSTIN, invoice prefix, contact details, and showroom logo',
+                'desc_hi': 'स्टोर का नाम, जीएसटी नंबर, इनवॉइस प्रीफिक्स और शोरूम लोगो',
             },
             {
                 'key': 'sub_settings_themes',
-                'name': 'Themes / Colors',
-                'name_hi': 'थीम्स / रंग',
+                'business_type': 'all',
+                'name': 'Themes & Appearance',
+                'name_hi': 'थीम एवं दिखावट',
                 'icon': 'bi-palette',
-                'desc': 'Dark, light, and luxury gold display modes',
-                'desc_hi': 'डार्क, लाइट और लग्जरी गोल्ड डिस्प्ले मोड',
+                'desc': 'Switch Dark Roast Gold or Royal Alabaster showroom themes',
+                'desc_hi': 'डार्क रोस्ट गोल्ड या रॉयल अलाबास्टर शोरूम थीम चुनें',
             },
         ],
     },
     {
         'key': 'app_install',
+        'business_type': 'all',
         'name': 'Get the App',
-        'name_hi': 'मोबाइल ऐप डाउनलोड',
+        'name_hi': 'ऐप डाउनलोड करें',
         'icon': 'bi-phone',
         'category': 'App & Shortcuts',
-        'category_hi': 'ऐप एवं शॉर्टकट',
-        'desc': 'JewelDesk Progressive Web App (PWA) and Android APK install shortcut in sidebar.',
-        'desc_hi': 'JewelDesk प्रोग्रेसिव वेब ऐप (PWA) और एंड्रॉइड एपीके इंस्टॉल शॉर्टकट।',
+        'category_hi': 'ऐप और शॉर्टकट',
+        'desc': 'Install JwelDesk Android APK / PWA application on mobile and tablet.',
+        'desc_hi': 'मोबाइल और टैबलेट पर ज्वेलडेस्क एंड्रॉइड ऐप / PWA इंस्टॉल करें।',
         'sub_items': [],
     },
 )
-
 
 @login_required
 def menu_settings(request):
@@ -870,28 +1019,34 @@ def menu_settings(request):
 
     settings_obj = CompanySettings.load(tenant=tenant)
 
-    # Collect all valid keys across modules and sub-options
-    valid_keys = set()
+    # Collect valid keys across modules and sub-options matching this tenant's business model
+    visible_valid_keys = set()
     for item in SIDEBAR_MENU_OPTIONS:
-        valid_keys.add(item['key'])
-        for sub in item.get('sub_items', []):
-            valid_keys.add(sub['key'])
+        if is_menu_allowed_for_tenant(item.get('business_type', 'all'), tenant, request.user):
+            visible_valid_keys.add(item['key'])
+            for sub in item.get('sub_items', []):
+                if is_menu_allowed_for_tenant(sub.get('business_type', 'all'), tenant, request.user):
+                    visible_valid_keys.add(sub['key'])
 
     if request.method == 'POST':
         action = request.POST.get('action')
         if action == 'unhide_all':
-            settings_obj.hidden_menu_items = ''
+            existing_hidden = set(settings_obj.get_hidden_menus())
+            existing_hidden -= visible_valid_keys
+            settings_obj.hidden_menu_items = ','.join(sorted(existing_hidden))
             settings_obj.save()
             messages.success(request, 'All menu options and sub-options have been restored and unhidden!')
             return redirect('accounts:menu_settings')
 
         submitted_lists = set(request.POST.getlist('hidden_menus') + request.POST.getlist('hidden_items'))
-        hidden_keys = set()
-        for key in valid_keys:
+        existing_hidden = set(settings_obj.get_hidden_menus())
+        for key in visible_valid_keys:
             if request.POST.get(f'hide_{key}') in ('1', 'on', 'true') or key in submitted_lists:
-                hidden_keys.add(key)
+                existing_hidden.add(key)
+            else:
+                existing_hidden.discard(key)
 
-        settings_obj.hidden_menu_items = ','.join(sorted(hidden_keys))
+        settings_obj.hidden_menu_items = ','.join(sorted(existing_hidden))
         settings_obj.save()
         messages.success(request, 'Menu bar navigation settings updated successfully!')
         return redirect('accounts:menu_settings')
@@ -909,6 +1064,9 @@ def menu_settings(request):
     total_hidden_count = 0
 
     for item in SIDEBAR_MENU_OPTIONS:
+        if not is_menu_allowed_for_tenant(item.get('business_type', 'all'), tenant, request.user):
+            continue
+
         is_hidden = item['key'] in hidden_set
         name_val = item.get('name_hi') if is_hindi else item['name']
         desc_val = item.get('desc_hi') if is_hindi else item['desc']
@@ -916,6 +1074,9 @@ def menu_settings(request):
 
         processed_subs = []
         for sub in item.get('sub_items', []):
+            if not is_menu_allowed_for_tenant(sub.get('business_type', 'all'), tenant, request.user):
+                continue
+
             sub_is_hidden = sub['key'] in hidden_set
             total_options_count += 1
             if sub_is_hidden:
@@ -1000,14 +1161,16 @@ def menu_toggle_api(request):
             else:
                 is_hidden = str(is_hidden_raw).lower() in ('1', 'true', 'on', 'yes')
 
-    valid_keys = set()
+    visible_valid_keys = set()
     for item in SIDEBAR_MENU_OPTIONS:
-        valid_keys.add(item['key'])
-        for sub in item.get('sub_items', []):
-            valid_keys.add(sub['key'])
+        if is_menu_allowed_for_tenant(item.get('business_type', 'all'), tenant, request.user):
+            visible_valid_keys.add(item['key'])
+            for sub in item.get('sub_items', []):
+                if is_menu_allowed_for_tenant(sub.get('business_type', 'all'), tenant, request.user):
+                    visible_valid_keys.add(sub['key'])
 
-    if not menu_key or menu_key not in valid_keys:
-        return JsonResponse({'error': f"Invalid menu key '{menu_key}'."}, status=400)
+    if not menu_key or menu_key not in visible_valid_keys:
+        return JsonResponse({'error': f"Menu option '{menu_key}' is not available for this business model."}, status=400)
 
     if is_hidden is None:
         return JsonResponse({'error': 'is_hidden flag is required.'}, status=400)

@@ -121,14 +121,14 @@ class MenuBarSettingsTestCase(TestCase):
         """POST /settings/menu/ saves hidden menu items list."""
         url = reverse('accounts:menu_settings')
         resp = self.client_a.post(url, {
-            'hidden_items': ['sales', 'wholesale', 'karigar']
+            'hidden_items': ['sales', 'customers', 'karigar']
         }, follow=True)
         self.assertEqual(resp.status_code, 200)
 
         self.settings_a.refresh_from_db()
         hidden = self.settings_a.get_hidden_menus()
         self.assertIn('sales', hidden)
-        self.assertIn('wholesale', hidden)
+        self.assertIn('customers', hidden)
         self.assertIn('karigar', hidden)
         self.assertNotIn('inventory', hidden)
 
@@ -229,7 +229,7 @@ class MenuBarSettingsTestCase(TestCase):
         menu_resp = self.client_a.get(reverse('accounts:menu_settings'))
         self.assertEqual(menu_resp.status_code, 200)
         self.assertContains(menu_resp, 'बिक्री एवं एक्सचेंज')
-        self.assertContains(menu_resp, 'थोक व्यापार (B2B)')
+        self.assertNotContains(menu_resp, 'थोक व्यापार (B2B)')
         self.assertContains(menu_resp, 'मेनू बार दृश्यता')
         self.assertContains(menu_resp, 'नेविगेशन मेनू')
         self.assertContains(menu_resp, 'सभी बदलाव सहेजें')
@@ -333,6 +333,72 @@ class MenuBarSettingsTestCase(TestCase):
         self.assertContains(resp, 'switch-sub_inventory_items')
         self.assertContains(resp, 'switch-sub_pricing_rates')
         self.assertContains(resp, 'sub-items-collapse')
+    def test_retail_tenant_menu_settings_filtering(self):
+        """Retail store sees retail modules and does NOT see wholesale in menu settings."""
+        self.tenant_a.business_type = Tenant.TYPE_RETAIL
+        self.tenant_a.save()
 
+        url = reverse('accounts:menu_settings')
+        resp = self.client_a.get(url)
+        self.assertEqual(resp.status_code, 200)
 
+        # Retail items are visible
+        self.assertContains(resp, 'Sales &amp; Exchange')
+        self.assertContains(resp, 'Customers')
+        self.assertContains(resp, 'Custom Orders')
+        self.assertContains(resp, 'switch-sub_sales_add')
+
+        # Wholesale items are filtered out
+        self.assertNotContains(resp, 'Wholesale &amp; B2B')
+        self.assertNotContains(resp, 'switch-sub_wholesale_dashboard')
+        self.assertNotContains(resp, 'switch-sub_reports_wholesale')
+
+    def test_wholesale_tenant_menu_settings_filtering(self):
+        """Wholesale store sees wholesale modules and does NOT see retail-only modules."""
+        self.tenant_a.business_type = Tenant.TYPE_WHOLESALE
+        self.tenant_a.save()
+
+        url = reverse('accounts:menu_settings')
+        resp = self.client_a.get(url)
+        self.assertEqual(resp.status_code, 200)
+
+        # Wholesale items are visible
+        self.assertContains(resp, 'Wholesale &amp; B2B')
+        self.assertContains(resp, 'switch-sub_wholesale_dashboard')
+        self.assertContains(resp, 'switch-sub_reports_wholesale')
+
+        # Retail-only items are filtered out from menu options table
+        self.assertNotContains(resp, 'id="row-sales"')
+        self.assertNotContains(resp, 'id="row-customers"')
+        self.assertNotContains(resp, 'id="row-custom_orders"')
+        self.assertNotContains(resp, 'switch-sub_sales_add')
+
+    def test_hybrid_tenant_menu_settings_filtering(self):
+        """Hybrid store (BOTH) sees both retail and wholesale modules in menu settings."""
+        self.tenant_a.business_type = Tenant.TYPE_BOTH
+        self.tenant_a.save()
+
+        url = reverse('accounts:menu_settings')
+        resp = self.client_a.get(url)
+        self.assertEqual(resp.status_code, 200)
+
+        # Both retail and wholesale items are visible
+        self.assertContains(resp, 'Sales &amp; Exchange')
+        self.assertContains(resp, 'Wholesale &amp; B2B')
+        self.assertContains(resp, 'switch-sub_sales_add')
+        self.assertContains(resp, 'switch-sub_wholesale_dashboard')
+
+    def test_toggle_api_rejects_incompatible_business_model_menu(self):
+        """Attempting to toggle a wholesale menu on a pure retail tenant returns 400 error."""
+        self.tenant_a.business_type = Tenant.TYPE_RETAIL
+        self.tenant_a.save()
+
+        url = reverse('accounts:menu_toggle_api')
+        resp = self.client_a.post(
+            url,
+            data=json.dumps({'menu_key': 'wholesale', 'is_hidden': True}),
+            content_type='application/json'
+        )
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('not available for this business model', resp.json().get('error', ''))
 

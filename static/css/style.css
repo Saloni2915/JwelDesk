@@ -2188,3 +2188,99 @@ a.jd-customer-name:hover {
         max-width: 105px;
     }
 }
+
+/* --------------------------------------------------------------------------
+   Mobile PWA Quick Action Dock (Global Fallback)
+   -------------------------------------------------------------------------- */
+.jd-app-quick-dock {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 0.5rem !important;
+    margin-bottom: 1.15rem !important;
+    padding: 0.85rem 0.5rem !important;
+    background: #14110C !important;
+    border: 1px solid rgba(212, 175, 55, 0.16) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4) !important;
+    list-style: none !important;
+    box-sizing: border-box !important;
+}
+
+[data-theme="light"] .jd-app-quick-dock {
+    background: #FFFFFF !important;
+    border-color: #E2E8F0 !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06) !important;
+}
+
+.jd-app-dock-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-decoration: none !important;
+    gap: 0.35rem !important;
+    color: inherit !important;
+    -webkit-tap-highlight-color: transparent !important;
+    cursor: pointer !important;
+}
+
+.jd-app-dock-item:hover,
+.jd-app-dock-item:focus,
+.jd-app-dock-item:active {
+    text-decoration: none !important;
+    color: inherit !important;
+}
+
+.jd-app-dock-icon {
+    width: 46px !important;
+    height: 46px !important;
+    border-radius: 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1.25rem !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
+    transition: transform 0.15s ease !important;
+}
+
+.jd-app-dock-item:active .jd-app-dock-icon {
+    transform: scale(0.92) !important;
+}
+
+.jd-dock-gold {
+    background: linear-gradient(135deg, #ECC86A 0%, #D4AF37 50%, #A88420 100%) !important;
+    color: #141009 !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.jd-dock-emerald {
+    background: linear-gradient(135deg, #34D399 0%, #059669 100%) !important;
+    color: #FFFFFF !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+}
+
+.jd-dock-cyan {
+    background: linear-gradient(135deg, #38BDF8 0%, #0284C7 100%) !important;
+    color: #FFFFFF !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+}
+
+.jd-dock-purple {
+    background: linear-gradient(135deg, #C084FC 0%, #7C3AED 100%) !important;
+    color: #FFFFFF !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+}
+
+.jd-app-dock-label {
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    color: #FAF4EA !important;
+    letter-spacing: -0.01em !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    text-decoration: none !important;
+}
+
+[data-theme="light"] .jd-app-dock-label {
+    color: #0F172A !important;
+}
