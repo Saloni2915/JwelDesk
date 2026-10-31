@@ -107,78 +107,119 @@ def sales_dashboard_view(request):
     stage_counts = get_sales_crm_stage_counts()
 
     # 12 Core KPI Metrics
-    total_leads = PlatformDemoLead.objects.count()
-    new_leads = PlatformDemoLead.objects.filter(stage=PlatformDemoLead.STAGE_NEW).count()
-    interested_leads = stage_counts['interested']
-    meetings_count = stage_counts['meetings']
-    trial_count = stage_counts['trial']
-    proposals_count = stage_counts['proposals']
-    orders_count = stage_counts['orders']
-    won_count = stage_counts['customers']
-    lost_count = stage_counts['lost']
+    try:
+        total_leads = PlatformDemoLead.objects.count()
+        new_leads = PlatformDemoLead.objects.filter(stage=PlatformDemoLead.STAGE_NEW).count()
+    except Exception:
+        total_leads = PlatformDemoLead.objects.count()
+        new_leads = PlatformDemoLead.objects.filter(status='pending').count()
+
+    interested_leads = stage_counts.get('interested', 0)
+    meetings_count = stage_counts.get('meetings', 0)
+    trial_count = stage_counts.get('trial', 0)
+    proposals_count = stage_counts.get('proposals', 0)
+    orders_count = stage_counts.get('orders', 0)
+    won_count = stage_counts.get('customers', 0)
+    lost_count = stage_counts.get('lost', 0)
 
     # Revenue metrics
-    active_deal_stages = [
-        PlatformDemoLead.STAGE_NEW,
-        PlatformDemoLead.STAGE_CONTACTED,
-        PlatformDemoLead.STAGE_INTERESTED,
-        PlatformDemoLead.STAGE_MEETINGS,
-        PlatformDemoLead.STAGE_TRIAL,
-        PlatformDemoLead.STAGE_PROPOSAL,
-        PlatformDemoLead.STAGE_ORDERS,
-    ]
-    expected_revenue = PlatformDemoLead.objects.filter(stage__in=active_deal_stages).aggregate(
-        total=Sum('deal_value')
-    )['total'] or Decimal('0.00')
+    try:
+        active_deal_stages = [
+            PlatformDemoLead.STAGE_NEW,
+            PlatformDemoLead.STAGE_CONTACTED,
+            PlatformDemoLead.STAGE_INTERESTED,
+            PlatformDemoLead.STAGE_MEETINGS,
+            PlatformDemoLead.STAGE_TRIAL,
+            PlatformDemoLead.STAGE_PROPOSAL,
+            PlatformDemoLead.STAGE_ORDERS,
+        ]
+        expected_revenue = PlatformDemoLead.objects.filter(stage__in=active_deal_stages).aggregate(
+            total=Sum('deal_value')
+        )['total'] or Decimal('0.00')
+    except Exception:
+        expected_revenue = Decimal('0.00')
 
-    converted_revenue = TenantSubscription.objects.filter(status='active').aggregate(
-        total=Sum('price')
-    )['total'] or Decimal('0.00')
+    try:
+        converted_revenue = TenantSubscription.objects.filter(status='active').aggregate(
+            total=Sum('price')
+        )['total'] or Decimal('0.00')
+    except Exception:
+        converted_revenue = Decimal('0.00')
 
     # Follow-ups due today and overdue
-    followups_today = PlatformLeadActivity.objects.filter(
-        scheduled_at__date=today,
-        is_completed=False
-    ).count()
-
-    overdue_followups = PlatformLeadActivity.objects.filter(
-        scheduled_at__date__lt=today,
-        is_completed=False
-    ).count()
+    try:
+        followups_today = PlatformLeadActivity.objects.filter(
+            scheduled_at__date=today,
+            is_completed=False
+        ).count()
+        overdue_followups = PlatformLeadActivity.objects.filter(
+            scheduled_at__date__lt=today,
+            is_completed=False
+        ).count()
+    except Exception:
+        followups_today = 0
+        overdue_followups = 0
 
     # Funnel stages breakdown
-    funnel = [
-        {'name': 'Total Leads', 'count': total_leads, 'pct': 100, 'color': '#38bdf8'},
-        {'name': 'Contacted', 'count': PlatformDemoLead.objects.filter(stage__in=[PlatformDemoLead.STAGE_CONTACTED, PlatformDemoLead.STAGE_INTERESTED, PlatformDemoLead.STAGE_MEETINGS, PlatformDemoLead.STAGE_TRIAL, PlatformDemoLead.STAGE_PROPOSAL, PlatformDemoLead.STAGE_ORDERS, PlatformDemoLead.STAGE_CUSTOMERS]).count(), 'color': '#0ea5e9'},
-        {'name': 'Interested', 'count': PlatformDemoLead.objects.filter(stage__in=[PlatformDemoLead.STAGE_INTERESTED, PlatformDemoLead.STAGE_MEETINGS, PlatformDemoLead.STAGE_TRIAL, PlatformDemoLead.STAGE_PROPOSAL, PlatformDemoLead.STAGE_ORDERS, PlatformDemoLead.STAGE_CUSTOMERS]).count(), 'color': '#eab308'},
-        {'name': 'Demos / Trial', 'count': PlatformDemoLead.objects.filter(stage__in=[PlatformDemoLead.STAGE_MEETINGS, PlatformDemoLead.STAGE_TRIAL, PlatformDemoLead.STAGE_PROPOSAL, PlatformDemoLead.STAGE_ORDERS, PlatformDemoLead.STAGE_CUSTOMERS]).count(), 'color': '#a855f7'},
-        {'name': 'Proposals & Closing', 'count': PlatformDemoLead.objects.filter(stage__in=[PlatformDemoLead.STAGE_PROPOSAL, PlatformDemoLead.STAGE_ORDERS, PlatformDemoLead.STAGE_CUSTOMERS]).count(), 'color': '#f97316'},
-        {'name': 'Won (Customers)', 'count': won_count, 'color': '#10b981'},
-    ]
-    for step in funnel:
-        step['pct'] = round((step['count'] / total_leads * 100), 1) if total_leads > 0 else 0
+    try:
+        funnel = [
+            {'name': 'Total Leads', 'count': total_leads, 'pct': 100, 'color': '#38bdf8'},
+            {'name': 'Contacted', 'count': PlatformDemoLead.objects.filter(stage__in=[PlatformDemoLead.STAGE_CONTACTED, PlatformDemoLead.STAGE_INTERESTED, PlatformDemoLead.STAGE_MEETINGS, PlatformDemoLead.STAGE_TRIAL, PlatformDemoLead.STAGE_PROPOSAL, PlatformDemoLead.STAGE_ORDERS, PlatformDemoLead.STAGE_CUSTOMERS]).count(), 'color': '#0ea5e9'},
+            {'name': 'Interested', 'count': PlatformDemoLead.objects.filter(stage__in=[PlatformDemoLead.STAGE_INTERESTED, PlatformDemoLead.STAGE_MEETINGS, PlatformDemoLead.STAGE_TRIAL, PlatformDemoLead.STAGE_PROPOSAL, PlatformDemoLead.STAGE_ORDERS, PlatformDemoLead.STAGE_CUSTOMERS]).count(), 'color': '#eab308'},
+            {'name': 'Demos / Trial', 'count': PlatformDemoLead.objects.filter(stage__in=[PlatformDemoLead.STAGE_MEETINGS, PlatformDemoLead.STAGE_TRIAL, PlatformDemoLead.STAGE_PROPOSAL, PlatformDemoLead.STAGE_ORDERS, PlatformDemoLead.STAGE_CUSTOMERS]).count(), 'color': '#a855f7'},
+            {'name': 'Proposals & Closing', 'count': PlatformDemoLead.objects.filter(stage__in=[PlatformDemoLead.STAGE_PROPOSAL, PlatformDemoLead.STAGE_ORDERS, PlatformDemoLead.STAGE_CUSTOMERS]).count(), 'color': '#f97316'},
+            {'name': 'Won (Customers)', 'count': won_count, 'color': '#10b981'},
+        ]
+        for step in funnel:
+            step['pct'] = round((step['count'] / total_leads * 100), 1) if total_leads > 0 else 0
+    except Exception:
+        funnel = []
 
     # Lead source performance
-    source_stats = PlatformDemoLead.objects.values('source').annotate(
-        total=Count('id'),
-        won=Count('id', filter=Q(stage=PlatformDemoLead.STAGE_CUSTOMERS) | Q(converted_tenant__isnull=False))
-    ).order_by('-total')
+    try:
+        source_stats = PlatformDemoLead.objects.values('source').annotate(
+            total=Count('id'),
+            won=Count('id', filter=Q(stage=PlatformDemoLead.STAGE_CUSTOMERS) | Q(converted_tenant__isnull=False))
+        ).order_by('-total')
+    except Exception:
+        try:
+            source_stats = PlatformDemoLead.objects.values('source').annotate(
+                total=Count('id'),
+                won=Count('id', filter=Q(converted_tenant__isnull=False))
+            ).order_by('-total')
+        except Exception:
+            source_stats = []
 
     # Sales rep performance leaderboard
-    staff_leaderboard = User.objects.filter(
-        is_staff=True
-    ).annotate(
-        assigned_leads=Count('assigned_demo_leads', distinct=True),
-        won_deals=Count('assigned_demo_leads', filter=Q(assigned_demo_leads__stage=PlatformDemoLead.STAGE_CUSTOMERS) | Q(assigned_demo_leads__converted_tenant__isnull=False), distinct=True),
-        open_followups=Count('assigned_crm_activities', filter=Q(assigned_crm_activities__is_completed=False), distinct=True)
-    ).order_by('-won_deals', '-assigned_leads')[:8]
+    try:
+        staff_leaderboard = User.objects.filter(
+            is_staff=True
+        ).annotate(
+            assigned_leads=Count('assigned_demo_leads', distinct=True),
+            won_deals=Count('assigned_demo_leads', filter=Q(assigned_demo_leads__stage=PlatformDemoLead.STAGE_CUSTOMERS) | Q(assigned_demo_leads__converted_tenant__isnull=False), distinct=True),
+            open_followups=Count('assigned_crm_activities', filter=Q(assigned_crm_activities__is_completed=False), distinct=True)
+        ).order_by('-won_deals', '-assigned_leads')[:8]
+    except Exception:
+        try:
+            staff_leaderboard = User.objects.filter(
+                is_staff=True
+            ).annotate(
+                assigned_leads=Count('assigned_demo_leads', distinct=True),
+                won_deals=Count('assigned_demo_leads', filter=Q(assigned_demo_leads__converted_tenant__isnull=False), distinct=True)
+            ).order_by('-won_deals', '-assigned_leads')[:8]
+        except Exception:
+            staff_leaderboard = []
 
     # Recent activities & upcoming follow-ups
-    recent_activities = PlatformLeadActivity.objects.select_related('lead', 'assigned_to').order_by('-created_at')[:6]
-    upcoming_followups = PlatformLeadActivity.objects.filter(
-        is_completed=False,
-        scheduled_at__gte=now
-    ).select_related('lead', 'assigned_to').order_by('scheduled_at')[:6]
+    try:
+        recent_activities = PlatformLeadActivity.objects.select_related('lead', 'assigned_to').order_by('-created_at')[:6]
+        upcoming_followups = PlatformLeadActivity.objects.filter(
+            is_completed=False,
+            scheduled_at__gte=now
+        ).select_related('lead', 'assigned_to').order_by('scheduled_at')[:6]
+    except Exception:
+        recent_activities = []
+        upcoming_followups = []
 
     context = {
         'page_title': 'Sales CRM Dashboard',
