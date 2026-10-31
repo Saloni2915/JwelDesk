@@ -89,7 +89,7 @@
                 {% endif %}
             </p>
         </div>
-        <div class="jd-cockpit-header-actions">
+        <div class="jd-cockpit-header-actions d-none d-md-flex">
             {% if request.tenant and request.tenant.is_wholesale %}
             <a href="{% url 'wholesale:dashboard' %}" class="jd-btn-cockpit-ghost text-gold border-warning">
                 <i class="bi bi-buildings"></i> Wholesale Suite
@@ -102,6 +102,34 @@
                 <i class="bi bi-cart-plus"></i> New Sale
             </a>
         </div>
+    </div>
+
+    <!-- Native Mobile App Quick Action Dock (< 768px) -->
+    <div class="jd-app-quick-dock d-md-none" role="navigation" aria-label="Quick App Actions">
+        <a href="{% url 'sale_add' %}" class="jd-app-dock-item">
+            <div class="jd-app-dock-icon jd-dock-gold">
+                <i class="bi bi-cart-plus"></i>
+            </div>
+            <span class="jd-app-dock-label">New Sale</span>
+        </a>
+        <a href="{% url 'inventory_add' %}" class="jd-app-dock-item">
+            <div class="jd-app-dock-icon jd-dock-emerald">
+                <i class="bi bi-gem"></i>
+            </div>
+            <span class="jd-app-dock-label">Add Stock</span>
+        </a>
+        <a href="{% url 'customer_add' %}" class="jd-app-dock-item">
+            <div class="jd-app-dock-icon jd-dock-cyan">
+                <i class="bi bi-person-plus"></i>
+            </div>
+            <span class="jd-app-dock-label">+ Customer</span>
+        </a>
+        <a href="{% url 'custom_orders:custom_order_add' %}" class="jd-app-dock-item">
+            <div class="jd-app-dock-icon jd-dock-purple">
+                <i class="bi bi-hammer"></i>
+            </div>
+            <span class="jd-app-dock-label">Order</span>
+        </a>
     </div>
 
     <!-- Trial Expiry Alert (Shown only when trial is expired) -->
@@ -197,7 +225,7 @@
     </div>
 
     <!-- 4. Quick Shortcuts Bar -->
-    <div class="jd-shortcuts-bar">
+    <div class="jd-shortcuts-bar d-none d-md-flex">
         <span class="jd-shortcuts-label"><i class="bi bi-lightning-charge text-warning me-1"></i> Quick Shortcuts:</span>
         <div class="jd-shortcuts-group">
             <a href="{% url 'sale_add' %}" class="jd-shortcut-tile">
@@ -279,12 +307,9 @@
                     </div>
                     <a href="{% url 'sale_list' %}" class="jd-card-header-link">View All Sales &rarr;</a>
                 </div>
-                <!-- Mobile Horizontal Scroll Tip -->
-                <div class="jd-table-scroll-hint d-md-none">
-                    <i class="bi bi-arrow-left-right me-1"></i> Swipe horizontally to view full invoice &amp; item details &rarr;
-                </div>
                 <div class="jd-card-body p-0">
-                    <div class="jd-table-wrap">
+                    <!-- Desktop Table View (>= 768px) -->
+                    <div class="jd-table-wrap d-none d-md-block">
                         <table class="jd-sales-table">
                             <thead>
                                 <tr>
@@ -354,6 +379,50 @@
                                 {% endfor %}
                             </tbody>
                         </table>
+                    </div>
+
+                    <!-- Native Mobile App Sales Cards (< 768px) -->
+                    <div class="jd-mobile-sales-cards d-md-none">
+                        {% for sale in recent_sales %}
+                        <a href="{% url 'sale_detail' sale.id %}" class="jd-mobile-sale-card">
+                            <div class="jd-msc-top">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="jd-msc-invoice">#{{ sale.id }}</span>
+                                    <span class="jd-msc-customer">{{ sale.customer.name }}</span>
+                                </div>
+                                <div class="jd-msc-amount">₹{{ sale.sale_price|floatformat:2 }}</div>
+                            </div>
+                            <div class="jd-msc-bottom">
+                                <div class="jd-msc-item">
+                                    <i class="bi bi-gem me-1 text-gold"></i>{{ sale.jewellery_item.name }}
+                                    {% if sale.jewellery_item.huid %}
+                                    <span class="jd-msc-huid">· {{ sale.jewellery_item.huid }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="jd-msc-date">{{ sale.sale_date|date:"M d" }}</span>
+                                    {% if sale.payment_status == 'Paid' %}
+                                    <span class="jd-status-badge jd-status-paid"><i class="bi bi-check-circle-fill"></i> Paid</span>
+                                    {% elif sale.payment_status == 'Partially Paid' %}
+                                    <span class="jd-status-badge jd-status-partial"><i class="bi bi-hourglass-split"></i> Partial</span>
+                                    {% else %}
+                                    <span class="jd-status-badge jd-status-unpaid"><i class="bi bi-exclamation-circle-fill"></i> Due</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </a>
+                        {% empty %}
+                        <div class="jd-mobile-sales-empty">
+                            <div class="jd-msc-empty-icon">
+                                <i class="bi bi-receipt"></i>
+                            </div>
+                            <div class="jd-msc-empty-title">No sales recorded yet today</div>
+                            <p class="jd-msc-empty-sub">Issue invoices to customers using New Sale.</p>
+                            <a href="{% url 'sale_add' %}" class="jd-msc-empty-btn">
+                                <i class="bi bi-cart-plus me-1"></i> New Sale
+                            </a>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>

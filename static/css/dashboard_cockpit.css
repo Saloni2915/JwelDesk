@@ -898,6 +898,307 @@ body.has-cockpit .sidebar {
 
 /* Mobile Devices & Small Tablets (max-width: 767px) */
 @media (max-width: 767px) {
+    :root, body, .jd-cockpit-canvas {
+        --jd-cockpit-font-headline: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
+    }
+
+    .jd-cockpit-canvas {
+        padding-bottom: max(2rem, env(safe-area-inset-bottom, 2rem));
+    }
+
+    /* Mobile App Clean Typography */
+    .jd-card-title-group h3 {
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
+        font-size: 0.94rem !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.01em !important;
+        text-transform: none !important;
+        color: #FAF4EA !important;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .jd-card-title-group h3 i {
+        color: var(--jd-cockpit-gold) !important;
+        font-size: 1rem !important;
+    }
+
+    .jd-card-title-group p {
+        font-size: 0.72rem !important;
+        color: #94A3B8 !important;
+        margin-top: 0.1rem;
+        margin-bottom: 0 !important;
+    }
+
+    .jd-card-header-link {
+        font-size: 0.74rem !important;
+        color: var(--jd-cockpit-gold) !important;
+        font-weight: 600 !important;
+        padding: 0.2rem 0.55rem;
+        background: rgba(212, 175, 55, 0.1);
+        border: 1px solid rgba(212, 175, 55, 0.25);
+        border-radius: 9999px;
+        text-decoration: none !important;
+        white-space: nowrap;
+        transition: all 0.15s ease;
+    }
+
+    .jd-card-header-link:active {
+        background: rgba(212, 175, 55, 0.25);
+    }
+
+    /* Native Mobile App Card Styling */
+    .jd-card {
+        border-radius: 14px !important;
+        background: #14110C !important;
+        border: 1px solid rgba(212, 175, 55, 0.16) !important;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45) !important;
+        margin-bottom: 1rem !important;
+        overflow: hidden;
+    }
+
+    .jd-card-header {
+        padding: 0.8rem 0.95rem !important;
+        background: linear-gradient(180deg, rgba(32, 25, 18, 0.95) 0%, rgba(20, 17, 12, 0.95) 100%) !important;
+        border-bottom: 1px solid rgba(212, 175, 55, 0.12) !important;
+    }
+
+    .jd-card-body {
+        padding: 0.85rem !important;
+    }
+
+    /* Native Mobile App Quick Action Dock */
+    .jd-app-quick-dock {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.5rem;
+        margin-bottom: 1.15rem;
+        padding: 0.85rem 0.5rem;
+        background: #14110C;
+        border: 1px solid rgba(212, 175, 55, 0.16);
+        border-radius: 16px;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+    }
+
+    .jd-app-dock-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none !important;
+        gap: 0.35rem;
+        -webkit-tap-highlight-color: transparent;
+        transition: transform 0.15s ease;
+    }
+
+    .jd-app-dock-item:active {
+        transform: scale(0.92);
+    }
+
+    .jd-app-dock-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+        transition: all 0.2s ease;
+    }
+
+    .jd-dock-gold {
+        background: linear-gradient(135deg, #ECC86A 0%, #D4AF37 50%, #A88420 100%);
+        color: #141009;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .jd-dock-emerald {
+        background: linear-gradient(135deg, #34D399 0%, #059669 100%);
+        color: #FFFFFF;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+
+    .jd-dock-cyan {
+        background: linear-gradient(135deg, #38BDF8 0%, #0284C7 100%);
+        color: #FFFFFF;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+
+    .jd-dock-purple {
+        background: linear-gradient(135deg, #C084FC 0%, #7C3AED 100%);
+        color: #FFFFFF;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+
+    .jd-app-dock-label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #FAF4EA;
+        letter-spacing: -0.01em;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    /* Native Mobile App Sales Cards */
+    .jd-mobile-sales-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 0.55rem;
+        padding: 0.65rem;
+    }
+
+    .jd-mobile-sale-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(212, 175, 55, 0.14);
+        border-radius: 12px;
+        padding: 0.75rem 0.85rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+        text-decoration: none !important;
+        transition: all 0.15s ease;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .jd-mobile-sale-card:active {
+        background: rgba(212, 175, 55, 0.1);
+        border-color: rgba(212, 175, 55, 0.35);
+        transform: scale(0.99);
+    }
+
+    .jd-msc-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .jd-msc-invoice {
+        font-family: var(--jd-font-mono, monospace);
+        font-weight: 700;
+        font-size: 0.82rem;
+        color: var(--jd-cockpit-gold);
+        background: rgba(212, 175, 55, 0.12);
+        padding: 0.12rem 0.4rem;
+        border-radius: 6px;
+        border: 1px solid rgba(212, 175, 55, 0.25);
+    }
+
+    .jd-msc-customer {
+        font-size: 0.86rem;
+        font-weight: 600;
+        color: #FAF4EA;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 140px;
+    }
+
+    .jd-msc-amount {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: #ECC86A;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.01em;
+    }
+
+    .jd-msc-bottom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        font-size: 0.76rem;
+        color: #94A3B8;
+    }
+
+    .jd-msc-item {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 165px;
+    }
+
+    .jd-msc-huid {
+        color: #64748B;
+        font-family: var(--jd-font-mono, monospace);
+        font-size: 0.7rem;
+    }
+
+    .jd-msc-date {
+        font-size: 0.72rem;
+        color: #64748B;
+    }
+
+    /* Mobile Sales Empty State */
+    .jd-mobile-sales-empty {
+        text-align: center;
+        padding: 1.4rem 1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .jd-msc-empty-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: rgba(212, 175, 55, 0.1);
+        border: 1px solid rgba(212, 175, 55, 0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        color: var(--jd-cockpit-gold);
+        margin-bottom: 0.5rem;
+    }
+
+    .jd-msc-empty-title {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #FAF4EA;
+        margin-bottom: 0.2rem;
+    }
+
+    .jd-msc-empty-sub {
+        font-size: 0.74rem;
+        color: #94A3B8;
+        margin-bottom: 0.8rem;
+        max-width: 250px;
+    }
+
+    .jd-msc-empty-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.45rem 1.1rem;
+        background: linear-gradient(135deg, #ECC86A 0%, #D4AF37 100%);
+        color: #141009 !important;
+        font-weight: 700;
+        font-size: 0.82rem;
+        border-radius: 9999px;
+        text-decoration: none !important;
+        box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+    }
+
+    .jd-msc-empty-btn:active {
+        transform: scale(0.96);
+    }
+
+    /* Compact Mobile Empty States for Follow-ups, Leads, Orders */
+    .jd-cockpit-empty {
+        padding: 1.25rem 0.75rem !important;
+    }
+
+    .jd-cockpit-empty i {
+        font-size: 1.5rem !important;
+        margin-bottom: 0.35rem !important;
+    }
+
+    .jd-cockpit-empty p {
+        font-size: 0.76rem !important;
+    }
     .jd-cockpit-canvas {
         padding-bottom: max(2rem, env(safe-area-inset-bottom, 2rem));
     }
@@ -1099,4 +1400,44 @@ body.has-cockpit .sidebar {
         -webkit-box-orient: vertical;
         overflow: hidden;
     }
+}
+
+/* Light Theme Mobile Overrides */
+[data-theme="light"] .jd-app-quick-dock {
+    background: #FFFFFF !important;
+    border-color: #E2E8F0 !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06) !important;
+}
+
+[data-theme="light"] .jd-app-dock-label {
+    color: #0F172A !important;
+}
+
+[data-theme="light"] .jd-card {
+    background: #FFFFFF !important;
+    border-color: #E2E8F0 !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .jd-card-header {
+    background: #F8FAFC !important;
+    border-bottom-color: #E2E8F0 !important;
+}
+
+[data-theme="light"] .jd-card-title-group h3 {
+    color: #0F172A !important;
+}
+
+[data-theme="light"] .jd-mobile-sale-card {
+    background: #F8FAFC !important;
+    border-color: #E2E8F0 !important;
+}
+
+[data-theme="light"] .jd-msc-customer,
+[data-theme="light"] .jd-msc-empty-title {
+    color: #0F172A !important;
+}
+
+[data-theme="light"] .jd-msc-amount {
+    color: #B48516 !important;
 }
