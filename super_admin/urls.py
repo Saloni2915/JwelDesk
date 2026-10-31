@@ -6,6 +6,7 @@ URL routes for the JewelDesk Super Admin Portal.
 
 from django.urls import path
 from . import views
+from . import sales_views
 
 app_name = 'super_admin'
 
@@ -20,6 +21,18 @@ urlpatterns = [
     path('subscriptions/', views.subscriptions_view, name='subscriptions'),
     path('subscriptions/<int:tenant_id>/update/', views.subscription_update_view, name='subscription_update'),
     path('subscriptions/<int:tenant_id>/record-payment/', views.subscription_record_payment_view, name='subscription_record_payment'),
+
+    # Sales CRM Enterprise Pipeline Routes
+    path('sales/', sales_views.sales_dashboard_view, name='sales_dashboard'),
+    path('sales/stage/<str:stage_key>/', sales_views.sales_stage_view, name='sales_stage_view'),
+    path('sales/pipeline/', sales_views.sales_pipeline_kanban_view, name='sales_pipeline'),
+    path('sales/leads/<int:lead_id>/transition/', sales_views.sales_stage_transition_view, name='sales_stage_transition'),
+    path('sales/leads/<int:lead_id>/negotiation/', sales_views.sales_add_negotiation_view, name='sales_add_negotiation'),
+    path('sales/leads/<int:lead_id>/activity/', sales_views.sales_add_activity_view, name='sales_add_activity'),
+    path('sales/activities/<int:activity_id>/toggle/', sales_views.sales_toggle_activity_view, name='sales_toggle_activity'),
+    path('sales/followups/', sales_views.sales_followups_view, name='followup_list'),
+    path('sales/reports/', sales_views.sales_reports_view, name='sales_reports'),
+    path('sales/leads/<int:lead_id>/convert-tenant/', sales_views.sales_convert_tenant_view, name='sales_convert_tenant'),
     
     # Lead Management & Prospective Showrooms
     path('leads/', views.lead_list_view, name='lead_list'),

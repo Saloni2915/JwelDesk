@@ -242,6 +242,54 @@
             font-size: 1.15rem;
         }
 
+        .sa-stage-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.65rem;
+            padding: 0.52rem 0.85rem;
+            font-size: 0.87rem;
+            border-radius: 6px;
+            margin-bottom: 0.18rem;
+            text-decoration: none;
+            color: var(--sa-text-secondary);
+            transition: all 0.15s ease;
+        }
+
+        .sa-stage-item:hover {
+            color: var(--sa-gold);
+            background: var(--sa-card);
+        }
+
+        .sa-stage-item.active {
+            color: var(--sa-gold);
+            background: var(--sa-gold-subtle);
+            font-weight: 700;
+            border-left: 3px solid var(--sa-gold);
+        }
+
+        .sa-stage-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #2dd4bf; /* Mint/Teal dot matching user screenshot */
+            flex-shrink: 0;
+            box-shadow: 0 0 5px rgba(45, 212, 191, 0.45);
+        }
+
+        .sa-badge-count {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--sa-text-secondary);
+            min-width: 18px;
+            text-align: right;
+        }
+
+        .sa-stage-item:hover .sa-badge-count,
+        .sa-stage-item.active .sa-badge-count {
+            color: var(--sa-gold);
+        }
+
         .sa-sidebar-footer {
             padding: 0.85rem 1rem 1rem;
             border-top: 1px solid var(--sa-border);
@@ -1021,10 +1069,6 @@
                 <i class="bi bi-credit-card-2-front"></i>
                 <span>Subscriptions &amp; Plans</span>
             </a>
-            <a href="{% url 'super_admin:lead_list' %}" class="sa-nav-item {% if 'lead' in request.resolver_match.url_name or 'demo' in request.resolver_match.url_name %}active{% endif %}">
-                <i class="bi bi-person-lines-fill"></i>
-                <span>Leads</span>
-            </a>
             <a href="{% url 'super_admin:ticket_list' %}" class="sa-nav-item {% if 'ticket' in request.resolver_match.url_name %}active{% endif %}">
                 <i class="bi bi-headset"></i>
                 <span>Support &amp; Feedback</span>
@@ -1033,6 +1077,113 @@
                 <i class="bi bi-sliders"></i>
                 <span>Platform Settings</span>
             </a>
+
+            <!-- SALES CRM PIPELINE SECTION -->
+            <div class="sa-nav-heading mt-3 d-flex align-items-center justify-content-between">
+                <span>Sales CRM</span>
+                <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-25" style="font-size: 0.65rem; letter-spacing: 0.5px;">CRM</span>
+            </div>
+
+            <a href="{% url 'super_admin:sales_dashboard' %}" class="sa-nav-item {% if request.resolver_match.url_name == 'sales_dashboard' %}active{% endif %}">
+                <i class="bi bi-bar-chart-fill text-warning"></i>
+                <span>Sales Dashboard</span>
+            </a>
+
+            <a href="{% url 'super_admin:sales_stage_view' 'leads' %}" class="sa-stage-item {% if current_sales_stage == 'leads' %}active{% endif %}">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="sa-stage-dot"></span>
+                    <span>Leads</span>
+                </div>
+                <span class="sa-badge-count">{{ sales_crm_counts.leads|default:"0" }}</span>
+            </a>
+
+            <a href="{% url 'super_admin:sales_stage_view' 'interested' %}" class="sa-stage-item {% if current_sales_stage == 'interested' %}active{% endif %}">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="sa-stage-dot"></span>
+                    <span>Interested</span>
+                </div>
+                <span class="sa-badge-count">{{ sales_crm_counts.interested|default:"0" }}</span>
+            </a>
+
+            <a href="{% url 'super_admin:sales_stage_view' 'meetings' %}" class="sa-stage-item {% if current_sales_stage == 'meetings' %}active{% endif %}">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="sa-stage-dot"></span>
+                    <span>Meetings / Demos</span>
+                </div>
+                <span class="sa-badge-count">{{ sales_crm_counts.meetings|default:"0" }}</span>
+            </a>
+
+            <a href="{% url 'super_admin:sales_stage_view' 'trial' %}" class="sa-stage-item {% if current_sales_stage == 'trial' %}active{% endif %}">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="sa-stage-dot"></span>
+                    <span>Trial</span>
+                </div>
+                <span class="sa-badge-count">{{ sales_crm_counts.trial|default:"0" }}</span>
+            </a>
+
+            <a href="{% url 'super_admin:sales_stage_view' 'proposals' %}" class="sa-stage-item {% if current_sales_stage == 'proposals' %}active{% endif %}">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="sa-stage-dot"></span>
+                    <span>Proposal &amp; closing</span>
+                </div>
+                <span class="sa-badge-count">{{ sales_crm_counts.proposals|default:"0" }}</span>
+            </a>
+
+            <a href="{% url 'super_admin:sales_stage_view' 'orders' %}" class="sa-stage-item {% if current_sales_stage == 'orders' %}active{% endif %}">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="sa-stage-dot"></span>
+                    <span>Sales Orders</span>
+                </div>
+                {% if sales_crm_counts.orders %}<span class="sa-badge-count">{{ sales_crm_counts.orders }}</span>{% endif %}
+            </a>
+
+            <a href="{% url 'super_admin:sales_stage_view' 'customers' %}" class="sa-stage-item {% if current_sales_stage == 'customers' %}active{% endif %}">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="sa-stage-dot"></span>
+                    <span>Customers</span>
+                </div>
+                {% if sales_crm_counts.customers %}<span class="sa-badge-count">{{ sales_crm_counts.customers }}</span>{% endif %}
+            </a>
+
+            <a href="{% url 'super_admin:sales_stage_view' 'subscribers' %}" class="sa-stage-item {% if current_sales_stage == 'subscribers' %}active{% endif %}">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="sa-stage-dot"></span>
+                    <span>Subscribers</span>
+                </div>
+                {% if sales_crm_counts.subscribers %}<span class="sa-badge-count">{{ sales_crm_counts.subscribers }}</span>{% endif %}
+            </a>
+
+            <a href="{% url 'super_admin:sales_stage_view' 'renewals' %}" class="sa-stage-item {% if current_sales_stage == 'renewals' %}active{% endif %}">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="sa-stage-dot"></span>
+                    <span>Renewals</span>
+                </div>
+                <span class="sa-badge-count">{{ sales_crm_counts.renewals|default:"0" }}</span>
+            </a>
+
+            <a href="{% url 'super_admin:sales_stage_view' 'lost' %}" class="sa-stage-item {% if current_sales_stage == 'lost' %}active{% endif %}">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="sa-stage-dot"></span>
+                    <span>Lost</span>
+                </div>
+                <span class="sa-badge-count">{{ sales_crm_counts.lost|default:"0" }}</span>
+            </a>
+
+            <a href="{% url 'super_admin:sales_pipeline' %}" class="sa-nav-item {% if request.resolver_match.url_name == 'sales_pipeline' %}active{% endif %}">
+                <i class="bi bi-kanban text-warning"></i>
+                <span>Kanban Pipeline</span>
+            </a>
+
+            <a href="{% url 'super_admin:followup_list' %}" class="sa-nav-item {% if request.resolver_match.url_name == 'followup_list' %}active{% endif %}">
+                <i class="bi bi-calendar2-check text-warning"></i>
+                <span>Follow-ups</span>
+            </a>
+
+            <a href="{% url 'super_admin:sales_reports' %}" class="sa-nav-item {% if request.resolver_match.url_name == 'sales_reports' %}active{% endif %}">
+                <i class="bi bi-graph-up text-warning"></i>
+                <span>Sales Reports</span>
+            </a>
+
         </div>
 
         <div class="sa-sidebar-footer">

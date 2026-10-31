@@ -1,0 +1,225 @@
+{% extends 'super_admin/base_super_admin.html' %}
+{% load static %}
+
+{% block title %}Sales Follow-ups & Activities — JewelDesk CRM{% endblock %}
+{% block page_title %}Sales Follow-up Hub{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- Shared Top Stage Tabs -->
+    {% include 'super_admin/sales/stage_tabs_header.html' %}
+
+    <!-- Follow-up Header -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-calendar-check text-warning fs-5"></i>
+                <h1 class="h4 fw-bold mb-0" style="color: var(--sa-text);">Sales Follow-up Hub</h1>
+                {% if counts.overdue > 0 %}
+                <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-25 px-2 py-1">
+                    {{ counts.overdue }} Overdue Follow-ups
+                </span>
+                {% endif %}
+            </div>
+            <p class="text-muted small mb-0 mt-1">Multi-channel touchpoints: Calls, WhatsApp, Demos, Meetings, and Callbacks</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'super_admin:sales_dashboard' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-speedometer2 me-1"></i> Dashboard
+            </a>
+            <a href="{% url 'super_admin:lead_create' %}" class="btn btn-sm btn-gold d-inline-flex align-items-center gap-1 shadow-sm">
+                <i class="bi bi-person-plus-fill"></i> + New Lead
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter & Follow-up Sub Tabs -->
+    <div class="sa-card p-3 mb-4">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <!-- Tabs -->
+            <ul class="nav nav-pills gap-1">
+                <li class="nav-item">
+                    <a href="?tab=today{% if request.GET.staff %}&staff={{ request.GET.staff }}{% endif %}"
+                       class="nav-link btn btn-sm py-1 px-3 rounded-pill {% if current_tab == 'today' %}btn-warning text-dark fw-bold{% else %}btn-outline-secondary text-muted{% endif %}">
+                        <i class="bi bi-clock me-1"></i> Due Today
+                        <span class="badge bg-dark bg-opacity-25 ms-1">{{ counts.today }}</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="?tab=overdue{% if request.GET.staff %}&staff={{ request.GET.staff }}{% endif %}"
+                       class="nav-link btn btn-sm py-1 px-3 rounded-pill {% if current_tab == 'overdue' %}btn-danger text-white fw-bold{% else %}btn-outline-danger text-danger{% endif %}">
+                        <i class="bi bi-exclamation-triangle me-1"></i> Overdue
+                        <span class="badge bg-dark bg-opacity-25 ms-1">{{ counts.overdue }}</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="?tab=upcoming{% if request.GET.staff %}&staff={{ request.GET.staff }}{% endif %}"
+                       class="nav-link btn btn-sm py-1 px-3 rounded-pill {% if current_tab == 'upcoming' %}btn-primary text-white fw-bold{% else %}btn-outline-secondary text-muted{% endif %}">
+                        <i class="bi bi-calendar-event me-1"></i> Upcoming
+                        <span class="badge bg-dark bg-opacity-25 ms-1">{{ counts.upcoming }}</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="?tab=completed{% if request.GET.staff %}&staff={{ request.GET.staff }}{% endif %}"
+                       class="nav-link btn btn-sm py-1 px-3 rounded-pill {% if current_tab == 'completed' %}btn-success text-white fw-bold{% else %}btn-outline-secondary text-muted{% endif %}">
+                        <i class="bi bi-check-circle me-1"></i> Completed
+                        <span class="badge bg-dark bg-opacity-25 ms-1">{{ counts.completed }}</span>
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Staff Filter -->
+            <form method="get" class="d-flex align-items-center gap-2">
+                <input type="hidden" name="tab" value="{{ current_tab }}">
+                <select name="staff" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 170px;">
+                    <option value="">All Sales Reps</option>
+                    {% for st in sales_staff %}
+                    <option value="{{ st.id }}" {% if request.GET.staff == st.id|stringformat:"s" %}selected{% endif %}>
+                        {{ st.first_name|default:st.username }}
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if request.GET.staff %}
+                <a href="?tab={{ current_tab }}" class="btn btn-sm btn-outline-secondary">Clear</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <!-- Activities Feed List -->
+    <div class="row g-3">
+        {% for act in activities %}
+        <div class="col-12">
+            <div class="sa-card p-3 border shadow-sm transition-all" style="background: var(--sa-surface); border-color: var(--sa-border) !important;">
+                <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+                    
+                    <!-- Left: Checkbox, Icon, Title, Lead Name -->
+                    <div class="d-flex align-items-start gap-3">
+                        <form method="post" action="{% url 'super_admin:sales_toggle_activity' act.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm p-0 text-decoration-none mt-1" title="Toggle completion">
+                                {% if act.is_completed %}
+                                <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                                {% else %}
+                                <i class="bi bi-circle text-muted fs-5 hover-gold"></i>
+                                {% endif %}
+                            </button>
+                        </form>
+
+                        <div>
+                            <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+                                <!-- Activity Type Badge -->
+                                {% if act.activity_type == 'call' %}
+                                <span class="badge bg-primary bg-opacity-15 text-primary border border-primary border-opacity-25">
+                                    <i class="bi bi-telephone-fill me-1"></i> Phone Call
+                                </span>
+                                {% elif act.activity_type == 'whatsapp' %}
+                                <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25">
+                                    <i class="bi bi-whatsapp me-1"></i> WhatsApp
+                                </span>
+                                {% elif act.activity_type == 'demo' or act.activity_type == 'meeting' %}
+                                <span class="badge bg-purple bg-opacity-15 text-purple border border-purple border-opacity-25" style="color: #a855f7; border-color: #a855f7;">
+                                    <i class="bi bi-laptop me-1"></i> {{ act.get_activity_type_display }}
+                                </span>
+                                {% elif act.activity_type == 'site_visit' %}
+                                <span class="badge bg-info bg-opacity-15 text-info border border-info border-opacity-25">
+                                    <i class="bi bi-geo-alt-fill me-1"></i> Showroom Visit
+                                </span>
+                                {% elif act.activity_type == 'email' %}
+                                <span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-25">
+                                    <i class="bi bi-envelope-fill me-1"></i> Email
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary bg-opacity-15 text-secondary border border-secondary border-opacity-25">
+                                    <i class="bi bi-sticky me-1"></i> Note / Task
+                                </span>
+                                {% endif %}
+
+                                <h6 class="mb-0 fw-bold" style="color: var(--sa-text); font-size: 0.96rem;">
+                                    {{ act.title }}
+                                </h6>
+                            </div>
+
+                            <!-- Lead Link and Meta -->
+                            <div class="d-flex align-items-center flex-wrap gap-3 text-muted small mt-1">
+                                <span>
+                                    <i class="bi bi-shop text-warning me-1"></i>
+                                    <a href="{% url 'super_admin:lead_detail' act.lead.id %}" class="fw-semibold text-decoration-none" style="color: var(--sa-gold);">
+                                        {{ act.lead.lead_name }}
+                                    </a>
+                                    ({{ act.lead.contact_name|default:"Owner" }})
+                                </span>
+                                <span>
+                                    <i class="bi bi-tag me-1"></i> Stage: <span class="badge bg-secondary bg-opacity-25 text-body">{{ act.lead.get_stage_display }}</span>
+                                </span>
+                                {% if act.lead.city %}
+                                <span><i class="bi bi-geo-alt me-1"></i> {{ act.lead.city }}</span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Outcome notes if any -->
+                            {% if act.outcome_notes %}
+                            <div class="mt-2 p-2 rounded small border" style="background: var(--sa-card-bg); border-color: var(--sa-border) !important; color: var(--sa-text);">
+                                <span class="text-muted fw-semibold">Outcome:</span> {{ act.outcome_notes }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Right: Schedule Time, Assignee, Actions -->
+                    <div class="text-end d-flex flex-column align-items-end justify-content-between h-100">
+                        <div>
+                            {% if act.scheduled_at %}
+                            <div class="fw-semibold small {% if act.scheduled_at.date < today and not act.is_completed %}text-danger{% elif act.scheduled_at.date == today %}text-warning{% else %}text-muted{% endif %}">
+                                <i class="bi bi-clock me-1"></i>
+                                {{ act.scheduled_at|date:"d M Y, h:i A" }}
+                                {% if act.scheduled_at.date < today and not act.is_completed %}
+                                <span class="badge bg-danger ms-1">OVERDUE</span>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <span class="text-muted small">No scheduled date</span>
+                            {% endif %}
+
+                            <div class="small text-muted mt-1">
+                                Assigned: <span class="fw-semibold" style="color: var(--sa-text);">{{ act.assigned_to.first_name|default:act.assigned_to.username|default:"Unassigned" }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Direct contact shortcuts -->
+                        <div class="d-flex align-items-center gap-2 mt-2">
+                            {% if act.lead.phone %}
+                            <a href="tel:{{ act.lead.phone }}" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Call">
+                                <i class="bi bi-telephone text-primary"></i>
+                            </a>
+                            <a href="https://wa.me/{{ act.lead.phone|cut:'+'|cut:' ' }}" target="_blank" class="btn btn-sm btn-outline-secondary py-0 px-2" title="WhatsApp">
+                                <i class="bi bi-whatsapp text-success"></i>
+                            </a>
+                            {% endif %}
+                            <a href="{% url 'super_admin:lead_detail' act.lead.id %}" class="btn btn-sm btn-outline-gold py-0 px-2">
+                                Details &rarr;
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="sa-card p-5 text-center">
+                <i class="bi bi-calendar2-check fs-1 text-muted opacity-50 mb-3 d-block"></i>
+                <h5 class="fw-bold" style="color: var(--sa-text);">No activities found in this tab</h5>
+                <p class="text-muted small mb-3">All caught up! Check other tabs or schedule new touchpoints from lead profiles.</p>
+                <a href="{% url 'super_admin:sales_stage_view' 'leads' %}" class="btn btn-sm btn-gold">
+                    View Leads Pipeline &rarr;
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}
+

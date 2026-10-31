@@ -1,0 +1,311 @@
+{% extends 'super_admin/base_super_admin.html' %}
+{% load static %}
+
+{% block title %}{{ stage_title }} — Sales CRM JewelDesk{% endblock %}
+{% block page_title %}{{ stage_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- Shared Top Stage Tabs -->
+    {% include 'super_admin/sales/stage_tabs_header.html' %}
+
+    <!-- Stage Title Header -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="sa-stage-dot" style="width: 10px; height: 10px;"></span>
+                <h1 class="h4 fw-bold mb-0" style="color: var(--sa-text);">{{ stage_title }}</h1>
+                <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-25 px-2 py-1">
+                    {{ total_in_stage }} Total
+                </span>
+            </div>
+            <p class="text-muted small mb-0 mt-1">{{ stage_desc }}</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'super_admin:lead_create' %}" class="btn btn-sm btn-gold d-inline-flex align-items-center gap-1 shadow-sm">
+                <i class="bi bi-person-plus-fill"></i> Add Prospect
+            </a>
+            <a href="{% url 'super_admin:sales_pipeline' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-kanban me-1"></i> Kanban
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div class="sa-card p-3 mb-4">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-md-4 col-lg-3">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-transparent border-secondary border-opacity-25 text-muted">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" name="q" value="{{ selected_q }}" class="form-control form-control-sm"
+                           placeholder="Search shop, owner, phone, ID...">
+                </div>
+            </div>
+
+            <div class="col-6 col-md-3 col-lg-2">
+                <select name="staff" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Sales Reps</option>
+                    {% for st in sales_staff %}
+                    <option value="{{ st.id }}" {% if selected_staff == st.id|stringformat:"s" %}selected{% endif %}>
+                        {{ st.first_name|default:st.username }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-6 col-md-3 col-lg-2">
+                <select name="business_type" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Business Types</option>
+                    <option value="RETAIL" {% if selected_type == 'RETAIL' %}selected{% endif %}>Retail</option>
+                    <option value="WHOLESALE" {% if selected_type == 'WHOLESALE' %}selected{% endif %}>Wholesale</option>
+                    <option value="BOTH" {% if selected_type == 'BOTH' %}selected{% endif %}>Hybrid</option>
+                </select>
+            </div>
+
+            <div class="col-6 col-md-2 col-lg-2">
+                <select name="source" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Sources</option>
+                    <option value="website" {% if selected_source == 'website' %}selected{% endif %}>Website</option>
+                    <option value="whatsapp" {% if selected_source == 'whatsapp' %}selected{% endif %}>WhatsApp</option>
+                    <option value="referral" {% if selected_source == 'referral' %}selected{% endif %}>Referral</option>
+                    <option value="cold_call" {% if selected_source == 'cold_call' %}selected{% endif %}>Cold Call</option>
+                    <option value="exhibition" {% if selected_source == 'exhibition' %}selected{% endif %}>Exhibition</option>
+                </select>
+            </div>
+
+            <div class="col-6 col-md-2 col-lg-3 d-flex gap-2 justify-content-end">
+                {% if selected_q or selected_staff or selected_type or selected_source %}
+                <a href="{% url 'super_admin:sales_stage_view' stage_key %}" class="btn btn-sm btn-outline-secondary">
+                    Clear
+                </a>
+                {% endif %}
+                <button type="submit" class="btn btn-sm btn-secondary">
+                    Filter
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Prospects Table -->
+    <div class="sa-card p-0 overflow-hidden mb-4">
+        <div class="table-responsive">
+            <table class="table sa-table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 130px;">Lead ID</th>
+                        <th>Showroom / Business</th>
+                        <th>Contact Person</th>
+                        <th>Phone &amp; WhatsApp</th>
+                        <th>City / State</th>
+                        <th class="text-end">Deal Value</th>
+                        <th>Current Stage</th>
+                        <th>Assigned Rep</th>
+                        <th>Next Touchpoint</th>
+                        <th class="text-end" style="width: 140px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lead in leads %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'super_admin:lead_detail' lead.id %}" class="text-decoration-none" title="View Lead Details">
+                                <span class="badge font-monospace px-2 py-1" style="background: var(--sa-code-bg); color: var(--sa-code-color); border: 1px solid var(--sa-border); font-size: 0.82rem; font-weight: 700; letter-spacing: 0.4px;">
+                                    {{ lead.lead_id|default:lead.id }}
+                                </span>
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{% url 'super_admin:lead_detail' lead.id %}" class="fw-bold text-decoration-none" style="color: var(--sa-text);">
+                                {{ lead.lead_name }}
+                            </a>
+                            <div class="small text-muted">{{ lead.get_business_type_display }}</div>
+                        </td>
+                        <td>
+                            <div class="fw-semibold small" style="color: var(--sa-text);">{{ lead.contact_name }}</div>
+                            <small class="text-muted">{{ lead.email|default:"No email" }}</small>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-1 font-monospace small">
+                                <span>{{ lead.phone }}</span>
+                                {% if lead.whatsapp_number %}
+                                <a href="https://wa.me/91{{ lead.whatsapp_number|cut:' ' }}" target="_blank" class="text-success text-decoration-none ms-1" title="Chat on WhatsApp">
+                                    <i class="bi bi-whatsapp"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="small text-truncate" style="max-width: 130px;">
+                                {{ lead.city|default:"&mdash;" }}{% if lead.state %}, {{ lead.state }}{% endif %}
+                            </div>
+                        </td>
+                        <td class="text-end fw-bold" style="color: var(--sa-gold);">
+                            ₹{{ lead.deal_value|floatformat:0 }}
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary bg-opacity-25 text-body border border-secondary border-opacity-25 small px-2 py-1">
+                                {{ lead.get_stage_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if lead.assigned_staff %}
+                            <div class="d-flex align-items-center gap-1 small">
+                                <i class="bi bi-person-circle text-muted"></i>
+                                <span>{{ lead.assigned_staff.first_name|default:lead.assigned_staff.username }}</span>
+                            </div>
+                            {% else %}
+                            <span class="badge bg-secondary bg-opacity-15 text-muted small">Unassigned</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if lead.follow_up_date %}
+                            <div class="small {% if lead.is_overdue_followup %}text-danger fw-bold{% else %}text-muted{% endif %}">
+                                <i class="bi bi-calendar2-event me-1"></i>{{ lead.follow_up_date|date:"d M Y" }}
+                                {% if lead.is_overdue_followup %}
+                                <span class="badge bg-danger small ms-1" style="font-size: 0.65rem;">Overdue</span>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <span class="text-muted small">&mdash;</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="d-flex align-items-center justify-content-end gap-1">
+                                <button type="button" class="btn btn-xs btn-outline-warning py-1 px-2"
+                                        data-bs-toggle="modal" data-bs-target="#stageModal{{ lead.id }}" title="Change Pipeline Stage">
+                                    <i class="bi bi-arrow-left-right"></i>
+                                </button>
+                                <a href="{% url 'super_admin:lead_detail' lead.id %}" class="sa-btn-action" title="Manage Lead">
+                                    Manage &rarr;
+                                </a>
+                            </div>
+
+                            <!-- Stage Transition Modal for this lead -->
+                            <div class="modal fade text-start" id="stageModal{{ lead.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content border" style="background: var(--sa-surface); border-color: var(--sa-border) !important; color: var(--sa-text);">
+                                        <div class="modal-header border-bottom" style="border-color: var(--sa-border) !important;">
+                                            <h5 class="modal-title fs-6 fw-bold">
+                                                <i class="bi bi-arrow-left-right text-warning me-2"></i>Move Stage &mdash; {{ lead.lead_name }}
+                                            </h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form method="post" action="{% url 'super_admin:sales_stage_transition' lead.id %}">
+                                            {% csrf_token %}
+                                            <div class="modal-body p-4">
+                                                <div class="mb-3">
+                                                    <label class="form-label small fw-semibold">Target Stage</label>
+                                                    <select name="to_stage" class="form-select form-select-sm" id="stageSelect{{ lead.id }}" onchange="toggleLostFields('{{ lead.id }}')">
+                                                        <option value="new" {% if lead.stage == 'new' %}selected{% endif %}>Leads (New)</option>
+                                                        <option value="contacted" {% if lead.stage == 'contacted' %}selected{% endif %}>Contacted</option>
+                                                        <option value="interested" {% if lead.stage == 'interested' %}selected{% endif %}>Interested</option>
+                                                        <option value="meetings" {% if lead.stage == 'meetings' %}selected{% endif %}>Meetings / Demos</option>
+                                                        <option value="trial" {% if lead.stage == 'trial' %}selected{% endif %}>Trial</option>
+                                                        <option value="proposal" {% if lead.stage == 'proposal' %}selected{% endif %}>Proposal &amp; closing</option>
+                                                        <option value="orders" {% if lead.stage == 'orders' %}selected{% endif %}>Sales Orders</option>
+                                                        <option value="customers" {% if lead.stage == 'customers' %}selected{% endif %}>Customers (Won)</option>
+                                                        <option value="lost" {% if lead.stage == 'lost' %}selected{% endif %}>Lost</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label small fw-semibold">Estimated Deal Value (₹)</label>
+                                                    <input type="number" step="0.01" name="deal_value" value="{{ lead.deal_value }}" class="form-control form-control-sm">
+                                                </div>
+
+                                                <!-- Conditional Lost Fields -->
+                                                <div id="lostFieldsContainer{{ lead.id }}" class="p-3 rounded mb-3 border border-danger border-opacity-25 bg-danger bg-opacity-10 {% if lead.stage != 'lost' %}d-none{% endif %}">
+                                                    <label class="form-label small fw-semibold text-danger">Lost Reason *</label>
+                                                    <select name="lost_reason" class="form-select form-select-sm mb-2">
+                                                        <option value="price_high">Pricing / Too High</option>
+                                                        <option value="competitor">Chose Competitor</option>
+                                                        <option value="missing_features">Missing Specific Features</option>
+                                                        <option value="budget">No Current Budget</option>
+                                                        <option value="timing">Postponed Decision</option>
+                                                        <option value="not_responsive">Not Responsive / Dropped Off</option>
+                                                        <option value="other">Other Reason</option>
+                                                    </select>
+                                                    <label class="form-label small fw-semibold text-danger">Lost Notes / Winback Potential</label>
+                                                    <textarea name="lost_notes" rows="2" class="form-control form-control-sm" placeholder="Why did we lose? Competitor name? Follow-up in 6 months?"></textarea>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label small fw-semibold">Transition Reason / Notes</label>
+                                                    <textarea name="reason" rows="2" class="form-control form-control-sm" placeholder="Summary of discussion or trigger for stage change..."></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer border-top py-2" style="border-color: var(--sa-border) !important;">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-sm btn-gold">Update Stage</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center text-muted py-5">
+                            <i class="bi bi-inbox fs-2 d-block text-secondary mb-2"></i>
+                            No prospects found in <strong>{{ stage_title }}</strong> matching your filters.
+                            <div class="mt-2">
+                                <a href="{% url 'super_admin:lead_create' %}" class="btn btn-sm btn-gold">
+                                    <i class="bi bi-plus-lg me-1"></i> Add First Prospect
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="p-3 border-top d-flex align-items-center justify-content-between flex-wrap gap-2" style="border-color: var(--sa-border) !important;">
+            <small class="text-muted">
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} prospects
+            </small>
+            <nav aria-label="Page navigation">
+                <ul class="pagination pagination-sm m-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if selected_q %}&q={{ selected_q }}{% endif %}">&larr; Prev</a>
+                    </li>
+                    {% endif %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                    </li>
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if selected_q %}&q={{ selected_q }}{% endif %}">Next &rarr;</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+function toggleLostFields(leadId) {
+    const sel = document.getElementById('stageSelect' + leadId);
+    const container = document.getElementById('lostFieldsContainer' + leadId);
+    if (sel && container) {
+        if (sel.value === 'lost') {
+            container.classList.remove('d-none');
+        } else {
+            container.classList.add('d-none');
+        }
+    }
+}
+</script>
+{% endblock %}
+

@@ -1,0 +1,115 @@
+<!-- Top Shared Sales CRM Stage Navigation Tabs -->
+<div class="sa-stage-tabs-wrap mb-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pb-2 border-bottom" style="border-color: var(--sa-border) !important;">
+        <div class="d-flex align-items-center gap-1 overflow-x-auto py-1 sa-stage-tabs-scroll" style="white-space: nowrap; max-width: 100%;">
+            <a href="{% url 'super_admin:sales_dashboard' %}" class="sa-tab-pill {% if current_sales_stage == 'dashboard' %}active{% endif %}">
+                <i class="bi bi-speedometer2 me-1"></i> Dashboard
+            </a>
+            <a href="{% url 'super_admin:sales_stage_view' 'leads' %}" class="sa-tab-pill {% if current_sales_stage == 'leads' %}active{% endif %}">
+                <span class="sa-tab-dot"></span> Leads <span class="sa-tab-count">{{ sales_crm_counts.leads|default:"0" }}</span>
+            </a>
+            <a href="{% url 'super_admin:sales_stage_view' 'interested' %}" class="sa-tab-pill {% if current_sales_stage == 'interested' %}active{% endif %}">
+                <span class="sa-tab-dot"></span> Interested <span class="sa-tab-count">{{ sales_crm_counts.interested|default:"0" }}</span>
+            </a>
+            <a href="{% url 'super_admin:sales_stage_view' 'meetings' %}" class="sa-tab-pill {% if current_sales_stage == 'meetings' %}active{% endif %}">
+                <span class="sa-tab-dot"></span> Meetings / Demos <span class="sa-tab-count">{{ sales_crm_counts.meetings|default:"0" }}</span>
+            </a>
+            <a href="{% url 'super_admin:sales_stage_view' 'trial' %}" class="sa-tab-pill {% if current_sales_stage == 'trial' %}active{% endif %}">
+                <span class="sa-tab-dot"></span> Trial <span class="sa-tab-count">{{ sales_crm_counts.trial|default:"0" }}</span>
+            </a>
+            <a href="{% url 'super_admin:sales_stage_view' 'proposals' %}" class="sa-tab-pill {% if current_sales_stage == 'proposals' %}active{% endif %}">
+                <span class="sa-tab-dot"></span> Proposal &amp; closing <span class="sa-tab-count">{{ sales_crm_counts.proposals|default:"0" }}</span>
+            </a>
+            <a href="{% url 'super_admin:sales_stage_view' 'orders' %}" class="sa-tab-pill {% if current_sales_stage == 'orders' %}active{% endif %}">
+                <span class="sa-tab-dot"></span> Sales Orders {% if sales_crm_counts.orders %}<span class="sa-tab-count">{{ sales_crm_counts.orders }}</span>{% endif %}
+            </a>
+            <a href="{% url 'super_admin:sales_stage_view' 'customers' %}" class="sa-tab-pill {% if current_sales_stage == 'customers' %}active{% endif %}">
+                <span class="sa-tab-dot"></span> Customers {% if sales_crm_counts.customers %}<span class="sa-tab-count">{{ sales_crm_counts.customers }}</span>{% endif %}
+            </a>
+            <a href="{% url 'super_admin:sales_stage_view' 'subscribers' %}" class="sa-tab-pill {% if current_sales_stage == 'subscribers' %}active{% endif %}">
+                <span class="sa-tab-dot"></span> Subscribers {% if sales_crm_counts.subscribers %}<span class="sa-tab-count">{{ sales_crm_counts.subscribers }}</span>{% endif %}
+            </a>
+            <a href="{% url 'super_admin:sales_stage_view' 'renewals' %}" class="sa-tab-pill {% if current_sales_stage == 'renewals' %}active{% endif %}">
+                <span class="sa-tab-dot"></span> Renewals <span class="sa-tab-count">{{ sales_crm_counts.renewals|default:"0" }}</span>
+            </a>
+            <a href="{% url 'super_admin:sales_stage_view' 'lost' %}" class="sa-tab-pill {% if current_sales_stage == 'lost' %}active{% endif %}">
+                <span class="sa-tab-dot" style="background: #ef4444;"></span> Lost <span class="sa-tab-count">{{ sales_crm_counts.lost|default:"0" }}</span>
+            </a>
+            <a href="{% url 'super_admin:sales_pipeline' %}" class="sa-tab-pill {% if current_sales_stage == 'pipeline' %}active{% endif %}">
+                <i class="bi bi-kanban me-1"></i> Kanban
+            </a>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+            <a href="{% url 'super_admin:lead_create' %}" class="btn btn-sm btn-gold d-inline-flex align-items-center gap-1 shadow-sm">
+                <i class="bi bi-person-plus-fill"></i> + New Lead
+            </a>
+            <a href="{% url 'super_admin:proposal_create' %}" class="btn btn-sm btn-outline-gold d-inline-flex align-items-center gap-1 shadow-sm">
+                <i class="bi bi-file-earmark-plus"></i> + Proposal
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.sa-stage-tabs-wrap {
+    position: relative;
+    background: var(--sa-surface);
+    padding: 0.5rem 0.5rem 0;
+    margin-bottom: 1.5rem;
+    border-radius: 8px;
+}
+.sa-tab-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--sa-text-secondary);
+    border-radius: 20px;
+    background: transparent;
+    border: 1px solid transparent;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+.sa-tab-pill:hover {
+    color: var(--sa-gold);
+    background: var(--sa-card);
+    border-color: var(--sa-border);
+}
+.sa-tab-pill.active {
+    color: var(--sa-gold);
+    background: var(--sa-gold-subtle);
+    border-color: var(--sa-gold);
+    font-weight: 700;
+}
+.sa-tab-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #2dd4bf; /* Mint teal like user screenshot */
+    display: inline-block;
+}
+.sa-tab-count {
+    font-size: 0.76rem;
+    font-weight: 700;
+    padding: 0.12rem 0.45rem;
+    border-radius: 10px;
+    background: var(--sa-card);
+    border: 1px solid var(--sa-border);
+    color: var(--sa-text);
+}
+.sa-tab-pill.active .sa-tab-count {
+    background: var(--sa-gold);
+    color: #100e09;
+    border-color: var(--sa-gold);
+}
+.sa-stage-tabs-scroll::-webkit-scrollbar {
+    height: 3px;
+}
+.sa-stage-tabs-scroll::-webkit-scrollbar-thumb {
+    background: var(--sa-border);
+    border-radius: 3px;
+}
+</style>
+

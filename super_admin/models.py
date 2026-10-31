@@ -62,6 +62,13 @@ class PlatformAuditLog(models.Model):
         (ACTION_TICKET_RESOLVE,      'Resolved Support Ticket'),
         (ACTION_SUBSCRIPTION_UPDATE, 'Updated Tenant Subscription'),
         (ACTION_PAYMENT_RECORD,      'Recorded Subscription Payment'),
+        ('LEAD_STAGE_CHANGE',        'Changed Lead Stage'),
+        ('LEAD_ASSIGN',              'Assigned Lead to Sales Rep'),
+        ('PROPOSAL_REVISE',          'Created Proposal Revision'),
+        ('DEAL_WON',                 'Marked Deal as Won & Converted Tenant'),
+        ('DEAL_LOST',                'Marked Deal as Lost'),
+        ('ACTIVITY_CREATE',          'Created Sales Follow-up Activity'),
+        ('ACTIVITY_COMPLETE',        'Completed Sales Activity'),
         (ACTION_COUPON_TEMPLATE_CREATE,  'Created Coupon Design Template'),
         (ACTION_COUPON_TEMPLATE_UPDATE,  'Updated Coupon Design Template'),
         (ACTION_COUPON_TEMPLATE_ARCHIVE, 'Archived/Unarchived Coupon Template'),
@@ -475,6 +482,28 @@ class PlatformProposal(models.Model):
         blank=True,
         help_text="Payment terms, onboarding schedule, warranty/support SLAs"
     )
+    lead = models.ForeignKey(
+        'PlatformDemoLead',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='proposals',
+        help_text="Originating sales CRM lead"
+    )
+    version_number = models.PositiveIntegerField(default=1)
+    parent_proposal = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='revisions'
+    )
+    is_latest = models.BooleanField(default=True, db_index=True)
+    selected_modules = models.JSONField(default=list, blank=True, help_text="e.g. ['pos', 'barcode', 'karigar', 'wholesale', 'girvi']")
+    branches_count = models.PositiveIntegerField(default=1)
+    users_count = models.PositiveIntegerField(default=3)
+    tax_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('18.00'))
+    tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
     status = models.CharField(
         max_length=30,
         choices=STATUS_CHOICES,
@@ -537,6 +566,50 @@ class PlatformDemoLead(models.Model):
         (STATUS_RESCHEDULED,    'Rescheduled'),
         (STATUS_CANCELLED,      'Cancelled'),
         (STATUS_NOT_INTERESTED, 'Not Interested / Lost'),
+    ]
+
+    STAGE_NEW         = 'new'
+    STAGE_CONTACTED   = 'contacted'
+    STAGE_INTERESTED  = 'interested'
+    STAGE_MEETINGS    = 'meetings'
+    STAGE_TRIAL       = 'trial'
+    STAGE_PROPOSAL    = 'proposal'
+    STAGE_ORDERS      = 'orders'
+    STAGE_CUSTOMERS   = 'customers'
+    STAGE_SUBSCRIBERS = 'subscribers'
+    STAGE_RENEWALS    = 'renewals'
+    STAGE_LOST        = 'lost'
+
+    STAGE_CHOICES = [
+        (STAGE_NEW,         'Leads (New)'),
+        (STAGE_CONTACTED,   'Contacted'),
+        (STAGE_INTERESTED,  'Interested'),
+        (STAGE_MEETINGS,    'Meetings / Demos'),
+        (STAGE_TRIAL,       'Trial'),
+        (STAGE_PROPOSAL,    'Proposal & closing'),
+        (STAGE_ORDERS,      'Sales Orders'),
+        (STAGE_CUSTOMERS,   'Customers'),
+        (STAGE_SUBSCRIBERS, 'Subscribers'),
+        (STAGE_RENEWALS,    'Renewals'),
+        (STAGE_LOST,        'Lost'),
+    ]
+
+    LOST_PRICE_HIGH       = 'price_high'
+    LOST_COMPETITOR       = 'competitor'
+    LOST_MISSING_FEATURES = 'missing_features'
+    LOST_BUDGET           = 'budget'
+    LOST_TIMING           = 'timing'
+    LOST_NOT_RESPONSIVE   = 'not_responsive'
+    LOST_OTHER            = 'other'
+
+    LOST_REASON_CHOICES = [
+        (LOST_PRICE_HIGH,       'Pricing / Too High'),
+        (LOST_COMPETITOR,       'Chose Competitor'),
+        (LOST_MISSING_FEATURES, 'Missing Specific Features'),
+        (LOST_BUDGET,           'No Current Budget'),
+        (LOST_TIMING,           'Postponed Decision'),
+        (LOST_NOT_RESPONSIVE,   'Not Responsive / Dropped Off'),
+        (LOST_OTHER,            'Other Reason'),
     ]
 
     MODE_ONLINE    = 'online'
@@ -658,6 +731,48 @@ class PlatformDemoLead(models.Model):
         help_text="Showroom tenant account created if lead converted"
     )
     conversion_date = models.DateTimeField(null=True, blank=True)
+    lead_id = models.CharField(
+        max_length=30,
+        blank=True,
+        db_index=True,
+        help_text="Auto-generated sequential Lead ID (e.g. LEAD-2026-0042)"
+    )
+    whatsapp_number = models.CharField(
+        max_length=30,
+        blank=True,
+        help_text="WhatsApp contact number"
+    )
+    state = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="State / Province"
+    )
+    deal_value = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        help_text="Estimated deal / opportunity value in INR"
+    )
+    stage = models.CharField(
+        max_length=30,
+        choices=STAGE_CHOICES,
+        default=STAGE_NEW,
+        db_index=True
+    )
+    lost_reason = models.CharField(
+        max_length=50,
+        blank=True,
+        choices=LOST_REASON_CHOICES
+    )
+    lost_notes = models.TextField(
+        blank=True,
+        help_text="Lost context, competitor names, winback notes"
+    )
+    expected_close_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Target closing date"
+    )
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -667,7 +782,90 @@ class PlatformDemoLead(models.Model):
         verbose_name_plural = 'Platform Demo Leads'
 
     def __str__(self):
-        return f"{self.lead_name} ({self.contact_name}) - {self.get_status_display()}"
+        prefix = f"[{self.lead_id}] " if self.lead_id else ""
+        return f"{prefix}{self.lead_name} ({self.contact_name}) - {self.get_stage_display()}"
+
+    def save(self, *args, **kwargs):
+        is_new = not self.pk
+        if not self.lead_id:
+            from django.utils import timezone
+            year = timezone.now().year
+            try:
+                last_lead = PlatformDemoLead.objects.filter(lead_id__startswith=f"LEAD-{year}-").order_by('-id').first()
+                if last_lead and last_lead.lead_id:
+                    num_part = last_lead.lead_id.split('-')[-1]
+                    next_num = int(num_part) + 1
+                else:
+                    next_num = 1
+            except Exception:
+                next_num = 1
+            self.lead_id = f"LEAD-{year}-{next_num:04d}"
+
+        # Synchronize stage and status intelligently
+        if not is_new and self.pk:
+            try:
+                orig = PlatformDemoLead.objects.filter(pk=self.pk).values('status', 'stage').first()
+                if orig:
+                    if self.status != orig['status'] and self.stage == orig['stage']:
+                        status_to_stage = {
+                            self.STATUS_NEW: self.STAGE_NEW,
+                            self.STATUS_CONTACTED: self.STAGE_CONTACTED,
+                            self.STATUS_INTERESTED: self.STAGE_INTERESTED,
+                            self.STATUS_SCHEDULED: self.STAGE_MEETINGS,
+                            self.STATUS_COMPLETED: self.STAGE_MEETINGS,
+                            self.STATUS_CONVERTED: self.STAGE_CUSTOMERS,
+                            self.STATUS_NOT_INTERESTED: self.STAGE_LOST,
+                        }
+                        if self.status in status_to_stage:
+                            self.stage = status_to_stage[self.status]
+                    elif self.stage != orig['stage'] and self.status == orig['status']:
+                        stage_to_status = {
+                            self.STAGE_NEW: self.STATUS_NEW,
+                            self.STAGE_CONTACTED: self.STATUS_CONTACTED,
+                            self.STAGE_INTERESTED: self.STATUS_INTERESTED,
+                            self.STAGE_MEETINGS: self.STATUS_SCHEDULED,
+                            self.STAGE_TRIAL: self.STATUS_INTERESTED,
+                            self.STAGE_PROPOSAL: self.STATUS_INTERESTED,
+                            self.STAGE_ORDERS: self.STATUS_INTERESTED,
+                            self.STAGE_CUSTOMERS: self.STATUS_CONVERTED,
+                            self.STAGE_SUBSCRIBERS: self.STATUS_CONVERTED,
+                            self.STAGE_RENEWALS: self.STATUS_CONVERTED,
+                            self.STAGE_LOST: self.STATUS_NOT_INTERESTED,
+                        }
+                        if self.stage in stage_to_status:
+                            self.status = stage_to_status[self.stage]
+            except Exception:
+                pass
+        else:
+            if self.status and self.status != self.STATUS_NEW and self.stage == self.STAGE_NEW:
+                status_to_stage = {
+                    self.STATUS_CONTACTED: self.STAGE_CONTACTED,
+                    self.STATUS_INTERESTED: self.STAGE_INTERESTED,
+                    self.STATUS_SCHEDULED: self.STAGE_MEETINGS,
+                    self.STATUS_COMPLETED: self.STAGE_MEETINGS,
+                    self.STATUS_CONVERTED: self.STAGE_CUSTOMERS,
+                    self.STATUS_NOT_INTERESTED: self.STAGE_LOST,
+                }
+                if self.status in status_to_stage:
+                    self.stage = status_to_stage[self.status]
+            elif self.stage and self.stage != self.STAGE_NEW and self.status == self.STATUS_NEW:
+                stage_to_status = {
+                    self.STAGE_NEW: self.STATUS_NEW,
+                    self.STAGE_CONTACTED: self.STATUS_CONTACTED,
+                    self.STAGE_INTERESTED: self.STATUS_INTERESTED,
+                    self.STAGE_MEETINGS: self.STATUS_SCHEDULED,
+                    self.STAGE_TRIAL: self.STATUS_INTERESTED,
+                    self.STAGE_PROPOSAL: self.STATUS_INTERESTED,
+                    self.STAGE_ORDERS: self.STATUS_INTERESTED,
+                    self.STAGE_CUSTOMERS: self.STATUS_CONVERTED,
+                    self.STAGE_SUBSCRIBERS: self.STATUS_CONVERTED,
+                    self.STAGE_RENEWALS: self.STATUS_CONVERTED,
+                    self.STAGE_LOST: self.STATUS_NOT_INTERESTED,
+                }
+                if self.stage in stage_to_status:
+                    self.status = stage_to_status[self.stage]
+
+        super().save(*args, **kwargs)
 
     @property
     def is_upcoming_meeting(self):
@@ -1386,3 +1584,136 @@ class CouponBatchItem(models.Model):
         return f"#{self.serial_number:04d} [{self.coupon_code}] - {self.batch.batch_number}"
 
 
+
+
+class PlatformLeadStageHistory(models.Model):
+    """Immutable log of stage transitions in the Sales CRM pipeline."""
+
+    lead = models.ForeignKey(
+        PlatformDemoLead,
+        on_delete=models.CASCADE,
+        related_name='stage_history'
+    )
+    from_stage = models.CharField(max_length=30)
+    to_stage = models.CharField(max_length=30)
+    changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='crm_stage_changes'
+    )
+    reason = models.TextField(blank=True, help_text="Reason for stage change or negotiation update")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Lead Stage Transition'
+        verbose_name_plural = 'Lead Stage Transitions'
+
+    def __str__(self):
+        return f"{self.lead.lead_name}: {self.from_stage} -> {self.to_stage}"
+
+
+class PlatformLeadNegotiation(models.Model):
+    """Requirements, plan interests, pricing discussions, and negotiation history."""
+
+    lead = models.ForeignKey(
+        PlatformDemoLead,
+        on_delete=models.CASCADE,
+        related_name='negotiations'
+    )
+    target_plan = models.CharField(
+        max_length=30,
+        choices=TenantSubscription.PLAN_CHOICES,
+        default=TenantSubscription.PLAN_PRO
+    )
+    required_modules = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Requested modules, e.g. ['pos', 'barcode', 'karigar', 'wholesale', 'girvi', 'ecom']"
+    )
+    branches_count = models.PositiveIntegerField(default=1)
+    users_count = models.PositiveIntegerField(default=3)
+    budget = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    expected_purchase_date = models.DateField(null=True, blank=True)
+    competitor_info = models.CharField(max_length=200, blank=True, help_text="Current software used / competitors")
+    discussion_summary = models.TextField(help_text="Detailed discussion notes, client requirements, pricing expectations")
+    conducted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='conducted_negotiations'
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Lead Negotiation & Requirements'
+        verbose_name_plural = 'Lead Negotiations & Requirements'
+
+    def __str__(self):
+        return f"{self.lead.lead_name} Negotiation - {self.target_plan} (Budget: Rs {self.budget})"
+
+
+class PlatformLeadActivity(models.Model):
+    """Centralized activity timeline and scheduled follow-up tracking."""
+
+    ACTIVITY_CALL       = 'call'
+    ACTIVITY_WHATSAPP   = 'whatsapp'
+    ACTIVITY_EMAIL      = 'email'
+    ACTIVITY_MEETING    = 'meeting'
+    ACTIVITY_DEMO       = 'demo'
+    ACTIVITY_SITE_VISIT = 'site_visit'
+    ACTIVITY_NOTE       = 'note'
+
+    ACTIVITY_CHOICES = [
+        (ACTIVITY_CALL,       'Phone Call'),
+        (ACTIVITY_WHATSAPP,   'WhatsApp Message'),
+        (ACTIVITY_EMAIL,      'Email Sent'),
+        (ACTIVITY_MEETING,    'Discussion / Meeting'),
+        (ACTIVITY_DEMO,       'Product Demo Walkthrough'),
+        (ACTIVITY_SITE_VISIT, 'Showroom Site Visit'),
+        (ACTIVITY_NOTE,       'Internal Team Note'),
+    ]
+
+    lead = models.ForeignKey(
+        PlatformDemoLead,
+        on_delete=models.CASCADE,
+        related_name='activities'
+    )
+    activity_type = models.CharField(
+        max_length=30,
+        choices=ACTIVITY_CHOICES,
+        default=ACTIVITY_CALL
+    )
+    title = models.CharField(max_length=200, help_text="Subject or summary of the touchpoint")
+    scheduled_at = models.DateTimeField(null=True, blank=True, help_text="Scheduled callback date and time")
+    is_completed = models.BooleanField(default=False, db_index=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    outcome_notes = models.TextField(blank=True, help_text="Call outcome, customer feedback, next steps")
+    next_follow_up_date = models.DateField(null=True, blank=True)
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_crm_activities'
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_crm_activities'
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-scheduled_at', '-created_at']
+        verbose_name = 'Lead Follow-up Activity'
+        verbose_name_plural = 'Lead Follow-up Activities'
+
+    def __str__(self):
+        return f"[{self.get_activity_type_display()}] {self.title} ({self.lead.lead_name})"

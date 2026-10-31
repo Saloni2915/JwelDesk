@@ -25,6 +25,15 @@
 
             <form method="post" action="{% url 'super_admin:proposal_create' %}">
                 {% csrf_token %}
+                {% if lead %}
+                <input type="hidden" name="lead_id" value="{{ lead.id }}">
+                <div class="alert alert-info py-2 px-3 small mb-4 d-flex align-items-center justify-content-between">
+                    <span>
+                        <i class="bi bi-link-45deg me-1"></i> Creating proposal linked to Lead <strong>#{{ lead.lead_id|default:lead.id }} ({{ lead.lead_name }})</strong>
+                    </span>
+                    <a href="{% url 'super_admin:lead_detail' lead.id %}" class="btn btn-sm btn-outline-info py-0">View Lead</a>
+                </div>
+                {% endif %}
 
                 <!-- Section 1: Prospective Client & Showroom Details -->
                 <h6 class="fw-bold text-uppercase small mb-3" style="color: var(--sa-gold); letter-spacing: 0.05em;">
@@ -33,26 +42,26 @@
                 <div class="row g-3 mb-4">
                     <div class="col-12 col-md-6">
                         <label class="form-label small fw-bold sa-label">Customer / Owner Name *</label>
-                        <input type="text" name="client_name" class="form-control" placeholder="e.g. Shri Rajesh Soni" required style="background: var(--sa-surface); color: var(--sa-text); border-color: var(--sa-border);">
+                        <input type="text" name="client_name" value="{{ lead.contact_name }}" class="form-control" placeholder="e.g. Shri Rajesh Soni" required style="background: var(--sa-surface); color: var(--sa-text); border-color: var(--sa-border);">
                     </div>
                     <div class="col-12 col-md-6">
                         <label class="form-label small fw-bold sa-label">Jewellery Showroom Name *</label>
-                        <input type="text" name="client_showroom_name" class="form-control" placeholder="e.g. Soni & Sons Jewellers" required style="background: var(--sa-surface); color: var(--sa-text); border-color: var(--sa-border);">
+                        <input type="text" name="client_showroom_name" value="{{ lead.lead_name }}" class="form-control" placeholder="e.g. Soni & Sons Jewellers" required style="background: var(--sa-surface); color: var(--sa-text); border-color: var(--sa-border);">
                     </div>
                     <div class="col-12 col-md-4">
                         <label class="form-label small fw-bold sa-label">WhatsApp / Mobile Number *</label>
                         <div class="input-group">
                             <span class="input-group-text border-secondary" style="background: var(--sa-card); color: var(--sa-text);"><i class="bi bi-whatsapp text-success"></i></span>
-                            <input type="text" name="client_phone" class="form-control" placeholder="e.g. 9876543210" required style="background: var(--sa-surface); color: var(--sa-text); border-color: var(--sa-border);">
+                            <input type="text" name="client_phone" value="{{ lead.phone }}" class="form-control" placeholder="e.g. 9876543210" required style="background: var(--sa-surface); color: var(--sa-text); border-color: var(--sa-border);">
                         </div>
                     </div>
                     <div class="col-12 col-md-4">
                         <label class="form-label small fw-bold sa-label">Email Address</label>
-                        <input type="email" name="client_email" class="form-control" placeholder="e.g. rajesh@example.com" style="background: var(--sa-surface); color: var(--sa-text); border-color: var(--sa-border);">
+                        <input type="email" name="client_email" value="{{ lead.email }}" class="form-control" placeholder="e.g. rajesh@example.com" style="background: var(--sa-surface); color: var(--sa-text); border-color: var(--sa-border);">
                     </div>
                     <div class="col-12 col-md-4">
                         <label class="form-label small fw-bold sa-label">City / Region</label>
-                        <input type="text" name="client_city" class="form-control" placeholder="e.g. Jaipur, Rajasthan" style="background: var(--sa-surface); color: var(--sa-text); border-color: var(--sa-border);">
+                        <input type="text" name="client_city" value="{{ lead.city }}" class="form-control" placeholder="e.g. Jaipur, Rajasthan" style="background: var(--sa-surface); color: var(--sa-text); border-color: var(--sa-border);">
                     </div>
                 </div>
 

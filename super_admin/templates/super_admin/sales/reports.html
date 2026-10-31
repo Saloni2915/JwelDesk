@@ -1,0 +1,277 @@
+{% extends 'super_admin/base_super_admin.html' %}
+{% load static %}
+
+{% block title %}Sales Reports & Conversion Analytics — JewelDesk CRM{% endblock %}
+{% block page_title %}Sales CRM Reports{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- Shared Top Stage Tabs -->
+    {% include 'super_admin/sales/stage_tabs_header.html' %}
+
+    <!-- Reports Header -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-graph-up-arrow text-warning fs-5"></i>
+                <h1 class="h4 fw-bold mb-0" style="color: var(--sa-text);">Sales Reports &amp; Analytics</h1>
+                <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-25 px-2 py-1">
+                    Enterprise Intelligence
+                </span>
+            </div>
+            <p class="text-muted small mb-0 mt-1">Multi-stage conversion metrics, lead source ROI, team performance, and proposal win rates</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button onclick="window.print()" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-printer me-1"></i> Print Report
+            </button>
+            <a href="{% url 'super_admin:sales_dashboard' %}" class="btn btn-sm btn-gold">
+                <i class="bi bi-speedometer2 me-1"></i> Dashboard &rarr;
+            </a>
+        </div>
+    </div>
+
+    <!-- High-Level Proposal & Conversion KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="sa-card p-3 border shadow-sm">
+                <span class="text-muted small fw-semibold text-uppercase">Total Proposals</span>
+                <h3 class="fw-bold mb-0 mt-2" style="color: var(--sa-text);">{{ proposal_stats.total }}</h3>
+                <span class="text-muted small">Generated quotes &amp; contracts</span>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="sa-card p-3 border shadow-sm">
+                <span class="text-muted small fw-semibold text-uppercase">Accepted Proposals</span>
+                <h3 class="fw-bold mb-0 mt-2 text-success">{{ proposal_stats.accepted }}</h3>
+                <span class="text-muted small">Signed &amp; commercial agreements</span>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="sa-card p-3 border shadow-sm">
+                <span class="text-muted small fw-semibold text-uppercase">Proposal Win Rate</span>
+                <h3 class="fw-bold mb-0 mt-2 text-warning">{{ proposal_stats.win_rate }}%</h3>
+                <span class="text-muted small">Quote-to-close efficiency</span>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="sa-card p-3 border shadow-sm">
+                <span class="text-muted small fw-semibold text-uppercase">Active Customers</span>
+                <h3 class="fw-bold mb-0 mt-2" style="color: var(--sa-gold);">{{ sales_crm_counts.customers }}</h3>
+                <span class="text-muted small">Active converted jewellery showrooms</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stage-wise Volume Breakdown (10 Stages) -->
+    <div class="sa-card p-4 mb-4 border shadow-sm">
+        <h5 class="fw-bold mb-3" style="color: var(--sa-text);">
+            <i class="bi bi-diagram-3 text-warning me-2"></i>Stage-wise Pipeline Volume
+        </h5>
+        <div class="row g-2 text-center">
+            <div class="col-6 col-md-3 col-lg">
+                <div class="p-2 rounded border" style="background: var(--sa-card-bg); border-color: var(--sa-border) !important;">
+                    <span class="sa-tab-dot d-inline-block mb-1"></span>
+                    <div class="text-muted" style="font-size: 0.75rem;">Leads</div>
+                    <div class="fw-bold fs-5" style="color: var(--sa-text);">{{ sales_crm_counts.leads }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 col-lg">
+                <div class="p-2 rounded border" style="background: var(--sa-card-bg); border-color: var(--sa-border) !important;">
+                    <span class="sa-tab-dot d-inline-block mb-1"></span>
+                    <div class="text-muted" style="font-size: 0.75rem;">Interested</div>
+                    <div class="fw-bold fs-5 text-warning">{{ sales_crm_counts.interested }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 col-lg">
+                <div class="p-2 rounded border" style="background: var(--sa-card-bg); border-color: var(--sa-border) !important;">
+                    <span class="sa-tab-dot d-inline-block mb-1"></span>
+                    <div class="text-muted" style="font-size: 0.75rem;">Meetings / Demos</div>
+                    <div class="fw-bold fs-5" style="color: #a855f7;">{{ sales_crm_counts.meetings }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 col-lg">
+                <div class="p-2 rounded border" style="background: var(--sa-card-bg); border-color: var(--sa-border) !important;">
+                    <span class="sa-tab-dot d-inline-block mb-1"></span>
+                    <div class="text-muted" style="font-size: 0.75rem;">Trial (15d)</div>
+                    <div class="fw-bold fs-5 text-info">{{ sales_crm_counts.trial }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 col-lg">
+                <div class="p-2 rounded border" style="background: var(--sa-card-bg); border-color: var(--sa-border) !important;">
+                    <span class="sa-tab-dot d-inline-block mb-1"></span>
+                    <div class="text-muted" style="font-size: 0.75rem;">Proposals</div>
+                    <div class="fw-bold fs-5" style="color: #f97316;">{{ sales_crm_counts.proposals }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 col-lg">
+                <div class="p-2 rounded border" style="background: var(--sa-card-bg); border-color: var(--sa-border) !important;">
+                    <span class="sa-tab-dot d-inline-block mb-1"></span>
+                    <div class="text-muted" style="font-size: 0.75rem;">Sales Orders</div>
+                    <div class="fw-bold fs-5" style="color: #14b8a6;">{{ sales_crm_counts.orders }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 col-lg">
+                <div class="p-2 rounded border" style="background: var(--sa-card-bg); border-color: var(--sa-border) !important;">
+                    <span class="sa-tab-dot d-inline-block mb-1"></span>
+                    <div class="text-muted" style="font-size: 0.75rem;">Customers</div>
+                    <div class="fw-bold fs-5 text-success">{{ sales_crm_counts.customers }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 col-lg">
+                <div class="p-2 rounded border" style="background: var(--sa-card-bg); border-color: var(--sa-border) !important;">
+                    <span class="sa-tab-dot d-inline-block mb-1"></span>
+                    <div class="text-muted" style="font-size: 0.75rem;">Subscribers</div>
+                    <div class="fw-bold fs-5 text-primary">{{ sales_crm_counts.subscribers }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 col-lg">
+                <div class="p-2 rounded border" style="background: var(--sa-card-bg); border-color: var(--sa-border) !important;">
+                    <span class="sa-tab-dot d-inline-block mb-1"></span>
+                    <div class="text-muted" style="font-size: 0.75rem;">Renewals</div>
+                    <div class="fw-bold fs-5 text-warning">{{ sales_crm_counts.renewals }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 col-lg">
+                <div class="p-2 rounded border" style="background: var(--sa-card-bg); border-color: var(--sa-border) !important;">
+                    <span class="sa-tab-dot d-inline-block mb-1" style="background: #ef4444;"></span>
+                    <div class="text-muted" style="font-size: 0.75rem;">Lost</div>
+                    <div class="fw-bold fs-5 text-danger">{{ sales_crm_counts.lost }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- Lead Source Performance Table -->
+        <div class="col-lg-6">
+            <div class="sa-card p-0 overflow-hidden border shadow-sm h-100">
+                <div class="p-3 border-bottom d-flex align-items-center justify-content-between" style="border-color: var(--sa-border) !important;">
+                    <h5 class="fw-bold mb-0 fs-6" style="color: var(--sa-text);">
+                        <i class="bi bi-funnel text-warning me-2"></i>Lead Source Performance &amp; ROI
+                    </h5>
+                    <span class="text-muted small">Channel attribution</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table sa-table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Source</th>
+                                <th class="text-center">Total Leads</th>
+                                <th class="text-center">Won</th>
+                                <th class="text-center">Lost</th>
+                                <th class="text-end">Deal Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for src in source_data %}
+                            <tr>
+                                <td class="fw-semibold text-capitalize" style="color: var(--sa-text);">
+                                    <i class="bi bi-dot text-warning"></i>{{ src.source|default:"Other / Direct" }}
+                                </td>
+                                <td class="text-center fw-bold">{{ src.total }}</td>
+                                <td class="text-center text-success fw-bold">{{ src.won }}</td>
+                                <td class="text-center text-danger">{{ src.lost }}</td>
+                                <td class="text-end fw-semibold text-warning">
+                                    ₹{{ src.total_val|default:0|floatformat:0 }}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted small">No source data recorded yet</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sales Executive Performance Table -->
+        <div class="col-lg-6">
+            <div class="sa-card p-0 overflow-hidden border shadow-sm h-100">
+                <div class="p-3 border-bottom d-flex align-items-center justify-content-between" style="border-color: var(--sa-border) !important;">
+                    <h5 class="fw-bold mb-0 fs-6" style="color: var(--sa-text);">
+                        <i class="bi bi-trophy text-warning me-2"></i>Sales Team Leaderboard
+                    </h5>
+                    <span class="text-muted small">Individual rep quota</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table sa-table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Sales Executive</th>
+                                <th class="text-center">Assigned</th>
+                                <th class="text-center">Won</th>
+                                <th class="text-center">Lost</th>
+                                <th class="text-end">Converted Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for rep in exec_data %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="rounded-circle bg-warning bg-opacity-20 text-warning d-inline-flex align-items-center justify-content-center fw-bold" style="width: 26px; height: 26px; font-size: 0.75rem;">
+                                            {{ rep.first_name|default:rep.username|slice:":1"|upper }}
+                                        </span>
+                                        <span class="fw-semibold" style="color: var(--sa-text);">
+                                            {{ rep.first_name|default:rep.username }}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="text-center fw-bold">{{ rep.leads }}</td>
+                                <td class="text-center text-success fw-bold">{{ rep.won }}</td>
+                                <td class="text-center text-danger">{{ rep.lost }}</td>
+                                <td class="text-end fw-semibold text-warning">
+                                    ₹{{ rep.revenue|default:0|floatformat:0 }}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted small">No executive data recorded yet</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lost Reason Analysis / Win-Back Opportunities -->
+    <div class="sa-card p-4 border shadow-sm mb-4">
+        <h5 class="fw-bold mb-2" style="color: var(--sa-text);">
+            <i class="bi bi-x-octagon text-danger me-2"></i>Lost Opportunity Intelligence (Win-Backs)
+        </h5>
+        <p class="text-muted small mb-3">Understanding rejection reasons to improve pricing, product roadmap, and competitor countering</p>
+        
+        <div class="row g-3">
+            {% for lr in lost_reasons %}
+            <div class="col-md-4 col-sm-6">
+                <div class="p-3 rounded border" style="background: var(--sa-card-bg); border-color: var(--sa-border) !important;">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <span class="fw-semibold text-capitalize" style="color: var(--sa-text); font-size: 0.88rem;">
+                            {{ lr.lost_reason|default:"Unspecified"|cut:"_" }}
+                        </span>
+                        <span class="badge bg-danger bg-opacity-20 text-danger px-2 py-1 fw-bold">
+                            {{ lr.count }}
+                        </span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-danger" style="width: {{ lr.count }}0%;"></div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-3 text-muted small">
+                No lost deals recorded yet.
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+

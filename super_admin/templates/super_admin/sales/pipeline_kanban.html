@@ -1,0 +1,368 @@
+{% extends 'super_admin/base_super_admin.html' %}
+{% load static %}
+
+{% block title %}Sales Pipeline Kanban — Sales CRM JewelDesk{% endblock %}
+{% block page_title %}Sales Pipeline Kanban{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- Shared Top Stage Tabs -->
+    {% include 'super_admin/sales/stage_tabs_header.html' %}
+
+    <!-- Pipeline Header -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-kanban text-warning fs-5"></i>
+                <h1 class="h4 fw-bold mb-0" style="color: var(--sa-text);">Sales Pipeline Board</h1>
+                <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-25 px-2 py-1">
+                    Visual CRM Pipeline
+                </span>
+            </div>
+            <p class="text-muted small mb-0 mt-1">Drag and drop cards or click to transition leads smoothly across stages</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'super_admin:sales_stage_view' 'leads' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-table me-1"></i> Table View
+            </a>
+            <a href="{% url 'super_admin:lead_create' %}" class="btn btn-sm btn-gold d-inline-flex align-items-center gap-1 shadow-sm">
+                <i class="bi bi-person-plus-fill"></i> + New Lead
+            </a>
+        </div>
+    </div>
+
+    <!-- Kanban Board Container -->
+    <div class="kanban-wrapper pb-4">
+        <div class="kanban-board d-flex gap-3 overflow-x-auto pb-3">
+            {% for col in columns %}
+            <div class="kanban-column flex-shrink-0" data-stage="{{ col.key }}">
+                <!-- Column Header -->
+                <div class="kanban-column-header d-flex align-items-center justify-content-between p-3 rounded-top border-bottom"
+                     style="background: var(--sa-surface); border-color: var(--sa-border) !important;">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="rounded-circle d-inline-block" style="width: 10px; height: 10px; background-color: {{ col.badge }};"></span>
+                        <span class="fw-bold small text-uppercase" style="color: var(--sa-text); letter-spacing: 0.5px;">{{ col.name }}</span>
+                    </div>
+                    <span class="badge rounded-pill bg-secondary bg-opacity-25 text-body px-2 py-1" style="font-size: 0.75rem;">
+                        {{ col.leads|length }}
+                    </span>
+                </div>
+
+                <!-- Column Drop Zone / Card List -->
+                <div class="kanban-cards p-2 rounded-bottom d-flex flex-column gap-2"
+                     id="col-{{ col.key }}"
+                     ondragover="handleDragOver(event)"
+                     ondragleave="handleDragLeave(event)"
+                     ondrop="handleDrop(event, '{{ col.key }}')"
+                     style="background: var(--sa-card-bg); min-height: 520px; max-height: calc(100vh - 250px); overflow-y: auto; border: 1px solid var(--sa-border); border-top: none;">
+                    
+                    {% for lead in col.leads %}
+                    <div class="kanban-card p-3 rounded border shadow-sm"
+                         id="lead-card-{{ lead.id }}"
+                         draggable="true"
+                         ondragstart="handleDragStart(event, '{{ lead.id }}')"
+                         style="background: var(--sa-surface); border-color: var(--sa-border) !important; cursor: grab;">
+                        
+                        <!-- Top Meta -->
+                        <div class="d-flex align-items-center justify-content-between gap-1 mb-2">
+                            <span class="badge font-monospace px-2 py-1" style="background: var(--sa-code-bg); color: var(--sa-code-color); border: 1px solid var(--sa-border); font-size: 0.72rem; font-weight: 700;">
+                                {{ lead.lead_id|default:lead.id }}
+                            </span>
+                            {% if lead.deal_value and lead.deal_value > 0 %}
+                            <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-25 fw-semibold" style="font-size: 0.72rem;">
+                                ₹{{ lead.deal_value|floatformat:0 }}
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Business & Contact Name -->
+                        <h6 class="fw-bold mb-1 text-truncate" style="color: var(--sa-text); font-size: 0.92rem;" title="{{ lead.lead_name }}">
+                            <a href="{% url 'super_admin:lead_detail' lead.id %}" class="text-decoration-none" style="color: inherit;">
+                                {{ lead.lead_name }}
+                            </a>
+                        </h6>
+                        <div class="text-muted small mb-2 d-flex align-items-center gap-1">
+                            <i class="bi bi-person text-secondary"></i> {{ lead.contact_name|default:"Owner" }}
+                        </div>
+
+                        <!-- Location & Source -->
+                        <div class="d-flex align-items-center flex-wrap gap-1 mb-2">
+                            {% if lead.city %}
+                            <span class="badge bg-secondary bg-opacity-20 text-body border border-secondary border-opacity-25" style="font-size: 0.68rem;">
+                                <i class="bi bi-geo-alt me-1"></i>{{ lead.city }}
+                            </span>
+                            {% endif %}
+                            <span class="badge bg-secondary bg-opacity-20 text-body border border-secondary border-opacity-25 text-capitalize" style="font-size: 0.68rem;">
+                                {{ lead.source|default:"lead" }}
+                            </span>
+                        </div>
+
+                        <!-- Card Footer -->
+                        <div class="d-flex align-items-center justify-content-between pt-2 border-top mt-2" style="border-color: var(--sa-border) !important;">
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="rounded-circle bg-warning bg-opacity-20 text-warning d-inline-flex align-items-center justify-content-center fw-bold" style="width: 22px; height: 22px; font-size: 0.65rem;">
+                                    {{ lead.assigned_staff.first_name|default:lead.assigned_staff.username|default:"U"|slice:":1"|upper }}
+                                </span>
+                                <span class="text-muted small text-truncate" style="max-width: 80px; font-size: 0.75rem;">
+                                    {{ lead.assigned_staff.first_name|default:lead.assigned_staff.username|default:"Unassigned" }}
+                                </span>
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                {% if lead.phone %}
+                                <a href="https://wa.me/{{ lead.phone|cut:'+'|cut:' ' }}" target="_blank" class="btn btn-sm btn-icon text-success p-0" title="WhatsApp">
+                                    <i class="bi bi-whatsapp" style="font-size: 0.85rem;"></i>
+                                </a>
+                                {% endif %}
+                                <button type="button" class="btn btn-sm btn-icon text-warning p-0 ms-1" data-bs-toggle="modal" data-bs-target="#kanbanModal{{ lead.id }}" title="Change Stage">
+                                    <i class="bi bi-arrow-right-circle" style="font-size: 0.85rem;"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stage Transition Modal for this lead -->
+                    <div class="modal fade text-start" id="kanbanModal{{ lead.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border" style="background: var(--sa-surface); border-color: var(--sa-border) !important; color: var(--sa-text);">
+                                <div class="modal-header border-bottom" style="border-color: var(--sa-border) !important;">
+                                    <h5 class="modal-title fs-6 fw-bold">
+                                        <i class="bi bi-arrow-left-right text-warning me-2"></i>Move Stage &mdash; {{ lead.lead_name }}
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="post" action="{% url 'super_admin:sales_stage_transition' lead.id %}">
+                                    {% csrf_token %}
+                                    <div class="modal-body p-4">
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold">Target Stage</label>
+                                            <select name="to_stage" class="form-select form-select-sm" id="kbStageSelect{{ lead.id }}" onchange="toggleKbLost('{{ lead.id }}')">
+                                                <option value="new" {% if lead.stage == 'new' %}selected{% endif %}>Leads (New)</option>
+                                                <option value="contacted" {% if lead.stage == 'contacted' %}selected{% endif %}>Contacted</option>
+                                                <option value="interested" {% if lead.stage == 'interested' %}selected{% endif %}>Interested</option>
+                                                <option value="meetings" {% if lead.stage == 'meetings' %}selected{% endif %}>Meetings / Demos</option>
+                                                <option value="trial" {% if lead.stage == 'trial' %}selected{% endif %}>Trial</option>
+                                                <option value="proposal" {% if lead.stage == 'proposal' %}selected{% endif %}>Proposal &amp; closing</option>
+                                                <option value="orders" {% if lead.stage == 'orders' %}selected{% endif %}>Sales Orders</option>
+                                                <option value="customers" {% if lead.stage == 'customers' %}selected{% endif %}>Customers (Won)</option>
+                                                <option value="lost" {% if lead.stage == 'lost' %}selected{% endif %}>Lost</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold">Estimated Deal Value (₹)</label>
+                                            <input type="number" step="0.01" name="deal_value" value="{{ lead.deal_value }}" class="form-control form-control-sm">
+                                        </div>
+
+                                        <!-- Lost Reason container -->
+                                        <div id="kbLostContainer{{ lead.id }}" class="p-3 rounded mb-3 border border-danger border-opacity-25 bg-danger bg-opacity-10 {% if lead.stage != 'lost' %}d-none{% endif %}">
+                                            <label class="form-label small fw-semibold text-danger">Lost Reason *</label>
+                                            <select name="lost_reason" class="form-select form-select-sm mb-2">
+                                                <option value="price_high">Pricing / Too High</option>
+                                                <option value="competitor">Chose Competitor</option>
+                                                <option value="missing_features">Missing Specific Features</option>
+                                                <option value="budget">No Current Budget</option>
+                                                <option value="timing">Postponed Decision</option>
+                                                <option value="not_responsive">Not Responsive / Dropped Off</option>
+                                                <option value="other">Other Reason</option>
+                                            </select>
+                                            <label class="form-label small fw-semibold text-danger">Lost Notes / Winback</label>
+                                            <textarea name="lost_notes" rows="2" class="form-control form-control-sm" placeholder="Why did we lose? Competitor name?"></textarea>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold">Transition Reason / Notes</label>
+                                            <textarea name="reason" rows="2" class="form-control form-control-sm" placeholder="Summary or trigger for move..."></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer border-top py-2" style="border-color: var(--sa-border) !important;">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-sm btn-gold">Update Stage</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-4 text-muted small kanban-empty">
+                        <i class="bi bi-inbox fs-4 d-block opacity-25 mb-1"></i>
+                        No leads in this stage
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal for drag drop lost confirmation -->
+<div class="modal fade" id="dragLostModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border" style="background: var(--sa-surface); border-color: var(--sa-border) !important; color: var(--sa-text);">
+            <div class="modal-header border-bottom border-danger" style="border-color: var(--sa-border) !important;">
+                <h5 class="modal-title fs-6 fw-bold text-danger">
+                    <i class="bi bi-x-circle me-2"></i>Mark Deal as Lost
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="dragLostLeadId">
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Reason for Loss *</label>
+                    <select id="dragLostReason" class="form-select form-select-sm">
+                        <option value="price_high">Pricing / Too High</option>
+                        <option value="competitor">Chose Competitor</option>
+                        <option value="missing_features">Missing Specific Features</option>
+                        <option value="budget">No Current Budget</option>
+                        <option value="timing">Postponed Decision</option>
+                        <option value="not_responsive">Not Responsive / Dropped Off</option>
+                        <option value="other">Other Reason</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Notes / Competitor / Winback details</label>
+                    <textarea id="dragLostNotes" rows="2" class="form-control form-control-sm" placeholder="Details..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-top py-2" style="border-color: var(--sa-border) !important;">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-danger" onclick="confirmDragLost()">Confirm Lost</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.kanban-wrapper {
+    overflow-x: auto;
+}
+.kanban-column {
+    width: 290px;
+    transition: transform 0.15s ease;
+}
+.kanban-cards {
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.kanban-cards.drag-over {
+    background-color: var(--sa-gold-subtle) !important;
+    border: 2px dashed var(--sa-gold) !important;
+}
+.kanban-card {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.kanban-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+.kanban-card.dragging {
+    opacity: 0.4;
+}
+</style>
+
+<script>
+let draggedLeadId = null;
+
+function handleDragStart(e, leadId) {
+    draggedLeadId = leadId;
+    e.dataTransfer.setData('text/plain', leadId);
+    e.currentTarget.classList.add('dragging');
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.currentTarget.classList.add('drag-over');
+}
+
+function handleDragLeave(e) {
+    e.currentTarget.classList.remove('drag-over');
+}
+
+function handleDrop(e, targetStage) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drag-over');
+    const card = document.getElementById(`lead-card-${draggedLeadId}`);
+    if (card) card.classList.remove('dragging');
+
+    if (!draggedLeadId) return;
+
+    if (targetStage === 'lost') {
+        document.getElementById('dragLostLeadId').value = draggedLeadId;
+        const lostModal = new bootstrap.Modal(document.getElementById('dragLostModal'));
+        lostModal.show();
+        return;
+    }
+
+    executeStageMove(draggedLeadId, targetStage, 'Moved via Kanban drag & drop', '', '');
+}
+
+function confirmDragLost() {
+    const leadId = document.getElementById('dragLostLeadId').value;
+    const reason = document.getElementById('dragLostReason').value;
+    const notes = document.getElementById('dragLostNotes').value;
+    const modalEl = document.getElementById('dragLostModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+
+    executeStageMove(leadId, 'lost', 'Moved to lost via Kanban', reason, notes);
+}
+
+function executeStageMove(leadId, toStage, reason, lostReason, lostNotes) {
+    const formData = new FormData();
+    formData.append('to_stage', toStage);
+    formData.append('reason', reason);
+    if (lostReason) formData.append('lost_reason', lostReason);
+    if (lostNotes) formData.append('lost_notes', lostNotes);
+
+    fetch(`/super-admin/sales/leads/${leadId}/transition/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Failed to move lead stage.');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        window.location.reload();
+    });
+}
+
+function toggleKbLost(leadId) {
+    const sel = document.getElementById('kbStageSelect' + leadId);
+    const box = document.getElementById('kbLostContainer' + leadId);
+    if (sel && box) {
+        if (sel.value === 'lost') {
+            box.classList.remove('d-none');
+        } else {
+            box.classList.add('d-none');
+        }
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}
+

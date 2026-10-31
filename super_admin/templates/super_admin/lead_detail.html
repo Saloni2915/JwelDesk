@@ -1,431 +1,799 @@
 {% extends 'super_admin/base_super_admin.html' %}
+{% load static %}
 
-{% block title %}Lead: {{ lead.contact_name }} ({{ lead.lead_name }}) | Super Admin Portal{% endblock %}
-{% block page_title %}Lead Details & Follow-up History{% endblock %}
+{% block title %}Lead #{{ lead.lead_id|default:lead.id }}: {{ lead.lead_name }} | Sales CRM JewelDesk{% endblock %}
+{% block page_title %}Lead Profile &amp; Pipeline Management{% endblock %}
 
 {% block content %}
-<!-- Top Header & Action Controls -->
-<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-    <div class="d-flex align-items-center gap-3 flex-wrap">
-        <a href="{% url 'super_admin:lead_list' %}" class="btn btn-sm btn-outline-secondary text-body">
-            <i class="bi bi-arrow-left me-1"></i> Back to Leads
-        </a>
-        <h4 class="mb-0 fw-bold" style="color: var(--sa-text); font-family: 'Cinzel', serif;">
-            {{ lead.contact_name }} <span class="text-muted fw-normal" style="font-size: 1.1rem; font-family: sans-serif;">— {{ lead.lead_name }}</span>
-        </h4>
+<div class="container-fluid p-0">
 
-        <!-- Status Badge -->
-        {% if lead.status == 'new' %}
-        <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-30">New Lead</span>
-        {% elif lead.status == 'contacted' %}
-        <span class="badge bg-primary bg-opacity-20 text-primary border border-primary border-opacity-30">Contacted</span>
-        {% elif lead.status == 'interested' %}
-        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30">Interested</span>
-        {% elif lead.status == 'scheduled' %}
-        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30">Demo Scheduled</span>
-        {% elif lead.status == 'completed' %}
-        <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30">Demo Completed</span>
-        {% elif lead.status == 'converted' %}
-        <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30"><i class="bi bi-check-circle me-1"></i>Converted</span>
-        {% elif lead.status == 'rescheduled' %}
-        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30">Rescheduled</span>
-        {% elif lead.status == 'cancelled' %}
-        <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-30">Cancelled</span>
-        {% elif lead.status == 'not_interested' %}
-        <span class="badge bg-secondary bg-opacity-25 text-muted border border-secondary border-opacity-25">Not Interested</span>
-        {% else %}
-        <span class="badge bg-secondary bg-opacity-25 text-body">{{ lead.get_status_display }}</span>
-        {% endif %}
-    </div>
-
-    <!-- Toolbar Buttons -->
-    <div class="d-flex flex-wrap align-items-center gap-2">
-        <a href="{% url 'super_admin:lead_edit' lead.id %}" class="btn btn-sm btn-outline-secondary text-body">
-            <i class="bi bi-pencil me-1"></i> Edit Lead
-        </a>
-        <button type="button" class="btn btn-sm btn-outline-gold" data-bs-toggle="modal" data-bs-target="#updateStatusModal">
-            <i class="bi bi-tag me-1"></i> Change Status
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-bs-toggle="modal" data-bs-target="#scheduleMeetingModal">
-            <i class="bi bi-calendar-event me-1"></i> Demo Schedule
-        </button>
-        <a href="#addNoteSection" class="btn btn-sm btn-gold">
-            <i class="bi bi-plus-lg me-1"></i> Add Note
-        </a>
-    </div>
-</div>
-
-<!-- Phase 3 Conversion Readiness Notice Card -->
-<div class="sa-card mb-4" style="background: linear-gradient(135deg, rgba(212, 175, 55, 0.05) 0%, rgba(20, 20, 20, 0.6) 100%); border-left: 4px solid var(--sa-gold);">
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-        <div class="d-flex align-items-start gap-3">
-            <div class="p-2 rounded-circle mt-1" style="background: rgba(212, 175, 55, 0.15); color: var(--sa-gold); font-size: 1.25rem;">
-                <i class="bi bi-shield-lock-fill"></i>
-            </div>
+    <!-- Top Navigation & Lead Header (Clean, Non-overlapping) -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 pb-3 border-bottom" style="border-color: var(--sa-border) !important;">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <a href="{% url 'super_admin:sales_stage_view' lead.stage|default:'leads' %}" class="btn btn-sm btn-outline-secondary" title="Back to pipeline">
+                <i class="bi bi-arrow-left me-1"></i> Back
+            </a>
             <div>
-                <div class="d-flex align-items-center gap-2">
-                    <h6 class="mb-0 fw-bold" style="color: var(--sa-gold);">Showroom Tenant Conversion &amp; Free Trial System</h6>
-                    <span class="badge bg-secondary bg-opacity-25 text-warning border border-warning border-opacity-25 small" style="font-size: 0.72rem;">Coming in Phase 3</span>
-                </div>
-                <p class="text-muted small mb-0 mt-1" style="max-width: 760px; line-height: 1.5;">
-                    Automatic showroom tenant provisioning, login credential dispatch, and account-level 15-day free trial enforcement will be activated in <strong>Phase 3</strong>. In this Phase 1 stage, prospective showrooms are qualified, tracked with timestamped notes, and prepared for conversion.
-                </p>
-            </div>
-        </div>
-        <div>
-            {% if lead.converted_tenant %}
-            <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30 p-2">
-                    <i class="bi bi-check-circle-fill me-1"></i> Linked Showroom: {{ lead.converted_tenant.name }}
-                </span>
-                <a href="{% url 'super_admin:showroom_detail' lead.converted_tenant.id %}" class="btn btn-sm btn-outline-success">
-                    View Showroom Account
-                </a>
-            </div>
-            {% else %}
-            <button type="button" class="btn btn-sm btn-outline-secondary disabled" title="Tenant and 15-day Free Trial provisioning will be unlocked in Phase 3" style="cursor: not-allowed; opacity: 0.65;">
-                <i class="bi bi-lock me-1"></i> Convert to Showroom Account (Phase 3)
-            </button>
-            {% endif %}
-        </div>
-    </div>
-</div>
-
-<div class="row g-4">
-    <!-- Left Column: Lead & Showroom Identity -->
-    <div class="col-12 col-lg-7 d-flex flex-column gap-4">
-        <!-- Showroom Information Card -->
-        <div class="sa-card mb-0">
-            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-15">
-                <h6 class="mb-0 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold); font-size: 0.95rem;">
-                    <i class="bi bi-building"></i> Prospect Showroom Information
-                </h6>
-                <a href="{% url 'super_admin:lead_edit' lead.id %}" class="btn btn-sm btn-link text-decoration-none p-0 text-muted" title="Edit Information">
-                    <i class="bi bi-pencil me-1"></i>Edit
-                </a>
-            </div>
-
-            <div class="row g-3">
-                <!-- Contact Person Name -->
-                <div class="col-sm-6">
-                    <div class="sa-label small">Contact Person (Owner)</div>
-                    <div class="fw-bold" style="color: var(--sa-text); font-size: 0.95rem;">
-                        {{ lead.contact_name }}
-                    </div>
-                </div>
-
-                <!-- Shop / Business Name -->
-                <div class="col-sm-6">
-                    <div class="sa-label small">Shop / Business Name</div>
-                    <div class="fw-semibold" style="color: var(--sa-gold); font-size: 0.95rem;">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="badge font-monospace px-2 py-1" style="background: var(--sa-code-bg); color: var(--sa-code-color); border: 1px solid var(--sa-border); font-size: 0.85rem; font-weight: 700; letter-spacing: 0.4px;">
+                        {{ lead.lead_id|default:lead.id }}
+                    </span>
+                    <h4 class="mb-0 fw-bold d-inline-block" style="color: var(--sa-text); font-family: 'Cinzel', serif;">
                         {{ lead.lead_name }}
-                    </div>
-                </div>
-
-                <!-- Mobile / WhatsApp -->
-                <div class="col-sm-6">
-                    <div class="sa-label small">Phone / WhatsApp Number</div>
-                    <div class="d-flex align-items-center gap-2">
-                        <a href="tel:{{ lead.phone }}" class="fw-semibold text-decoration-none" style="color: var(--sa-gold);">
-                            <i class="bi bi-telephone-fill me-1 small"></i>{{ lead.phone }}
-                        </a>
-                        {% if lead.phone %}
-                        <a href="https://wa.me/91{{ lead.phone|cut:'+'|cut:' '|cut:'-' }}" target="_blank" class="badge bg-success bg-opacity-20 text-success text-decoration-none border border-success border-opacity-25" style="font-size: 0.70rem;">
-                            <i class="bi bi-whatsapp me-1"></i>WhatsApp
-                        </a>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- Email Address -->
-                <div class="col-sm-6">
-                    <div class="sa-label small">Email Address</div>
-                    {% if lead.email %}
-                    <div>
-                        <a href="mailto:{{ lead.email }}" class="text-decoration-none" style="color: var(--sa-text-secondary);">
-                            <i class="bi bi-envelope me-1"></i>{{ lead.email }}
-                        </a>
-                    </div>
-                    {% else %}
-                    <span class="text-muted small">Not provided</span>
+                    </h4>
+                    <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30 px-2 py-1 small">
+                        Stage: {{ lead.get_stage_display }}
+                    </span>
+                    {% if lead.deal_value and lead.deal_value > 0 %}
+                    <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-30 px-2 py-1 fw-semibold small">
+                        ₹{{ lead.deal_value|floatformat:0 }}
+                    </span>
                     {% endif %}
                 </div>
-
-                <!-- City / Market -->
-                <div class="col-sm-6">
-                    <div class="sa-label small">City / Location</div>
-                    <div style="color: var(--sa-text-secondary);">
-                        {% if lead.city %}
-                        <i class="bi bi-geo-alt me-1 text-muted"></i>{{ lead.city }}
-                        {% else %}
-                        <span class="text-muted small">Not specified</span>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- Business Type -->
-                <div class="col-sm-6">
-                    <div class="sa-label small">Business Type</div>
-                    <div>
-                        <span class="badge bg-secondary bg-opacity-25 text-body border border-secondary border-opacity-25">
-                            {{ lead.get_business_type_display }}
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Address -->
-                <div class="col-12">
-                    <div class="sa-label small">Showroom Street Address</div>
-                    <div style="color: var(--sa-text-secondary);">
-                        {{ lead.address|default:"Not specified"|linebreaksbr }}
-                    </div>
-                </div>
-
-                <!-- Business Size -->
-                <div class="col-sm-6">
-                    <div class="sa-label small">Showroom Size / Counters</div>
-                    <div style="color: var(--sa-text-secondary);">
-                        {{ lead.business_size|default:"Not specified" }}
-                    </div>
-                </div>
-
-                <!-- Lead Source -->
-                <div class="col-sm-6">
-                    <div class="sa-label small">Lead Source</div>
-                    <div>
-                        <span class="badge bg-secondary bg-opacity-25 text-body">
-                            {{ lead.get_source_display }}
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Assigned Specialist -->
-                <div class="col-sm-6">
-                    <div class="sa-label small">Assigned Sales Specialist</div>
-                    <div style="color: var(--sa-text-secondary);">
-                        {% if lead.assigned_staff %}
-                        <i class="bi bi-person me-1 text-gold"></i>{{ lead.assigned_staff.get_full_name|default:lead.assigned_staff.username }}
-                        {% else %}
-                        <span class="text-muted small">Unassigned</span>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- Registration Date -->
-                <div class="col-sm-6">
-                    <div class="sa-label small">Created Date</div>
-                    <div style="color: var(--sa-text-secondary);">
-                        {{ lead.created_at|date:"d M Y, h:i A" }}
-                    </div>
-                </div>
-
-                <!-- Follow-up Date -->
-                <div class="col-sm-6">
-                    <div class="sa-label small">Next Follow-up Date</div>
-                    <div>
-                        {% if lead.follow_up_date %}
-                        <span class="{% if lead.is_overdue_followup %}text-danger fw-bold{% else %}text-warning fw-semibold{% endif %}">
-                            <i class="bi bi-clock me-1"></i>{{ lead.follow_up_date|date:"d M Y" }}
-                            {% if lead.is_overdue_followup %} (Overdue){% endif %}
-                        </span>
-                        {% else %}
-                        <span class="text-muted small">No follow-up set</span>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- Next Action -->
-                <div class="col-sm-6">
-                    <div class="sa-label small">Next Action Required</div>
-                    <div class="text-warning fw-semibold">
-                        {{ lead.next_action|default:"—" }}
-                    </div>
+                <div class="text-muted small mt-1">
+                    <i class="bi bi-person me-1"></i> {{ lead.contact_name }}
+                    {% if lead.city %}&bull; <i class="bi bi-geo-alt me-1"></i> {{ lead.city }}{% endif %}
+                    {% if lead.created_at %}&bull; <i class="bi bi-calendar3 me-1"></i> Added {{ lead.created_at|date:"d M Y" }}{% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- Meeting & Demo Logistics Card (if scheduled) -->
-        <div class="sa-card mb-0">
-            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-15">
-                <h6 class="mb-0 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold); font-size: 0.95rem;">
-                    <i class="bi bi-calendar-check"></i> Demo Walkthrough Logistics
-                </h6>
-                <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 text-muted" data-bs-toggle="modal" data-bs-target="#scheduleMeetingModal">
-                    <i class="bi bi-gear me-1"></i>Manage
-                </button>
-            </div>
-            <div class="row g-3">
-                <div class="col-sm-6">
-                    <div class="sa-label small">Demo Date & Time</div>
-                    <div class="fw-bold" style="color: var(--sa-text);">
-                        {% if lead.requested_datetime %}
-                        {{ lead.requested_datetime|date:"l, d F Y @ h:i A" }}
-                        {% else %}
-                        <span class="text-muted">Not scheduled yet</span>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="col-sm-6">
-                    <div class="sa-label small">Meeting Mode</div>
-                    <div>
-                        <span class="badge bg-dark border border-secondary text-muted">{{ lead.get_meeting_mode_display }}</span>
-                    </div>
-                </div>
-                {% if lead.meeting_link %}
-                <div class="col-12">
-                    <div class="sa-label small">Meeting Link / Address</div>
-                    <div class="font-monospace p-2 rounded small" style="background: var(--sa-code-bg); color: var(--sa-gold); word-break: break-all;">
-                        <a href="{{ lead.meeting_link }}" target="_blank" class="text-decoration-none" style="color: var(--sa-gold);">
-                            {{ lead.meeting_link }} <i class="bi bi-box-arrow-up-right ms-1"></i>
-                        </a>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
+        <!-- Action Controls -->
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-gold d-inline-flex align-items-center gap-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#stageTransitionModal">
+                <i class="bi bi-arrow-left-right"></i> Move Stage
+            </button>
+
+            <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#addActivityModal">
+                <i class="bi bi-calendar-plus"></i> + Activity
+            </button>
+
+            {% if not lead.converted_tenant %}
+            <button type="button" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#convertTenantModal" title="Convert to Showroom Account (Phase 3)">
+                <i class="bi bi-check2-circle"></i> Convert to Showroom Account (Phase 3)
+            </button>
+            <span class="d-none">Coming in Phase 3</span>
+            {% endif %}
+
+            <a href="{% url 'super_admin:proposal_create' %}?lead_id={{ lead.id }}" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1">
+                <i class="bi bi-file-earmark-plus"></i> + Proposal
+            </a>
+
+            <a href="{% url 'super_admin:lead_edit' lead.id %}" class="btn btn-sm btn-outline-secondary" title="Edit Contact Details">
+                <i class="bi bi-pencil"></i>
+            </a>
         </div>
     </div>
 
-    <!-- Right Column: Follow-up Activity & Timestamped Notes -->
-    <div class="col-12 col-lg-5 d-flex flex-column gap-4">
-        <!-- Section: Add Follow-up Note Form -->
-        <div class="sa-card mb-0" id="addNoteSection">
-            <h6 class="mb-3 fw-bold d-flex align-items-center gap-2 pb-2 border-bottom border-secondary border-opacity-15" style="color: var(--sa-gold); font-size: 0.95rem;">
-                <i class="bi bi-pencil-square"></i> Log Follow-up Note
-            </h6>
-            <form action="{% url 'super_admin:lead_add_note' lead.id %}" method="POST">
-                {% csrf_token %}
-                <div class="mb-3">
-                    <label class="sa-label small mb-1" for="{{ note_form.note.id_for_label }}">
-                        Discussion Notes / Client Feedback <span class="text-danger">*</span>
-                    </label>
-                    {{ note_form.note }}
+    <!-- Active Tenant / Won Alert -->
+    {% if lead.converted_tenant %}
+    <div class="sa-card mb-4 border-success border-opacity-50 p-3" style="background: rgba(16, 185, 129, 0.08);">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <i class="bi bi-patch-check-fill text-success fs-4"></i>
+                <div>
+                    <h6 class="mb-0 fw-bold text-success">Active Showroom Customer</h6>
+                    <span class="text-muted small">
+                        Converted to <strong>{{ lead.converted_tenant.name }}</strong> (Slug: <code>{{ lead.converted_tenant.slug }}</code>)
+                    </span>
                 </div>
-                <div class="row g-2 mb-3">
-                    <div class="col-6">
-                        <label class="sa-label small mb-1" for="{{ note_form.status_at_note.id_for_label }}">
-                            Update Lead Status
-                        </label>
-                        {{ note_form.status_at_note }}
+            </div>
+            <a href="{% url 'super_admin:showroom_detail' lead.converted_tenant.id %}" class="btn btn-sm btn-success">
+                View Showroom &rarr;
+            </a>
+        </div>
+    </div>
+    {% elif lead.stage == 'lost' %}
+    <div class="sa-card mb-4 border-danger border-opacity-50 p-3" style="background: rgba(239, 68, 68, 0.08);">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <i class="bi bi-x-circle-fill text-danger fs-4"></i>
+                <div>
+                    <h6 class="mb-0 fw-bold text-danger">Closed as Lost &mdash; {{ lead.lost_reason|default:"Unspecified"|cut:"_"|title }}</h6>
+                    <span class="text-muted small">{{ lead.lost_notes|default:"No notes recorded." }}</span>
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#stageTransitionModal">
+                Reopen Lead
+            </button>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Main CRM Content Layout -->
+    <div class="row g-4 mb-4">
+        
+        <!-- Left: Showroom Profile & Contact Card -->
+        <div class="col-lg-7">
+            <div class="sa-card p-4 h-100">
+                <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom" style="border-color: var(--sa-border) !important;">
+                    <h6 class="mb-0 fw-bold" style="color: var(--sa-gold); font-size: 0.95rem;">
+                        <i class="bi bi-building me-1"></i> Showroom &amp; Contact Details
+                    </h6>
+                    <a href="{% url 'super_admin:lead_edit' lead.id %}" class="btn btn-sm btn-link text-decoration-none p-0 text-muted">
+                        <i class="bi bi-pencil me-1"></i>Edit
+                    </a>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="sa-label small text-muted">Contact Person (Owner)</div>
+                        <div class="fw-bold" style="color: var(--sa-text);">{{ lead.contact_name }}</div>
                     </div>
-                    <div class="col-6">
-                        <label class="sa-label small mb-1" for="{{ note_form.follow_up_date.id_for_label }}">
-                            Next Follow-up Date
-                        </label>
-                        {{ note_form.follow_up_date }}
+
+                    <div class="col-sm-6">
+                        <div class="sa-label small text-muted">Shop / Showroom Name</div>
+                        <div class="fw-semibold" style="color: var(--sa-gold);">{{ lead.lead_name }}</div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="sa-label small text-muted">Phone &amp; WhatsApp</div>
+                        <div class="d-flex align-items-center gap-2 mt-1">
+                            <a href="tel:{{ lead.phone }}" class="fw-semibold text-decoration-none" style="color: var(--sa-text);">
+                                <i class="bi bi-telephone text-primary me-1"></i>{{ lead.phone }}
+                            </a>
+                            {% if lead.phone %}
+                            <a href="https://wa.me/91{{ lead.phone|cut:'+'|cut:' '|cut:'-' }}" target="_blank"
+                               class="btn btn-sm btn-outline-success py-0 px-2 d-inline-flex align-items-center gap-1"
+                               style="font-size: 0.72rem; line-height: 1.6;" title="Open WhatsApp chat">
+                                <i class="bi bi-whatsapp"></i> WhatsApp
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="sa-label small text-muted">Email Address</div>
+                        <div style="color: var(--sa-text);">
+                            {% if lead.email %}
+                            <a href="mailto:{{ lead.email }}" class="text-decoration-none text-body">{{ lead.email }}</a>
+                            {% else %}
+                            <span class="text-muted small">Not provided</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="sa-label small text-muted">City / Market</div>
+                        <div style="color: var(--sa-text);">
+                            {{ lead.city|default:"Not specified" }}{% if lead.state %}, {{ lead.state }}{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="sa-label small text-muted">Business Model</div>
+                        <div>
+                            <span class="badge bg-secondary bg-opacity-25 text-body border border-secondary border-opacity-25">
+                                {{ lead.get_business_type_display }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="sa-label small text-muted">Showroom Address</div>
+                        <div class="small" style="color: var(--sa-text-secondary);">
+                            {{ lead.address|default:"Not specified"|linebreaksbr }}
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="sa-label small text-muted">Lead Source</div>
+                        <div>
+                            <span class="badge bg-secondary bg-opacity-20 text-body text-capitalize">
+                                {{ lead.source|default:"Direct enquiry" }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="sa-label small text-muted">Assigned Sales Executive</div>
+                        <div style="color: var(--sa-text);">
+                            {% if lead.assigned_staff %}
+                            <i class="bi bi-person-badge text-warning me-1"></i>{{ lead.assigned_staff.first_name|default:lead.assigned_staff.username }}
+                            {% else %}
+                            <span class="text-muted small">Unassigned</span>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
-                <div class="d-flex justify-content-end">
-                    <button type="submit" class="btn btn-sm btn-gold">
-                        <i class="bi bi-plus-circle me-1"></i> Save Follow-up Note
+            </div>
+        </div>
+
+        <!-- Right: Commercial & Follow-up Summary -->
+        <div class="col-lg-5">
+            <div class="sa-card p-4 h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <h6 class="mb-3 fw-bold pb-2 border-bottom" style="color: var(--sa-gold); border-color: var(--sa-border) !important; font-size: 0.95rem;">
+                        <i class="bi bi-graph-up me-1"></i> Commercial &amp; Next Action
+                    </h6>
+
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="sa-label small text-muted">Current Stage</div>
+                            <div class="fw-bold" style="color: var(--sa-text);">{{ lead.get_stage_display }}</div>
+                        </div>
+
+                        <div class="col-6">
+                            <div class="sa-label small text-muted">Estimated Deal Value</div>
+                            <div class="fw-bold fs-5 text-warning">₹{{ lead.deal_value|floatformat:0 }}</div>
+                        </div>
+
+                        <div class="col-6">
+                            <div class="sa-label small text-muted">Next Touchpoint Due</div>
+                            <div>
+                                {% if lead.follow_up_date %}
+                                <span class="{% if lead.is_overdue_followup %}text-danger fw-bold{% else %}text-warning fw-semibold{% endif %} small">
+                                    <i class="bi bi-clock me-1"></i>{{ lead.follow_up_date|date:"d M Y" }}
+                                    {% if lead.is_overdue_followup %} (Overdue){% endif %}
+                                </span>
+                                {% else %}
+                                <span class="text-muted small">No date scheduled</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-6">
+                            <div class="sa-label small text-muted">Expected Close</div>
+                            <div class="small" style="color: var(--sa-text);">
+                                {{ lead.expected_close_date|date:"d M Y"|default:"Not specified" }}
+                            </div>
+                        </div>
+
+                        {% if lead.next_action %}
+                        <div class="col-12">
+                            <div class="sa-label small text-muted">Next Action / Milestone</div>
+                            <div class="small p-2 rounded border" style="background: var(--sa-card-bg); border-color: var(--sa-border) !important; color: var(--sa-text);">
+                                {{ lead.next_action }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Primary Action Buttons in Card -->
+                <div class="pt-3 border-top mt-4 d-flex flex-column gap-2" style="border-color: var(--sa-border) !important;">
+                    <button type="button" class="btn btn-sm btn-gold w-100" data-bs-toggle="modal" data-bs-target="#stageTransitionModal">
+                        <i class="bi bi-arrow-left-right me-1"></i> Change Pipeline Stage
                     </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-toggle="modal" data-bs-target="#addActivityModal">
+                        <i class="bi bi-calendar-plus me-1"></i> Schedule Touchpoint / Call
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Clean, Focused Tabs for Lead Interaction (Activities, Requirements, Proposals, History) -->
+    <div class="sa-card p-0 overflow-hidden mb-4 border">
+        <div class="border-bottom px-3 pt-3" style="border-color: var(--sa-border) !important; background: var(--sa-surface);">
+            <ul class="nav nav-tabs border-bottom-0 gap-2" id="leadDetailTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active py-2 px-3 fw-semibold" id="activities-tab" data-bs-toggle="tab" data-bs-target="#tab-activities" type="button" role="tab">
+                        <i class="bi bi-calendar-check me-1"></i> Activities &amp; Follow-ups ({{ activities.count }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link py-2 px-3 fw-semibold" id="negotiations-tab" data-bs-toggle="tab" data-bs-target="#tab-negotiations" type="button" role="tab">
+                        <i class="bi bi-sliders me-1"></i> Requirements &amp; Modules ({{ negotiations.count }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link py-2 px-3 fw-semibold" id="proposals-tab" data-bs-toggle="tab" data-bs-target="#tab-proposals" type="button" role="tab">
+                        <i class="bi bi-file-earmark-text me-1"></i> Proposals ({{ proposals.count }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link py-2 px-3 fw-semibold" id="history-tab" data-bs-toggle="tab" data-bs-target="#tab-history" type="button" role="tab">
+                        <i class="bi bi-clock-history me-1"></i> Stage History ({{ stage_history.count }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link py-2 px-3 fw-semibold" id="notes-tab" data-bs-toggle="tab" data-bs-target="#tab-notes" type="button" role="tab">
+                        <i class="bi bi-journal-text me-1"></i> Notes ({{ notes.count }})
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="tab-content p-4" id="leadDetailTabsContent" style="background: var(--sa-card-bg);">
+
+            <!-- TAB 1: ACTIVITIES & FOLLOW-UPS -->
+            <div class="tab-pane fade show active" id="tab-activities" role="tabpanel">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h6 class="fw-bold mb-0" style="color: var(--sa-text);">
+                        Touchpoint Timeline &amp; Follow-ups
+                    </h6>
+                    <button type="button" class="btn btn-sm btn-gold" data-bs-toggle="modal" data-bs-target="#addActivityModal">
+                        <i class="bi bi-plus-lg me-1"></i> Log Touchpoint
+                    </button>
+                </div>
+
+                <div class="d-flex flex-column gap-2">
+                    {% for act in activities %}
+                    <div class="p-3 rounded border" style="background: var(--sa-surface); border-color: var(--sa-border) !important;">
+                        <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+                            <div class="d-flex align-items-start gap-3">
+                                <form method="post" action="{% url 'super_admin:sales_toggle_activity' act.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm p-0 text-decoration-none mt-1" title="Mark Done / Reopen">
+                                        {% if act.is_completed %}
+                                        <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                                        {% else %}
+                                        <i class="bi bi-circle text-muted fs-5"></i>
+                                        {% endif %}
+                                    </button>
+                                </form>
+                                <div>
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="badge bg-secondary bg-opacity-20 text-body text-capitalize small">
+                                            {{ act.get_activity_type_display }}
+                                        </span>
+                                        <span class="fw-bold small" style="color: var(--sa-text);">{{ act.title }}</span>
+                                    </div>
+                                    <div class="text-muted small">
+                                        Assigned to <strong>{{ act.assigned_to.first_name|default:act.assigned_to.username|default:"Unassigned" }}</strong>
+                                        &bull; {{ act.created_at|date:"d M Y, h:i A" }}
+                                    </div>
+                                    {% if act.outcome_notes %}
+                                    <div class="small mt-2 p-2 rounded" style="background: var(--sa-card-bg); color: var(--sa-text-secondary);">
+                                        {{ act.outcome_notes }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="text-end">
+                                {% if act.scheduled_at %}
+                                <div class="small fw-semibold {% if act.is_completed %}text-success{% else %}text-warning{% endif %}">
+                                    <i class="bi bi-clock me-1"></i>{{ act.scheduled_at|date:"d M Y, h:i A" }}
+                                </div>
+                                {% endif %}
+                                {% if act.is_completed %}
+                                <span class="badge bg-success bg-opacity-15 text-success small">Done</span>
+                                {% else %}
+                                <span class="badge bg-warning bg-opacity-15 text-warning small">Pending</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-4 text-muted small">
+                        <i class="bi bi-calendar2-x fs-2 d-block opacity-50 mb-2"></i>
+                        No activities logged yet. Schedule your first call or meeting above.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- TAB 2: REQUIREMENTS & NEGOTIATIONS -->
+            <div class="tab-pane fade" id="tab-negotiations" role="tabpanel">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h6 class="fw-bold mb-0" style="color: var(--sa-text);">
+                        Customer Requirements &amp; Commercial Terms
+                    </h6>
+                    <button type="button" class="btn btn-sm btn-gold" data-bs-toggle="modal" data-bs-target="#addNegotiationModal">
+                        <i class="bi bi-plus-lg me-1"></i> Log Requirements
+                    </button>
+                </div>
+
+                <div class="d-flex flex-column gap-3">
+                    {% for neg in negotiations %}
+                    <div class="p-3 rounded border" style="background: var(--sa-surface); border-color: var(--sa-border) !important;">
+                        <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom" style="border-color: var(--sa-border) !important;">
+                            <div>
+                                <span class="badge bg-warning bg-opacity-20 text-warning px-2 py-1 fw-bold text-uppercase small">
+                                    Plan: {{ neg.get_target_plan_display }}
+                                </span>
+                                <span class="text-muted small ms-2">
+                                    by {{ neg.conducted_by.first_name|default:neg.conducted_by.username|default:"Staff" }} on {{ neg.created_at|date:"d M Y" }}
+                                </span>
+                            </div>
+                            <span class="fw-bold text-warning">Budget: ₹{{ neg.budget|floatformat:0 }}</span>
+                        </div>
+
+                        <div class="row g-2 small mb-2 text-muted">
+                            <div class="col-sm-4">Branches: <strong class="text-body">{{ neg.branches_count }}</strong></div>
+                            <div class="col-sm-4">Users: <strong class="text-body">{{ neg.users_count }}</strong></div>
+                            <div class="col-sm-4">Target Date: <strong class="text-body">{{ neg.expected_purchase_date|date:"d M Y"|default:"—" }}</strong></div>
+                        </div>
+
+                        {% if neg.required_modules %}
+                        <div class="mb-2">
+                            <span class="text-muted small d-block mb-1">Required Modules:</span>
+                            <div class="d-flex flex-wrap gap-1">
+                                {% for m in neg.required_modules %}
+                                <span class="badge bg-secondary bg-opacity-20 text-body small">
+                                    <i class="bi bi-check text-success me-1"></i>{{ m }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if neg.discussion_summary %}
+                        <div class="small p-2 rounded" style="background: var(--sa-card-bg); color: var(--sa-text-secondary); white-space: pre-wrap;">
+                            {{ neg.discussion_summary }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-4 text-muted small">
+                        <i class="bi bi-clipboard2-plus fs-2 d-block opacity-50 mb-2"></i>
+                        No specific module requirements or negotiations recorded.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- TAB 3: PROPOSALS -->
+            <div class="tab-pane fade" id="tab-proposals" role="tabpanel">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h6 class="fw-bold mb-0" style="color: var(--sa-text);">
+                        Commercial Proposals
+                    </h6>
+                    <a href="{% url 'super_admin:proposal_create' %}?lead_id={{ lead.id }}" class="btn btn-sm btn-gold">
+                        <i class="bi bi-plus-lg me-1"></i> Create Proposal
+                    </a>
+                </div>
+
+                <div class="d-flex flex-column gap-3">
+                    {% for prop in proposals %}
+                    <div class="p-3 rounded border" style="background: var(--sa-surface); border-color: var(--sa-border) !important;">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                            <div>
+                                <span class="badge font-monospace px-2 py-1" style="background: var(--sa-code-bg); color: var(--sa-code-color); border: 1px solid var(--sa-border);">
+                                    {{ prop.proposal_number }}
+                                </span>
+                                <span class="badge bg-secondary bg-opacity-25 text-body ms-1">v{{ prop.version_number }}</span>
+                                <span class="badge bg-info bg-opacity-20 text-info ms-1 text-uppercase">{{ prop.status }}</span>
+                            </div>
+                            <div class="fw-bold fs-6 text-warning">₹{{ prop.final_amount|floatformat:0 }}</div>
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 small text-muted">
+                            <div>Plan: <strong>{{ prop.get_plan_name_display }}</strong> &bull; Valid until: {{ prop.valid_until|date:"d M Y"|default:"15 days" }}</div>
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'super_admin:proposal_detail' prop.id %}" class="btn btn-xs btn-outline-secondary py-1 px-2">View</a>
+                                {% if prop.proposal_pdf %}
+                                <a href="{{ prop.proposal_pdf.url }}" target="_blank" class="btn btn-xs btn-outline-danger py-1 px-2">PDF</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-4 text-muted small">
+                        <i class="bi bi-file-earmark-text fs-2 d-block opacity-50 mb-2"></i>
+                        No commercial proposals issued yet.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- TAB 4: STAGE HISTORY -->
+            <div class="tab-pane fade" id="tab-history" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table sa-table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Date &amp; Time</th>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Changed By</th>
+                                <th>Reason / Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for hist in stage_history %}
+                            <tr>
+                                <td class="small">{{ hist.created_at|date:"d M Y, h:i A" }}</td>
+                                <td><span class="badge bg-secondary bg-opacity-20 text-body small">{{ hist.from_stage }}</span></td>
+                                <td><span class="badge bg-warning bg-opacity-20 text-warning small">{{ hist.to_stage }}</span></td>
+                                <td class="small">{{ hist.changed_by.first_name|default:hist.changed_by.username|default:"System" }}</td>
+                                <td class="small text-muted">{{ hist.reason|default:"—" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-3 text-muted small">No stage transitions logged yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 5: QUICK NOTES -->
+            <div class="tab-pane fade" id="tab-notes" role="tabpanel">
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <form action="{% url 'super_admin:lead_add_note' lead.id %}" method="POST">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label class="sa-label small mb-1">Add Note <span class="text-danger">*</span></label>
+                                {{ note_form.note }}
+                            </div>
+                            <div class="mb-3">
+                                <label class="sa-label small mb-1">Next Follow-up Date</label>
+                                {{ note_form.follow_up_date }}
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-gold w-100">Save Note</button>
+                        </form>
+                    </div>
+                    <div class="col-md-7">
+                        <div class="d-flex flex-column gap-2" style="max-height: 380px; overflow-y: auto;">
+                            {% for n in notes %}
+                            <div class="p-2 rounded border small" style="background: var(--sa-surface); border-color: var(--sa-border) !important;">
+                                <div class="d-flex justify-content-between text-muted mb-1" style="font-size: 0.75rem;">
+                                    <strong>{{ n.author.first_name|default:n.author.username|default:"Staff" }}</strong>
+                                    <span>{{ n.created_at|date:"d M Y, h:i A" }}</span>
+                                </div>
+                                <div style="color: var(--sa-text-secondary); white-space: pre-wrap;">{{ n.note }}</div>
+                            </div>
+                            {% empty %}
+                            <div class="text-center py-4 text-muted small">No notes logged yet.</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- ================= MODALS ================= -->
+
+<!-- Modal 1: Stage Transition Modal -->
+<div class="modal fade" id="stageTransitionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border" style="background: var(--sa-surface); border-color: var(--sa-border) !important; color: var(--sa-text);">
+            <div class="modal-header border-bottom" style="border-color: var(--sa-border) !important;">
+                <h5 class="modal-title fs-6 fw-bold">
+                    <i class="bi bi-arrow-left-right text-warning me-2"></i>Change Sales Pipeline Stage
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'super_admin:sales_stage_transition' lead.id %}">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Target Stage</label>
+                        <select name="to_stage" class="form-select form-select-sm" id="detailStageSelect" onchange="toggleDetailLost()">
+                            <option value="new" {% if lead.stage == 'new' %}selected{% endif %}>Leads (New)</option>
+                            <option value="contacted" {% if lead.stage == 'contacted' %}selected{% endif %}>Contacted</option>
+                            <option value="interested" {% if lead.stage == 'interested' %}selected{% endif %}>Interested</option>
+                            <option value="meetings" {% if lead.stage == 'meetings' %}selected{% endif %}>Meetings / Demos</option>
+                            <option value="trial" {% if lead.stage == 'trial' %}selected{% endif %}>Trial</option>
+                            <option value="proposal" {% if lead.stage == 'proposal' %}selected{% endif %}>Proposal &amp; closing</option>
+                            <option value="orders" {% if lead.stage == 'orders' %}selected{% endif %}>Sales Orders</option>
+                            <option value="customers" {% if lead.stage == 'customers' %}selected{% endif %}>Customers (Won)</option>
+                            <option value="lost" {% if lead.stage == 'lost' %}selected{% endif %}>Lost</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Estimated Deal Value (₹)</label>
+                        <input type="number" step="0.01" name="deal_value" value="{{ lead.deal_value }}" class="form-control form-control-sm">
+                    </div>
+
+                    <!-- Lost Fields Container -->
+                    <div id="detailLostContainer" class="p-3 rounded mb-3 border border-danger border-opacity-25 bg-danger bg-opacity-10 {% if lead.stage != 'lost' %}d-none{% endif %}">
+                        <label class="form-label small fw-semibold text-danger">Lost Reason *</label>
+                        <select name="lost_reason" class="form-select form-select-sm mb-2">
+                            <option value="price_high">Pricing / Too High</option>
+                            <option value="competitor">Chose Competitor</option>
+                            <option value="missing_features">Missing Specific Features</option>
+                            <option value="budget">No Current Budget</option>
+                            <option value="timing">Postponed Decision</option>
+                            <option value="not_responsive">Not Responsive / Dropped Off</option>
+                            <option value="other">Other Reason</option>
+                        </select>
+                        <label class="form-label small fw-semibold text-danger">Lost Notes / Winback Potential</label>
+                        <textarea name="lost_notes" rows="2" class="form-control form-control-sm" placeholder="Why did we lose? Follow-up timeline?"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Notes / Reason for Transition</label>
+                        <textarea name="reason" rows="2" class="form-control form-control-sm" placeholder="Discussion summary or trigger for stage change..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top py-2" style="border-color: var(--sa-border) !important;">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-gold">Update Stage</button>
                 </div>
             </form>
         </div>
+    </div>
+</div>
 
-        <!-- Section: Follow-up History Timeline -->
-        <div class="sa-card flex-grow-1 mb-0">
-            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-15">
-                <h6 class="mb-0 fw-bold d-flex align-items-center gap-2" style="color: var(--sa-gold); font-size: 0.95rem;">
-                    <i class="bi bi-clock-history"></i> Follow-up History &amp; Timeline
-                </h6>
-                <span class="badge bg-secondary bg-opacity-25 text-body small">{{ notes.count }} note{{ notes.count|pluralize }}</span>
+<!-- Modal 2: Requirements & Negotiations Modal -->
+<div class="modal fade" id="addNegotiationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border" style="background: var(--sa-surface); border-color: var(--sa-border) !important; color: var(--sa-text);">
+            <div class="modal-header border-bottom" style="border-color: var(--sa-border) !important;">
+                <h5 class="modal-title fs-6 fw-bold">
+                    <i class="bi bi-sliders text-warning me-2"></i>Log Customer Requirements &amp; Negotiations
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-
-            <!-- Notes List -->
-            <div class="d-flex flex-column gap-3" style="max-height: 520px; overflow-y: auto; padding-right: 4px;">
-                {% for n in notes %}
-                <div class="p-3 rounded-3" style="background: var(--sa-bg); border: 1px solid var(--sa-border);">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center text-gold fw-bold" style="width: 26px; height: 26px; background: rgba(212, 175, 55, 0.15); font-size: 0.75rem;">
-                                {{ n.author.username|slice:":1"|upper|default:"S" }}
-                            </div>
-                            <span class="small fw-semibold" style="color: var(--sa-text);">
-                                {{ n.author.get_full_name|default:n.author.username|default:"System" }}
-                            </span>
+            <form method="post" action="{% url 'super_admin:sales_add_negotiation' lead.id %}">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Target JwelDesk Plan</label>
+                            <select name="target_plan" class="form-select form-select-sm">
+                                <option value="starter">JewelDesk Starter (Retail)</option>
+                                <option value="pro" selected>JewelDesk Pro (Multi-Counter / Karigar)</option>
+                                <option value="enterprise">JewelDesk Enterprise (Multi-Branch / Wholesale)</option>
+                            </select>
                         </div>
-                        <span class="text-muted small" style="font-size: 0.75rem;">
-                            {{ n.created_at|date:"d M Y, h:i A" }}
-                        </span>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">Branches</label>
+                            <input type="number" name="branches_count" value="1" min="1" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">Users Needed</label>
+                            <input type="number" name="users_count" value="3" min="1" class="form-control form-control-sm">
+                        </div>
                     </div>
 
-                    <div style="font-size: 0.86rem; color: var(--sa-text-secondary); white-space: pre-wrap; line-height: 1.5;">
-                        {{ n.note }}
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold d-block">Required Special Modules</label>
+                        <div class="d-flex flex-wrap gap-3">
+                            <label class="small"><input type="checkbox" name="modules" value="Girvi Management" checked class="me-1"> Girvi / Pawn</label>
+                            <label class="small"><input type="checkbox" name="modules" value="Karigar & Workshop" checked class="me-1"> Karigar &amp; Workshop</label>
+                            <label class="small"><input type="checkbox" name="modules" value="Wholesale B2B" class="me-1"> Wholesale &amp; B2B</label>
+                            <label class="small"><input type="checkbox" name="modules" value="Outstation Trips" class="me-1"> Outstation Sales</label>
+                            <label class="small"><input type="checkbox" name="modules" value="Marketing & Loyalty" class="me-1"> Loyalty &amp; WhatsApp</label>
+                        </div>
                     </div>
 
-                    {% if n.status_at_note or n.follow_up_date %}
-                    <div class="mt-2 pt-2 border-top border-secondary border-opacity-10 d-flex flex-wrap gap-2 align-items-center">
-                        {% if n.status_at_note %}
-                        <span class="badge bg-secondary bg-opacity-25 text-body small" style="font-size: 0.70rem;">
-                            Status: {{ n.status_at_note|title }}
-                        </span>
-                        {% endif %}
-                        {% if n.follow_up_date %}
-                        <span class="badge bg-warning bg-opacity-15 text-warning small" style="font-size: 0.70rem;">
-                            <i class="bi bi-clock me-1"></i>Next: {{ n.follow_up_date|date:"d M Y" }}
-                        </span>
-                        {% endif %}
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Budget / Expected Deal Value (₹)</label>
+                            <input type="number" step="0.01" name="budget" value="{{ lead.deal_value|default:'30000.00' }}" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Expected Purchase Date</label>
+                            <input type="date" name="expected_purchase_date" class="form-control form-control-sm">
+                        </div>
                     </div>
-                    {% endif %}
-                </div>
-                {% empty %}
-                    {% if not lead.notes %}
-                    <div class="text-center py-5 text-muted">
-                        <i class="bi bi-journal-x fs-2 d-block mb-2 text-warning opacity-50"></i>
-                        No follow-up notes logged yet.
-                        <div class="small mt-1">Use the form above to record your first client interaction.</div>
-                    </div>
-                    {% endif %}
-                {% endfor %}
 
-                <!-- Initial Registration Note (if present) -->
-                {% if lead.notes %}
-                <div class="p-3 rounded-3" style="background: rgba(212, 175, 55, 0.05); border: 1px dashed rgba(212, 175, 55, 0.25);">
-                    <div class="d-flex align-items-center justify-content-between mb-1">
-                        <span class="badge bg-gold bg-opacity-20 text-gold small" style="font-size: 0.70rem;">
-                            <i class="bi bi-bookmark-fill me-1"></i>Initial Requirements / Intake Note
-                        </span>
-                        <span class="text-muted small" style="font-size: 0.72rem;">{{ lead.created_at|date:"d M Y" }}</span>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Competitor Information (if evaluated)</label>
+                        <input type="text" name="competitor_info" class="form-control form-control-sm" placeholder="e.g. Currently using Marg ERP, evaluated Jwelly...">
                     </div>
-                    <div style="font-size: 0.84rem; color: var(--sa-text-secondary); white-space: pre-wrap; line-height: 1.5;">
-                        {{ lead.notes }}
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Discussion Summary &amp; Key Requirements</label>
+                        <textarea name="discussion_summary" rows="3" class="form-control form-control-sm" placeholder="Key feature demands, payment terms discussed..."></textarea>
                     </div>
                 </div>
-                {% endif %}
-            </div>
+                <div class="modal-footer border-top py-2" style="border-color: var(--sa-border) !important;">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-gold">Save Requirements</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
-<!-- Modal 1: Quick Status Update Modal -->
-<div class="modal fade" id="updateStatusModal" tabindex="-1" aria-labelledby="updateStatusModalLabel" aria-hidden="true">
+<!-- Modal 3: Add Activity Modal -->
+<div class="modal fade" id="addActivityModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="background: var(--sa-card); border: 1px solid var(--sa-border); color: var(--sa-text);">
-            <form action="{% url 'super_admin:lead_update_status' lead.id %}" method="POST">
+        <div class="modal-content border" style="background: var(--sa-surface); border-color: var(--sa-border) !important; color: var(--sa-text);">
+            <div class="modal-header border-bottom" style="border-color: var(--sa-border) !important;">
+                <h5 class="modal-title fs-6 fw-bold">
+                    <i class="bi bi-calendar-plus text-warning me-2"></i>Schedule Touchpoint / Follow-up
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'super_admin:sales_add_activity' lead.id %}">
                 {% csrf_token %}
-                <div class="modal-header border-secondary border-opacity-25">
-                    <h6 class="modal-title fw-bold" id="updateStatusModalLabel" style="color: var(--sa-gold);">
-                        <i class="bi bi-tag me-1"></i> Quick Status Update
-                    </h6>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="small text-muted mb-3">
-                        Select new pipeline status for <strong>{{ lead.contact_name }}</strong> ({{ lead.lead_name }}).
-                    </p>
+                <div class="modal-body p-4">
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Activity Channel</label>
+                            <select name="activity_type" class="form-select form-select-sm">
+                                <option value="call">Phone Call</option>
+                                <option value="whatsapp">WhatsApp Message</option>
+                                <option value="meeting">Discussion / Meeting</option>
+                                <option value="demo">Product Demo</option>
+                                <option value="site_visit">Showroom Visit</option>
+                                <option value="email">Email Sent</option>
+                                <option value="note">Internal Task / Note</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Assigned Rep</label>
+                            <select name="assigned_to" class="form-select form-select-sm">
+                                {% for st in staff_users %}
+                                <option value="{{ st.id }}" {% if lead.assigned_staff_id == st.id %}selected{% endif %}>
+                                    {{ st.first_name|default:st.username }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
                     <div class="mb-3">
-                        <label class="sa-label small mb-1">Lead Status <span class="text-danger">*</span></label>
-                        <select name="status" class="form-select sa-input" required>
-                            {% for code, label in status_choices %}
-                            <option value="{{ code }}" {% if lead.status == code %}selected{% endif %}>{{ label }}</option>
+                        <label class="form-label small fw-semibold">Activity Title</label>
+                        <input type="text" name="title" class="form-control form-control-sm" placeholder="e.g. Follow-up demo call with showroom owner">
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Scheduled Date &amp; Time</label>
+                            <input type="datetime-local" name="scheduled_at" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Next Follow-up Date</label>
+                            <input type="date" name="next_follow_up_date" class="form-control form-control-sm">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Outcome Notes / Agenda</label>
+                        <textarea name="outcome_notes" rows="2" class="form-control form-control-sm" placeholder="Meeting agenda or outcome notes..."></textarea>
+                    </div>
+
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="is_completed" value="1" id="isCompletedCheck">
+                        <label class="form-check-label small" for="isCompletedCheck">Mark completed now</label>
+                    </div>
+                </div>
+                <div class="modal-footer border-top py-2" style="border-color: var(--sa-border) !important;">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-gold">Save Activity</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 4: Convert to Tenant Modal -->
+<div class="modal fade" id="convertTenantModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border" style="background: var(--sa-surface); border-color: var(--sa-border) !important; color: var(--sa-text);">
+            <div class="modal-header border-bottom border-success" style="border-color: var(--sa-border) !important;">
+                <h5 class="modal-title fs-6 fw-bold text-success">
+                    <i class="bi bi-patch-check me-2"></i>Convert Deal to Active Tenant
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'super_admin:sales_convert_tenant' lead.id %}">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <p class="small text-muted mb-3">
+                        Convert <strong>{{ lead.lead_name }}</strong> into an active showroom account without creating duplicates.
+                    </p>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Subscription Plan</label>
+                        <select name="target_plan" class="form-select form-select-sm">
+                            <option value="trial">15-Day Free Trial</option>
+                            <option value="starter">Starter Plan</option>
+                            <option value="pro" selected>Pro Commercial Plan</option>
+                            <option value="enterprise">Enterprise Multi-Store</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Link Existing Tenant (Optional)</label>
+                        <select name="existing_tenant_id" class="form-select form-select-sm">
+                            <option value="">-- Create New Showroom Tenant Automatically --</option>
+                            {% for t in tenants %}
+                            <option value="{{ t.id }}">{{ t.name }} ({{ t.slug }})</option>
                             {% endfor %}
                         </select>
                     </div>
                 </div>
-                <div class="modal-footer border-secondary border-opacity-25">
+                <div class="modal-footer border-top py-2" style="border-color: var(--sa-border) !important;">
                     <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-sm btn-gold">
-                        <i class="bi bi-check2 me-1"></i> Update Status
+                    <button type="submit" class="btn btn-sm btn-success">
+                        <i class="bi bi-check2-circle me-1"></i> Confirm &amp; Convert
                     </button>
                 </div>
             </form>
@@ -433,65 +801,18 @@
     </div>
 </div>
 
-<!-- Modal 2: Meeting Logistics & Demo Schedule Modal -->
-<div class="modal fade" id="scheduleMeetingModal" tabindex="-1" aria-labelledby="scheduleMeetingModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="background: var(--sa-card); border: 1px solid var(--sa-border); color: var(--sa-text);">
-            <form action="{% url 'super_admin:lead_action' lead.id %}" method="POST">
-                {% csrf_token %}
-                <div class="modal-header border-secondary border-opacity-25">
-                    <h6 class="modal-title fw-bold" id="scheduleMeetingModalLabel" style="color: var(--sa-gold);">
-                        <i class="bi bi-calendar-event me-1"></i> Schedule Demo &amp; Next Action
-                    </h6>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="sa-label small mb-1">Meeting Action <span class="text-danger">*</span></label>
-                        {{ schedule_form.action_type }}
-                    </div>
-                    <div class="mb-3">
-                        <label class="sa-label small mb-1">Meeting Date &amp; Time</label>
-                        {{ schedule_form.meeting_datetime }}
-                    </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="sa-label small mb-1">Mode</label>
-                            {{ schedule_form.meeting_mode }}
-                        </div>
-                        <div class="col-6">
-                            <label class="sa-label small mb-1">Assigned Specialist</label>
-                            {{ schedule_form.assigned_staff }}
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="sa-label small mb-1">Meeting Link or Location</label>
-                        {{ schedule_form.meeting_link }}
-                    </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="sa-label small mb-1">Follow-up Date</label>
-                            {{ schedule_form.follow_up_date }}
-                        </div>
-                        <div class="col-6">
-                            <label class="sa-label small mb-1">Next Action</label>
-                            {{ schedule_form.next_action }}
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="sa-label small mb-1">Log Interaction Note</label>
-                        {{ schedule_form.notes }}
-                    </div>
-                </div>
-                <div class="modal-footer border-secondary border-opacity-25">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-sm btn-gold">
-                        <i class="bi bi-check-lg me-1"></i> Update Schedule
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+<script>
+function toggleDetailLost() {
+    const sel = document.getElementById('detailStageSelect');
+    const box = document.getElementById('detailLostContainer');
+    if (sel && box) {
+        if (sel.value === 'lost') {
+            box.classList.remove('d-none');
+        } else {
+            box.classList.add('d-none');
+        }
+    }
+}
+</script>
+
 {% endblock %}
-

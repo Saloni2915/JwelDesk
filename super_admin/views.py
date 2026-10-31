@@ -932,6 +932,11 @@ def proposal_list_view(request):
 @super_admin_required
 def proposal_create_view(request):
     """Create a new proposal / quote for a prospective jewellery showroom."""
+    lead_id = request.GET.get('lead_id') or request.POST.get('lead_id')
+    lead = None
+    if lead_id and lead_id.isdigit():
+        lead = PlatformDemoLead.objects.filter(id=int(lead_id)).first()
+
     if request.method == 'POST':
         import random
         from django.utils.dateparse import parse_date
@@ -943,6 +948,10 @@ def proposal_create_view(request):
         client_city = request.POST.get('client_city', '').strip()
         target_plan = request.POST.get('target_plan', TenantSubscription.PLAN_CORE)
         billing_cycle = request.POST.get('billing_cycle', TenantSubscription.CYCLE_YEARLY)
+
+        branches_count = int(request.POST.get('branches_count', 1))
+        users_count = int(request.POST.get('users_count', 3))
+        selected_modules = request.POST.getlist('modules')
 
         quoted_amount_raw = request.POST.get('quoted_amount', '29999.00').strip()
         discount_amount_raw = request.POST.get('discount_amount', '0.00').strip()
@@ -998,6 +1007,7 @@ def proposal_create_view(request):
 
         proposal = PlatformProposal.objects.create(
             proposal_number=proposal_number,
+            lead=lead,
             client_name=client_name,
             client_showroom_name=client_showroom_name,
             client_email=client_email,
@@ -1005,6 +1015,9 @@ def proposal_create_view(request):
             client_city=client_city,
             target_plan=target_plan,
             billing_cycle=billing_cycle,
+            branches_count=branches_count,
+            users_count=users_count,
+            selected_modules=selected_modules,
             quoted_amount=quoted_amount,
             discount_amount=discount_amount,
             final_amount=final_amount,
@@ -1014,6 +1027,12 @@ def proposal_create_view(request):
             status=PlatformProposal.STATUS_DRAFT,
             created_by=request.user
         )
+
+        if lead:
+            if lead.stage in [PlatformDemoLead.STAGE_NEW, PlatformDemoLead.STAGE_CONTACTED, PlatformDemoLead.STAGE_INTERESTED, PlatformDemoLead.STAGE_MEETINGS]:
+                lead.stage = PlatformDemoLead.STAGE_PROPOSAL
+            lead.deal_value = final_amount
+            lead.save()
 
         PlatformAuditLog.objects.create(
             actor=request.user,
@@ -1046,6 +1065,7 @@ def proposal_create_view(request):
     )
 
     context = {
+        'lead': lead,
         'default_valid_until': default_valid_until,
         'default_features': default_features,
         'default_terms': default_terms,
@@ -1397,6 +1417,12 @@ def lead_detail_view(request, lead_id):
     # Available tenants for legacy link if needed
     tenants = Tenant.objects.filter(is_active=True).order_by('name')[:100]
 
+    stage_history = lead.stage_history.select_related('changed_by').order_by('-created_at')
+    negotiations = lead.negotiations.select_related('conducted_by').order_by('-created_at')
+    activities = lead.activities.select_related('assigned_to', 'created_by').order_by('-scheduled_at', '-created_at')
+    proposals = lead.proposals.select_related('created_by').order_by('-version_number', '-created_at')
+    staff_users = User.objects.filter(is_staff=True).order_by('first_name', 'username')
+
     context = {
         'lead': lead,
         'notes': notes,
@@ -1404,6 +1430,12 @@ def lead_detail_view(request, lead_id):
         'schedule_form': schedule_form,
         'tenants': tenants,
         'status_choices': PlatformDemoLead.STATUS_CHOICES,
+        'stage_choices': PlatformDemoLead.STAGE_CHOICES,
+        'stage_history': stage_history,
+        'negotiations': negotiations,
+        'activities': activities,
+        'proposals': proposals,
+        'staff_users': staff_users,
     }
     return render(request, 'super_admin/lead_detail.html', context)
 

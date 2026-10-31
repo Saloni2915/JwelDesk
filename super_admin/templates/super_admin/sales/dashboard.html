@@ -1,0 +1,365 @@
+{% extends 'super_admin/base_super_admin.html' %}
+{% load static %}
+
+{% block title %}Sales CRM Dashboard — Super Admin JewelDesk{% endblock %}
+{% block page_title %}Sales CRM Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- Shared Top Stage Tabs -->
+    {% include 'super_admin/sales/stage_tabs_header.html' %}
+
+    <!-- Page Header -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1" style="color: var(--sa-text);">
+                <i class="bi bi-bar-chart-fill text-warning me-2"></i>Sales CRM Cockpit
+            </h1>
+            <p class="text-muted small mb-0">Internal sales pipeline health, conversion rates, and jewellery showroom prospect metrics.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'super_admin:sales_pipeline' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-kanban me-1"></i> Kanban Pipeline
+            </a>
+            <a href="{% url 'super_admin:sales_reports' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-graph-up me-1"></i> Detailed Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- 12 Core KPI Metric Cards -->
+    <div class="row g-3 mb-4">
+        <!-- 1. Total Leads -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="sa-metric-card p-3">
+                <div class="sa-metric-icon" style="width: 42px; height: 42px; font-size: 1.25rem;">
+                    <i class="bi bi-person-lines-fill"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="sa-metric-val fs-4">{{ kpis.total_leads }}</div>
+                    <div class="sa-metric-lbl" style="font-size: 0.72rem;">Total Leads</div>
+                </div>
+            </div>
+        </div>
+        <!-- 2. New Leads -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="sa-metric-card p-3">
+                <div class="sa-metric-icon" style="width: 42px; height: 42px; font-size: 1.25rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8;">
+                    <i class="bi bi-lightning-fill"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="sa-metric-val fs-4 text-info">{{ kpis.new_leads }}</div>
+                    <div class="sa-metric-lbl" style="font-size: 0.72rem;">New / Inbound</div>
+                </div>
+            </div>
+        </div>
+        <!-- 3. Interested -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="sa-metric-card p-3">
+                <div class="sa-metric-icon" style="width: 42px; height: 42px; font-size: 1.25rem; background: rgba(234, 179, 8, 0.15); color: #eab308;">
+                    <i class="bi bi-star-fill"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="sa-metric-val fs-4 text-warning">{{ kpis.interested_leads }}</div>
+                    <div class="sa-metric-lbl" style="font-size: 0.72rem;">Interested</div>
+                </div>
+            </div>
+        </div>
+        <!-- 4. Meetings / Demos -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="sa-metric-card p-3">
+                <div class="sa-metric-icon" style="width: 42px; height: 42px; font-size: 1.25rem; background: rgba(168, 85, 247, 0.15); color: #a855f7;">
+                    <i class="bi bi-camera-video-fill"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="sa-metric-val fs-4" style="color: #c084fc;">{{ kpis.meetings_count }}</div>
+                    <div class="sa-metric-lbl" style="font-size: 0.72rem;">Meetings / Demos</div>
+                </div>
+            </div>
+        </div>
+        <!-- 5. Active Trials -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="sa-metric-card p-3">
+                <div class="sa-metric-icon" style="width: 42px; height: 42px; font-size: 1.25rem; background: rgba(99, 102, 241, 0.15); color: #818cf8;">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="sa-metric-val fs-4 text-primary">{{ kpis.trial_count }}</div>
+                    <div class="sa-metric-lbl" style="font-size: 0.72rem;">Active Trials</div>
+                </div>
+            </div>
+        </div>
+        <!-- 6. Proposals Sent -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="sa-metric-card p-3">
+                <div class="sa-metric-icon" style="width: 42px; height: 42px; font-size: 1.25rem; background: rgba(249, 115, 22, 0.15); color: #f97316;">
+                    <i class="bi bi-file-earmark-check-fill"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="sa-metric-val fs-4" style="color: #fb923c;">{{ kpis.proposals_count }}</div>
+                    <div class="sa-metric-lbl" style="font-size: 0.72rem;">Proposals Sent</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. Active Deals / Orders -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="sa-metric-card p-3">
+                <div class="sa-metric-icon" style="width: 42px; height: 42px; font-size: 1.25rem; background: rgba(20, 184, 166, 0.15); color: #14b8a6;">
+                    <i class="bi bi-cart-check-fill"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="sa-metric-val fs-4" style="color: #2dd4bf;">{{ kpis.orders_count }}</div>
+                    <div class="sa-metric-lbl" style="font-size: 0.72rem;">Active Deals</div>
+                </div>
+            </div>
+        </div>
+        <!-- 8. Won Customers -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="sa-metric-card p-3">
+                <div class="sa-metric-icon" style="width: 42px; height: 42px; font-size: 1.25rem; background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                    <i class="bi bi-trophy-fill"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="sa-metric-val fs-4 text-success">{{ kpis.won_count }}</div>
+                    <div class="sa-metric-lbl" style="font-size: 0.72rem;">Won Customers</div>
+                </div>
+            </div>
+        </div>
+        <!-- 9. Lost Deals -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="sa-metric-card p-3">
+                <div class="sa-metric-icon" style="width: 42px; height: 42px; font-size: 1.25rem; background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+                    <i class="bi bi-x-circle-fill"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="sa-metric-val fs-4 text-danger">{{ kpis.lost_count }}</div>
+                    <div class="sa-metric-lbl" style="font-size: 0.72rem;">Lost Deals</div>
+                </div>
+            </div>
+        </div>
+        <!-- 10. Expected Revenue -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="sa-metric-card p-3">
+                <div class="sa-metric-icon" style="width: 42px; height: 42px; font-size: 1.25rem;">
+                    <i class="bi bi-cash-stack"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="sa-metric-val fs-5" style="color: var(--sa-gold);">₹{{ kpis.expected_revenue|floatformat:0 }}</div>
+                    <div class="sa-metric-lbl" style="font-size: 0.72rem;">Pipeline Value</div>
+                </div>
+            </div>
+        </div>
+        <!-- 11. Converted Revenue -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="sa-metric-card p-3">
+                <div class="sa-metric-icon" style="width: 42px; height: 42px; font-size: 1.25rem; background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                    <i class="bi bi-graph-up-arrow"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="sa-metric-val fs-5 text-success">₹{{ kpis.converted_revenue|floatformat:0 }}</div>
+                    <div class="sa-metric-lbl" style="font-size: 0.72rem;">Won Revenue</div>
+                </div>
+            </div>
+        </div>
+        <!-- 12. Follow-ups Due -->
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="sa-metric-card p-3">
+                <div class="sa-metric-icon" style="width: 42px; height: 42px; font-size: 1.25rem; background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+                    <i class="bi bi-calendar-check-fill"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="sa-metric-val fs-4 text-warning">
+                        {{ kpis.followups_today }}
+                        {% if kpis.overdue_followups > 0 %}
+                        <span class="badge bg-danger small ms-1" style="font-size: 0.65rem;">{{ kpis.overdue_followups }} overdue</span>
+                        {% endif %}
+                    </div>
+                    <div class="sa-metric-lbl" style="font-size: 0.72rem;">Follow-ups Today</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Second Row: Conversion Funnel & Sales Performance Leaderboard -->
+    <div class="row g-4 mb-4">
+        <!-- Lead Conversion Funnel -->
+        <div class="col-lg-6">
+            <div class="sa-card h-100 mb-0">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h3 class="fs-5 fw-bold mb-0" style="color: var(--sa-text);">
+                        <i class="bi bi-funnel-fill text-warning me-2"></i>Lead Conversion Funnel
+                    </h3>
+                    <span class="badge bg-secondary bg-opacity-25 text-body small">Overall Pipeline</span>
+                </div>
+                <p class="text-muted small mb-4">Progression of showroom leads from initial contact to converted paying subscribers.</p>
+
+                <div class="d-flex flex-column gap-3">
+                    {% for step in funnel %}
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="small fw-semibold" style="color: var(--sa-text);">{{ step.name }}</span>
+                            <span class="small fw-bold" style="color: {{ step.color }};">
+                                {{ step.count }} <span class="text-muted fw-normal">({{ step.pct }}%)</span>
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 10px; background: rgba(255,255,255,0.06); border-radius: 5px;">
+                            <div class="progress-bar" role="progressbar" style="width: {{ step.pct }}%; background-color: {{ step.color }}; border-radius: 5px;" aria-valuenow="{{ step.pct }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sales Executive Performance -->
+        <div class="col-lg-6">
+            <div class="sa-card h-100 mb-0">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h3 class="fs-5 fw-bold mb-0" style="color: var(--sa-text);">
+                        <i class="bi bi-people-fill text-warning me-2"></i>Sales Team Leaderboard
+                    </h3>
+                    <a href="{% url 'super_admin:sales_reports' %}" class="small text-decoration-none" style="color: var(--sa-gold);">View Full Report &rarr;</a>
+                </div>
+                <p class="text-muted small mb-3">Lead allocations, closed deals, and open follow-ups by sales executive.</p>
+
+                <div class="table-responsive">
+                    <table class="table sa-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Sales Executive</th>
+                                <th class="text-center">Assigned</th>
+                                <th class="text-center">Won</th>
+                                <th class="text-center">Follow-ups</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for staff in staff_leaderboard %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 30px; height: 30px; font-size: 0.75rem; background: var(--sa-gold-subtle); color: var(--sa-gold); border: 1px solid var(--sa-gold);">
+                                            {{ staff.username|slice:":2"|upper }}
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold small" style="color: var(--sa-text);">{{ staff.get_full_name|default:staff.username }}</div>
+                                            <small class="text-muted" style="font-size: 0.7rem;">{{ staff.email|default:"Staff" }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center fw-bold">{{ staff.assigned_leads }}</td>
+                                <td class="text-center">
+                                    <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-25 px-2 py-1">
+                                        {{ staff.won_deals }} Won
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    {% if staff.open_followups > 0 %}
+                                    <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-25 px-2 py-1">
+                                        {{ staff.open_followups }} Pending
+                                    </span>
+                                    {% else %}
+                                    <span class="text-muted small">&mdash;</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">No sales activity logged yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Third Row: Source Breakdown & Upcoming Follow-ups -->
+    <div class="row g-4">
+        <!-- Lead Source Performance -->
+        <div class="col-lg-6">
+            <div class="sa-card mb-0">
+                <h3 class="fs-5 fw-bold mb-3" style="color: var(--sa-text);">
+                    <i class="bi bi-pie-chart-fill text-warning me-2"></i>Lead Source Performance
+                </h3>
+                <div class="table-responsive">
+                    <table class="table sa-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Source</th>
+                                <th class="text-center">Total Leads</th>
+                                <th class="text-center">Won</th>
+                                <th class="text-end">Conversion %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for src in source_stats %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-secondary bg-opacity-25 text-body text-uppercase small">
+                                        {{ src.source|default:"Other" }}
+                                    </span>
+                                </td>
+                                <td class="text-center fw-bold">{{ src.total }}</td>
+                                <td class="text-center text-success fw-bold">{{ src.won }}</td>
+                                <td class="text-end fw-semibold">
+                                    {% widthratio src.won src.total 100 %}%
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">No lead source data available.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Follow-ups Due & Upcoming -->
+        <div class="col-lg-6">
+            <div class="sa-card mb-0">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h3 class="fs-5 fw-bold mb-0" style="color: var(--sa-text);">
+                        <i class="bi bi-calendar-week-fill text-warning me-2"></i>Upcoming Follow-ups
+                    </h3>
+                    <a href="{% url 'super_admin:followup_list' %}" class="small text-decoration-none" style="color: var(--sa-gold);">View All &rarr;</a>
+                </div>
+                <div class="d-flex flex-column gap-2">
+                    {% for f in upcoming_followups %}
+                    <div class="p-2 px-3 rounded border d-flex align-items-center justify-content-between gap-3" style="background: var(--sa-surface); border-color: var(--sa-border) !important;">
+                        <div class="d-flex align-items-center gap-2 min-w-0">
+                            <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-25" style="font-size: 0.72rem;">
+                                {{ f.get_activity_type_display }}
+                            </span>
+                            <div class="text-truncate">
+                                <a href="{% url 'super_admin:lead_detail' f.lead.id %}" class="fw-semibold small text-decoration-none" style="color: var(--sa-text);">
+                                    {{ f.lead.lead_name }} ({{ f.lead.contact_name }})
+                                </a>
+                                <div class="text-muted" style="font-size: 0.72rem;">{{ f.title }}</div>
+                            </div>
+                        </div>
+                        <div class="text-end flex-shrink-0">
+                            <small class="text-warning fw-semibold d-block" style="font-size: 0.75rem;">
+                                <i class="bi bi-clock me-1"></i>{{ f.scheduled_at|date:"d M, H:i" }}
+                            </small>
+                            <small class="text-muted" style="font-size: 0.7rem;">{{ f.assigned_to.username|default:"Unassigned" }}</small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-check2-circle fs-3 d-block text-success mb-1"></i>
+                        No pending follow-ups scheduled!
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
