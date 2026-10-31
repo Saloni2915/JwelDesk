@@ -225,6 +225,21 @@ def system_migrate_view(request):
         except Exception as e:
             return JsonResponse({'status': 'error', 'exception': str(e)}, status=500)
 
+    if action == 'test_crm_queries':
+        from super_admin.models import PlatformDemoLead
+        from super_admin.sales_views import get_sales_crm_stage_counts
+        res = {}
+        try:
+            res['counts'] = get_sales_crm_stage_counts()
+            res['leads_sample'] = list(PlatformDemoLead.objects.values('id', 'lead_name', 'stage', 'status')[:5])
+            res['status'] = 'success'
+        except Exception as e:
+            import traceback
+            res['status'] = 'error'
+            res['error'] = str(e)
+            res['traceback'] = traceback.format_exc()
+        return JsonResponse(res)
+
     if action == 'inspect_db':
         with connection.cursor() as cursor:
             vendor = connection.vendor
