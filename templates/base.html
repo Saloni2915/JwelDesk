@@ -152,105 +152,17 @@
                 </div>
                 {% endif %}
 
-                <!-- Raise Ticket & AI Assistant Quick Action Buttons in Top Navbar (Desktop >= 992px) -->
-                <div class="d-none d-lg-inline-flex align-items-center gap-1">
-                    <button type="button" class="btn btn-warning btn-sm d-inline-flex align-items-center gap-1 fw-bold py-1 px-2 text-dark shadow-sm"
-                            style="border-radius: 9999px; font-size: 0.8rem; background: linear-gradient(135deg, #ECC86A 0%, #D4AF37 100%); border: none;"
-                            onclick="if(window.jdOpenSupportWidget){window.jdOpenSupportWidget('ticket');}else{var l=document.getElementById('jdSupportLauncher'); if(l) l.click();}"
-                            title="Raise a Support Ticket / सहायता टिकट दर्ज करें">
-                        <i class="bi bi-plus-circle-fill"></i>
-                        <span class="d-none d-sm-inline">{% if is_hindi %}टिकट बनाएं{% else %}Raise Ticket{% endif %}</span>
-                    </button>
-
-                    <button type="button" class="btn btn-sm jd-nav-ai-btn d-inline-flex align-items-center gap-1 py-1 px-2"
-                            onclick="if(window.jdOpenSupportWidget){window.jdOpenSupportWidget('chat');}else{var l=document.getElementById('jdSupportLauncher'); if(l) l.click();}"
-                            title="JewelDesk AI Assistant Bot / एआई चैटबॉट">
-                        <i class="bi bi-robot text-warning"></i>
-                        <span class="d-none d-md-inline fw-semibold">{% if is_hindi %}एआई बोट{% else %}AI Assistant{% endif %}</span>
-                    </button>
-
-                    <a href="{% url 'support_customer:ticket_list' %}" class="btn btn-sm jd-nav-tickets-btn d-none d-lg-inline-flex align-items-center gap-1 py-1 px-2"
-                       title="All My Tickets / मेरे सभी टिकट">
-                        <i class="bi bi-ticket-perforated"></i>
-                        <span>{% if is_hindi %}सभी टिकट{% else %}My Tickets{% endif %}</span>
-                    </a>
-                </div>
-
-                <!-- Language Switcher Dropdown in Navbar -->
-                <div class="dropdown d-inline-block">
-                    <button class="btn btn-sm jd-lang-btn d-inline-flex align-items-center gap-1 dropdown-toggle py-1 px-2"
-                            type="button" id="navLanguageDropdown" data-bs-toggle="dropdown" aria-expanded="false"
-                            title="Switch Language / भाषा बदलें">
-                        <i class="bi bi-translate text-warning"></i>
-                        <span class="d-none d-md-inline fw-semibold">{% if is_hindi %}🇮🇳 हिंदी{% else %}🇬🇧 EN{% endif %}</span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 jd-dropdown-menu" aria-labelledby="navLanguageDropdown">
-                        <li>
-                            <form method="post" action="{% url 'accounts:set_language' %}" class="m-0 p-0">
-                                {% csrf_token %}
-                                <input type="hidden" name="language" value="en">
-                                <button type="submit" class="dropdown-item {% if not is_hindi %}active{% endif %}">
-                                    <span>🇬🇧 English</span>
-                                    {% if not is_hindi %}<i class="bi bi-check2 text-warning ms-2"></i>{% endif %}
-                                </button>
-                            </form>
-                        </li>
-                        <li>
-                            <form method="post" action="{% url 'accounts:set_language' %}" class="m-0 p-0">
-                                {% csrf_token %}
-                                <input type="hidden" name="language" value="hi">
-                                <button type="submit" class="dropdown-item {% if is_hindi %}active{% endif %}">
-                                    <span>🇮🇳 हिंदी (Hindi)</span>
-                                    {% if is_hindi %}<i class="bi bi-check2 text-warning ms-2"></i>{% endif %}
-                                </button>
-                            </form>
-                        </li>
-                    </ul>
-                </div>
-
-                {% if is_impersonating %}
-                <!-- Impersonation Quick Exit in Navbar -->
-                <form method="post" action="{% url 'super_admin:impersonate_exit' %}" class="d-inline-flex m-0 p-0 align-items-center">
-                    {% csrf_token %}
-                    <button type="submit" class="btn jd-impersonation-nav-btn fw-bold btn-sm d-inline-flex align-items-center gap-1" title="Exit Customer Impersonation / उपयोगकर्ता मोड समाप्त करें">
-                        <i class="bi bi-box-arrow-left"></i>
-                        <span class="d-none d-sm-inline">{% if is_hindi %}उपयोगकर्ता मोड समाप्त करें{% else %}Exit Impersonation{% endif %}</span>
-                    </button>
-                </form>
-                {% elif is_platform_admin %}
-                <!-- Super Admin Link (Desktop >= 768px; also in mobile user dropdown) -->
-                <a href="{% url 'super_admin:dashboard' %}" class="btn jd-nav-admin-btn btn-sm d-none d-md-inline-flex align-items-center gap-1" title="Go to Platform Super Admin Portal">
-                    <i class="bi bi-shield-lock-fill"></i>
-                    <span>{% if is_hindi %}सुपर एडमिन{% else %}Super Admin{% endif %}</span>
-                </a>
-                {% endif %}
-
-                {% if request.tenant and not user.is_superuser %}
-                    {% if request.tenant.is_trial_active %}
-                    <!-- Active Trial Badge Indicator -->
-                    <span class="badge d-inline-flex align-items-center gap-1 py-1 px-1 px-sm-2 text-warning border border-warning border-opacity-30 small flex-shrink-0" style="background: rgba(236, 200, 106, 0.14); font-size: 0.74rem;" title="{% if request.tenant.is_trial_extended %}Free Trial Extended{% else %}15-Day Free Trial Active{% endif %}: {{ request.tenant.trial_days_remaining }} days remaining">
-                        <i class="bi bi-clock-history"></i>
-                        <span class="d-none d-md-inline">{% if request.tenant.is_trial_extended %}Trial Extended{% else %}15 Days Free Trial{% endif %}: {{ request.tenant.trial_days_remaining }}d left</span>
-                        <span class="d-inline d-md-none">{{ request.tenant.trial_days_remaining }}d</span>
-                    </span>
-                    {% elif request.tenant.is_trial_expired %}
-                    <!-- Expired Trial Badge Indicator -->
-                    <span class="badge d-inline-flex align-items-center gap-1 py-1 px-1 px-sm-2 text-danger border border-danger border-opacity-30 small flex-shrink-0" style="background: rgba(220, 53, 69, 0.18); font-size: 0.74rem;" title="Trial Expired — Contact Account Manager">
-                        <i class="bi bi-exclamation-triangle-fill"></i>
-                        <span class="d-none d-md-inline">Trial Expired</span>
-                        <span class="d-inline d-md-none">Expired</span>
-                    </span>
-                    {% endif %}
-                {% endif %}
-
                 {% if user.is_authenticated %}
-                <!-- Desktop User Profile Pill (>= 768px) - (Logout option moved to bottom-left corner of sidebar) -->
-                <div class="d-none d-md-inline-flex align-items-center">
-                    <div class="navbar-user-pill d-inline-flex align-items-center" title="Logged in as {{ user.first_name|default:user.username }} ({% if user.is_superuser %}{% if is_hindi %}सुपर एडमिन{% else %}Super Admin{% endif %}{% elif request.tenant and request.tenant.owner_id == user.id %}{% if is_hindi %}स्टोर एडमिन{% else %}Tenant Admin{% endif %}{% else %}{% if is_hindi %}स्टोर एडमिन{% else %}Tenant Admin{% endif %}{% endif %})">
+                <!-- Desktop User Profile Dropdown (>= 768px) -->
+                <div class="dropdown d-none d-md-inline-block">
+                    <button class="navbar-user-pill d-inline-flex align-items-center dropdown-toggle border-0"
+                            type="button" id="desktopUserDropdown" data-bs-toggle="dropdown" aria-expanded="false"
+                            style="background: transparent; cursor: pointer;"
+                            title="Logged in as {{ user.first_name|default:user.username }}">
                         <div class="navbar-user-avatar rounded-circle d-flex align-items-center justify-content-center flex-shrink-0">
                             <i class="bi bi-person-fill"></i>
                         </div>
-                        <div class="d-inline-flex flex-column min-w-0 justify-content-center ms-2" style="line-height: 1.15;">
+                        <div class="d-inline-flex flex-column min-w-0 justify-content-center ms-2 text-start" style="line-height: 1.15;">
                             <div class="d-flex align-items-center gap-1">
                                 <span class="fw-semibold navbar-username text-truncate">{{ user.first_name|default:user.username }}</span>
                                 {% if user.is_superuser %}
@@ -269,10 +181,76 @@
                                 {% if user.is_superuser %}{% if is_hindi %}सुपर एडमिन{% else %}Super Admin{% endif %}{% elif request.tenant and request.tenant.owner_id == user.id %}{{ request.tenant.get_business_type_display }}{% elif request.tenant and user.employee_profile and user.employee_profile.role.name in 'Tenant Administrator,Tenant Admin,Admin' %}{% if is_hindi %}एडमिन{% else %}Admin{% endif %} &bull; {{ request.tenant.get_business_type_display }}{% elif request.tenant and user.employee_profile %}{{ user.employee_profile.role.name }} &bull; {{ request.tenant.get_business_type_display }}{% else %}{% if is_hindi %}स्टोर एडमिन{% else %}Tenant Admin{% endif %}{% endif %}
                             </span>
                         </div>
-                    </div>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 jd-dropdown-menu" aria-labelledby="desktopUserDropdown" style="min-width: 260px;">
+                        <li class="px-3 py-2 border-bottom border-secondary border-opacity-25">
+                            <div class="fw-bold text-warning text-truncate">{{ user.first_name|default:user.username }}</div>
+                            <div class="text-muted small text-truncate">{{ company.name }} &bull; {% if active_branch %}{{ active_branch.name }}{% else %}Main{% endif %}</div>
+                        </li>
+                        {% if request.tenant and not user.is_superuser and request.tenant.is_trial_active %}
+                        <li class="px-3 py-2 border-bottom border-secondary border-opacity-25">
+                            <div class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 w-100 p-2 text-start d-flex align-items-center gap-2">
+                                <i class="bi bi-clock-history fs-6"></i>
+                                <div>
+                                    <div class="fw-bold">{% if request.tenant.is_trial_extended %}Free Trial Extended{% else %}15-Day Free Trial{% endif %}</div>
+                                    <div class="small fw-normal">{{ request.tenant.trial_days_remaining }} days remaining</div>
+                                </div>
+                            </div>
+                        </li>
+                        {% endif %}
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'accounts:company_settings' %}">
+                                <i class="bi bi-gear-fill text-warning"></i> <span>{% if is_hindi %}कंपनी सेटिंग्स{% else %}Company Settings{% endif %}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'accounts:menu_settings' %}">
+                                <i class="bi bi-layout-sidebar-inset text-warning"></i> <span>{% if is_hindi %}मेनू बार सेटिंग्स{% else %}Menu Bar Settings{% endif %}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2" href="#" data-bs-toggle="modal" data-bs-target="#languageModal">
+                                <i class="bi bi-translate text-warning"></i> <span>{% if is_hindi %}भाषा बदलें (Language){% else %}Switch Language{% endif %}</span>
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'support_customer:ticket_list' %}">
+                                <i class="bi bi-ticket-perforated text-warning"></i> <span>{% if is_hindi %}मेरे टिकट{% else %}My Tickets{% endif %}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <button type="button" class="dropdown-item d-flex align-items-center gap-2" onclick="if(window.jdOpenSupportWidget){window.jdOpenSupportWidget('ticket');}else{var l=document.getElementById('jdSupportLauncher'); if(l) l.click();}">
+                                <i class="bi bi-plus-circle-fill text-warning"></i> <span>{% if is_hindi %}नया टिकट बनाएं{% else %}Raise Support Ticket{% endif %}</span>
+                            </button>
+                        </li>
+                        <li>
+                            <button type="button" class="dropdown-item d-flex align-items-center gap-2" onclick="if(window.jdOpenSupportWidget){window.jdOpenSupportWidget('chat');}else{var l=document.getElementById('jdSupportLauncher'); if(l) l.click();}">
+                                <i class="bi bi-robot text-warning"></i> <span>{% if is_hindi %}एआई असिस्टेंट चैट{% else %}AI Assistant Bot{% endif %}</span>
+                            </button>
+                        </li>
+                        {% if is_impersonating %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form method="post" action="{% url 'super_admin:impersonate_exit' %}" class="m-0 p-0">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item text-warning d-flex align-items-center gap-2">
+                                    <i class="bi bi-box-arrow-left"></i> <span>Exit Impersonation</span>
+                                </button>
+                            </form>
+                        </li>
+                        {% elif is_platform_admin %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'super_admin:dashboard' %}">
+                                <i class="bi bi-shield-lock-fill text-warning"></i> <span>Super Admin Portal</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
                 </div>
 
-                <!-- Mobile User Avatar Menu (< 768px) - (Logout moved to bottom-left corner) -->
+                <!-- Mobile User Avatar Menu (< 768px) -->
                 <div class="dropdown d-inline-flex d-md-none">
                     <button class="btn btn-sm p-0 rounded-circle d-flex align-items-center justify-content-center jd-mobile-user-avatar-btn"
                             type="button" id="mobileUserDropdown" data-bs-toggle="dropdown" aria-expanded="false"
@@ -280,44 +258,71 @@
                             aria-label="User Account">
                         <i class="bi bi-person-fill fs-6"></i>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 jd-dropdown-menu" aria-labelledby="mobileUserDropdown" style="min-width: 220px;">
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 jd-dropdown-menu" aria-labelledby="mobileUserDropdown" style="min-width: 240px;">
                         <li class="px-3 py-2 border-bottom border-secondary border-opacity-25">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="rounded-circle bg-warning bg-opacity-25 text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width: 30px; height: 30px;">
-                                    <i class="bi bi-person-fill"></i>
-                                </div>
-                                <div class="min-w-0">
-                                    <div class="fw-bold text-truncate" style="color: var(--accent, #D4AF37); font-size: 0.88rem;">{{ user.first_name|default:user.username }}</div>
-                                    <div class="text-muted text-truncate" style="font-size: 0.7rem;">
-                                        {% if user.is_superuser %}Super Admin{% elif request.tenant and user.employee_profile %}{{ user.employee_profile.role.name }}{% else %}Store Admin{% endif %}
-                                    </div>
+                            <div class="fw-bold text-warning text-truncate">{{ user.first_name|default:user.username }}</div>
+                            <div class="text-muted small text-truncate">{{ company.name }} &bull; {% if active_branch %}{{ active_branch.name }}{% else %}Main{% endif %}</div>
+                        </li>
+                        {% if request.tenant and not user.is_superuser and request.tenant.is_trial_active %}
+                        <li class="px-3 py-2 border-bottom border-secondary border-opacity-25">
+                            <div class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 w-100 p-2 text-start d-flex align-items-center gap-2">
+                                <i class="bi bi-clock-history fs-6"></i>
+                                <div>
+                                    <div class="fw-bold">{% if request.tenant.is_trial_extended %}Free Trial Extended{% else %}15-Day Free Trial{% endif %}</div>
+                                    <div class="small fw-normal">{{ request.tenant.trial_days_remaining }} days left</div>
                                 </div>
                             </div>
                         </li>
-                        {% if is_platform_admin %}
+                        {% endif %}
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'accounts:company_settings' %}">
+                                <i class="bi bi-gear-fill text-warning"></i> <span>{% if is_hindi %}कंपनी सेटिंग्स{% else %}Company Settings{% endif %}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'accounts:menu_settings' %}">
+                                <i class="bi bi-layout-sidebar-inset text-warning"></i> <span>{% if is_hindi %}मेनू बार सेटिंग्स{% else %}Menu Bar Settings{% endif %}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2" href="#" data-bs-toggle="modal" data-bs-target="#languageModal">
+                                <i class="bi bi-translate text-warning"></i> <span>{% if is_hindi %}भाषा बदलें (Language){% else %}Switch Language{% endif %}</span>
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'support_customer:ticket_list' %}">
+                                <i class="bi bi-ticket-perforated text-warning"></i> <span>{% if is_hindi %}मेरे टिकट{% else %}My Tickets{% endif %}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <button type="button" class="dropdown-item d-flex align-items-center gap-2" onclick="if(window.jdOpenSupportWidget){window.jdOpenSupportWidget('ticket');}else{var l=document.getElementById('jdSupportLauncher'); if(l) l.click();}">
+                                <i class="bi bi-plus-circle-fill text-warning"></i> <span>{% if is_hindi %}नया टिकट बनाएं{% else %}Raise Support Ticket{% endif %}</span>
+                            </button>
+                        </li>
+                        <li>
+                            <button type="button" class="dropdown-item d-flex align-items-center gap-2" onclick="if(window.jdOpenSupportWidget){window.jdOpenSupportWidget('chat');}else{var l=document.getElementById('jdSupportLauncher'); if(l) l.click();}">
+                                <i class="bi bi-robot text-warning"></i> <span>{% if is_hindi %}एआई असिस्टेंट चैट{% else %}AI Assistant Bot{% endif %}</span>
+                            </button>
+                        </li>
+                        {% if is_impersonating %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form method="post" action="{% url 'super_admin:impersonate_exit' %}" class="m-0 p-0">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item text-warning d-flex align-items-center gap-2">
+                                    <i class="bi bi-box-arrow-left"></i> <span>Exit Impersonation</span>
+                                </button>
+                            </form>
+                        </li>
+                        {% elif is_platform_admin %}
+                        <li><hr class="dropdown-divider"></li>
                         <li>
                             <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'super_admin:dashboard' %}">
                                 <i class="bi bi-shield-lock-fill text-warning"></i> <span>Super Admin Portal</span>
                             </a>
                         </li>
                         {% endif %}
-                        <li>
-                            <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'support_customer:ticket_list' %}">
-                                <i class="bi bi-ticket-perforated text-warning"></i> <span>{% if is_hindi %}मेरे टिकट{% else %}My Tickets{% endif %}</span>
-                            </a>
-                        </li>
-                        {% if user.is_authenticated and not user.is_superuser %}
-                        <li>
-                            <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'accounts:company_settings' %}">
-                                <i class="bi bi-gear-fill text-warning"></i> <span>{% if is_hindi %}कंपनी सेटिंग्स{% else %}Company Settings{% endif %}</span>
-                            </a>
-                        </li>
-                        {% endif %}
-                        <li>
-                            <button type="button" class="dropdown-item d-flex align-items-center gap-2" onclick="if(window.jdOpenSupportWidget){window.jdOpenSupportWidget('chat');}else{var l=document.getElementById('jdSupportLauncher'); if(l) l.click();}">
-                                <i class="bi bi-robot text-warning"></i> <span>{% if is_hindi %}एआई असिस्टेंट चैट{% else %}AI Assistant Chat{% endif %}</span>
-                            </button>
-                        </li>
                     </ul>
                 </div>
                 {% endif %}
