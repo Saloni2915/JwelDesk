@@ -265,19 +265,31 @@ class JewelleryItem(models.Model):
         db_index=True,
         help_text="Physical jewellery piece tag number (e.g. JWL-000001)"
     )
-    item_code = models.CharField(max_length=50, help_text="Piece ID / Tag / Barcode")
+    item_code = models.CharField(
+        max_length=50,
+        blank=True,
+        default='',
+        help_text="Piece ID / Tag / Barcode. Leave blank to auto-generate based on series settings."
+    )
     design_code = models.CharField(
         max_length=50,
         blank=True,
         db_index=True,
         help_text="Design / Model Code (e.g. DSN-GLD-001). Multiple physical pieces can share the same design code."
     )
-    name = models.CharField(max_length=200)
-    category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name='items')
+    name = models.CharField(max_length=200, blank=True, default='')
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='items'
+    )
     metal_type = models.CharField(max_length=20, choices=METAL_CHOICES)
     purity = models.CharField(
         max_length=50,
         default='22K',
+        blank=True,
         help_text="Standard jewellery purity grade (e.g. 22K, 18K, 925)"
     )
 
@@ -307,7 +319,14 @@ class JewelleryItem(models.Model):
     )
 
     # Weights
-    gross_weight = models.DecimalField(max_digits=10, decimal_places=3, help_text="Gross weight in grams")
+    gross_weight = models.DecimalField(
+        max_digits=10,
+        decimal_places=3,
+        default=Decimal('0.000'),
+        blank=True,
+        null=True,
+        help_text="Gross weight in grams"
+    )
     stone_weight = models.DecimalField(
         max_digits=10,
         decimal_places=3,
@@ -356,12 +375,19 @@ class JewelleryItem(models.Model):
         blank=True,
         help_text="Hallmarking, certification or other charges in ₹"
     )
-    selling_price = models.DecimalField(max_digits=12, decimal_places=2)
+    selling_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        blank=True,
+        null=True
+    )
     quantity = models.PositiveIntegerField(
         default=1,
+        blank=True,
         help_text="Pieces of this item currently held in stock."
     )
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Available')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Available', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -397,6 +423,14 @@ class JewelleryItem(models.Model):
             self.other_charges = Decimal('0.00')
         if self.stone_weight is None:
             self.stone_weight = Decimal('0.000')
+        if self.item_code:
+            self.item_code = self.item_code.strip()
+            code_qs = type(self).objects.filter(tenant=self.tenant, item_code=self.item_code)
+            if self.pk:
+                code_qs = code_qs.exclude(pk=self.pk)
+            if code_qs.exists():
+                raise ValidationError({'item_code': 'This Item Code is already assigned to another item in your showroom.'})
+
         if self.tag_number:
             self.tag_number = self.tag_number.strip()
             tag_qs = type(self).objects.filter(tenant=self.tenant, tag_number=self.tag_number)
@@ -449,6 +483,78 @@ class JewelleryItem(models.Model):
             raise ValidationError({'quantity': 'Stock quantity cannot be negative.'})
 
     @classmethod
+    def generate_next_item_code(cls, tenant=None, metal_type=None, category=None):
+        """
+        Thread-safe item code generator producing unique codes based on shop series settings.
+        Uses database row-locking on ItemSequence scoped to the shop tenant.
+        """
+        from django.db import transaction
+        from accounts.models import CompanySettings
+
+        settings_obj = CompanySettings.load(tenant=tenant) if tenant else None
+        prefix = (getattr(settings_obj, 'item_code_prefix', 'JW') or 'JW').strip().rstrip('-')
+        digits = max(1, min(10, getattr(settings_obj, 'item_code_digits', 5) or 5))
+        mode = getattr(settings_obj, 'item_code_series_mode', 'prefix_number')
+        start_number = getattr(settings_obj, 'item_code_next_number', 1) or 1
+
+        if mode == 'metal_prefix_number':
+            metal = (metal_type or 'Gold').strip().upper()
+            metal_prefixes = {
+                'GOLD': 'GLD',
+                'SILVER': 'SLV',
+                'DIAMOND': 'DIA',
+                'PLATINUM': 'PLT',
+                'OTHER': 'OTH',
+            }
+            code_prefix = metal_prefixes.get(metal, metal[:3].upper())
+        elif mode == 'category_prefix_number':
+            cat_name = getattr(category, 'name', '') or 'CAT'
+            code_prefix = ''.join([c for c in cat_name if c.isalnum()])[:3].upper() or 'CAT'
+        else:
+            code_prefix = prefix
+
+        seq_name = f"item_code_{code_prefix}" if code_prefix else "item_code_seq"
+
+        with transaction.atomic():
+            seq, _ = ItemSequence.objects.select_for_update().get_or_create(
+                tenant=tenant,
+                name=seq_name,
+                defaults={'last_number': max(0, start_number - 1)}
+            )
+            if seq.last_number < (start_number - 1):
+                seq.last_number = start_number - 1
+
+            seq.last_number += 1
+            seq.save(update_fields=['last_number'])
+
+            num_str = f"{seq.last_number:0{digits}d}"
+            candidate = f"{code_prefix}-{num_str}" if code_prefix else num_str
+
+            # Safety check against existing record collision in this tenant
+            collision_qs = cls.objects.filter(item_code=candidate)
+            if tenant:
+                collision_qs = collision_qs.filter(tenant=tenant)
+            while collision_qs.exists():
+                seq.last_number += 1
+                seq.save(update_fields=['last_number'])
+                num_str = f"{seq.last_number:0{digits}d}"
+                candidate = f"{code_prefix}-{num_str}" if code_prefix else num_str
+                collision_qs = cls.objects.filter(item_code=candidate)
+                if tenant:
+                    collision_qs = collision_qs.filter(tenant=tenant)
+
+            # Sync next_number back to CompanySettings so settings display stays current
+            if settings_obj and mode == 'prefix_number':
+                try:
+                    CompanySettings.objects.filter(pk=settings_obj.pk).update(
+                        item_code_next_number=seq.last_number + 1
+                    )
+                except Exception:
+                    pass
+
+            return candidate
+
+    @classmethod
     def generate_next_tag_number(cls, tenant=None):
         """
         Thread-safe tag number generator producing unique tags formatted as JWL-000001.
@@ -496,6 +602,30 @@ class JewelleryItem(models.Model):
             return tag_candidate
 
     def save(self, *args, **kwargs):
+        if not self.item_code or not self.item_code.strip():
+            self.item_code = self.generate_next_item_code(
+                tenant=self.tenant,
+                metal_type=self.metal_type,
+                category=self.category
+            )
+        else:
+            self.item_code = self.item_code.strip()
+
+        if not self.name or not self.name.strip():
+            cat_name = self.category.name if self.category else "Jewellery"
+            metal = self.metal_type or "Gold"
+            purity_str = f" {self.purity}" if self.purity and self.purity != 'Other' else ""
+            self.name = f"{metal}{purity_str} {cat_name}".strip()
+
+        if self.gross_weight is None:
+            self.gross_weight = Decimal('0.000')
+        if self.selling_price is None:
+            self.selling_price = Decimal('0.00')
+        if self.quantity is None:
+            self.quantity = 1
+        if not self.status:
+            self.status = 'Available'
+
         if self.tag_number:
             self.tag_number = self.tag_number.strip()
         if not self.tag_number:

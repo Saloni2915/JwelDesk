@@ -225,6 +225,92 @@
                                     <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>
                                 {% endfor %}
                             </div>
+
+                            <!-- 📦 Item Code & Barcode Series Settings -->
+                            <div class="col-12 mt-4 pt-4 border-top" style="border-color: rgba(236, 200, 106, 0.2) !important;">
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <div class="jd-kpi-icon" style="width: 36px; height: 36px; font-size: 1.1rem;">
+                                        <i class="bi bi-upc-scan text-warning"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="h6 fw-bold mb-0" style="color: var(--jd-gold);">Jewellery Stock Item Code & Barcode Series</h3>
+                                        <small class="text-muted">Configure automatic piece numbering and barcode series for new jewellery items</small>
+                                    </div>
+                                </div>
+
+                                <div class="p-3 rounded mb-3" style="background: rgba(212, 175, 55, 0.06); border: 1px solid rgba(212, 175, 55, 0.25);">
+                                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                        <div>
+                                            <span class="text-muted small d-block mb-1">Live Next Item Code Preview:</span>
+                                            <span class="fs-4 fw-bold font-monospace text-warning" id="seriesLivePreview">
+                                                {{ settings_obj.get_next_item_code_preview|default:"JW-00001" }}
+                                            </span>
+                                        </div>
+                                        <div class="small text-muted" style="max-width: 380px;">
+                                            <i class="bi bi-info-circle text-warning me-1"></i>
+                                            When adding jewellery stock in Inventory, leaving the <strong>Item Code</strong> field blank will automatically generate and assign the next sequential code in this format.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row g-3">
+                                    <!-- Series Mode -->
+                                    <div class="col-md-6">
+                                        <label class="jd-label" for="{{ form.item_code_series_mode.id_for_label }}">
+                                            Series Formatting Pattern
+                                        </label>
+                                        {{ form.item_code_series_mode }}
+                                        <div class="form-text" style="color: #9E9171; font-size: 0.78rem;">
+                                            Select how the prefix is formed (Custom Prefix, Metal Type e.g. GLD/SLV, or Category).
+                                        </div>
+                                        {% for e in form.item_code_series_mode.errors %}
+                                            <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>
+                                        {% endfor %}
+                                    </div>
+
+                                    <!-- Prefix -->
+                                    <div class="col-md-6" id="prefixContainer">
+                                        <label class="jd-label" for="{{ form.item_code_prefix.id_for_label }}">
+                                            Custom Prefix
+                                        </label>
+                                        {{ form.item_code_prefix }}
+                                        <div class="form-text" style="color: #9E9171; font-size: 0.78rem;">
+                                            Text prepended before the number (e.g. <code>JW</code>, <code>GLD</code>, <code>SKU</code>).
+                                        </div>
+                                        {% for e in form.item_code_prefix.errors %}
+                                            <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>
+                                        {% endfor %}
+                                    </div>
+
+                                    <!-- Number of Digits (Zero Padding) -->
+                                    <div class="col-md-6">
+                                        <label class="jd-label" for="{{ form.item_code_digits.id_for_label }}">
+                                            Number of Digits (Zero Padding)
+                                        </label>
+                                        {{ form.item_code_digits }}
+                                        <div class="form-text" style="color: #9E9171; font-size: 0.78rem;">
+                                            e.g. <code>5</code> digits gives <code>00001</code>, <code>4</code> digits gives <code>0001</code>.
+                                        </div>
+                                        {% for e in form.item_code_digits.errors %}
+                                            <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>
+                                        {% endfor %}
+                                    </div>
+
+                                    <!-- Next Sequence Number -->
+                                    <div class="col-md-6">
+                                        <label class="jd-label" for="{{ form.item_code_next_number.id_for_label }}">
+                                            Next Number / Starting Counter
+                                        </label>
+                                        {{ form.item_code_next_number }}
+                                        <div class="form-text" style="color: #9E9171; font-size: 0.78rem;">
+                                            The next sequential number that will be assigned to a new item.
+                                        </div>
+                                        {% for e in form.item_code_next_number.errors %}
+                                            <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Actions Bar -->
@@ -329,6 +415,43 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         }
+
+        // Live Item Code Series Preview
+        const modeSelect = document.getElementById('id_item_code_series_mode');
+        const prefixInput = document.getElementById('id_item_code_prefix');
+        const digitsInput = document.getElementById('id_item_code_digits');
+        const nextNumInput = document.getElementById('id_item_code_next_number');
+        const previewEl = document.getElementById('seriesLivePreview');
+        const prefixContainer = document.getElementById('prefixContainer');
+
+        function updateSeriesLivePreview() {
+            if (!previewEl) return;
+            const mode = modeSelect ? modeSelect.value : 'prefix_number';
+            const digits = Math.max(1, Math.min(10, parseInt(digitsInput ? digitsInput.value : 5, 10) || 5));
+            const num = Math.max(1, parseInt(nextNumInput ? nextNumInput.value : 1, 10) || 1);
+            const numStr = String(num).padStart(digits, '0');
+
+            let prefix = 'JW';
+            if (mode === 'metal_prefix_number') {
+                prefix = 'GLD';
+                if (prefixContainer) prefixContainer.style.opacity = '0.5';
+            } else if (mode === 'category_prefix_number') {
+                prefix = 'RNG';
+                if (prefixContainer) prefixContainer.style.opacity = '0.5';
+            } else {
+                prefix = (prefixInput && prefixInput.value ? prefixInput.value.trim().replace(/-+$/, '') : 'JW') || 'JW';
+                if (prefixContainer) prefixContainer.style.opacity = '1';
+            }
+            previewEl.textContent = prefix ? (prefix + '-' + numStr) : numStr;
+        }
+
+        [modeSelect, prefixInput, digitsInput, nextNumInput].forEach(el => {
+            if (el) {
+                el.addEventListener('input', updateSeriesLivePreview);
+                el.addEventListener('change', updateSeriesLivePreview);
+            }
+        });
+        updateSeriesLivePreview();
     }
 });
 </script>

@@ -363,6 +363,39 @@ class CompanySettings(models.Model):
         blank=True,
         help_text='System display language (English or Hindi).'
     )
+
+    # Item Code Series Configuration
+    ITEM_CODE_SERIES_CHOICES = (
+        ('prefix_number', 'Custom Prefix + Number (e.g. JW-00001)'),
+        ('metal_prefix_number', 'Metal Prefix + Number (e.g. GLD-00001, SLV-00001)'),
+        ('category_prefix_number', 'Category Prefix + Number (e.g. RNG-00001)'),
+    )
+    item_code_prefix = models.CharField(
+        max_length=20,
+        default='JW',
+        blank=True,
+        help_text='Prefix for auto-generated item codes, e.g. JW, GLD, SKU.'
+    )
+    item_code_series_mode = models.CharField(
+        max_length=30,
+        choices=ITEM_CODE_SERIES_CHOICES,
+        default='prefix_number',
+        blank=True,
+        help_text='Series format pattern for auto-generated item codes.'
+    )
+    item_code_digits = models.PositiveIntegerField(
+        default=5,
+        blank=True,
+        null=True,
+        help_text='Number of digits with zero-padding (e.g. 5 gives 00001).'
+    )
+    item_code_next_number = models.PositiveIntegerField(
+        default=1,
+        blank=True,
+        null=True,
+        help_text='Next sequential number in the series.'
+    )
+
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -371,6 +404,32 @@ class CompanySettings(models.Model):
 
     def __str__(self):
         return self.company_name or 'Company Settings'
+
+    def get_next_item_code_preview(self, metal_type=None, category=None):
+        """Generate a preview of the next item code according to current series settings."""
+        digits = max(1, min(10, self.item_code_digits or 5))
+        num = max(1, self.item_code_next_number or 1)
+        num_str = f"{num:0{digits}d}"
+
+        mode = self.item_code_series_mode or 'prefix_number'
+        if mode == 'metal_prefix_number':
+            metal = (metal_type or 'Gold').strip().upper()
+            metal_prefixes = {
+                'GOLD': 'GLD',
+                'SILVER': 'SLV',
+                'DIAMOND': 'DIA',
+                'PLATINUM': 'PLT',
+                'OTHER': 'OTH',
+            }
+            code_prefix = metal_prefixes.get(metal, metal[:3].upper())
+            return f"{code_prefix}-{num_str}"
+        elif mode == 'category_prefix_number':
+            cat_name = getattr(category, 'name', '') or 'CAT'
+            cat_code = ''.join([c for c in cat_name if c.isalnum()])[:3].upper() or 'CAT'
+            return f"{cat_code}-{num_str}"
+        else:
+            pfx = (self.item_code_prefix or 'JW').strip().rstrip('-')
+            return f"{pfx}-{num_str}" if pfx else num_str
 
     @property
     def name(self):

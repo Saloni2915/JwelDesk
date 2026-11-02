@@ -331,6 +331,23 @@ def system_migrate_view(request):
                 results.append("CRM tables ensured")
 
                 cursor.execute("""
+                    ALTER TABLE accounts_companysettings 
+                    ADD COLUMN IF NOT EXISTS item_code_prefix varchar(20) DEFAULT 'JW',
+                    ADD COLUMN IF NOT EXISTS item_code_series_mode varchar(30) DEFAULT 'prefix_number',
+                    ADD COLUMN IF NOT EXISTS item_code_digits integer DEFAULT 5,
+                    ADD COLUMN IF NOT EXISTS item_code_next_number integer DEFAULT 1;
+
+                    ALTER TABLE inventory_jewelleryitem 
+                    ALTER COLUMN item_code DROP NOT NULL,
+                    ALTER COLUMN name DROP NOT NULL,
+                    ALTER COLUMN category_id DROP NOT NULL,
+                    ALTER COLUMN purity DROP NOT NULL,
+                    ALTER COLUMN gross_weight DROP NOT NULL,
+                    ALTER COLUMN selling_price DROP NOT NULL;
+                """)
+                results.append("accounts_companysettings and inventory_jewelleryitem series schema updated")
+
+                cursor.execute("""
                     INSERT INTO django_migrations (app, name, applied)
                     SELECT 'super_admin', '0010_platformdemolead_deal_value_and_more', now()
                     WHERE NOT EXISTS (

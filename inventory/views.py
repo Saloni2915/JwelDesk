@@ -485,10 +485,16 @@ def inventory_add(request):
     else:
         form = JewelleryItemForm(initial=initial_data, tenant=request.tenant, branch=active_b)
 
+    from accounts.models import CompanySettings
+    settings_obj = CompanySettings.load(tenant=request.tenant)
+    series_preview = settings_obj.get_next_item_code_preview() if settings_obj else "JW-00001"
+
     context = {
         'form': form,
         'page_title': 'Add Jewellery Piece',
         'is_edit': False,
+        'series_preview': series_preview,
+        'settings_obj': settings_obj,
     }
     return render(request, 'inventory/item_form.html', context)
 

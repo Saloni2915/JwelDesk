@@ -84,10 +84,10 @@ class JewelleryItemForm(forms.ModelForm):
         max_digits=10, decimal_places=2, required=False, default_zero=True,
         widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}))
     selling_price = SanitizedDecimalField(
-        max_digits=12, decimal_places=2, required=True,
+        max_digits=12, decimal_places=2, required=False, default_zero=True,
         widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}))
     gross_weight = SanitizedDecimalField(
-        max_digits=10, decimal_places=3, required=True,
+        max_digits=10, decimal_places=3, required=False, default_zero=True,
         widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001', 'placeholder': '0.000'}))
     stone_weight = SanitizedDecimalField(
         max_digits=10, decimal_places=3, required=False, default_zero=True,
@@ -108,7 +108,7 @@ class JewelleryItemForm(forms.ModelForm):
         }),
         help_text="Upload a photograph of the jewellery item (JPEG, PNG, WEBP, max 10MB).",
     )
-    purity = PurityChoiceField(initial='22K')
+    purity = PurityChoiceField(initial='22K', required=False)
 
     class Meta:
         model = JewelleryItem
@@ -121,9 +121,9 @@ class JewelleryItemForm(forms.ModelForm):
         ]
         widgets = {
             'tag_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Auto-assigned if left blank (e.g. JWL-000001)'}),
-            'item_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Unique Piece ID, e.g. GLD-RN-001-A'}),
+            'item_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Auto-assigned from series if left blank (e.g. JW-00001)'}),
             'design_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Design / Model Code, e.g. DSN-RN-001'}),
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. 22K Gold Solitaire Ring'}),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. 22K Gold Solitaire Ring (Optional)'}),
             'category': forms.Select(attrs={'class': 'form-select'}),
             'branch': forms.Select(attrs={'class': 'form-select'}),
             'metal_type': forms.Select(attrs={'class': 'form-select', 'id': 'id_metal_type'}),
@@ -179,6 +179,16 @@ class JewelleryItemForm(forms.ModelForm):
                 self.fields['quantity'].initial = self.instance.quantity
         else:
             self.fields['quantity'].initial = self.initial.get('quantity', 1)
+        self.fields['metal_type'].required = True
+        self.fields['item_code'].required = False
+        self.fields['name'].required = False
+        self.fields['category'].required = False
+        self.fields['category'].empty_label = "Select Category (Optional)"
+        self.fields['purity'].required = False
+        self.fields['status'].required = False
+        self.fields['gross_weight'].required = False
+        self.fields['selling_price'].required = False
+        self.fields['quantity'].required = False
         self.fields['tag_number'].required = False
         self.fields['design_code'].required = False
         self.fields['stone_weight'].required = False
@@ -235,9 +245,8 @@ class JewelleryItemForm(forms.ModelForm):
         return tag
 
     def clean_item_code(self):
-        code = self.cleaned_data.get('item_code', '')
+        code = (self.cleaned_data.get('item_code') or '').strip()
         if code:
-            code = code.strip()
             qs = JewelleryItem.objects.filter(item_code__iexact=code)
             if self.tenant:
                 qs = qs.filter(tenant=self.tenant)
@@ -318,10 +327,17 @@ class JewelleryItemForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         gross = cleaned_data.get('gross_weight')
+        if gross is None:
+            gross = Decimal('0.000')
+            cleaned_data['gross_weight'] = gross
+
         stone = cleaned_data.get('stone_weight')
         if stone is None:
             stone = Decimal('0.000')
             cleaned_data['stone_weight'] = stone
+
+        if cleaned_data.get('selling_price') is None:
+            cleaned_data['selling_price'] = Decimal('0.00')
 
         for fld in ('making_charge', 'wastage_percent', 'stone_charges', 'other_charges'):
             if cleaned_data.get(fld) is None:
@@ -329,11 +345,8 @@ class JewelleryItemForm(forms.ModelForm):
 
         net = cleaned_data.get('net_weight')
 
-        if gross is not None:
-            if net is None:
-                # Will be automatically calculated on save/clean
-                pass
-            else:
+        if gross > 0:
+            if net is not None:
                 if net > gross:
                     self.add_error('net_weight', 'Net weight cannot be greater than gross weight.')
                 if (net + stone) > gross:

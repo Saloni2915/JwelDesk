@@ -229,12 +229,19 @@ class CompanySettingsForm(forms.ModelForm):
 
     class Meta:
         model = CompanySettings
-        fields = ('company_name', 'logo', 'gstin', 'address', 'phone',
-                  'email', 'language', 'invoice_footer_note')
+        fields = (
+            'company_name', 'logo', 'gstin', 'address', 'phone',
+            'email', 'language', 'invoice_footer_note',
+            'item_code_prefix', 'item_code_series_mode', 'item_code_digits', 'item_code_next_number'
+        )
         widgets = {
             'address': forms.Textarea(attrs={'rows': 3}),
             'invoice_footer_note': forms.Textarea(attrs={'rows': 2}),
             'language': forms.Select(attrs={'class': 'form-select'}),
+            'item_code_series_mode': forms.Select(attrs={'class': 'form-select', 'id': 'id_item_code_series_mode'}),
+            'item_code_prefix': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_item_code_prefix', 'placeholder': 'e.g. JW, GLD, SKU'}),
+            'item_code_digits': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_item_code_digits', 'min': 1, 'max': 10, 'placeholder': '5'}),
+            'item_code_next_number': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_item_code_next_number', 'min': 1, 'placeholder': '1'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -242,17 +249,37 @@ class CompanySettingsForm(forms.ModelForm):
         if self.instance and getattr(self.instance, 'tenant', None):
             self.fields['business_type'].initial = self.instance.tenant.business_type
         self.fields['business_type'].disabled = True
-        for name in ('company_name', 'gstin', 'phone', 'email', 'business_type', 'language'):
+        for name in ('company_name', 'gstin', 'phone', 'email', 'business_type', 'language',
+                     'item_code_prefix', 'item_code_series_mode', 'item_code_digits', 'item_code_next_number'):
             if name in self.fields:
                 self.fields[name].widget.attrs.setdefault('class', 'form-control')
         self.fields['address'].widget.attrs.setdefault('class', 'form-control')
         self.fields['invoice_footer_note'].widget.attrs.setdefault(
             'class', 'form-control')
         self.fields['logo'].widget.attrs.setdefault('class', 'form-control')
+        if 'item_code_series_mode' in self.fields:
+            self.fields['item_code_series_mode'].widget.attrs['class'] = 'form-select'
+
+        for fld in ('item_code_prefix', 'item_code_series_mode', 'item_code_digits', 'item_code_next_number'):
+            if fld in self.fields:
+                self.fields[fld].required = False
 
     def save(self, commit=True):
         obj = super().save(commit=commit)
-        # Business operations model is uneditable by tenant
+        if commit and getattr(obj, 'tenant', None):
+            # Sync item code sequence counter if next_number was adjusted
+            try:
+                from inventory.models import ItemSequence
+                next_num = obj.item_code_next_number or 1
+                prefix = (obj.item_code_prefix or 'JW').strip().rstrip('-')
+                mode = obj.item_code_series_mode or 'prefix_number'
+                if mode == 'prefix_number':
+                    seq_name = f"item_code_{prefix}" if prefix else "item_code_seq"
+                    ItemSequence.objects.filter(tenant=obj.tenant, name=seq_name).update(
+                        last_number=max(0, next_num - 1)
+                    )
+            except Exception:
+                pass
         return obj
 
     def clean_logo(self):
@@ -295,5 +322,14 @@ class CompanySettingsForm(forms.ModelForm):
                        'invoice_footer_note'):
             if len(cleaned.get(field, '') or '') > COMPANY_NAME_MAX:
                 self.add_error(field, f'Maximum length is {COMPANY_NAME_MAX} characters.')
+
+        if not cleaned.get('item_code_prefix'):
+            cleaned['item_code_prefix'] = 'JW'
+        if not cleaned.get('item_code_series_mode'):
+            cleaned['item_code_series_mode'] = 'prefix_number'
+        if not cleaned.get('item_code_digits'):
+            cleaned['item_code_digits'] = 5
+        if not cleaned.get('item_code_next_number'):
+            cleaned['item_code_next_number'] = 1
 
         return cleaned

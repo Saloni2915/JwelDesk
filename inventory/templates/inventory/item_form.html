@@ -68,12 +68,17 @@
                                 <div class="jd-field-help">Unique physical tag (e.g. JWL-000001). Leave blank to auto-generate.</div>
                             </div>
                             <div>
-                                <label class="jd-field-label">Item Code <span class="text-danger">*</span></label>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="jd-field-label m-0">Item Code</label>
+                                    <button type="button" class="btn btn-sm text-warning p-0 fw-semibold text-decoration-none" id="btnAutoFillItemCode" title="Auto-fill with next series code">
+                                        <i class="bi bi-magic me-1"></i>Auto Fill ({{ series_preview|default:"Series" }})
+                                    </button>
+                                </div>
                                 {{ form.item_code }}
                                 {% if form.item_code.errors %}
                                 <div class="text-danger small mt-1">{{ form.item_code.errors.0 }}</div>
                                 {% endif %}
-                                <div class="jd-field-help">Physical barcode ID (e.g. GLD-RN-001-A).</div>
+                                <div class="jd-field-help">Physical barcode ID / Piece ID. Leave blank to auto-create from series settings.</div>
                             </div>
                         </div>
 
@@ -88,7 +93,7 @@
                             </div>
                             <div>
                                 <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <label class="jd-field-label m-0" for="id_category">Category / Collection <span class="text-danger">*</span></label>
+                                    <label class="jd-field-label m-0" for="id_category">Category / Collection</label>
                                     <button type="button" class="btn btn-sm text-warning p-0 fw-semibold text-decoration-none" id="btnOpenCategoryModal" data-bs-toggle="modal" data-bs-target="#quickAddCategoryModal" title="Add a new category or collection">
                                         <i class="bi bi-plus-circle me-1"></i>+ Add Category
                                     </button>
@@ -98,7 +103,7 @@
                                 <div class="text-danger small mt-1">{{ form.category.errors.0 }}</div>
                                 {% endif %}
                                 <div class="jd-field-help d-flex justify-content-between">
-                                    <span>Select existing or create new collection.</span>
+                                    <span>Select existing or create new collection (optional).</span>
                                     <a href="{% url 'category_list' %}" target="_blank" class="text-warning text-decoration-none small">
                                         <i class="bi bi-gear me-1"></i>Manage All
                                     </a>
@@ -107,12 +112,12 @@
                         </div>
 
                         <div class="jd-field-group">
-                            <label class="jd-field-label">Item Name <span class="text-danger">*</span></label>
+                            <label class="jd-field-label">Item Name</label>
                             {{ form.name }}
                             {% if form.name.errors %}
                             <div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>
                             {% endif %}
-                            <div class="jd-field-help">Item name shown on bills and tags (e.g. 22K Traditional Bridal Choker).</div>
+                            <div class="jd-field-help">Item name shown on bills and tags (optional, auto-generated if left blank).</div>
                         </div>
                     </div>
                 </div>
@@ -271,7 +276,7 @@
                                 {% endif %}
                             </div>
                             <div>
-                                <label class="jd-field-label">Purity / Karat <span class="text-danger">*</span></label>
+                                <label class="jd-field-label">Purity / Karat</label>
                                 {{ form.purity }}
                                 {% if form.purity.errors %}
                                 <div class="text-danger small mt-1">{{ form.purity.errors.0 }}</div>
@@ -282,7 +287,7 @@
 
                         <div class="jd-form-grid-3 mb-3">
                             <div>
-                                <label class="jd-field-label">Gross Weight (g) <span class="text-danger">*</span></label>
+                                <label class="jd-field-label">Gross Weight (g)</label>
                                 {{ form.gross_weight }}
                                 {% if form.gross_weight.errors %}
                                 <div class="text-danger small mt-1">{{ form.gross_weight.errors.0 }}</div>
@@ -358,7 +363,7 @@
 
                         <div class="jd-form-grid-3 mb-3">
                             <div>
-                                <label class="jd-field-label">Fixed Retail Tag Price (₹) <span class="text-danger">*</span></label>
+                                <label class="jd-field-label">Fixed Retail Tag Price (₹)</label>
                                 {{ form.selling_price }}
                                 <div class="jd-field-help">Final retail selling price of 1 piece</div>
                                 {% if form.selling_price.errors %}
@@ -366,7 +371,7 @@
                                 {% endif %}
                             </div>
                             <div>
-                                <label class="jd-field-label">Stock Quantity (Pieces) <span class="text-danger">*</span></label>
+                                <label class="jd-field-label">Stock Quantity (Pieces)</label>
                                 {{ form.quantity }}
                                 <div class="jd-field-help">Total pieces currently held in stock</div>
                                 {% if form.quantity.errors %}
@@ -374,7 +379,7 @@
                                 {% endif %}
                             </div>
                             <div>
-                                <label class="jd-field-label">Stock Status <span class="text-danger">*</span></label>
+                                <label class="jd-field-label">Stock Status</label>
                                 {{ form.status }}
                                 <div class="jd-field-help">Availability status in showroom</div>
                                 {% if form.status.errors %}
@@ -739,6 +744,17 @@
                         puritySelect.value = '22K';
                     }
                 }
+            });
+        }
+
+        // Auto Fill item code button handler
+        const btnAutoFill = document.getElementById('btnAutoFillItemCode');
+        const itemCodeInput = document.getElementById('id_item_code');
+        if (btnAutoFill && itemCodeInput) {
+            btnAutoFill.addEventListener('click', function() {
+                const preview = "{{ series_preview|default:'JW-00001' }}";
+                itemCodeInput.value = preview;
+                itemCodeInput.focus();
             });
         }
     });
