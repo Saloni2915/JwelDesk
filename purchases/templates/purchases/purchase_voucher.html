@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Voucher - {{ invoice.purchase_number }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            body { background: #fff !important; color: #000 !important; font-size: 12px; }
+            .voucher-container { border: none !important; box-shadow: none !important; padding: 0 !important; }
+        }
+        body {
+            background-color: #f8fafc;
+            color: #1e293b;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            padding: 20px 0;
+        }
+        .voucher-container {
+            max-width: 850px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 35px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .voucher-title {
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            color: #b45309;
+            text-transform: uppercase;
+        }
+        .table-voucher th {
+            background-color: #f1f5f9;
+            color: #334155;
+            font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+        .table-voucher td {
+            font-size: 12px;
+            vertical-align: middle;
+        }
+        .border-dashed {
+            border-top: 1px dashed #cbd5e1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="no-print text-center mb-3">
+        <button type="button" class="btn btn-warning fw-bold px-4 py-2 shadow-sm me-2" onclick="window.print();">
+            Print Voucher
+        </button>
+        <button type="button" class="btn btn-outline-secondary px-3 py-2" onclick="window.close();">
+            Close
+        </button>
+    </div>
+
+    <div class="voucher-container">
+        <!-- Voucher Header -->
+        <div class="row align-items-center mb-4 pb-3 border-bottom">
+            <div class="col-8">
+                <h3 class="fw-bold mb-1" style="color: #0f172a;">{{ company.name|default:"JewelDesk Showroom" }}</h3>
+                <div class="small text-muted">{{ company.address|default:"Jewellery Showroom" }}</div>
+                <div class="small text-muted">Phone: {{ company.phone|default:"-" }} &bull; Email: {{ company.email|default:"-" }}</div>
+                {% if company.gstin %}<div class="small fw-bold mt-1 text-dark">GSTIN: <span class="font-monospace">{{ company.gstin }}</span></div>{% endif %}
+            </div>
+            <div class="col-4 text-end">
+                <div class="voucher-title">Purchase Voucher</div>
+                <div class="fw-bold fs-6 mt-1 font-monospace">{{ invoice.purchase_number }}</div>
+                <div class="small text-muted">Date: <strong>{{ invoice.purchase_date|date:"d M Y" }}</strong></div>
+                <div class="badge bg-light text-dark border border-secondary mt-1">{{ invoice.get_purchase_type_display }}</div>
+            </div>
+        </div>
+
+        <!-- Supplier & Bill Info Grid -->
+        <div class="row g-3 mb-4 p-3 bg-light rounded-2 border">
+            <div class="col-6">
+                <span class="text-uppercase fw-bold text-muted small d-block">Supplier / Vendor:</span>
+                <div class="fw-bold fs-6 mt-1 text-dark">{{ invoice.supplier.name }}</div>
+                <div class="small text-muted">{{ invoice.supplier.address|default:"" }}</div>
+                <div class="small text-muted">Phone: {{ invoice.supplier.mobile }} &bull; State: {{ invoice.supplier.state|default:"-" }}</div>
+                {% if invoice.supplier.gstin %}<div class="small font-monospace fw-bold mt-1">Supplier GSTIN: {{ invoice.supplier.gstin }}</div>{% endif %}
+            </div>
+            <div class="col-6 text-end">
+                <div class="small"><span class="text-muted">Vendor Bill #:</span> <strong>{{ invoice.supplier_invoice_number|default:"N/A" }}</strong></div>
+                <div class="small"><span class="text-muted">Bill Date:</span> <strong>{{ invoice.supplier_invoice_date|date:"d/m/Y"|default:"N/A" }}</strong></div>
+                <div class="small"><span class="text-muted">Payment Terms:</span> <strong>{{ invoice.payment_terms_days }} Days</strong></div>
+                <div class="small"><span class="text-muted">Payment Due:</span> <strong>{{ invoice.due_date|date:"d/m/Y"|default:"Immediate" }}</strong></div>
+                <div class="small"><span class="text-muted">Tax Mode:</span> <strong>{{ invoice.get_tax_type_display }}</strong></div>
+            </div>
+        </div>
+
+        <!-- Line Items Table -->
+        <table class="table table-bordered table-voucher mb-4">
+            <thead>
+                <tr>
+                    <th style="width: 35px;">#</th>
+                    <th>Item Description</th>
+                    <th>Category</th>
+                    <th>Metal/Purity</th>
+                    <th class="text-center">Qty</th>
+                    <th class="text-end">Gross (g)</th>
+                    <th class="text-end">Net (g)</th>
+                    <th class="text-end">Fine (g)</th>
+                    <th class="text-end">Rate (₹)</th>
+                    <th class="text-end">Making (₹)</th>
+                    <th class="text-end">Total (₹)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for itm in items %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>
+                        <div class="fw-bold">{{ itm.item_name }}</div>
+                        {% if itm.huid %}<small class="font-monospace text-muted">HUID: {{ itm.huid }}</small>{% endif %}
+                    </td>
+                    <td>{{ itm.category.name|default:"-" }}</td>
+                    <td>{{ itm.metal_type }} {{ itm.purity }}</td>
+                    <td class="text-center">{{ itm.quantity }}</td>
+                    <td class="text-end">{{ itm.gross_weight }}</td>
+                    <td class="text-end fw-bold">{{ itm.net_weight }}</td>
+                    <td class="text-end">{{ itm.fine_weight }}</td>
+                    <td class="text-end">₹{{ itm.purchase_rate|floatformat:2 }}</td>
+                    <td class="text-end">₹{{ itm.making_charge_total|floatformat:2 }}</td>
+                    <td class="text-end fw-bold">₹{{ itm.line_total|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="fw-bold bg-light">
+                    <td colspan="4" class="text-uppercase">Total:</td>
+                    <td class="text-center">{{ invoice.total_quantity }}</td>
+                    <td class="text-end">{{ invoice.total_gross_weight }}g</td>
+                    <td class="text-end">{{ invoice.total_net_weight }}g</td>
+                    <td class="text-end">{{ invoice.total_fine_weight }}g</td>
+                    <td colspan="2"></td>
+                    <td class="text-end fs-6">₹{{ invoice.subtotal|floatformat:2 }}</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- Summary & Signatures Row -->
+        <div class="row align-items-start mt-4">
+            <div class="col-7">
+                <div class="small text-muted mb-2">
+                    <strong>Notes / Terms:</strong> {{ invoice.notes|default:"Procurement goods received in good order. Stock synchronized with JewelleryStock catalogue." }}
+                </div>
+            </div>
+            <div class="col-5">
+                <table class="table table-sm table-borderless mb-0">
+                    <tr>
+                        <td class="text-muted">Subtotal:</td>
+                        <td class="text-end fw-semibold">₹{{ invoice.subtotal|floatformat:2 }}</td>
+                    </tr>
+                    {% if invoice.discount_amount > 0 %}
+                    <tr>
+                        <td class="text-danger">Discount:</td>
+                        <td class="text-end text-danger">-₹{{ invoice.discount_amount|floatformat:2 }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if invoice.tax_type == 'CGST_SGST' %}
+                    <tr>
+                        <td class="text-muted">CGST ({{ invoice.cgst_rate }}%):</td>
+                        <td class="text-end">₹{{ invoice.cgst_amount|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">SGST ({{ invoice.sgst_rate }}%):</td>
+                        <td class="text-end">₹{{ invoice.sgst_amount|floatformat:2 }}</td>
+                    </tr>
+                    {% elif invoice.tax_type == 'IGST' %}
+                    <tr>
+                        <td class="text-muted">IGST ({{ invoice.igst_rate }}%):</td>
+                        <td class="text-end">₹{{ invoice.igst_amount|floatformat:2 }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if invoice.round_off != 0 %}
+                    <tr>
+                        <td class="text-muted">Round Off:</td>
+                        <td class="text-end">₹{{ invoice.round_off|floatformat:2 }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr class="border-top border-dark">
+                        <td class="fw-bold fs-6">Grand Total:</td>
+                        <td class="text-end fw-bold fs-5 text-dark">₹{{ invoice.grand_total|floatformat:2 }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Signature Lines -->
+        <div class="row mt-5 pt-4 text-center">
+            <div class="col-4">
+                <div class="border-dashed pt-2 small text-muted">Checked By</div>
+            </div>
+            <div class="col-4">
+                <div class="border-dashed pt-2 small text-muted">Store Manager</div>
+            </div>
+            <div class="col-4">
+                <div class="border-dashed pt-2 small text-muted">Authorized Signatory</div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

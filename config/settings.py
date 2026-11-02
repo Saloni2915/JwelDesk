@@ -128,6 +128,7 @@ INSTALLED_APPS = [
     'wholesale',
     'coupons',
     'girvi',
+    'purchases',
 ]
 
 MIDDLEWARE = [

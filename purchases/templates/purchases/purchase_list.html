@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Purchase Registers | JwelDesk{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-md-4 py-3">
+
+    <!-- Header & Quick Actions -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-journal-text text-warning fs-3"></i>
+                <h3 class="mb-0 fw-bold">Purchase Invoices &amp; Bills</h3>
+            </div>
+            <p class="text-muted small mb-0 mt-1">Complete register of all inward procurement vouchers, bullion intake and supplier bills.</p>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="{% url 'purchases:dashboard' %}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-speedometer2 me-1"></i> Dashboard
+            </a>
+            <a href="{% url 'purchases:purchase_create' %}" class="btn btn-sm btn-warning fw-bold text-dark d-inline-flex align-items-center gap-1 shadow-sm">
+                <i class="bi bi-plus-circle-fill"></i> New Purchase Invoice
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter & Search Card -->
+    <div class="card border-0 shadow-sm mb-4" style="background: var(--card-bg, #1e1812);">
+        <div class="card-body p-3">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-12 col-md-3">
+                    <label class="form-label small text-muted mb-1">Search Keywords</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-dark border-secondary border-opacity-50 text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" name="q" class="form-control" placeholder="Purchase #, Supplier, Bill #..." value="{{ search_query }}">
+                    </div>
+                </div>
+
+                <div class="col-6 col-md-2">
+                    <label class="form-label small text-muted mb-1">Status</label>
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">All Statuses</option>
+                        <option value="DRAFT" {% if selected_status == 'DRAFT' %}selected{% endif %}>Draft</option>
+                        <option value="CONFIRMED" {% if selected_status == 'CONFIRMED' %}selected{% endif %}>Confirmed</option>
+                        <option value="PARTIALLY_PAID" {% if selected_status == 'PARTIALLY_PAID' %}selected{% endif %}>Partially Paid</option>
+                        <option value="PAID" {% if selected_status == 'PAID' %}selected{% endif %}>Paid</option>
+                        <option value="CANCELLED" {% if selected_status == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+
+                <div class="col-6 col-md-2">
+                    <label class="form-label small text-muted mb-1">Purchase Type</label>
+                    <select name="type" class="form-select form-select-sm">
+                        <option value="">All Types</option>
+                        <option value="READY_MADE" {% if selected_type == 'READY_MADE' %}selected{% endif %}>Ready-made</option>
+                        <option value="GOLD" {% if selected_type == 'GOLD' %}selected{% endif %}>Gold</option>
+                        <option value="SILVER" {% if selected_type == 'SILVER' %}selected{% endif %}>Silver</option>
+                        <option value="BULLION" {% if selected_type == 'BULLION' %}selected{% endif %}>Bullion / Bar</option>
+                        <option value="DIAMOND" {% if selected_type == 'DIAMOND' %}selected{% endif %}>Diamond</option>
+                        <option value="GEMSTONE" {% if selected_type == 'GEMSTONE' %}selected{% endif %}>Gemstone</option>
+                    </select>
+                </div>
+
+                <div class="col-6 col-md-2">
+                    <label class="form-label small text-muted mb-1">Supplier</label>
+                    <select name="supplier" class="form-select form-select-sm">
+                        <option value="">All Suppliers</option>
+                        {% for s in suppliers %}
+                        <option value="{{ s.id }}" {% if selected_supplier == s.id|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-6 col-md-2">
+                    <label class="form-label small text-muted mb-1">From Date</label>
+                    <input type="date" name="from" class="form-control form-control-sm" value="{{ date_from }}">
+                </div>
+
+                <div class="col-12 col-md-1 d-flex gap-1">
+                    <button type="submit" class="btn btn-sm btn-warning w-100 fw-bold">Filter</button>
+                    <a href="{% url 'purchases:purchase_list' %}" class="btn btn-sm btn-outline-secondary" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Purchase Register Table -->
+    <div class="card border-0 shadow-sm" style="background: var(--card-bg, #1e1812);">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="color: inherit;">
+                    <thead class="table-dark text-muted small text-uppercase" style="border-bottom: 2px solid rgba(255,255,255,0.08);">
+                        <tr>
+                            <th>Purchase #</th>
+                            <th>Date</th>
+                            <th>Supplier / Party</th>
+                            <th>Vendor Bill #</th>
+                            <th>Type</th>
+                            <th>Net Weight (g)</th>
+                            <th>Subtotal</th>
+                            <th>GST</th>
+                            <th>Grand Total</th>
+                            <th>Balance</th>
+                            <th>Status</th>
+                            <th>Stock</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inv in page_obj %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'purchases:purchase_detail' inv.pk %}" class="fw-bold text-warning text-decoration-none">
+                                    {{ inv.purchase_number }}
+                                </a>
+                                {% if inv.branch %}
+                                <div class="small text-muted" style="font-size: 0.72rem;">{{ inv.branch.name }}</div>
+                                {% endif %}
+                            </td>
+                            <td>{{ inv.purchase_date|date:"d M Y" }}</td>
+                            <td>
+                                <a href="{% url 'purchases:supplier_detail' inv.supplier.pk %}" class="text-light fw-semibold text-decoration-none">
+                                    {{ inv.supplier.name }}
+                                </a>
+                                <div class="small text-muted" style="font-size: 0.72rem;">{{ inv.supplier.mobile }}</div>
+                            </td>
+                            <td>
+                                <span class="font-monospace text-light small">{{ inv.supplier_invoice_number|default:"-" }}</span>
+                                {% if inv.supplier_invoice_date %}
+                                <div class="text-muted" style="font-size: 0.70rem;">{{ inv.supplier_invoice_date|date:"d/m/Y" }}</div>
+                                {% endif %}
+                            </td>
+                            <td><span class="badge bg-secondary bg-opacity-25 text-light small">{{ inv.get_purchase_type_display }}</span></td>
+                            <td class="fw-semibold">
+                                {{ inv.total_net_weight }}g
+                                <div class="small text-muted" style="font-size: 0.70rem;">{{ inv.total_quantity }} pcs</div>
+                            </td>
+                            <td>₹{{ inv.subtotal|floatformat:2|intcomma }}</td>
+                            <td>
+                                <span class="small text-muted">₹{{ inv.total_tax_amount|floatformat:2|intcomma }}</span>
+                                <div style="font-size: 0.68rem;" class="text-muted">{{ inv.get_tax_type_display }} ({{ inv.tax_rate }}%)</div>
+                            </td>
+                            <td class="fw-bold fs-6">₹{{ inv.grand_total|floatformat:2|intcomma }}</td>
+                            <td>
+                                {% if inv.balance_amount > 0 %}
+                                <span class="text-danger fw-bold">₹{{ inv.balance_amount|floatformat:2|intcomma }}</span>
+                                {% else %}
+                                <span class="text-success small fw-semibold">Settled</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if inv.status == 'CONFIRMED' %}
+                                <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-25">Confirmed</span>
+                                {% elif inv.status == 'DRAFT' %}
+                                <span class="badge bg-secondary bg-opacity-25 text-white-50">Draft</span>
+                                {% elif inv.status == 'PARTIALLY_PAID' %}
+                                <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-25">Partially Paid</span>
+                                {% elif inv.status == 'PAID' %}
+                                <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-25">Paid</span>
+                                {% else %}
+                                <span class="badge bg-danger bg-opacity-20 text-danger">{{ inv.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if inv.inventory_status == 'STOCKED' %}
+                                <span class="badge bg-success bg-opacity-20 text-success"><i class="bi bi-box-seam me-1"></i>Stocked</span>
+                                {% elif inv.inventory_status == 'PENDING' %}
+                                <span class="badge bg-warning bg-opacity-20 text-warning">Pending</span>
+                                {% elif inv.inventory_status == 'PARTIALLY_RETURNED' %}
+                                <span class="badge bg-warning bg-opacity-20 text-warning">Part. Returned</span>
+                                {% elif inv.inventory_status == 'RETURNED' %}
+                                <span class="badge bg-secondary bg-opacity-20 text-muted">Returned</span>
+                                {% else %}
+                                <span class="text-muted small">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'purchases:purchase_detail' inv.pk %}" class="btn btn-outline-light py-1 px-2" title="View Detail">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'purchases:purchase_voucher' inv.pk %}" target="_blank" class="btn btn-outline-light py-1 px-2" title="Print Voucher">
+                                        <i class="bi bi-printer"></i>
+                                    </a>
+                                    {% if inv.status == 'DRAFT' %}
+                                    <a href="{% url 'purchases:purchase_edit' inv.pk %}" class="btn btn-outline-warning py-1 px-2" title="Edit Draft">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="13" class="text-center py-5 text-muted">
+                                <i class="bi bi-journal-x fs-1 d-block mb-2 text-white-50"></i>
+                                No purchase records match the selected filters.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <div class="p-3 border-top border-secondary border-opacity-25 d-flex justify-content-between align-items-center">
+                <span class="small text-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} Total Invoices)</span>
+                <ul class="pagination pagination-sm mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}&status={{ selected_status }}&type={{ selected_type }}&supplier={{ selected_supplier }}">&laquo;</a></li>
+                    {% endif %}
+                    {% for p in page_obj.paginator.page_range %}
+                    {% if p == page_obj.number %}
+                    <li class="page-item active"><span class="page-link bg-warning text-dark border-warning">{{ p }}</span></li>
+                    {% elif p >= page_obj.number|add:"-2" and p <= page_obj.number|add:"2" %}
+                    <li class="page-item"><a class="page-link" href="?page={{ p }}&q={{ search_query }}&status={{ selected_status }}&type={{ selected_type }}&supplier={{ selected_supplier }}">{{ p }}</a></li>
+                    {% endif %}
+                    {% endfor %}
+                    {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search_query }}&status={{ selected_status }}&type={{ selected_type }}&supplier={{ selected_supplier }}">&raquo;</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

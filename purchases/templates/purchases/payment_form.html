@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Record Supplier Payment | JwelDesk{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-md-4 py-3">
+
+    <!-- Top Bar -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{% url 'purchases:payment_list' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <h3 class="mb-0 fw-bold">Record Supplier Payment</h3>
+            </div>
+            <p class="text-muted small mb-0 mt-1">Settle a specific purchase invoice or make an on-account advance payment.</p>
+        </div>
+        <a href="{% url 'purchases:payment_list' %}" class="btn btn-sm btn-outline-light">
+            <i class="bi bi-x-lg me-1"></i> Cancel
+        </a>
+    </div>
+
+    {% if form.errors %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>Please check the errors below:</strong>
+        <ul class="mb-0 mt-1 small">
+            {% for field, errors in form.errors.items %}
+                {% for error in errors %}
+                    <li>{{ field|title }}: {{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm" style="background: var(--card-bg, #1e1812); border-left: 4px solid #22c55e !important;">
+                <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3">
+                    <h5 class="mb-0 fw-bold text-success"><i class="bi bi-cash-stack me-2"></i>Outward Payment Voucher Details</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold">Supplier / Party <span class="text-danger">*</span></label>
+                                {{ form.supplier }}
+                                {% if form.supplier.errors %}<div class="text-danger small mt-1">{{ form.supplier.errors.0 }}</div>{% endif %}
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold">Specific Bill to Settle (Optional)</label>
+                                {{ form.purchase_invoice }}
+                                <div class="form-text text-muted small">Leave blank to make an On-Account / Advance payment.</div>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold">Payment Date <span class="text-danger">*</span></label>
+                                {{ form.payment_date }}
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold">Amount Paid (₹) <span class="text-danger">*</span></label>
+                                {{ form.amount }}
+                                {% if form.amount.errors %}<div class="text-danger small mt-1">{{ form.amount.errors.0 }}</div>{% endif %}
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label small fw-semibold">Payment Mode <span class="text-danger">*</span></label>
+                                {{ form.payment_method }}
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label small fw-semibold">Reference / UTR / Cheque #</label>
+                                {{ form.reference }}
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label small fw-semibold">Remitting Bank Name</label>
+                                {{ form.bank_name }}
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold">Payment Notes / Narration</label>
+                                {{ form.notes }}
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top border-secondary border-opacity-25">
+                            <a href="{% url 'purchases:payment_list' %}" class="btn btn-outline-secondary px-4">Cancel</a>
+                            <button type="submit" class="btn btn-success fw-bold px-4 py-2 text-white">
+                                <i class="bi bi-check2-circle me-1"></i> Record &amp; Issue Voucher
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Party Ledger: {{ supplier.name }} | JwelDesk{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-md-4 py-3">
+
+    <!-- Top Action Bar -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 d-print-none">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{% url 'purchases:supplier_detail' supplier.pk %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <h3 class="mb-0 fw-bold">Party Statement / Ledger</h3>
+                <span class="badge bg-secondary font-monospace">{{ supplier.supplier_code }}</span>
+            </div>
+            <p class="text-muted small mb-0 mt-1">Audit ledger statement of purchases, payments, returns, and running balance.</p>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <button onclick="window.print()" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-printer me-1"></i> Print Statement
+            </button>
+            <a href="{% url 'purchases:payment_create' %}?supplier={{ supplier.pk }}" class="btn btn-sm btn-success fw-bold text-white shadow-sm">
+                <i class="bi bi-cash-stack me-1"></i> Record Payment
+            </a>
+            <a href="{% url 'purchases:supplier_detail' supplier.pk %}" class="btn btn-sm btn-outline-warning">
+                <i class="bi bi-person me-1"></i> Supplier Profile
+            </a>
+        </div>
+    </div>
+
+    <!-- Date Range Filter (Screen Only) -->
+    <div class="card border-0 shadow-sm mb-4 d-print-none" style="background: var(--card-bg, #1e1812);">
+        <div class="card-body p-3">
+            <form method="get" class="row g-2 align-items-center">
+                <div class="col-12 col-md-4">
+                    <label class="form-label small text-muted mb-1">From Date</label>
+                    <input type="date" name="from" class="form-control form-control-sm" value="{{ date_from }}">
+                </div>
+                <div class="col-12 col-md-4">
+                    <label class="form-label small text-muted mb-1">To Date</label>
+                    <input type="date" name="to" class="form-control form-control-sm" value="{{ date_to }}">
+                </div>
+                <div class="col-12 col-md-4 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-sm btn-warning fw-bold flex-grow-1">Filter Statement</button>
+                    <a href="{% url 'purchases:supplier_ledger' supplier.pk %}" class="btn btn-sm btn-outline-secondary" title="Reset Filters">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Print Header (Visible on print & screen) -->
+    <div class="card border-0 shadow-sm mb-4 p-4" style="background: var(--card-bg, #1e1812);">
+        <div class="row align-items-center mb-3">
+            <div class="col-8">
+                <h4 class="fw-bold mb-1">{{ company.company_name|default:"JwelDesk Jewellery" }}</h4>
+                <div class="small text-muted">{{ company.address|linebreaksbr }}</div>
+                {% if company.gstin %}<div class="small text-muted"><strong>GSTIN:</strong> {{ company.gstin }}</div>{% endif %}
+            </div>
+            <div class="col-4 text-end">
+                <h5 class="fw-bold text-warning text-uppercase mb-1">Supplier Statement</h5>
+                <div class="small text-muted font-monospace">Generated: {% now "d M Y, h:i A" %}</div>
+                {% if date_from or date_to %}
+                    <div class="small text-muted">Period: {{ date_from|default:"Start" }} to {{ date_to|default:"Today" }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <hr class="border-secondary border-opacity-25 my-3">
+
+        <div class="row">
+            <div class="col-6">
+                <span class="text-muted small text-uppercase fw-semibold d-block">Account Holder / Party:</span>
+                <h5 class="fw-bold text-white mb-1">{{ supplier.name }}</h5>
+                <div class="small text-muted">{{ supplier.address|default:"" }} {{ supplier.city|default:"" }} {{ supplier.state|default:"" }}</div>
+                <div class="small text-muted"><strong>Mobile:</strong> {{ supplier.mobile }} &bull; <strong>GSTIN:</strong> {{ supplier.gstin|default:"Unregistered" }}</div>
+            </div>
+            <div class="col-6 text-end">
+                <span class="text-muted small text-uppercase fw-semibold d-block">Net Balance Due</span>
+                <h3 class="fw-bold my-1 {% if supplier.current_balance > 0 %}text-danger{% elif supplier.current_balance < 0 %}text-success{% else %}text-muted{% endif %}">
+                    ₹{{ supplier.current_balance|floatformat:2|intcomma }}
+                </h3>
+                <span class="small text-muted">
+                    {% if supplier.current_balance > 0 %}(Payable by Shop){% elif supplier.current_balance < 0 %}(Advance Deposited){% else %}(Fully Settled){% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial KPI Totals -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm p-3" style="background: var(--card-bg, #1e1812); border-left: 4px solid #ef4444 !important;">
+                <span class="text-muted small text-uppercase fw-semibold d-block">Total Purchases / Invoiced (Credit)</span>
+                <h4 class="fw-bold my-1 text-danger">₹{{ total_credits|floatformat:2|intcomma }}</h4>
+                <span class="small text-muted">Added to supplier payable</span>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm p-3" style="background: var(--card-bg, #1e1812); border-left: 4px solid #22c55e !important;">
+                <span class="text-muted small text-uppercase fw-semibold d-block">Total Settlements / Returns (Debit)</span>
+                <h4 class="fw-bold my-1 text-success">₹{{ total_debits|floatformat:2|intcomma }}</h4>
+                <span class="small text-muted">Payments made &amp; return debit notes</span>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm p-3" style="background: var(--card-bg, #1e1812); border-left: 4px solid var(--bs-warning) !important;">
+                <span class="text-muted small text-uppercase fw-semibold d-block">Closing Running Balance</span>
+                <h4 class="fw-bold my-1 text-warning">₹{{ supplier.current_balance|floatformat:2|intcomma }}</h4>
+                <span class="small text-muted">Current balance at ledger close</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statement Table -->
+    <div class="card border-0 shadow-sm" style="background: var(--card-bg, #1e1812);">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="color: inherit;">
+                    <thead class="table-dark text-muted small text-uppercase" style="border-bottom: 2px solid rgba(255,255,255,0.08);">
+                        <tr>
+                            <th>#</th>
+                            <th>Date</th>
+                            <th>Transaction Type</th>
+                            <th>Voucher / Ref #</th>
+                            <th>Narration / Details</th>
+                            <th class="text-end">Debit (₹)</th>
+                            <th class="text-end">Credit (₹)</th>
+                            <th class="text-end">Running Balance (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in entries %}
+                        <tr>
+                            <td class="small text-muted">{{ forloop.counter }}</td>
+                            <td class="small text-nowrap">{{ entry.entry_date|date:"d M Y" }}</td>
+                            <td>
+                                {% if entry.entry_type == 'PURCHASE_INVOICE' %}
+                                    <span class="badge bg-danger-subtle text-danger">Purchase Bill</span>
+                                {% elif entry.entry_type == 'PAYMENT' %}
+                                    <span class="badge bg-success-subtle text-success">Payment Paid</span>
+                                {% elif entry.entry_type == 'PURCHASE_RETURN' %}
+                                    <span class="badge bg-info-subtle text-info">Return / Debit Note</span>
+                                {% elif entry.entry_type == 'OPENING_BALANCE' %}
+                                    <span class="badge bg-warning-subtle text-warning">Opening Balance</span>
+                                {% else %}
+                                    <span class="badge bg-secondary-subtle text-secondary">{{ entry.get_entry_type_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="font-monospace small">
+                                {% if entry.purchase_invoice %}
+                                    <a href="{% url 'purchases:purchase_detail' entry.purchase_invoice.pk %}" class="text-warning text-decoration-none">
+                                        {{ entry.reference_number }}
+                                    </a>
+                                {% elif entry.payment %}
+                                    <a href="{% url 'purchases:payment_receipt' entry.payment.pk %}" class="text-success text-decoration-none">
+                                        {{ entry.reference_number }}
+                                    </a>
+                                {% elif entry.purchase_return %}
+                                    <a href="{% url 'purchases:return_detail' entry.purchase_return.pk %}" class="text-info text-decoration-none">
+                                        {{ entry.reference_number }}
+                                    </a>
+                                {% else %}
+                                    {{ entry.reference_number }}
+                                {% endif %}
+                            </td>
+                            <td class="small text-muted">{{ entry.description }}</td>
+                            <td class="text-end text-success fw-semibold">
+                                {% if entry.debit_amount > 0 %}₹{{ entry.debit_amount|floatformat:2|intcomma }}{% else %}-{% endif %}
+                            </td>
+                            <td class="text-end text-danger fw-semibold">
+                                {% if entry.credit_amount > 0 %}₹{{ entry.credit_amount|floatformat:2|intcomma }}{% else %}-{% endif %}
+                            </td>
+                            <td class="text-end fw-bold font-monospace">
+                                ₹{{ entry.balance_after|floatformat:2|intcomma }}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-muted small">No transactions found in this period.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-dark fw-bold" style="border-top: 2px solid rgba(255,255,255,0.1);">
+                        <tr>
+                            <td colspan="5" class="text-end text-uppercase small">Total Period Activity</td>
+                            <td class="text-end text-success">₹{{ total_debits|floatformat:2|intcomma }}</td>
+                            <td class="text-end text-danger">₹{{ total_credits|floatformat:2|intcomma }}</td>
+                            <td class="text-end text-warning">₹{{ supplier.current_balance|floatformat:2|intcomma }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .d-print-none, .sidebar, .topbar, header, footer {
+        display: none !important;
+    }
+    body, .card {
+        background: white !important;
+        color: black !important;
+    }
+    table, th, td {
+        color: black !important;
+        border-color: #ddd !important;
+    }
+    .badge {
+        border: 1px solid #333 !important;
+        color: black !important;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Payment Voucher #{{ payment.payment_number }} | JwelDesk{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- Action Bar (Hidden on print) -->
+    <div class="d-flex align-items-center justify-content-between mb-4 d-print-none">
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'purchases:payment_list' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h4 class="mb-0 fw-bold">Payment Voucher #{{ payment.payment_number }}</h4>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <button onclick="window.print()" class="btn btn-warning text-dark fw-bold">
+                <i class="bi bi-printer-fill me-1"></i> Print Voucher
+            </button>
+            <a href="{% url 'purchases:supplier_detail' payment.supplier.pk %}" class="btn btn-outline-light">
+                <i class="bi bi-person me-1"></i> Supplier Profile
+            </a>
+        </div>
+    </div>
+
+    <!-- Printable Voucher Slip -->
+    <div class="card border-0 shadow-lg mx-auto p-4 p-md-5 voucher-paper" style="max-width: 820px; background: var(--card-bg, #1e1812); border-top: 5px solid #22c55e !important;">
+        <!-- Header -->
+        <div class="row align-items-start border-bottom pb-4 mb-4" style="border-color: rgba(255,255,255,0.1) !important;">
+            <div class="col-7">
+                <h3 class="fw-bold text-white mb-1">{{ company.company_name|default:"JwelDesk Showroom" }}</h3>
+                <div class="small text-muted">{{ company.address|linebreaksbr }}</div>
+                {% if company.phone %}<div class="small text-muted"><strong>Tel:</strong> {{ company.phone }}</div>{% endif %}
+                {% if company.gstin %}<div class="small text-muted"><strong>GSTIN:</strong> {{ company.gstin }}</div>{% endif %}
+            </div>
+            <div class="col-5 text-end">
+                <span class="badge bg-success-subtle text-success fs-6 px-3 py-2 text-uppercase mb-2">Payment Outward Voucher</span>
+                <div class="font-monospace fw-bold fs-5 text-white">{{ payment.payment_number }}</div>
+                <div class="small text-muted"><strong>Date:</strong> {{ payment.payment_date|date:"d M Y" }}</div>
+                {% if payment.is_cancelled %}
+                    <span class="badge bg-danger mt-2">CANCELLED / VOID</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Paid To Details -->
+        <div class="row mb-4">
+            <div class="col-6">
+                <span class="text-muted small text-uppercase fw-semibold d-block">Paid To (Beneficiary):</span>
+                <h5 class="fw-bold text-white mb-1">{{ payment.supplier.name }}</h5>
+                <div class="small text-muted"><strong>Party Code:</strong> {{ payment.supplier.supplier_code }}</div>
+                <div class="small text-muted"><strong>Mobile:</strong> {{ payment.supplier.mobile }}</div>
+                {% if payment.supplier.gstin %}<div class="small text-muted"><strong>GSTIN:</strong> {{ payment.supplier.gstin }}</div>{% endif %}
+                {% if payment.supplier.bank_name %}
+                    <div class="small text-muted mt-1"><strong>Bank:</strong> {{ payment.supplier.bank_name }} | <strong>A/C:</strong> {{ payment.supplier.account_number }}</div>
+                {% endif %}
+            </div>
+            <div class="col-6 text-end">
+                <span class="text-muted small text-uppercase fw-semibold d-block">Settlement Against:</span>
+                {% if payment.purchase_invoice %}
+                    <div class="fw-bold text-warning fs-6">Bill #{{ payment.purchase_invoice.purchase_number }}</div>
+                    {% if payment.purchase_invoice.supplier_invoice_number %}
+                        <div class="small text-muted">Vendor Inv: {{ payment.purchase_invoice.supplier_invoice_number }}</div>
+                    {% endif %}
+                    <div class="small text-muted">Original Total: ₹{{ payment.purchase_invoice.grand_total|floatformat:2|intcomma }}</div>
+                    <div class="small text-muted">Bill Balance Left: ₹{{ payment.purchase_invoice.balance_amount|floatformat:2|intcomma }}</div>
+                {% else %}
+                    <div class="fw-bold text-info">On-Account Advance</div>
+                    <div class="small text-muted">Credited to party ledger</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Amount Box -->
+        <div class="card bg-dark bg-opacity-50 border border-secondary border-opacity-25 p-4 mb-4 text-center">
+            <span class="text-muted small text-uppercase fw-semibold">Amount Paid</span>
+            <h1 class="display-5 fw-bold text-success my-2">₹{{ payment.amount|floatformat:2|intcomma }}</h1>
+            <div class="text-muted small font-monospace">
+                Method: <strong>{{ payment.payment_method }}</strong>
+                {% if payment.reference %} | Reference: <strong>{{ payment.reference }}</strong>{% endif %}
+                {% if payment.bank_name %} | Bank: <strong>{{ payment.bank_name }}</strong>{% endif %}
+            </div>
+        </div>
+
+        {% if payment.notes %}
+        <div class="mb-4">
+            <span class="text-muted small text-uppercase fw-semibold d-block mb-1">Narration / Notes:</span>
+            <div class="p-2 rounded bg-dark bg-opacity-25 small text-light">{{ payment.notes }}</div>
+        </div>
+        {% endif %}
+
+        <!-- Signatures -->
+        <div class="row pt-5 mt-4 border-top" style="border-color: rgba(255,255,255,0.1) !important;">
+            <div class="col-6 text-center">
+                <div class="border-top border-secondary border-opacity-50 w-75 mx-auto pt-2">
+                    <span class="small text-muted">Authorized Signatory</span>
+                    <div class="fw-semibold small text-white">{{ payment.created_by.get_full_name|default:payment.created_by.username }}</div>
+                </div>
+            </div>
+            <div class="col-6 text-center">
+                <div class="border-top border-secondary border-opacity-50 w-75 mx-auto pt-2">
+                    <span class="small text-muted">Receiver / Vendor Signature</span>
+                    <div class="fw-semibold small text-white">{{ payment.supplier.name }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .d-print-none, .sidebar, .topbar, header, footer {
+        display: none !important;
+    }
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    .voucher-paper {
+        background: white !important;
+        color: black !important;
+        border: 2px solid #333 !important;
+        box-shadow: none !important;
+    }
+    .text-white, .text-light, .text-muted {
+        color: black !important;
+    }
+    .badge {
+        border: 1px solid #333 !important;
+        color: black !important;
+    }
+}
+</style>
+{% endblock %}

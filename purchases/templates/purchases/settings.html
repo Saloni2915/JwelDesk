@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Purchase Settings | JwelDesk{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-md-4 py-3">
+
+    <!-- Top Bar -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{% url 'purchases:dashboard' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <h3 class="mb-0 fw-bold">Purchase Module Configuration</h3>
+            </div>
+            <p class="text-muted small mb-0 mt-1">Configure voucher number sequences, GST input tax rates, and automatic inventory synchronization rules.</p>
+        </div>
+        <a href="{% url 'purchases:dashboard' %}" class="btn btn-sm btn-outline-light">
+            <i class="bi bi-x-lg me-1"></i> Close
+        </a>
+    </div>
+
+    {% if form.errors %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>Please correct the configuration errors below:</strong>
+        <ul class="mb-0 mt-1 small">
+            {% for field, errors in form.errors.items %}
+                {% for error in errors %}
+                    <li>{{ field|title }}: {{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <!-- 1. Voucher Numbering Sequences -->
+                <div class="card border-0 shadow-sm mb-4" style="background: var(--card-bg, #1e1812);">
+                    <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3">
+                        <h6 class="mb-0 fw-bold text-warning"><i class="bi bi-hash me-2"></i>1. Document Prefix Sequences</h6>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold">Purchase Invoice Prefix</label>
+                                {{ form.purchase_prefix }}
+                                <div class="form-text text-muted small">e.g. <code>PUR</code> &rarr; PUR-00001</div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold">Payment Voucher Prefix</label>
+                                {{ form.payment_prefix }}
+                                <div class="form-text text-muted small">e.g. <code>PPAY</code> &rarr; PPAY-00001</div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold">Purchase Return / Debit Note Prefix</label>
+                                {{ form.return_prefix }}
+                                <div class="form-text text-muted small">e.g. <code>PRET</code> &rarr; PRET-00001</div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold">Supplier Party Code Prefix</label>
+                                {{ form.supplier_prefix }}
+                                <div class="form-text text-muted small">e.g. <code>SUP</code> &rarr; SUP-00001</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Tax & Payment Defaults -->
+                <div class="card border-0 shadow-sm mb-4" style="background: var(--card-bg, #1e1812);">
+                    <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3">
+                        <h6 class="mb-0 fw-bold text-warning"><i class="bi bi-percent me-2"></i>2. Default GST &amp; Payment Terms</h6>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label small fw-semibold">Default GST Rate (%)</label>
+                                {{ form.default_tax_rate }}
+                                <div class="form-text text-muted small">Gold/Silver default is 3.00%</div>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label small fw-semibold">Default GST Type</label>
+                                {{ form.default_tax_type }}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label small fw-semibold">Default Credit Days</label>
+                                {{ form.default_payment_terms_days }}
+                                <div class="form-text text-muted small">Standard supplier due days</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Automated Inventory Integration -->
+                <div class="card border-0 shadow-sm mb-4" style="background: var(--card-bg, #1e1812); border-left: 4px solid var(--bs-warning) !important;">
+                    <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3">
+                        <h6 class="mb-0 fw-bold text-warning"><i class="bi bi-box-seam me-2"></i>3. Inventory Synchronization Rules</h6>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="form-check form-switch mb-3">
+                            {{ form.auto_create_inventory_for_ready_made }}
+                            <label class="form-check-label fw-semibold" for="{{ form.auto_create_inventory_for_ready_made.id_for_label }}">
+                                Auto-generate stock jewellery pieces on confirmation
+                            </label>
+                            <div class="form-text text-muted small">
+                                When a purchase bill is confirmed, ready-made jewellery items will automatically create unique barcode pieces in the showroom inventory catalogue using your configured item code series.
+                            </div>
+                        </div>
+
+                        <div class="form-check form-switch">
+                            {{ form.auto_create_inventory_for_bullion }}
+                            <label class="form-check-label fw-semibold" for="{{ form.auto_create_inventory_for_bullion.id_for_label }}">
+                                Bullion stock synchronization (Gold &amp; Silver Bars/Coins)
+                            </label>
+                            <div class="form-text text-muted small">
+                                Automatically log bullion weight intake movements for scrap or metal bars.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save Button -->
+                <div class="d-flex justify-content-end gap-2 mb-4">
+                    <a href="{% url 'purchases:dashboard' %}" class="btn btn-outline-secondary px-4">Cancel</a>
+                    <button type="submit" class="btn btn-warning fw-bold text-dark px-4 py-2">
+                        <i class="bi bi-check2-circle me-1"></i> Save Configuration
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

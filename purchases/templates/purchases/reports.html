@@ -1,0 +1,445 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Purchase Reports &amp; GST Registers | JwelDesk{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-md-4 py-3">
+
+    <!-- Header & Export Action -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-file-earmark-bar-graph-fill text-warning fs-3"></i>
+                <h3 class="mb-0 fw-bold">Purchase &amp; Procurement Reports</h3>
+            </div>
+            <p class="text-muted small mb-0 mt-1">Audit registers, party procurement, metal weight aggregations, and GST input credit.</p>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'purchases:dashboard' %}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-speedometer2 me-1"></i> Dashboard
+            </a>
+            <a href="{% url 'purchases:reports_export_csv' %}?report={{ report_type }}&from={{ date_from }}&to={{ date_to }}&branch={{ selected_branch }}" class="btn btn-sm btn-outline-success fw-semibold">
+                <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export to CSV
+            </a>
+            <button onclick="window.print()" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-printer me-1"></i> Print
+            </button>
+        </div>
+    </div>
+
+    <!-- Report Type Selector Tabs -->
+    <ul class="nav nav-pills mb-4 gap-2 flex-wrap d-print-none">
+        <li class="nav-item">
+            <a class="nav-link py-2 px-3 fw-semibold {% if report_type == 'register' %}active bg-warning text-dark{% else %}btn-outline-secondary text-light{% endif %}"
+               href="?report=register&from={{ date_from }}&to={{ date_to }}&branch={{ selected_branch }}">
+                <i class="bi bi-journal-text me-1"></i> Inward Register
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link py-2 px-3 fw-semibold {% if report_type == 'supplier' %}active bg-warning text-dark{% else %}btn-outline-secondary text-light{% endif %}"
+               href="?report=supplier&from={{ date_from }}&to={{ date_to }}&branch={{ selected_branch }}">
+                <i class="bi bi-people me-1"></i> Supplier-wise
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link py-2 px-3 fw-semibold {% if report_type == 'metal' %}active bg-warning text-dark{% else %}btn-outline-secondary text-light{% endif %}"
+               href="?report=metal&from={{ date_from }}&to={{ date_to }}&branch={{ selected_branch }}">
+                <i class="bi bi-gem me-1"></i> Metal &amp; Purity
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link py-2 px-3 fw-semibold {% if report_type == 'outstanding' %}active bg-warning text-dark{% else %}btn-outline-secondary text-light{% endif %}"
+               href="?report=outstanding&from={{ date_from }}&to={{ date_to }}&branch={{ selected_branch }}">
+                <i class="bi bi-exclamation-triangle me-1"></i> Payables Aging
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link py-2 px-3 fw-semibold {% if report_type == 'payments' %}active bg-warning text-dark{% else %}btn-outline-secondary text-light{% endif %}"
+               href="?report=payments&from={{ date_from }}&to={{ date_to }}&branch={{ selected_branch }}">
+                <i class="bi bi-cash-stack me-1"></i> Outward Payments
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link py-2 px-3 fw-semibold {% if report_type == 'tax' %}active bg-warning text-dark{% else %}btn-outline-secondary text-light{% endif %}"
+               href="?report=tax&from={{ date_from }}&to={{ date_to }}&branch={{ selected_branch }}">
+                <i class="bi bi-receipt-cutoff me-1"></i> GST Input Tax Credit
+            </a>
+        </li>
+    </ul>
+
+    <!-- Filter Bar -->
+    <div class="card border-0 shadow-sm mb-4 d-print-none" style="background: var(--card-bg, #1e1812);">
+        <div class="card-body p-3">
+            <form method="get" class="row g-2 align-items-center">
+                <input type="hidden" name="report" value="{{ report_type }}">
+                <div class="col-12 col-md-3">
+                    <label class="form-label small text-muted mb-1">From Date</label>
+                    <input type="date" name="from" class="form-control form-control-sm" value="{{ date_from }}">
+                </div>
+                <div class="col-12 col-md-3">
+                    <label class="form-label small text-muted mb-1">To Date</label>
+                    <input type="date" name="to" class="form-control form-control-sm" value="{{ date_to }}">
+                </div>
+                {% if branches|length > 1 %}
+                <div class="col-12 col-md-3">
+                    <label class="form-label small text-muted mb-1">Branch</label>
+                    <select name="branch" class="form-select form-select-sm">
+                        <option value="">All Branches</option>
+                        {% for b in branches %}
+                            <option value="{{ b.id }}" {% if selected_branch == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                <div class="col-12 col-md-3 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-sm btn-warning fw-bold flex-grow-1">Generate Report</button>
+                    <a href="?report={{ report_type }}" class="btn btn-sm btn-outline-secondary" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- REPORT 1: INWARD REGISTER -->
+    {% if report_type == 'register' %}
+    <div class="card border-0 shadow-sm mb-4" style="background: var(--card-bg, #1e1812);">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="color: inherit;">
+                    <thead class="table-dark text-muted small text-uppercase">
+                        <tr>
+                            <th>Bill #</th>
+                            <th>Date</th>
+                            <th>Supplier</th>
+                            <th>Type</th>
+                            <th class="text-end">Gross Wt (g)</th>
+                            <th class="text-end">Net Wt (g)</th>
+                            <th class="text-end">Taxable Value</th>
+                            <th class="text-end">GST</th>
+                            <th class="text-end">Grand Total</th>
+                            <th class="text-end">Balance</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inv in report_data.rows %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'purchases:purchase_detail' inv.pk %}" class="fw-bold text-warning text-decoration-none">
+                                    {{ inv.purchase_number }}
+                                </a>
+                                {% if inv.supplier_invoice_number %}
+                                    <div class="small text-muted">Vdr: {{ inv.supplier_invoice_number }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="small text-nowrap">{{ inv.purchase_date|date:"d M Y" }}</td>
+                            <td>
+                                <a href="{% url 'purchases:supplier_detail' inv.supplier.pk %}" class="text-light text-decoration-none">
+                                    {{ inv.supplier.name }}
+                                </a>
+                            </td>
+                            <td><span class="badge bg-secondary-subtle text-light small">{{ inv.get_purchase_type_display }}</span></td>
+                            <td class="text-end font-monospace small">{{ inv.total_gross_weight|floatformat:3 }}</td>
+                            <td class="text-end font-monospace small">{{ inv.total_net_weight|floatformat:3 }}</td>
+                            <td class="text-end">₹{{ inv.subtotal|floatformat:2|intcomma }}</td>
+                            <td class="text-end text-info">₹{{ inv.total_tax_amount|floatformat:2|intcomma }}</td>
+                            <td class="text-end fw-bold">₹{{ inv.grand_total|floatformat:2|intcomma }}</td>
+                            <td class="text-end fw-bold {% if inv.balance_amount > 0 %}text-danger{% else %}text-success{% endif %}">
+                                ₹{{ inv.balance_amount|floatformat:2|intcomma }}
+                            </td>
+                            <td><span class="badge bg-dark border border-secondary text-light">{{ inv.get_status_display }}</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="11" class="text-center py-4 text-muted">No purchase records found for selected period.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    {% if report_data.summary %}
+                    <tfoot class="table-dark fw-bold">
+                        <tr>
+                            <td colspan="4" class="text-uppercase small">Summary Totals</td>
+                            <td class="text-end font-monospace">{{ report_data.summary.total_gw|default:0|floatformat:3 }}g</td>
+                            <td class="text-end font-monospace">{{ report_data.summary.total_nw|default:0|floatformat:3 }}g</td>
+                            <td class="text-end">₹{{ report_data.summary.total_subtotal|default:0|floatformat:2|intcomma }}</td>
+                            <td class="text-end text-info">₹{{ report_data.summary.total_tax|default:0|floatformat:2|intcomma }}</td>
+                            <td class="text-end text-warning">₹{{ report_data.summary.total_grand|default:0|floatformat:2|intcomma }}</td>
+                            <td class="text-end text-danger">₹{{ report_data.summary.total_balance|default:0|floatformat:2|intcomma }}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- REPORT 2: SUPPLIER-WISE -->
+    {% if report_type == 'supplier' %}
+    <div class="card border-0 shadow-sm" style="background: var(--card-bg, #1e1812);">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="color: inherit;">
+                    <thead class="table-dark text-muted small text-uppercase">
+                        <tr>
+                            <th>Code</th>
+                            <th>Supplier / Vendor</th>
+                            <th>Mobile / GSTIN</th>
+                            <th class="text-center">Total Bills</th>
+                            <th class="text-end">Total Procurement (₹)</th>
+                            <th class="text-end">Amount Paid (₹)</th>
+                            <th class="text-end">Current Outstanding</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sup in report_data.rows %}
+                        <tr>
+                            <td class="font-monospace small">{{ sup.supplier_code }}</td>
+                            <td>
+                                <a href="{% url 'purchases:supplier_detail' sup.pk %}" class="fw-bold text-warning text-decoration-none">
+                                    {{ sup.name }}
+                                </a>
+                            </td>
+                            <td class="small text-muted">{{ sup.mobile }} {% if sup.gstin %}&bull; {{ sup.gstin }}{% endif %}</td>
+                            <td class="text-center">{{ sup.bills_count|default:0 }}</td>
+                            <td class="text-end fw-bold">₹{{ sup.procurement_total|default:0|floatformat:2|intcomma }}</td>
+                            <td class="text-end text-success">₹{{ sup.paid_total|default:0|floatformat:2|intcomma }}</td>
+                            <td class="text-end fw-bold {% if sup.current_balance > 0 %}text-danger{% else %}text-muted{% endif %}">
+                                ₹{{ sup.current_balance|floatformat:2|intcomma }}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">No supplier activity found in this period.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- REPORT 3: METAL & PURITY BREAKDOWN -->
+    {% if report_type == 'metal' %}
+    <div class="card border-0 shadow-sm" style="background: var(--card-bg, #1e1812);">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="color: inherit;">
+                    <thead class="table-dark text-muted small text-uppercase">
+                        <tr>
+                            <th>Metal Type</th>
+                            <th>Purity / Grade</th>
+                            <th class="text-center">Pieces</th>
+                            <th class="text-end">Gross Weight (g)</th>
+                            <th class="text-end">Net Weight (g)</th>
+                            <th class="text-end">Fine Weight (g)</th>
+                            <th class="text-end">Total Procurement Value (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in report_data.rows %}
+                        <tr>
+                            <td><span class="badge bg-secondary">{{ row.metal_type }}</span></td>
+                            <td class="fw-bold text-white">{{ row.purity }}</td>
+                            <td class="text-center font-monospace">{{ row.total_pcs }}</td>
+                            <td class="text-end font-monospace">{{ row.total_gross|floatformat:3 }}</td>
+                            <td class="text-end font-monospace">{{ row.total_net|floatformat:3 }}</td>
+                            <td class="text-end font-monospace fw-bold text-warning">{{ row.total_fine|floatformat:3 }}</td>
+                            <td class="text-end fw-bold fs-6">₹{{ row.total_value|floatformat:2|intcomma }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">No items found for the selected period.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- REPORT 4: PAYABLES AGING -->
+    {% if report_type == 'outstanding' %}
+    <div class="card border-0 shadow-sm mb-4" style="background: var(--card-bg, #1e1812); border-left: 4px solid #ef4444 !important;">
+        <div class="card-body p-3 d-flex justify-content-between align-items-center">
+            <div>
+                <span class="text-muted small text-uppercase fw-semibold d-block">Total Accounts Payable (Payable to Vendors)</span>
+                <h3 class="fw-bold my-1 text-danger">₹{{ report_data.total_outstanding|floatformat:2|intcomma }}</h3>
+            </div>
+            <a href="{% url 'purchases:payment_create' %}" class="btn btn-sm btn-success fw-bold text-white">
+                <i class="bi bi-cash-stack me-1"></i> Make Payment
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm" style="background: var(--card-bg, #1e1812);">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="color: inherit;">
+                    <thead class="table-dark text-muted small text-uppercase">
+                        <tr>
+                            <th>Code</th>
+                            <th>Supplier Name</th>
+                            <th>Mobile</th>
+                            <th>GSTIN</th>
+                            <th>City / State</th>
+                            <th class="text-end">Outstanding Payable</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sup in report_data.rows %}
+                        <tr>
+                            <td class="font-monospace small">{{ sup.supplier_code }}</td>
+                            <td>
+                                <a href="{% url 'purchases:supplier_detail' sup.pk %}" class="fw-bold text-warning text-decoration-none">
+                                    {{ sup.name }}
+                                </a>
+                            </td>
+                            <td class="small">{{ sup.mobile }}</td>
+                            <td class="small text-muted">{{ sup.gstin|default:"-" }}</td>
+                            <td class="small text-muted">{{ sup.city|default:"" }} {{ sup.state|default:"" }}</td>
+                            <td class="text-end fw-bold text-danger fs-6">₹{{ sup.current_balance|floatformat:2|intcomma }}</td>
+                            <td class="text-end">
+                                <a href="{% url 'purchases:payment_create' %}?supplier={{ sup.pk }}" class="btn btn-sm btn-outline-success">
+                                    Pay Now
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">All supplier balances settled! Zero outstanding payable.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- REPORT 5: PAYMENTS REGISTER -->
+    {% if report_type == 'payments' %}
+    <div class="card border-0 shadow-sm" style="background: var(--card-bg, #1e1812);">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="color: inherit;">
+                    <thead class="table-dark text-muted small text-uppercase">
+                        <tr>
+                            <th>Voucher #</th>
+                            <th>Date</th>
+                            <th>Supplier</th>
+                            <th>Invoice Settled</th>
+                            <th>Method</th>
+                            <th>Reference</th>
+                            <th class="text-end">Amount Paid</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pay in report_data.rows %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'purchases:payment_receipt' pay.pk %}" class="fw-bold text-success text-decoration-none">
+                                    {{ pay.payment_number }}
+                                </a>
+                            </td>
+                            <td class="small text-nowrap">{{ pay.payment_date|date:"d M Y" }}</td>
+                            <td>
+                                <a href="{% url 'purchases:supplier_detail' pay.supplier.pk %}" class="text-light text-decoration-none">
+                                    {{ pay.supplier.name }}
+                                </a>
+                            </td>
+                            <td>{{ pay.purchase_invoice.purchase_number|default:"On-Account" }}</td>
+                            <td><span class="badge bg-secondary">{{ pay.payment_method }}</span></td>
+                            <td class="font-monospace small">{{ pay.reference|default:"-" }}</td>
+                            <td class="text-end fw-bold text-success fs-6">₹{{ pay.amount|floatformat:2|intcomma }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">No outward payments found in this period.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    {% if report_data.total_amount %}
+                    <tfoot class="table-dark fw-bold">
+                        <tr>
+                            <td colspan="6" class="text-uppercase small">Total Payments Disbursed</td>
+                            <td class="text-end text-success fs-6">₹{{ report_data.total_amount|floatformat:2|intcomma }}</td>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- REPORT 6: GST INPUT TAX CREDIT -->
+    {% if report_type == 'tax' %}
+    <div class="card border-0 shadow-sm" style="background: var(--card-bg, #1e1812);">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="color: inherit;">
+                    <thead class="table-dark text-muted small text-uppercase">
+                        <tr>
+                            <th>Bill #</th>
+                            <th>Date</th>
+                            <th>Supplier</th>
+                            <th>GSTIN</th>
+                            <th class="text-end">Taxable Amount</th>
+                            <th class="text-end">CGST</th>
+                            <th class="text-end">SGST</th>
+                            <th class="text-end">IGST</th>
+                            <th class="text-end">Total ITC (GST)</th>
+                            <th class="text-end">Invoice Grand Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inv in report_data.rows %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'purchases:purchase_detail' inv.pk %}" class="fw-bold text-warning text-decoration-none">
+                                    {{ inv.purchase_number }}
+                                </a>
+                            </td>
+                            <td class="small text-nowrap">{{ inv.purchase_date|date:"d M Y" }}</td>
+                            <td>{{ inv.supplier.name }}</td>
+                            <td class="font-monospace small text-muted">{{ inv.supplier.gstin|default:"Unregistered" }}</td>
+                            <td class="text-end">₹{{ inv.subtotal|floatformat:2|intcomma }}</td>
+                            <td class="text-end text-muted">₹{{ inv.cgst_amount|floatformat:2|intcomma }}</td>
+                            <td class="text-end text-muted">₹{{ inv.sgst_amount|floatformat:2|intcomma }}</td>
+                            <td class="text-end text-muted">₹{{ inv.igst_amount|floatformat:2|intcomma }}</td>
+                            <td class="text-end text-info fw-bold">₹{{ inv.total_tax_amount|floatformat:2|intcomma }}</td>
+                            <td class="text-end fw-bold">₹{{ inv.grand_total|floatformat:2|intcomma }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="10" class="text-center py-4 text-muted">No tax data found for this period.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    {% if report_data.summary %}
+                    <tfoot class="table-dark fw-bold">
+                        <tr>
+                            <td colspan="4" class="text-uppercase small">Total Input Tax Credit (ITC)</td>
+                            <td class="text-end">₹{{ report_data.summary.taxable|default:0|floatformat:2|intcomma }}</td>
+                            <td class="text-end">₹{{ report_data.summary.cgst|default:0|floatformat:2|intcomma }}</td>
+                            <td class="text-end">₹{{ report_data.summary.sgst|default:0|floatformat:2|intcomma }}</td>
+                            <td class="text-end">₹{{ report_data.summary.igst|default:0|floatformat:2|intcomma }}</td>
+                            <td class="text-end text-info fs-6">₹{{ report_data.summary.total_tax|default:0|floatformat:2|intcomma }}</td>
+                            <td class="text-end text-warning fs-6">₹{{ report_data.summary.grand|default:0|floatformat:2|intcomma }}</td>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

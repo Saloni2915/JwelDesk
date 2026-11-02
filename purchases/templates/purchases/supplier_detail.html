@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}{{ supplier.name }} | Supplier Profile | JwelDesk{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-md-4 py-3">
+
+    <!-- Top Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{% url 'purchases:supplier_list' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <h3 class="mb-0 fw-bold">{{ supplier.name }}</h3>
+                <span class="badge bg-secondary font-monospace">{{ supplier.supplier_code }}</span>
+                {% if supplier.is_active %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
+                {% else %}
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Inactive</span>
+                {% endif %}
+            </div>
+            <p class="text-muted small mb-0 mt-1">
+                <i class="bi bi-person me-1"></i>{{ supplier.contact_person|default:"Direct Vendor" }} &bull;
+                <i class="bi bi-telephone me-1"></i>{{ supplier.mobile }}
+                {% if supplier.gstin %} &bull; <i class="bi bi-receipt me-1"></i>GSTIN: {{ supplier.gstin }}{% endif %}
+            </p>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <a href="{% url 'purchases:supplier_ledger' supplier.pk %}" class="btn btn-sm btn-outline-warning">
+                <i class="bi bi-journal-text me-1"></i> Full Ledger Statement
+            </a>
+            <a href="{% url 'purchases:payment_create' %}?supplier={{ supplier.pk }}" class="btn btn-sm btn-success fw-bold text-white shadow-sm">
+                <i class="bi bi-cash-stack me-1"></i> Record Payment
+            </a>
+            <a href="{% url 'purchases:purchase_create' %}?supplier={{ supplier.pk }}" class="btn btn-sm btn-warning fw-bold text-dark shadow-sm">
+                <i class="bi bi-cart-plus-fill me-1"></i> New Purchase Bill
+            </a>
+            <a href="{% url 'purchases:supplier_edit' supplier.pk %}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-pencil me-1"></i> Edit
+            </a>
+        </div>
+    </div>
+
+    <!-- Overview Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm p-3 h-100" style="background: var(--card-bg, #1e1812); border-left: 4px solid {% if supplier.current_balance > 0 %}#ef4444{% elif supplier.current_balance < 0 %}#22c55e{% else %}#6b7280{% endif %} !important;">
+                <span class="text-muted small text-uppercase fw-semibold d-block">Current Outstanding Balance</span>
+                <h3 class="fw-bold my-1 {% if supplier.current_balance > 0 %}text-danger{% elif supplier.current_balance < 0 %}text-success{% else %}text-muted{% endif %}">
+                    ₹{{ supplier.current_balance|abs|floatformat:2|intcomma }}
+                </h3>
+                <span class="small text-muted">
+                    {% if supplier.current_balance > 0 %}
+                        <i class="bi bi-exclamation-circle-fill text-danger me-1"></i>Payable to Supplier
+                    {% elif supplier.current_balance < 0 %}
+                        <i class="bi bi-check-circle-fill text-success me-1"></i>Advance deposited with Supplier
+                    {% else %}
+                        <i class="bi bi-check2 me-1"></i>Settled (Zero balance)
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4">
+            <div class="card border-0 shadow-sm p-3 h-100" style="background: var(--card-bg, #1e1812);">
+                <span class="text-muted small text-uppercase fw-semibold d-block">Opening Balance</span>
+                <h4 class="fw-bold my-1">₹{{ supplier.opening_balance|floatformat:2|intcomma }}</h4>
+                <span class="small text-muted">Ledger opening recorded at onboarding</span>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4">
+            <div class="card border-0 shadow-sm p-3 h-100" style="background: var(--card-bg, #1e1812);">
+                <span class="text-muted small text-uppercase fw-semibold d-block">Settlement &amp; Bank Info</span>
+                <div class="small mt-2">
+                    {% if supplier.bank_name %}
+                        <div><strong>Bank:</strong> {{ supplier.bank_name }}</div>
+                        <div><strong>A/C:</strong> {{ supplier.account_number|default:"-" }}</div>
+                        <div><strong>IFSC:</strong> {{ supplier.ifsc_code|default:"-" }}</div>
+                    {% elif supplier.upi_id %}
+                        <div><strong>UPI:</strong> {{ supplier.upi_id }}</div>
+                    {% else %}
+                        <span class="text-muted">No banking details recorded.</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content: Invoices & Payments -->
+    <div class="row g-4 mb-4">
+        <!-- Recent Invoices -->
+        <div class="col-12 col-lg-7">
+            <div class="card border-0 shadow-sm" style="background: var(--card-bg, #1e1812);">
+                <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center py-3">
+                    <h6 class="mb-0 fw-bold text-warning"><i class="bi bi-receipt me-2"></i>Recent Purchase Bills</h6>
+                    <a href="{% url 'purchases:purchase_list' %}?q={{ supplier.supplier_code }}" class="btn btn-sm btn-link text-warning p-0 text-decoration-none small">
+                        View All Bills <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" style="color: inherit;">
+                            <thead class="table-dark text-muted small text-uppercase">
+                                <tr>
+                                    <th>Bill #</th>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th class="text-end">Amount</th>
+                                    <th class="text-end">Balance</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inv in recent_invoices %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'purchases:purchase_detail' inv.pk %}" class="fw-bold text-warning text-decoration-none">
+                                            {{ inv.purchase_number }}
+                                        </a>
+                                        {% if inv.supplier_invoice_number %}
+                                            <div class="small text-muted">Bill: {{ inv.supplier_invoice_number }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td class="small">{{ inv.purchase_date|date:"d M Y" }}</td>
+                                    <td><span class="badge bg-secondary-subtle text-light small">{{ inv.get_purchase_type_display }}</span></td>
+                                    <td class="text-end fw-semibold">₹{{ inv.grand_total|floatformat:2|intcomma }}</td>
+                                    <td class="text-end fw-bold {% if inv.balance_amount > 0 %}text-danger{% else %}text-success{% endif %}">
+                                        ₹{{ inv.balance_amount|floatformat:2|intcomma }}
+                                    </td>
+                                    <td>
+                                        {% if inv.status == 'CONFIRMED' %}
+                                            <span class="badge bg-info-subtle text-info">Confirmed</span>
+                                        {% elif inv.status == 'PARTIALLY_PAID' %}
+                                            <span class="badge bg-warning-subtle text-warning">Partial</span>
+                                        {% elif inv.status == 'PAID' %}
+                                            <span class="badge bg-success-subtle text-success">Paid</span>
+                                        {% elif inv.status == 'DRAFT' %}
+                                            <span class="badge bg-secondary-subtle text-secondary">Draft</span>
+                                        {% else %}
+                                            <span class="badge bg-danger-subtle text-danger">{{ inv.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted small">No purchase bills recorded for this supplier.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Payments -->
+        <div class="col-12 col-lg-5">
+            <div class="card border-0 shadow-sm" style="background: var(--card-bg, #1e1812);">
+                <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center py-3">
+                    <h6 class="mb-0 fw-bold text-success"><i class="bi bi-cash-stack me-2"></i>Recent Outward Payments</h6>
+                    <a href="{% url 'purchases:payment_list' %}?supplier={{ supplier.pk }}" class="btn btn-sm btn-link text-success p-0 text-decoration-none small">
+                        View All <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" style="color: inherit;">
+                            <thead class="table-dark text-muted small text-uppercase">
+                                <tr>
+                                    <th>Voucher #</th>
+                                    <th>Date</th>
+                                    <th>Mode</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pay in recent_payments %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'purchases:payment_receipt' pay.pk %}" class="fw-bold text-success text-decoration-none">
+                                            {{ pay.payment_number }}
+                                        </a>
+                                        {% if pay.reference %}
+                                            <div class="small text-muted font-monospace">{{ pay.reference }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td class="small">{{ pay.payment_date|date:"d M Y" }}</td>
+                                    <td><span class="badge bg-secondary-subtle text-light small">{{ pay.payment_method }}</span></td>
+                                    <td class="text-end fw-bold text-success">₹{{ pay.amount|floatformat:2|intcomma }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted small">No outward payments recorded yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Ledger Entries Snippet -->
+    <div class="card border-0 shadow-sm" style="background: var(--card-bg, #1e1812);">
+        <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center py-3">
+            <h6 class="mb-0 fw-bold text-warning"><i class="bi bi-journal-check me-2"></i>Recent Ledger Entries</h6>
+            <a href="{% url 'purchases:supplier_ledger' supplier.pk %}" class="btn btn-sm btn-outline-warning">
+                Open Full Statement
+            </a>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="color: inherit;">
+                    <thead class="table-dark text-muted small text-uppercase">
+                        <tr>
+                            <th>Date</th>
+                            <th>Entry Type</th>
+                            <th>Reference</th>
+                            <th>Description</th>
+                            <th class="text-end">Debit (₹)</th>
+                            <th class="text-end">Credit (₹)</th>
+                            <th class="text-end">Balance After</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in recent_ledger %}
+                        <tr>
+                            <td class="small">{{ entry.entry_date|date:"d M Y" }}</td>
+                            <td><span class="badge bg-secondary font-monospace">{{ entry.get_entry_type_display }}</span></td>
+                            <td class="font-monospace small">{{ entry.reference_number }}</td>
+                            <td class="small text-muted">{{ entry.description }}</td>
+                            <td class="text-end text-success fw-semibold">
+                                {% if entry.debit_amount > 0 %}₹{{ entry.debit_amount|floatformat:2|intcomma }}{% else %}-{% endif %}
+                            </td>
+                            <td class="text-end text-danger fw-semibold">
+                                {% if entry.credit_amount > 0 %}₹{{ entry.credit_amount|floatformat:2|intcomma }}{% else %}-{% endif %}
+                            </td>
+                            <td class="text-end fw-bold">₹{{ entry.balance_after|floatformat:2|intcomma }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted small">No ledger entries recorded.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

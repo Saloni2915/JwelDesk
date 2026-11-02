@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Purchase Returns &amp; Debit Notes | JwelDesk{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-md-4 py-3">
+
+    <!-- Header & Actions -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-arrow-return-left text-danger fs-3"></i>
+                <h3 class="mb-0 fw-bold">Purchase Returns &amp; Debit Notes</h3>
+            </div>
+            <p class="text-muted small mb-0 mt-1">Vendor returns, defective jewellery send-backs, and purchase credit adjustments.</p>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'purchases:dashboard' %}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-speedometer2 me-1"></i> Dashboard
+            </a>
+            <a href="{% url 'purchases:purchase_list' %}" class="btn btn-sm btn-warning text-dark fw-bold">
+                <i class="bi bi-plus-circle me-1"></i> New Return (From Bill)
+            </a>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="card border-0 shadow-sm mb-4" style="background: var(--card-bg, #1e1812);">
+        <div class="card-body p-3">
+            <form method="get" class="row g-2 align-items-center">
+                <div class="col-12 col-md-8">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-dark border-secondary border-opacity-50 text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" name="q" class="form-control" placeholder="Search return #, original invoice #, supplier name..." value="{{ search_query }}">
+                    </div>
+                </div>
+                <div class="col-12 col-md-4 d-flex gap-1">
+                    <button type="submit" class="btn btn-sm btn-warning w-100 fw-bold">Search Returns</button>
+                    <a href="{% url 'purchases:return_list' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i></a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Returns Table -->
+    <div class="card border-0 shadow-sm" style="background: var(--card-bg, #1e1812);">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="color: inherit;">
+                    <thead class="table-dark text-muted small text-uppercase" style="border-bottom: 2px solid rgba(255,255,255,0.08);">
+                        <tr>
+                            <th>Debit Note #</th>
+                            <th>Date</th>
+                            <th>Original Bill #</th>
+                            <th>Supplier Name</th>
+                            <th>Returned Items</th>
+                            <th class="text-end">Return Weight (g)</th>
+                            <th class="text-end">Return Amount</th>
+                            <th>Adjustment Mode</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ret in page_obj %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'purchases:return_detail' ret.pk %}" class="fw-bold text-danger text-decoration-none">
+                                    {{ ret.return_number }}
+                                </a>
+                            </td>
+                            <td class="small text-nowrap">{{ ret.return_date|date:"d M Y" }}</td>
+                            <td>
+                                <a href="{% url 'purchases:purchase_detail' ret.original_invoice.pk %}" class="text-warning text-decoration-none font-monospace small">
+                                    {{ ret.original_invoice.purchase_number }}
+                                </a>
+                            </td>
+                            <td>
+                                <a href="{% url 'purchases:supplier_detail' ret.supplier.pk %}" class="text-light text-decoration-none fw-semibold">
+                                    {{ ret.supplier.name }}
+                                </a>
+                            </td>
+                            <td><span class="badge bg-secondary">{{ ret.total_return_quantity }} pcs</span></td>
+                            <td class="text-end font-monospace small">{{ ret.total_return_weight|floatformat:3 }}g</td>
+                            <td class="text-end fw-bold text-danger fs-6">₹{{ ret.total_return_amount|floatformat:2|intcomma }}</td>
+                            <td>
+                                {% if ret.adjustment_mode == 'REDUCE_INVOICE_BALANCE' %}
+                                    <span class="badge bg-warning-subtle text-warning">Deducted from Bill</span>
+                                {% elif ret.adjustment_mode == 'SUPPLIER_CREDIT_NOTE' %}
+                                    <span class="badge bg-info-subtle text-info">Credit to Ledger</span>
+                                {% else %}
+                                    <span class="badge bg-success-subtle text-success">Cash/Bank Refund</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end text-nowrap">
+                                <a href="{% url 'purchases:return_detail' ret.pk %}" class="btn btn-sm btn-outline-light" title="View Debit Note">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5 text-muted">
+                                <i class="bi bi-arrow-return-left fs-1 d-block mb-2 opacity-50"></i>
+                                No purchase return debit notes found.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <div class="card-footer bg-transparent border-top border-secondary border-opacity-25 py-3 d-flex justify-content-between align-items-center">
+            <span class="small text-muted">Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} returns</span>
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}">&laquo;</a></li>
+                {% endif %}
+                <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search_query }}">&raquo;</a></li>
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

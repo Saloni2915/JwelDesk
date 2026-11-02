@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Suppliers &amp; Vendors | JwelDesk{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-md-4 py-3">
+
+    <!-- Header & Actions -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-people-fill text-warning fs-3"></i>
+                <h3 class="mb-0 fw-bold">Suppliers &amp; Parties Directory</h3>
+            </div>
+            <p class="text-muted small mb-0 mt-1">Bullion vendors, manufacturers, karigar workshops and stone dealers.</p>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'purchases:dashboard' %}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-speedometer2 me-1"></i> Dashboard
+            </a>
+            <a href="{% url 'purchases:supplier_create' %}" class="btn btn-sm btn-warning fw-bold text-dark d-inline-flex align-items-center gap-1 shadow-sm">
+                <i class="bi bi-person-plus-fill"></i> Add New Supplier
+            </a>
+        </div>
+    </div>
+
+    <!-- Balance KPI Pills -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-6">
+            <div class="card border-0 shadow-sm p-3" style="background: var(--card-bg, #1e1812); border-left: 4px solid #ef4444 !important;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small text-uppercase fw-semibold d-block">Total Accounts Payable (We Owe)</span>
+                        <h4 class="fw-bold my-1 text-danger">₹{{ total_payable|floatformat:2|intcomma }}</h4>
+                    </div>
+                    <a href="?balance=payable" class="btn btn-sm btn-outline-danger">Filter Payable</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6">
+            <div class="card border-0 shadow-sm p-3" style="background: var(--card-bg, #1e1812); border-left: 4px solid #22c55e !important;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small text-uppercase fw-semibold d-block">Total Supplier Advances (Debit Balance)</span>
+                        <h4 class="fw-bold my-1 text-success">₹{{ total_advance|floatformat:2|intcomma }}</h4>
+                    </div>
+                    <a href="?balance=advance" class="btn btn-sm btn-outline-success">Filter Advances</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search & Filter Form -->
+    <div class="card border-0 shadow-sm mb-4" style="background: var(--card-bg, #1e1812);">
+        <div class="card-body p-3">
+            <form method="get" class="row g-2 align-items-center">
+                <div class="col-12 col-md-5">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-dark border-secondary border-opacity-50 text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" name="q" class="form-control" placeholder="Search supplier name, mobile, code, GSTIN..." value="{{ search_query }}">
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <select name="balance" class="form-select form-select-sm">
+                        <option value="">All Balances</option>
+                        <option value="payable" {% if balance_filter == 'payable' %}selected{% endif %}>Payable (Balance &gt; 0)</option>
+                        <option value="advance" {% if balance_filter == 'advance' %}selected{% endif %}>Advance (Balance &lt; 0)</option>
+                        <option value="zero" {% if balance_filter == 'zero' %}selected{% endif %}>Zero Balance</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-2 d-flex gap-1">
+                    <button type="submit" class="btn btn-sm btn-warning w-100 fw-bold">Search</button>
+                    <a href="{% url 'purchases:supplier_list' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i></a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Supplier Table -->
+    <div class="card border-0 shadow-sm" style="background: var(--card-bg, #1e1812);">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="color: inherit;">
+                    <thead class="table-dark text-muted small text-uppercase" style="border-bottom: 2px solid rgba(255,255,255,0.08);">
+                        <tr>
+                            <th>Code</th>
+                            <th>Supplier / Business Name</th>
+                            <th>Contact Person</th>
+                            <th>Mobile / Phone</th>
+                            <th>GSTIN</th>
+                            <th>City / State</th>
+                            <th class="text-end">Current Balance</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in page_obj %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'purchases:supplier_detail' s.pk %}" class="fw-bold text-warning font-monospace text-decoration-none">
+                                    {{ s.supplier_code }}
+                                </a>
+                            </td>
+                            <td>
+                                <a href="{% url 'purchases:supplier_detail' s.pk %}" class="fw-bold text-light text-decoration-none">
+                                    {{ s.name }}
+                                </a>
+                            </td>
+                            <td>{{ s.contact_person|default:"-" }}</td>
+                            <td>{{ s.mobile }}</td>
+                            <td>
+                                {% if s.gstin %}
+                                <span class="font-monospace text-light small">{{ s.gstin }}</span>
+                                {% else %}
+                                <span class="text-muted small">Unregistered</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="small text-muted">{{ s.city|default:"" }}{% if s.state %}, {{ s.state }}{% endif %}</span>
+                            </td>
+                            <td class="text-end">
+                                {% if s.current_balance > 0 %}
+                                <span class="fw-bold text-danger fs-6">₹{{ s.current_balance|floatformat:2|intcomma }}</span>
+                                <div class="small text-muted" style="font-size: 0.68rem;">Payable</div>
+                                {% elif s.current_balance < 0 %}
+                                <span class="fw-bold text-success fs-6">₹{{ s.current_balance|stringformat:"f"|slice:"1:"|floatformat:2|intcomma }}</span>
+                                <div class="small text-muted" style="font-size: 0.68rem;">Advance</div>
+                                {% else %}
+                                <span class="text-muted small">₹0.00</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if s.is_active %}
+                                <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-25 small">Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary bg-opacity-25 text-white-50 small">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'purchases:supplier_detail' s.pk %}" class="btn btn-outline-light py-1 px-2" title="View Profile">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'purchases:supplier_ledger' s.pk %}" class="btn btn-outline-warning py-1 px-2" title="Party Ledger Statement">
+                                        <i class="bi bi-journal-bookmark"></i>
+                                    </a>
+                                    <a href="{% url 'purchases:supplier_edit' s.pk %}" class="btn btn-outline-light py-1 px-2" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5 text-muted">
+                                <i class="bi bi-people fs-1 d-block mb-2 text-white-50"></i>
+                                No suppliers registered yet. Click <strong>"Add New Supplier"</strong> to register your first procurement partner.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if page_obj.has_other_pages %}
+            <div class="p-3 border-top border-secondary border-opacity-25 d-flex justify-content-between align-items-center">
+                <span class="small text-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                <ul class="pagination pagination-sm mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}">&laquo;</a></li>
+                    {% endif %}
+                    {% for p in page_obj.paginator.page_range %}
+                    <li class="page-item {% if p == page_obj.number %}active{% endif %}">
+                        <a class="page-link" href="?page={{ p }}&q={{ search_query }}">{{ p }}</a>
+                    </li>
+                    {% endfor %}
+                    {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search_query }}">&raquo;</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

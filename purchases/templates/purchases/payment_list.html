@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Supplier Payments | JwelDesk{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-md-4 py-3">
+
+    <!-- Header & Actions -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-cash-stack text-success fs-3"></i>
+                <h3 class="mb-0 fw-bold">Supplier Payments Register</h3>
+            </div>
+            <p class="text-muted small mb-0 mt-1">Record outward settlements, bank transfers, cheques, and bill clearances.</p>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'purchases:dashboard' %}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-speedometer2 me-1"></i> Dashboard
+            </a>
+            <a href="{% url 'purchases:payment_create' %}" class="btn btn-sm btn-success fw-bold text-white shadow-sm">
+                <i class="bi bi-plus-circle me-1"></i> Record New Payment
+            </a>
+        </div>
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div class="card border-0 shadow-sm mb-4" style="background: var(--card-bg, #1e1812);">
+        <div class="card-body p-3">
+            <form method="get" class="row g-2 align-items-center">
+                <div class="col-12 col-md-5">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-dark border-secondary border-opacity-50 text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" name="q" class="form-control" placeholder="Search payment #, supplier name, UTR / Cheque ref..." value="{{ search_query }}">
+                    </div>
+                </div>
+                <div class="col-6 col-md-4">
+                    <select name="supplier" class="form-select form-select-sm">
+                        <option value="">All Suppliers</option>
+                        {% for s in suppliers %}
+                            <option value="{{ s.id }}" {% if selected_supplier == s.id|stringformat:"s" %}selected{% endif %}>
+                                {{ s.name }} ({{ s.supplier_code }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-md-3 d-flex gap-1">
+                    <button type="submit" class="btn btn-sm btn-warning w-100 fw-bold">Filter</button>
+                    <a href="{% url 'purchases:payment_list' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i></a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Payments Table -->
+    <div class="card border-0 shadow-sm" style="background: var(--card-bg, #1e1812);">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="color: inherit;">
+                    <thead class="table-dark text-muted small text-uppercase" style="border-bottom: 2px solid rgba(255,255,255,0.08);">
+                        <tr>
+                            <th>Voucher #</th>
+                            <th>Date</th>
+                            <th>Supplier Name</th>
+                            <th>Settles Invoice #</th>
+                            <th>Payment Mode</th>
+                            <th>Reference / UTR</th>
+                            <th class="text-end">Amount Paid</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pay in page_obj %}
+                        <tr {% if pay.is_cancelled %}class="opacity-50 text-decoration-line-through"{% endif %}>
+                            <td>
+                                <a href="{% url 'purchases:payment_receipt' pay.pk %}" class="fw-bold text-success text-decoration-none">
+                                    {{ pay.payment_number }}
+                                </a>
+                            </td>
+                            <td class="small text-nowrap">{{ pay.payment_date|date:"d M Y" }}</td>
+                            <td>
+                                <a href="{% url 'purchases:supplier_detail' pay.supplier.pk %}" class="text-light text-decoration-none fw-semibold">
+                                    {{ pay.supplier.name }}
+                                </a>
+                                <div class="small text-muted font-monospace">{{ pay.supplier.supplier_code }}</div>
+                            </td>
+                            <td>
+                                {% if pay.purchase_invoice %}
+                                    <a href="{% url 'purchases:purchase_detail' pay.purchase_invoice.pk %}" class="badge bg-secondary-subtle text-warning text-decoration-none font-monospace">
+                                        {{ pay.purchase_invoice.purchase_number }}
+                                    </a>
+                                {% else %}
+                                    <span class="badge bg-info-subtle text-info">On-Account / Advance</span>
+                                {% endif %}
+                            </td>
+                            <td><span class="badge bg-dark border border-secondary text-light">{{ pay.payment_method }}</span></td>
+                            <td class="small font-monospace">{{ pay.reference|default:"-" }}</td>
+                            <td class="text-end fw-bold text-success fs-6">₹{{ pay.amount|floatformat:2|intcomma }}</td>
+                            <td>
+                                {% if pay.is_cancelled %}
+                                    <span class="badge bg-danger-subtle text-danger">Cancelled</span>
+                                {% else %}
+                                    <span class="badge bg-success-subtle text-success">Paid</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end text-nowrap">
+                                <a href="{% url 'purchases:payment_receipt' pay.pk %}" class="btn btn-sm btn-outline-light" title="Print Payment Voucher">
+                                    <i class="bi bi-printer"></i>
+                                </a>
+                                {% if not pay.is_cancelled %}
+                                <form method="post" action="{% url 'purchases:payment_cancel' pay.pk %}" class="d-inline" onsubmit="return confirm('Cancel payment #{{ pay.payment_number }}? This will reverse the bill balance and ledger.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Cancel & Reverse Payment">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5 text-muted">
+                                <i class="bi bi-cash-stack fs-1 d-block mb-2 opacity-50"></i>
+                                No payment vouchers found.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <div class="card-footer bg-transparent border-top border-secondary border-opacity-25 py-3 d-flex justify-content-between align-items-center">
+            <span class="small text-muted">Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} payments</span>
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}&supplier={{ selected_supplier }}">&laquo;</a></li>
+                {% endif %}
+                <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search_query }}&supplier={{ selected_supplier }}">&raquo;</a></li>
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

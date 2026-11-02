@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Invoice #{{ invoice.purchase_number }} | JwelDesk{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-md-4 py-3">
+
+    <!-- Top Action Banner -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{% url 'purchases:purchase_list' %}" class="btn btn-sm btn-outline-secondary p-1 px-2"><i class="bi bi-arrow-left"></i></a>
+                <h3 class="mb-0 fw-bold">{{ invoice.purchase_number }}</h3>
+                {% if invoice.status == 'CONFIRMED' %}
+                <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-25 px-2 py-1">Confirmed</span>
+                {% elif invoice.status == 'DRAFT' %}
+                <span class="badge bg-secondary bg-opacity-25 text-white-50 px-2 py-1">Draft</span>
+                {% elif invoice.status == 'PARTIALLY_PAID' %}
+                <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-25 px-2 py-1">Partially Paid</span>
+                {% elif invoice.status == 'PAID' %}
+                <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-25 px-2 py-1">Fully Paid</span>
+                {% else %}
+                <span class="badge bg-danger bg-opacity-20 text-danger px-2 py-1">{{ invoice.get_status_display }}</span>
+                {% endif %}
+            </div>
+            <p class="text-muted small mb-0 mt-1">
+                Recorded on {{ invoice.purchase_date|date:"d M Y" }} &bull; Supplier: <a href="{% url 'purchases:supplier_detail' invoice.supplier.pk %}" class="text-warning text-decoration-none fw-semibold">{{ invoice.supplier.name }}</a>
+            </p>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="{% url 'purchases:purchase_voucher' invoice.pk %}" target="_blank" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-printer me-1"></i> Print Voucher
+            </a>
+
+            {% if invoice.status == 'DRAFT' %}
+            <a href="{% url 'purchases:purchase_edit' invoice.pk %}" class="btn btn-sm btn-outline-warning">
+                <i class="bi bi-pencil me-1"></i> Edit Draft
+            </a>
+            <form method="post" action="{% url 'purchases:purchase_confirm' invoice.pk %}" class="m-0" onsubmit="return confirm('Confirm this invoice? This will automatically intake inventory pieces and post credit to the supplier ledger.');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-warning fw-bold text-dark shadow-sm">
+                    <i class="bi bi-check-circle-fill me-1"></i> Confirm Purchase &amp; Sync Stock
+                </button>
+            </form>
+            {% endif %}
+
+            {% if invoice.status in 'CONFIRMED,PARTIALLY_PAID' and invoice.balance_amount > 0 %}
+            <a href="{% url 'purchases:payment_create' %}?invoice={{ invoice.pk }}&supplier={{ invoice.supplier.pk }}" class="btn btn-sm btn-success fw-bold">
+                <i class="bi bi-cash-stack me-1"></i> Record Payment
+            </a>
+            {% endif %}
+
+            {% if invoice.status in 'CONFIRMED,PARTIALLY_PAID,PAID' and invoice.inventory_status != 'RETURNED' %}
+            <a href="{% url 'purchases:return_create' invoice.pk %}" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-arrow-return-left me-1"></i> Return Items
+            </a>
+            {% endif %}
+
+            {% if invoice.status != 'CANCELLED' and invoice.amount_paid == 0 %}
+            <form method="post" action="{% url 'purchases:purchase_cancel' invoice.pk %}" class="m-0" onsubmit="return confirm('Are you sure you want to cancel this purchase invoice?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-x-circle me-1"></i> Cancel Invoice
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Invoice Header Info Grid -->
+    <div class="row g-3 mb-4">
+        <!-- 1. Supplier Card -->
+        <div class="col-12 col-md-4">
+            <div class="card h-100 border-0 shadow-sm" style="background: var(--card-bg, #1e1812);">
+                <div class="card-body p-3">
+                    <span class="text-muted small text-uppercase fw-semibold d-block">Supplier Details</span>
+                    <h5 class="fw-bold my-1 text-light">{{ invoice.supplier.name }}</h5>
+                    <div class="small text-muted">{{ invoice.supplier.supplier_code }} &bull; {{ invoice.supplier.mobile }}</div>
+                    {% if invoice.supplier.gstin %}<div class="small text-muted">GST: <span class="font-monospace text-warning">{{ invoice.supplier.gstin }}</span></div>{% endif %}
+                    <div class="small mt-2">
+                        Party Outstanding: <span class="{% if invoice.supplier.current_balance > 0 %}text-danger fw-bold{% else %}text-success{% endif %}">₹{{ invoice.supplier.current_balance|floatformat:2|intcomma }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Invoice Meta -->
+        <div class="col-12 col-md-4">
+            <div class="card h-100 border-0 shadow-sm" style="background: var(--card-bg, #1e1812);">
+                <div class="card-body p-3">
+                    <span class="text-muted small text-uppercase fw-semibold d-block">Invoice Meta &amp; Terms</span>
+                    <div class="d-flex justify-content-between mt-1 small">
+                        <span class="text-muted">Vendor Bill #:</span>
+                        <span class="fw-bold text-light font-monospace">{{ invoice.supplier_invoice_number|default:"N/A" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between small">
+                        <span class="text-muted">Vendor Bill Date:</span>
+                        <span class="text-light">{{ invoice.supplier_invoice_date|date:"d M Y"|default:"N/A" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between small">
+                        <span class="text-muted">Due Date:</span>
+                        <span class="fw-bold text-warning">{{ invoice.due_date|date:"d M Y"|default:"Immediate" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between small">
+                        <span class="text-muted">Stock Status:</span>
+                        <span class="fw-semibold {% if invoice.inventory_status == 'STOCKED' %}text-success{% else %}text-muted{% endif %}">{{ invoice.get_inventory_status_display }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Balance & Financial State -->
+        <div class="col-12 col-md-4">
+            <div class="card h-100 border-0 shadow-sm" style="background: var(--card-bg, #1e1812);">
+                <div class="card-body p-3">
+                    <span class="text-muted small text-uppercase fw-semibold d-block">Payment Summary</span>
+                    <div class="d-flex justify-content-between mt-1">
+                        <span class="text-muted small">Grand Total:</span>
+                        <span class="fw-bold fs-5 text-warning">₹{{ invoice.grand_total|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between small text-success">
+                        <span>Amount Paid:</span>
+                        <span class="fw-semibold">₹{{ invoice.amount_paid|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mt-1 pt-1 border-top border-secondary border-opacity-25">
+                        <span class="fw-bold small text-muted">Remaining Balance:</span>
+                        <span class="fw-bold fs-6 {% if invoice.balance_amount > 0 %}text-danger{% else %}text-success{% endif %}">
+                            ₹{{ invoice.balance_amount|floatformat:2|intcomma }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Line Items Table Card -->
+    <div class="card border-0 shadow-sm mb-4" style="background: var(--card-bg, #1e1812);">
+        <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3">
+            <h5 class="mb-0 fw-bold d-flex align-items-center gap-2">
+                <i class="bi bi-gem text-warning"></i> Purchased Line Items ({{ items|length }})
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="color: inherit;">
+                    <thead class="table-dark text-muted small text-uppercase" style="border-bottom: 2px solid rgba(255,255,255,0.08);">
+                        <tr>
+                            <th>#</th>
+                            <th>Item Description</th>
+                            <th>Category</th>
+                            <th>Metal / Purity</th>
+                            <th>Qty</th>
+                            <th>Gross Wt (g)</th>
+                            <th>Stone (g)</th>
+                            <th>Net Wt (g)</th>
+                            <th>Fine Wt (g)</th>
+                            <th>Rate (₹)</th>
+                            <th>Making (₹)</th>
+                            <th>Line Total (₹)</th>
+                            <th>Inventory Item</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for itm in items %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                <div class="fw-bold text-light">{{ itm.item_name }}</div>
+                                {% if itm.huid %}<span class="badge bg-secondary bg-opacity-25 text-warning font-monospace" style="font-size: 0.68rem;">HUID: {{ itm.huid }}</span>{% endif %}
+                            </td>
+                            <td>{{ itm.category.name|default:"-" }}</td>
+                            <td>
+                                <span class="badge bg-secondary bg-opacity-25 text-light">{{ itm.metal_type }}</span>
+                                <span class="small text-muted">{{ itm.purity }} ({{ itm.purity_percentage }}%)</span>
+                            </td>
+                            <td>{{ itm.quantity }}</td>
+                            <td>{{ itm.gross_weight }}g</td>
+                            <td>{{ itm.stone_weight }}g</td>
+                            <td class="fw-bold text-warning">{{ itm.net_weight }}g</td>
+                            <td class="text-info">{{ itm.fine_weight }}g</td>
+                            <td>₹{{ itm.purchase_rate|floatformat:2|intcomma }} <small class="text-muted">/{{ itm.get_rate_type_display }}</small></td>
+                            <td>₹{{ itm.making_charge_total|floatformat:2|intcomma }}</td>
+                            <td class="fw-bold fs-6">₹{{ itm.line_total|floatformat:2|intcomma }}</td>
+                            <td>
+                                {% if itm.inventory_item %}
+                                <a href="{% url 'inventory_detail' itm.inventory_item.pk %}" class="badge bg-success bg-opacity-20 text-success text-decoration-none border border-success border-opacity-25 p-1" title="View in Inventory Stock">
+                                    <i class="bi bi-box-seam me-1"></i>{{ itm.inventory_item.item_code }}
+                                </a>
+                                {% else %}
+                                <span class="text-muted small">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-dark fw-bold" style="border-top: 2px solid rgba(255,255,255,0.1);">
+                        <tr>
+                            <td colspan="4" class="text-uppercase text-muted">Total Aggregates:</td>
+                            <td>{{ invoice.total_quantity }} pcs</td>
+                            <td>{{ invoice.total_gross_weight }}g</td>
+                            <td>{{ invoice.total_stone_weight }}g</td>
+                            <td class="text-warning">{{ invoice.total_net_weight }}g</td>
+                            <td class="text-info">{{ invoice.total_fine_weight }}g</td>
+                            <td colspan="2"></td>
+                            <td class="text-warning fs-5">₹{{ invoice.subtotal|floatformat:2|intcomma }}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Financial & Tax Breakdown Card -->
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-md-6">
+            <!-- Linked Payments History -->
+            <div class="card border-0 shadow-sm h-100" style="background: var(--card-bg, #1e1812);">
+                <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold d-flex align-items-center gap-2">
+                        <i class="bi bi-cash-stack text-success"></i> Payments Against Invoice ({{ payments|length }})
+                    </h6>
+                    {% if invoice.balance_amount > 0 and invoice.status in 'CONFIRMED,PARTIALLY_PAID' %}
+                    <a href="{% url 'purchases:payment_create' %}?invoice={{ invoice.pk }}&supplier={{ invoice.supplier.pk }}" class="btn btn-sm btn-outline-success py-0 px-2" style="font-size: 0.75rem;">+ Add Payment</a>
+                    {% endif %}
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush bg-transparent">
+                        {% for pay in payments %}
+                        <li class="list-group-item bg-transparent border-secondary border-opacity-25 d-flex justify-content-between align-items-center py-2 px-3">
+                            <div>
+                                <a href="{% url 'purchases:payment_receipt' pay.pk %}" class="fw-bold text-light text-decoration-none">{{ pay.payment_number }}</a>
+                                <div class="small text-muted">{{ pay.payment_date|date:"d M Y" }} &bull; {{ pay.payment_method }} {% if pay.reference %}({{ pay.reference }}){% endif %}</div>
+                            </div>
+                            <div class="text-end">
+                                <span class="fw-bold text-success fs-6">₹{{ pay.amount|floatformat:2|intcomma }}</span>
+                                {% if pay.is_cancelled %}<span class="badge bg-danger ms-1">Cancelled</span>{% endif %}
+                            </div>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item bg-transparent text-center py-4 text-muted small">
+                            No outward payments linked directly to this invoice.
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <!-- Tax & Grand Total Summary -->
+            <div class="card border-0 shadow-sm" style="background: var(--card-bg, #1e1812);">
+                <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3">
+                    <h6 class="mb-0 fw-bold d-flex align-items-center gap-2">
+                        <i class="bi bi-file-earmark-spreadsheet text-warning"></i> Tax &amp; Settlement Calculation
+                    </h6>
+                </div>
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Subtotal (Metal + Charges):</span>
+                        <span class="fw-semibold text-light">₹{{ invoice.subtotal|floatformat:2|intcomma }}</span>
+                    </div>
+                    {% if invoice.discount_amount > 0 %}
+                    <div class="d-flex justify-content-between mb-2 text-danger">
+                        <span>Invoice Discount:</span>
+                        <span>-₹{{ invoice.discount_amount|floatformat:2|intcomma }}</span>
+                    </div>
+                    {% endif %}
+
+                    {% if invoice.tax_type == 'IGST' %}
+                    <div class="d-flex justify-content-between mb-2 small">
+                        <span class="text-muted">IGST ({{ invoice.igst_rate }}%):</span>
+                        <span class="text-light">₹{{ invoice.igst_amount|floatformat:2|intcomma }}</span>
+                    </div>
+                    {% elif invoice.tax_type == 'CGST_SGST' %}
+                    <div class="d-flex justify-content-between mb-1 small">
+                        <span class="text-muted">CGST ({{ invoice.cgst_rate }}%):</span>
+                        <span class="text-light">₹{{ invoice.cgst_amount|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2 small">
+                        <span class="text-muted">SGST ({{ invoice.sgst_rate }}%):</span>
+                        <span class="text-light">₹{{ invoice.sgst_amount|floatformat:2|intcomma }}</span>
+                    </div>
+                    {% else %}
+                    <div class="d-flex justify-content-between mb-2 small text-muted">
+                        <span>Tax Classification:</span>
+                        <span>Exempted</span>
+                    </div>
+                    {% endif %}
+
+                    {% if invoice.round_off != 0 %}
+                    <div class="d-flex justify-content-between mb-2 small text-muted">
+                        <span>Round Off:</span>
+                        <span>₹{{ invoice.round_off|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+
+                    <hr class="border-secondary border-opacity-25 my-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold fs-6">Grand Total:</span>
+                        <span class="fw-bold fs-4 text-warning">₹{{ invoice.grand_total|floatformat:2|intcomma }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Purchase Dashboard | JwelDesk{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-md-4 py-3">
+
+    <!-- Page Header & Action Buttons -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-bag-check-fill text-warning fs-3"></i>
+                <h3 class="mb-0 fw-bold">Purchase Management</h3>
+                <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-25 px-2 py-1 small">Procurement</span>
+            </div>
+            <p class="text-muted small mb-0 mt-1">Manage supplier invoices, bullion purchases, inventory intake, payments and accounts payable.</p>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            {% if branches %}
+            <form method="get" class="d-inline-flex align-items-center gap-1">
+                <select name="branch" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 140px;">
+                    <option value="">All Branches</option>
+                    {% for b in branches %}
+                    <option value="{{ b.id }}" {% if selected_branch_id == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            {% endif %}
+
+            <a href="{% url 'purchases:supplier_create' %}" class="btn btn-sm btn-outline-warning d-inline-flex align-items-center gap-1">
+                <i class="bi bi-person-plus-fill"></i> New Supplier
+            </a>
+            <a href="{% url 'purchases:payment_create' %}" class="btn btn-sm btn-outline-light d-inline-flex align-items-center gap-1">
+                <i class="bi bi-cash-stack"></i> Record Payment
+            </a>
+            <a href="{% url 'purchases:purchase_create' %}" class="btn btn-sm btn-warning fw-bold text-dark d-inline-flex align-items-center gap-1 shadow-sm">
+                <i class="bi bi-plus-circle-fill"></i> New Purchase Invoice
+            </a>
+        </div>
+    </div>
+
+    <!-- KPI Metric Cards (6 Cards) -->
+    <div class="row g-3 mb-4">
+        <!-- 1. Today's Purchases -->
+        <div class="col-6 col-lg-2">
+            <div class="card h-100 border-0 shadow-sm" style="background: var(--card-bg, #1e1812); border-left: 4px solid #ecc86a !important;">
+                <div class="card-body p-3">
+                    <span class="text-muted small text-uppercase fw-semibold d-block">Today's Purchases</span>
+                    <h4 class="fw-bold my-1 text-warning">₹{{ today_total|floatformat:2|intcomma }}</h4>
+                    <span class="badge bg-secondary bg-opacity-25 text-white-50 small">{{ today_count }} Invoice(s)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. This Month's Purchases -->
+        <div class="col-6 col-lg-2">
+            <div class="card h-100 border-0 shadow-sm" style="background: var(--card-bg, #1e1812); border-left: 4px solid #38bdf8 !important;">
+                <div class="card-body p-3">
+                    <span class="text-muted small text-uppercase fw-semibold d-block">This Month</span>
+                    <h4 class="fw-bold my-1 text-info">₹{{ month_total|floatformat:2|intcomma }}</h4>
+                    <span class="badge bg-secondary bg-opacity-25 text-white-50 small">{{ month_count }} Invoice(s)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Total Procurement -->
+        <div class="col-6 col-lg-2">
+            <div class="card h-100 border-0 shadow-sm" style="background: var(--card-bg, #1e1812); border-left: 4px solid #a855f7 !important;">
+                <div class="card-body p-3">
+                    <span class="text-muted small text-uppercase fw-semibold d-block">Total Value</span>
+                    <h4 class="fw-bold my-1" style="color: #c084fc;">₹{{ total_procurement|floatformat:2|intcomma }}</h4>
+                    <span class="text-muted small">Cumulative Purchases</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Total Supplier Outstanding Payable -->
+        <div class="col-6 col-lg-2">
+            <div class="card h-100 border-0 shadow-sm" style="background: var(--card-bg, #1e1812); border-left: 4px solid #ef4444 !important;">
+                <div class="card-body p-3">
+                    <span class="text-muted small text-uppercase fw-semibold d-block">Accounts Payable</span>
+                    <h4 class="fw-bold my-1 text-danger">₹{{ total_outstanding|floatformat:2|intcomma }}</h4>
+                    <span class="badge bg-danger bg-opacity-20 text-danger small">Outstanding to Parties</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Monthly Payments -->
+        <div class="col-6 col-lg-2">
+            <div class="card h-100 border-0 shadow-sm" style="background: var(--card-bg, #1e1812); border-left: 4px solid #22c55e !important;">
+                <div class="card-body p-3">
+                    <span class="text-muted small text-uppercase fw-semibold d-block">Month Payments</span>
+                    <h4 class="fw-bold my-1 text-success">₹{{ month_payments_total|floatformat:2|intcomma }}</h4>
+                    <span class="badge bg-success bg-opacity-20 text-success small">Settled to Vendors</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. Purchase Returns -->
+        <div class="col-6 col-lg-2">
+            <div class="card h-100 border-0 shadow-sm" style="background: var(--card-bg, #1e1812); border-left: 4px solid #f97316 !important;">
+                <div class="card-body p-3">
+                    <span class="text-muted small text-uppercase fw-semibold d-block">Month Returns</span>
+                    <h4 class="fw-bold my-1 text-warning">₹{{ month_returns_total|floatformat:2|intcomma }}</h4>
+                    <span class="badge bg-warning bg-opacity-20 text-warning small">{{ month_returns_count }} Debit Note(s)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Columns: Recent Invoices & Sidebar Widgets -->
+    <div class="row g-4">
+        <!-- Left: Recent Purchase Invoices -->
+        <div class="col-12 col-xl-8">
+            <div class="card border-0 shadow-sm" style="background: var(--card-bg, #1e1812);">
+                <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 d-flex align-items-center justify-content-between py-3">
+                    <h5 class="mb-0 fw-bold d-flex align-items-center gap-2">
+                        <i class="bi bi-receipt-cutoff text-warning"></i> Recent Purchase Invoices
+                    </h5>
+                    <a href="{% url 'purchases:purchase_list' %}" class="btn btn-sm btn-link text-warning text-decoration-none">
+                        View All Registers <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" style="color: inherit;">
+                            <thead class="table-dark text-muted small text-uppercase" style="border-bottom: 2px solid rgba(255,255,255,0.08);">
+                                <tr>
+                                    <th>Purchase #</th>
+                                    <th>Date</th>
+                                    <th>Supplier</th>
+                                    <th>Type</th>
+                                    <th>Weight (g)</th>
+                                    <th>Grand Total</th>
+                                    <th>Balance</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inv in recent_invoices %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'purchases:purchase_detail' inv.pk %}" class="fw-bold text-warning text-decoration-none">
+                                            {{ inv.purchase_number }}
+                                        </a>
+                                        {% if inv.supplier_invoice_number %}
+                                        <div class="small text-muted font-monospace">{{ inv.supplier_invoice_number }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ inv.purchase_date|date:"d M Y" }}</td>
+                                    <td>
+                                        <a href="{% url 'purchases:supplier_detail' inv.supplier.pk %}" class="text-decoration-none text-light fw-semibold">
+                                            {{ inv.supplier.name }}
+                                        </a>
+                                    </td>
+                                    <td><span class="badge bg-secondary bg-opacity-25 text-light">{{ inv.get_purchase_type_display }}</span></td>
+                                    <td>
+                                        <div class="fw-semibold">{{ inv.total_net_weight }}g <span class="text-muted small">net</span></div>
+                                        <div class="text-muted small">{{ inv.total_gross_weight }}g gross</div>
+                                    </td>
+                                    <td class="fw-bold">₹{{ inv.grand_total|floatformat:2|intcomma }}</td>
+                                    <td>
+                                        {% if inv.balance_amount > 0 %}
+                                        <span class="text-danger fw-bold">₹{{ inv.balance_amount|floatformat:2|intcomma }}</span>
+                                        {% else %}
+                                        <span class="text-success small fw-semibold">Settled</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if inv.status == 'CONFIRMED' %}
+                                        <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-25">Confirmed</span>
+                                        {% elif inv.status == 'DRAFT' %}
+                                        <span class="badge bg-secondary bg-opacity-25 text-white-50">Draft</span>
+                                        {% elif inv.status == 'PARTIALLY_PAID' %}
+                                        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-25">Partially Paid</span>
+                                        {% elif inv.status == 'PAID' %}
+                                        <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-25">Paid</span>
+                                        {% else %}
+                                        <span class="badge bg-danger bg-opacity-20 text-danger">{{ inv.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{% url 'purchases:purchase_detail' inv.pk %}" class="btn btn-sm btn-outline-light py-1 px-2" title="Inspect Invoice">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="9" class="text-center py-5 text-muted">
+                                        <i class="bi bi-inbox fs-1 d-block mb-2 text-white-50"></i>
+                                        No purchase invoices recorded yet. Click <strong>"New Purchase Invoice"</strong> to record your first procurement bill.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Due Invoices & Top Suppliers -->
+        <div class="col-12 col-xl-4">
+            <!-- 1. Invoices Due Soon / Pending Settlement -->
+            <div class="card border-0 shadow-sm mb-4" style="background: var(--card-bg, #1e1812);">
+                <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3 d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0 fw-bold d-flex align-items-center gap-2">
+                        <i class="bi bi-hourglass-split text-warning"></i> Due Bills &amp; Payables
+                    </h6>
+                    <a href="{% url 'purchases:payment_create' %}" class="btn btn-sm btn-outline-warning py-0 px-2" style="font-size: 0.75rem;">Pay</a>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush bg-transparent">
+                        {% for inv in due_invoices %}
+                        <li class="list-group-item bg-transparent border-secondary border-opacity-25 d-flex align-items-center justify-content-between py-2 px-3">
+                            <div>
+                                <div class="fw-bold text-light">{{ inv.supplier.name }}</div>
+                                <div class="small text-muted">{{ inv.purchase_number }} &bull; Due: {{ inv.due_date|default:"Immediate" }}</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold text-danger">₹{{ inv.balance_amount|floatformat:2|intcomma }}</div>
+                                <a href="{% url 'purchases:payment_create' %}?invoice={{ inv.id }}" class="small text-warning text-decoration-none">Record Payment</a>
+                            </div>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item bg-transparent text-center py-4 text-muted small">
+                            <i class="bi bi-check-circle text-success fs-4 d-block mb-1"></i>
+                            No pending dues on active invoices!
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 2. Top Suppliers by Procurement Volume -->
+            <div class="card border-0 shadow-sm" style="background: var(--card-bg, #1e1812);">
+                <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3 d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0 fw-bold d-flex align-items-center gap-2">
+                        <i class="bi bi-award-fill text-warning"></i> Top Procurement Partners
+                    </h6>
+                    <a href="{% url 'purchases:supplier_list' %}" class="small text-warning text-decoration-none">All Suppliers</a>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush bg-transparent">
+                        {% for sup in top_suppliers %}
+                        <li class="list-group-item bg-transparent border-secondary border-opacity-25 d-flex align-items-center justify-content-between py-2 px-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; background: rgba(236,200,106,0.15); color: #ecc86a; font-size: 0.8rem;">
+                                    {{ forloop.counter }}
+                                </div>
+                                <div>
+                                    <a href="{% url 'purchases:supplier_detail' sup.pk %}" class="fw-bold text-light text-decoration-none">
+                                        {{ sup.name }}
+                                    </a>
+                                    <div class="small text-muted">{{ sup.supplier_code }}</div>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold text-warning">₹{{ sup.purchase_sum|floatformat:2|intcomma }}</div>
+                                <div class="small {% if sup.current_balance > 0 %}text-danger{% else %}text-muted{% endif %}">
+                                    Bal: ₹{{ sup.current_balance|floatformat:2|intcomma }}
+                                </div>
+                            </div>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item bg-transparent text-center py-4 text-muted small">
+                            No supplier history yet.
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

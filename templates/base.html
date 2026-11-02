@@ -631,6 +631,94 @@
                     </li>
                     {% endif %}
 
+                    <!-- 2.7 Purchases & Procurement Module -->
+                    {% if 'purchases' not in hidden_menus %}
+                    {% if user.is_superuser or user.is_staff or not user.employee_profile or user_perms.purchases.can_view %}
+                    <li class="nav-item" data-menu-key="purchases">
+                        <a class="nav-link sidebar-dropdown-toggle {% if request.resolver_match.app_name == 'purchases' or '/purchases/' in request.path %}parent-active{% else %}collapsed{% endif %}"
+                           data-bs-toggle="collapse"
+                           href="#submenu-purchases"
+                           role="button"
+                           aria-expanded="{% if request.resolver_match.app_name == 'purchases' or '/purchases/' in request.path %}true{% else %}false{% endif %}"
+                           aria-controls="submenu-purchases">
+                            <span class="sidebar-item-content">
+                                <i class="bi bi-bag-check sidebar-item-icon"></i>
+                                <span class="sidebar-item-title">{% if is_hindi %}खरीद एवं सप्लायर{% else %}Purchases{% endif %}</span>
+                            </span>
+                            <i class="bi bi-chevron-down dropdown-chevron"></i>
+                        </a>
+                        <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.app_name == 'purchases' or '/purchases/' in request.path %}show{% endif %}" id="submenu-purchases">
+                            <ul class="nav flex-column sidebar-submenu">
+                                {% if 'sub_purchases_dashboard' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_purchases_dashboard">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'purchases' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+                                       href="{% url 'purchases:dashboard' %}">
+                                        <i class="bi bi-speedometer2"></i> {% if is_hindi %}खरीद डैशबोर्ड{% else %}Purchase Dashboard{% endif %}
+                                    </a>
+                                </li>
+                                {% endif %}
+                                {% if 'sub_purchases_create' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_purchases_create">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'purchases' and request.resolver_match.url_name == 'purchase_create' %}active{% endif %}"
+                                       href="{% url 'purchases:purchase_create' %}">
+                                        <i class="bi bi-cart-plus"></i> {% if is_hindi %}नई खरीद बिल{% else %}New Purchase{% endif %}
+                                    </a>
+                                </li>
+                                {% endif %}
+                                {% if 'sub_purchases_list' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_purchases_list">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'purchases' and request.resolver_match.url_name in 'purchase_list purchase_detail purchase_edit' %}active{% endif %}"
+                                       href="{% url 'purchases:purchase_list' %}">
+                                        <i class="bi bi-receipt"></i> {% if is_hindi %}खरीद रिकॉर्ड्स{% else %}Purchase Records{% endif %}
+                                    </a>
+                                </li>
+                                {% endif %}
+                                {% if 'sub_purchases_suppliers' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_purchases_suppliers">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'purchases' and 'supplier' in request.resolver_match.url_name %}active{% endif %}"
+                                       href="{% url 'purchases:supplier_list' %}">
+                                        <i class="bi bi-people"></i> {% if is_hindi %}सप्लायर्स / पार्टियां{% else %}Suppliers / Parties{% endif %}
+                                    </a>
+                                </li>
+                                {% endif %}
+                                {% if 'sub_purchases_payments' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_purchases_payments">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'purchases' and 'payment' in request.resolver_match.url_name %}active{% endif %}"
+                                       href="{% url 'purchases:payment_list' %}">
+                                        <i class="bi bi-cash-stack"></i> {% if is_hindi %}सप्लायर भुगतान{% else %}Supplier Payments{% endif %}
+                                    </a>
+                                </li>
+                                {% endif %}
+                                {% if 'sub_purchases_returns' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_purchases_returns">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'purchases' and 'return' in request.resolver_match.url_name %}active{% endif %}"
+                                       href="{% url 'purchases:return_list' %}">
+                                        <i class="bi bi-arrow-return-left"></i> {% if is_hindi %}खरीद वापसी (Debit Notes){% else %}Purchase Returns{% endif %}
+                                    </a>
+                                </li>
+                                {% endif %}
+                                {% if 'sub_purchases_reports' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_purchases_reports">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'purchases' and request.resolver_match.url_name == 'reports' %}active{% endif %}"
+                                       href="{% url 'purchases:reports' %}">
+                                        <i class="bi bi-file-earmark-bar-graph"></i> {% if is_hindi %}खरीद रिपोर्ट्स{% else %}Purchase Reports{% endif %}
+                                    </a>
+                                </li>
+                                {% endif %}
+                                {% if 'sub_purchases_settings' not in hidden_menus %}
+                                <li class="nav-item" data-submenu-key="sub_purchases_settings">
+                                    <a class="nav-link {% if request.resolver_match.app_name == 'purchases' and request.resolver_match.url_name == 'settings' %}active{% endif %}"
+                                       href="{% url 'purchases:settings' %}">
+                                        <i class="bi bi-gear"></i> {% if is_hindi %}खरीद सेटिंग्स{% else %}Purchase Settings{% endif %}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </li>
+                    {% endif %}
+                    {% endif %}
+
                     <!-- 3. Stock -->
                     {% if 'inventory' not in hidden_menus %}
                     <li class="nav-item" data-menu-key="inventory">

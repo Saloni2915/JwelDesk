@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Debit Note #{{ purchase_return.return_number }} | JwelDesk{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- Action Bar (Hidden on print) -->
+    <div class="d-flex align-items-center justify-content-between mb-4 d-print-none">
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'purchases:return_list' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h4 class="mb-0 fw-bold">Purchase Return Debit Note #{{ purchase_return.return_number }}</h4>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <button onclick="window.print()" class="btn btn-warning text-dark fw-bold">
+                <i class="bi bi-printer-fill me-1"></i> Print Debit Note
+            </button>
+            <a href="{% url 'purchases:purchase_detail' purchase_return.original_invoice.pk %}" class="btn btn-outline-light">
+                <i class="bi bi-receipt me-1"></i> View Original Bill
+            </a>
+        </div>
+    </div>
+
+    <!-- Printable Debit Note Document -->
+    <div class="card border-0 shadow-lg mx-auto p-4 p-md-5 voucher-paper" style="max-width: 860px; background: var(--card-bg, #1e1812); border-top: 5px solid #ef4444 !important;">
+        <!-- Header -->
+        <div class="row align-items-start border-bottom pb-4 mb-4" style="border-color: rgba(255,255,255,0.1) !important;">
+            <div class="col-7">
+                <h3 class="fw-bold text-white mb-1">{{ company.company_name|default:"JwelDesk Jewellery" }}</h3>
+                <div class="small text-muted">{{ company.address|linebreaksbr }}</div>
+                {% if company.phone %}<div class="small text-muted"><strong>Tel:</strong> {{ company.phone }}</div>{% endif %}
+                {% if company.gstin %}<div class="small text-muted"><strong>GSTIN:</strong> {{ company.gstin }}</div>{% endif %}
+            </div>
+            <div class="col-5 text-end">
+                <span class="badge bg-danger-subtle text-danger fs-6 px-3 py-2 text-uppercase mb-2">Debit Note (Purchase Return)</span>
+                <div class="font-monospace fw-bold fs-5 text-white">{{ purchase_return.return_number }}</div>
+                <div class="small text-muted"><strong>Date:</strong> {{ purchase_return.return_date|date:"d M Y" }}</div>
+                <div class="small text-muted mt-1">
+                    Against Bill:
+                    <a href="{% url 'purchases:purchase_detail' purchase_return.original_invoice.pk %}" class="text-warning text-decoration-none fw-bold">
+                        {{ purchase_return.original_invoice.purchase_number }}
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Party Details -->
+        <div class="row mb-4">
+            <div class="col-6">
+                <span class="text-muted small text-uppercase fw-semibold d-block">Debited To Supplier:</span>
+                <h5 class="fw-bold text-white mb-1">{{ purchase_return.supplier.name }}</h5>
+                <div class="small text-muted">{{ purchase_return.supplier.address|default:"" }}</div>
+                <div class="small text-muted"><strong>Mobile:</strong> {{ purchase_return.supplier.mobile }} &bull; <strong>GSTIN:</strong> {{ purchase_return.supplier.gstin|default:"Unregistered" }}</div>
+            </div>
+            <div class="col-6 text-end">
+                <span class="text-muted small text-uppercase fw-semibold d-block">Adjustment Mode:</span>
+                <span class="badge bg-secondary fs-6 px-3 py-1 mb-1">{{ purchase_return.get_adjustment_mode_display }}</span>
+                <div class="small text-muted"><strong>Reason:</strong> {{ purchase_return.reason }}</div>
+            </div>
+        </div>
+
+        <!-- Returned Items Table -->
+        <div class="table-responsive mb-4">
+            <table class="table table-bordered align-middle mb-0" style="color: inherit; border-color: rgba(255,255,255,0.1);">
+                <thead class="table-dark text-muted small text-uppercase">
+                    <tr>
+                        <th>#</th>
+                        <th>Item Description</th>
+                        <th>Metal / Purity</th>
+                        <th class="text-center">Returned Qty</th>
+                        <th class="text-end">Weight (g)</th>
+                        <th class="text-end">Rate (₹)</th>
+                        <th class="text-end">Total Debit (₹)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td class="small">{{ forloop.counter }}</td>
+                        <td>
+                            <div class="fw-semibold text-white">{{ item.purchase_item.item_name }}</div>
+                            {% if item.reason %}
+                                <div class="small text-muted fst-italic">Note: {{ item.reason }}</div>
+                            {% endif %}
+                        </td>
+                        <td>{{ item.purchase_item.metal_type }} {{ item.purchase_item.purity }}</td>
+                        <td class="text-center">{{ item.returned_quantity }} pcs</td>
+                        <td class="text-end font-monospace">{{ item.returned_weight|floatformat:3 }}g</td>
+                        <td class="text-end font-monospace">₹{{ item.return_rate|floatformat:2|intcomma }}</td>
+                        <td class="text-end font-monospace fw-bold text-danger">₹{{ item.return_amount|floatformat:2|intcomma }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-3 text-muted">No line items.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-dark fw-bold">
+                    <tr>
+                        <td colspan="3" class="text-uppercase small">Total Returned</td>
+                        <td class="text-center">{{ purchase_return.total_return_quantity }} pcs</td>
+                        <td class="text-end">{{ purchase_return.total_return_weight|floatformat:3 }}g</td>
+                        <td class="text-end text-uppercase small">Debit Amount:</td>
+                        <td class="text-end text-danger fs-6">₹{{ purchase_return.total_return_amount|floatformat:2|intcomma }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        {% if purchase_return.notes %}
+        <div class="mb-4">
+            <span class="text-muted small text-uppercase fw-semibold d-block mb-1">Remarks:</span>
+            <div class="p-2 rounded bg-dark bg-opacity-25 small text-light">{{ purchase_return.notes }}</div>
+        </div>
+        {% endif %}
+
+        <!-- Signatures -->
+        <div class="row pt-5 mt-4 border-top" style="border-color: rgba(255,255,255,0.1) !important;">
+            <div class="col-6 text-center">
+                <div class="border-top border-secondary border-opacity-50 w-75 mx-auto pt-2">
+                    <span class="small text-muted">Prepared By</span>
+                    <div class="fw-semibold small text-white">{{ purchase_return.created_by.get_full_name|default:purchase_return.created_by.username }}</div>
+                </div>
+            </div>
+            <div class="col-6 text-center">
+                <div class="border-top border-secondary border-opacity-50 w-75 mx-auto pt-2">
+                    <span class="small text-muted">Authorized Signatory / Vendor Ack</span>
+                    <div class="fw-semibold small text-white">For {{ company.company_name|default:"JwelDesk Showroom" }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .d-print-none, .sidebar, .topbar, header, footer {
+        display: none !important;
+    }
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    .voucher-paper {
+        background: white !important;
+        color: black !important;
+        border: 2px solid #333 !important;
+        box-shadow: none !important;
+    }
+    .text-white, .text-light, .text-muted {
+        color: black !important;
+    }
+    .badge {
+        border: 1px solid #333 !important;
+        color: black !important;
+    }
+}
+</style>
+{% endblock %}

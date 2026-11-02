@@ -62,6 +62,7 @@ urlpatterns = [
     path('karigar/', include('karigar.urls')),
     path('wholesale/', include('wholesale.urls')),
     path('girvi/', include('girvi.urls')),
+    path('purchases/', include('purchases.urls')),
     path('coupons/', include('coupons.urls')),
     path('support/', include('super_admin.support_urls')),
 

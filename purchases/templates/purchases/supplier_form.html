@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} | JwelDesk{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-md-4 py-3">
+
+    <!-- Top Bar -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{% url 'purchases:supplier_list' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <h3 class="mb-0 fw-bold">{{ title }}</h3>
+            </div>
+            <p class="text-muted small mb-0 mt-1">Configure supplier contact, banking, GST, and opening ledger balance.</p>
+        </div>
+        <a href="{% url 'purchases:supplier_list' %}" class="btn btn-sm btn-outline-light">
+            <i class="bi bi-x-lg me-1"></i> Cancel
+        </a>
+    </div>
+
+    {% if form.errors %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>Please correct the errors below:</strong>
+        <ul class="mb-0 mt-1 small">
+            {% for field, errors in form.errors.items %}
+                {% for error in errors %}
+                    <li>{{ field|title }}: {{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="row g-4">
+            <!-- Left Column: Business & Contact Details -->
+            <div class="col-12 col-lg-7">
+                <!-- 1. Party Details -->
+                <div class="card border-0 shadow-sm mb-4" style="background: var(--card-bg, #1e1812);">
+                    <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3">
+                        <h6 class="mb-0 fw-bold text-warning">
+                            <i class="bi bi-building me-2"></i>1. Supplier / Party Details
+                        </h6>
+                    </div>
+                    <div class="card-body p-3 p-md-4">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-8">
+                                <label class="form-label small fw-semibold">Supplier / Business Name <span class="text-danger">*</span></label>
+                                {{ form.name }}
+                                {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label small fw-semibold">Contact Person</label>
+                                {{ form.contact_person }}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold">Mobile Number <span class="text-danger">*</span></label>
+                                {{ form.mobile }}
+                                {% if form.mobile.errors %}<div class="text-danger small mt-1">{{ form.mobile.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold">WhatsApp Number</label>
+                                {{ form.whatsapp_number }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold">Email Address</label>
+                                {{ form.email }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Address & Location -->
+                <div class="card border-0 shadow-sm mb-4" style="background: var(--card-bg, #1e1812);">
+                    <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3">
+                        <h6 class="mb-0 fw-bold text-warning">
+                            <i class="bi bi-geo-alt me-2"></i>2. Address &amp; Place of Supply
+                        </h6>
+                    </div>
+                    <div class="card-body p-3 p-md-4">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold">Address / Street</label>
+                                {{ form.address }}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label small fw-semibold">City</label>
+                                {{ form.city }}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label small fw-semibold">State</label>
+                                {{ form.state }}
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label small fw-semibold">State Code</label>
+                                {{ form.state_code }}
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label small fw-semibold">PIN Code</label>
+                                {{ form.pincode }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Notes -->
+                <div class="card border-0 shadow-sm mb-4" style="background: var(--card-bg, #1e1812);">
+                    <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3">
+                        <h6 class="mb-0 fw-bold text-warning">
+                            <i class="bi bi-card-text me-2"></i>3. Additional Notes
+                        </h6>
+                    </div>
+                    <div class="card-body p-3 p-md-4">
+                        {{ form.notes }}
+                        <div class="form-text text-muted small">Special purchase terms, credit days agreement, or delivery instructions.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Tax, Bank, & Ledger -->
+            <div class="col-12 col-lg-5">
+                <!-- 4. Tax & Legal -->
+                <div class="card border-0 shadow-sm mb-4" style="background: var(--card-bg, #1e1812);">
+                    <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3">
+                        <h6 class="mb-0 fw-bold text-warning">
+                            <i class="bi bi-receipt me-2"></i>4. Tax &amp; Legal Identifiers
+                        </h6>
+                    </div>
+                    <div class="card-body p-3 p-md-4">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold">GSTIN (15 Alphanumeric)</label>
+                                {{ form.gstin }}
+                                {% if form.gstin.errors %}<div class="text-danger small mt-1">{{ form.gstin.errors.0 }}</div>{% endif %}
+                                <div class="form-text text-muted small">Used for Input Tax Credit (ITC) CGST/SGST/IGST calculation.</div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold">PAN Number</label>
+                                {{ form.pan_number }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Bank Settlement -->
+                <div class="card border-0 shadow-sm mb-4" style="background: var(--card-bg, #1e1812);">
+                    <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3">
+                        <h6 class="mb-0 fw-bold text-warning">
+                            <i class="bi bi-bank me-2"></i>5. Bank &amp; Settlement Details
+                        </h6>
+                    </div>
+                    <div class="card-body p-3 p-md-4">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold">Bank Name</label>
+                                {{ form.bank_name }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold">Account Number</label>
+                                {{ form.account_number }}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold">IFSC Code</label>
+                                {{ form.ifsc_code }}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold">UPI ID</label>
+                                {{ form.upi_id }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. Opening Ledger Balance -->
+                <div class="card border-0 shadow-sm mb-4" style="background: var(--card-bg, #1e1812); border-left: 4px solid var(--bs-warning) !important;">
+                    <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3">
+                        <h6 class="mb-0 fw-bold text-warning">
+                            <i class="bi bi-cash-stack me-2"></i>6. Opening Balance &amp; Status
+                        </h6>
+                    </div>
+                    <div class="card-body p-3 p-md-4">
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Opening Balance (₹)</label>
+                            {{ form.opening_balance }}
+                            <div class="form-text text-muted small">
+                                <strong>Positive (+):</strong> Shop owes supplier.<br>
+                                <strong>Negative (-):</strong> Advance deposited with supplier.
+                            </div>
+                        </div>
+                        <div class="form-check form-switch pt-2">
+                            {{ form.is_active }}
+                            <label class="form-check-label fw-semibold" for="{{ form.is_active.id_for_label }}">Active Supplier</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save Action Buttons -->
+                <div class="card border-0 shadow-sm" style="background: var(--card-bg, #1e1812);">
+                    <div class="card-body p-3 d-flex flex-column gap-2">
+                        <button type="submit" class="btn btn-warning fw-bold text-dark w-100 py-2">
+                            <i class="bi bi-check2-circle me-1"></i> Save Supplier Record
+                        </button>
+                        <a href="{% url 'purchases:supplier_list' %}" class="btn btn-outline-secondary w-100">
+                            Cancel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
