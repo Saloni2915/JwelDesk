@@ -4,7 +4,7 @@
 {% block title %}Metal Transactions — JewelDesk{% endblock %}
 
 {% block extra_css %}
-<link href="{% static 'css/sales_bullion.css' %}?v={% now "U" %}" rel="stylesheet">
+<link href="{% static 'css/sales_bullion.css' %}?v={% now " U" %}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -47,7 +47,8 @@
                 <div class="jd-sb-kpi-icon icon-green">
                     <i class="bi bi-arrow-repeat"></i>
                 </div>
-                <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25">Exchange</span>
+                <span
+                    class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25">Exchange</span>
             </div>
             <div class="jd-sb-kpi-label">Metal Exchanges</div>
             <div class="jd-sb-kpi-val text-success">{{ exchange_count_all }}</div>
@@ -89,18 +90,15 @@
             <div class="col-lg-4 col-md-3 col-12">
                 <div class="input-group">
                     <span class="input-group-text jd-sb-input-addon"><i class="bi bi-search"></i></span>
-                    <input type="text"
-                           name="q"
-                           value="{{ selected_q }}"
-                           class="form-control jd-sb-filter-input"
-                           placeholder="Search customer, voucher #, description...">
+                    <input type="text" name="q" value="{{ selected_q }}" class="form-control jd-sb-filter-input"
+                        placeholder="Search customer, voucher #, description...">
                 </div>
             </div>
             <div class="col-lg-2 col-md-3 col-6">
                 <select name="type" class="form-select jd-sb-filter-select">
                     <option value="">All Types</option>
                     {% for key, val in type_choices %}
-                    <option value="{{ key }}" {% if selected_type == key %}selected{% endif %}>{{ val }}</option>
+                    <option value="{{ key }}" {% if selected_type==key %}selected{% endif %}>{{ val }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -116,7 +114,7 @@
                 <select name="status" class="form-select jd-sb-filter-select">
                     <option value="">All Statuses</option>
                     {% for key, val in status_choices %}
-                    <option value="{{ key }}" {% if selected_status == key %}selected{% endif %}>{{ val }}</option>
+                    <option value="{{ key }}" {% if selected_status==key %}selected{% endif %}>{{ val }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -135,7 +133,8 @@
     <div class="jd-sb-table-card">
         <!-- Mobile Horizontal Scroll Hint -->
         <div class="jd-sb-table-scroll-hint d-md-none">
-            <i class="bi bi-arrow-left-right me-1"></i> Swipe horizontally to view full voucher &amp; scrap details &rarr;
+            <i class="bi bi-arrow-left-right me-1"></i> Swipe horizontally to view full voucher &amp; scrap details
+            &rarr;
         </div>
 
         <div class="jd-sb-table-wrap">
@@ -161,7 +160,8 @@
                             <a href="{% url 'old_gold_detail' tx.id %}" class="jd-sb-link-gold">
                                 {{ tx.transaction_number }}
                             </a>
-                            <div class="text-muted small" style="font-size: 0.72rem;">{{ tx.created_at|date:"M d, Y" }}</div>
+                            <div class="text-muted small" style="font-size: 0.72rem;">{{ tx.created_at|date:"M d, Y" }}
+                            </div>
                         </td>
                         <td>
                             {% if tx.transaction_type == 'Exchange' %}
@@ -175,7 +175,8 @@
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{% url 'customer_detail' tx.customer.id %}" class="text-light fw-semibold text-decoration-none">
+                            <a href="{% url 'customer_detail' tx.customer.id %}"
+                                class="text-light fw-semibold text-decoration-none">
                                 {{ tx.customer.name }}
                             </a>
                             <div class="text-muted small font-monospace">{{ tx.customer.mobile }}</div>
@@ -206,7 +207,8 @@
                         </td>
                         <td>
                             {% if tx.new_sale %}
-                            <a href="{% url 'sale_detail' tx.new_sale.id %}" class="jd-sb-link-gold small text-decoration-none">
+                            <a href="{% url 'sale_detail' tx.new_sale.id %}"
+                                class="jd-sb-link-gold small text-decoration-none">
                                 <i class="bi bi-link-45deg"></i> Sale #{{ tx.new_sale.id }}
                             </a>
                             <div class="text-muted small">{{ tx.new_sale.jewellery_item.name|truncatechars:20 }}</div>
@@ -224,7 +226,8 @@
                             {% endif %}
                         </td>
                         <td class="text-end pe-3">
-                            <a href="{% url 'old_gold_detail' tx.id %}" class="btn jd-btn-outline-theme btn-sm py-1 px-2 fw-semibold" title="View Voucher">
+                            <a href="{% url 'old_gold_detail' tx.id %}"
+                                class="btn jd-btn-outline-theme btn-sm py-1 px-2 fw-semibold" title="View Voucher">
                                 <i class="bi bi-file-earmark-text"></i> Voucher
                             </a>
                         </td>
@@ -256,7 +259,7 @@
 </div>
 
 <script>
-    (function() {
+    (function () {
         document.body.classList.add('has-sales-suite');
         var pc = document.getElementById('page-content');
         if (pc) pc.classList.add('jd-sb-active');
