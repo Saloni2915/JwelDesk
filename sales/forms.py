@@ -65,7 +65,7 @@ class SaleForm(forms.ModelForm):
         if self.tenant:
             item_qs = item_qs.filter(tenant=self.tenant)
         if branch and getattr(branch, 'id', None):
-            item_qs = item_qs.filter(branch=branch)
+            item_qs = item_qs.filter(Q(branch=branch) | Q(branch__isnull=True))
         if self.instance and self.instance.pk:
             # If editing existing sale, include current item as well
             self.fields['jewellery_item'].queryset = item_qs.filter(
@@ -78,8 +78,8 @@ class SaleForm(forms.ModelForm):
                 status='Available').select_related('category')
         # Show tag number + design in the dropdown for reliable piece identification.
         self.fields['jewellery_item'].label_from_instance = (
-            lambda obj: f"[{obj.tag_number or obj.item_code}] {obj.name} "
-                        f"({obj.metal_type} {obj.purity}) - Rs.{obj.selling_price}"
+            lambda obj: f"[{obj.tag_number or obj.item_code or ('TAG-' + str(obj.id))}] {obj.name or 'Jewellery Piece'} "
+                        f"({obj.metal_type or 'Gold'}{' ' + obj.purity if obj.purity else ''}) - ₹{obj.selling_price or Decimal('0.00'):,.2f}"
         )
 
     def clean(self):

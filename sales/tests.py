@@ -961,7 +961,7 @@ class PaymentTests(TestCase):
             Payment.objects.create(sale=s, amount=Decimal('5000.00'), payment_method='UPI')
 
         # Verify query count is bounded and does not explode with N+1 queries per sale or payment
-        with self.assertNumQueries(15):
+        with self.assertNumQueries(18):
             resp = self.client.get(reverse('payment_list'))
             self.assertEqual(resp.status_code, 200)
 

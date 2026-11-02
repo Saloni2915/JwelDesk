@@ -457,8 +457,16 @@ def inventory_add(request):
             with transaction.atomic():
                 item = form.save(commit=False)
                 item.tenant = request.tenant
-                if not item.branch and active_b:
-                    item.branch = active_b
+                if not item.branch:
+                    if active_b:
+                        item.branch = active_b
+                    elif request.tenant:
+                        from team.models import Branch
+                        default_b = Branch.objects.filter(tenant=request.tenant, is_default=True, is_active=True).first()
+                        if not default_b:
+                            default_b = Branch.objects.filter(tenant=request.tenant, is_active=True).first()
+                        if default_b:
+                            item.branch = default_b
                 item.save()
                 form.save_m2m()
 
@@ -556,7 +564,19 @@ def inventory_edit(request, pk):
             new_qty = form.cleaned_data.get('quantity')
             if new_qty is None:
                 new_qty = old_qty
-            item = form.save()
+            item = form.save(commit=False)
+            if not item.branch:
+                if active_b:
+                    item.branch = active_b
+                elif request.tenant:
+                    from team.models import Branch
+                    default_b = Branch.objects.filter(tenant=request.tenant, is_default=True, is_active=True).first()
+                    if not default_b:
+                        default_b = Branch.objects.filter(tenant=request.tenant, is_active=True).first()
+                    if default_b:
+                        item.branch = default_b
+            item.save()
+            form.save_m2m()
 
             # Handle photo deletion if requested
             if request.POST.get('remove_image') == '1':

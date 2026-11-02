@@ -348,6 +348,20 @@ def system_migrate_view(request):
                 results.append("accounts_companysettings and inventory_jewelleryitem series schema updated")
 
                 cursor.execute("""
+                    UPDATE inventory_jewelleryitem it
+                    SET branch_id = (
+                        SELECT b.id FROM team_branch b 
+                        WHERE b.tenant_id = it.tenant_id 
+                        ORDER BY b.is_default DESC, b.id ASC 
+                        LIMIT 1
+                    )
+                    WHERE it.branch_id IS NULL AND EXISTS (
+                        SELECT 1 FROM team_branch b WHERE b.tenant_id = it.tenant_id
+                    );
+                """)
+                results.append("inventory_jewelleryitem branch backfilled for unassigned items")
+
+                cursor.execute("""
                     INSERT INTO django_migrations (app, name, applied)
                     SELECT 'super_admin', '0010_platformdemolead_deal_value_and_more', now()
                     WHERE NOT EXISTS (
