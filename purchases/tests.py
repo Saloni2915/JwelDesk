@@ -512,7 +512,13 @@ class PurchaseViewsTests(BasePurchaseTestCase):
             'is_active': True
         })
         self.assertEqual(post_resp.status_code, 302)
-        self.assertTrue(Supplier.objects.filter(name='Titan Tanishq Supplier').exists())
+        supplier = Supplier.objects.filter(name='Titan Tanishq Supplier').first()
+        self.assertIsNotNone(supplier)
+
+        # Test supplier detail view renders with 200 OK without filter errors
+        detail_resp = self.client.get(reverse('purchases:supplier_detail', kwargs={'pk': supplier.pk}))
+        self.assertEqual(detail_resp.status_code, 200)
+        self.assertContains(detail_resp, "Titan Tanishq Supplier")
 
     def test_purchase_reports_view_across_tabs(self):
         """Reports view loads for all 6 tab types without error."""

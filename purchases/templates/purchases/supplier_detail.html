@@ -50,7 +50,7 @@
             <div class="card border-0 shadow-sm p-3 h-100" style="background: var(--card-bg, #1e1812); border-left: 4px solid {% if supplier.current_balance > 0 %}#ef4444{% elif supplier.current_balance < 0 %}#22c55e{% else %}#6b7280{% endif %} !important;">
                 <span class="text-muted small text-uppercase fw-semibold d-block">Current Outstanding Balance</span>
                 <h3 class="fw-bold my-1 {% if supplier.current_balance > 0 %}text-danger{% elif supplier.current_balance < 0 %}text-success{% else %}text-muted{% endif %}">
-                    ₹{{ supplier.current_balance|abs|floatformat:2|intcomma }}
+                    ₹{{ supplier.abs_current_balance|floatformat:2|intcomma }}
                 </h3>
                 <span class="small text-muted">
                     {% if supplier.current_balance > 0 %}
@@ -254,3 +254,4 @@
     </div>
 </div>
 {% endblock %}
+

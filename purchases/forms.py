@@ -200,3 +200,4 @@ class PurchaseSettingForm(forms.ModelForm):
             'auto_create_inventory_for_ready_made': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'auto_create_inventory_for_bullion': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+

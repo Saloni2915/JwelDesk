@@ -180,6 +180,11 @@ class Supplier(models.Model):
     def __str__(self):
         return f"{self.name} ({self.supplier_code})"
 
+    @property
+    def abs_current_balance(self):
+        """Absolute value of current balance for presentation."""
+        return abs(self.current_balance or Decimal('0.00'))
+
     def save(self, *args, **kwargs):
         is_new = self.pk is None
         if not self.supplier_code and self.tenant_id:
