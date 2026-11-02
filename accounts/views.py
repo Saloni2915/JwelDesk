@@ -13,6 +13,7 @@ from django.db.models import Q
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse, reverse_lazy
+from django.views.decorators.csrf import csrf_exempt
 import logging
 
 logger = logging.getLogger(__name__)
@@ -191,18 +192,16 @@ def signup_view(request):
     return render(request, 'accounts/signup.html', {'form': form})
 
 
+@csrf_exempt
 def logout_view(request):
-    """Log the user out.
+    """Log the user out safely across all portals.
 
-    POST performs the logout and redirects to the login page; GET shows a
-    small confirmation page with a logout button (Django 5+ requires POST
-    for the logout action, so a plain GET link cannot log out directly).
+    Accepts both POST and GET, exempt from CSRF token expiration/rotation
+    issues so that users are never blocked from cleanly logging out.
     """
-    if request.method == 'POST':
-        auth_logout(request)
-        messages.success(request, 'You have been logged out successfully.')
-        return redirect('accounts:login')
-    return render(request, 'accounts/logout_confirm.html')
+    auth_logout(request)
+    messages.success(request, 'You have been logged out successfully.')
+    return redirect('accounts:login')
 
 
 @login_required

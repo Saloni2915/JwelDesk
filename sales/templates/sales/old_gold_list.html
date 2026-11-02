@@ -98,7 +98,7 @@
                 <select name="type" class="form-select jd-sb-filter-select">
                     <option value="">All Types</option>
                     {% for key, val in type_choices %}
-                    <option value="{{ key }}" {% if selected_type==key %}selected{% endif %}>{{ val }}</option>
+                    <option value="{{ key }}" {% if selected_type == key %}selected{% endif %}>{{ val }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -114,7 +114,7 @@
                 <select name="status" class="form-select jd-sb-filter-select">
                     <option value="">All Statuses</option>
                     {% for key, val in status_choices %}
-                    <option value="{{ key }}" {% if selected_status==key %}selected{% endif %}>{{ val }}</option>
+                    <option value="{{ key }}" {% if selected_status == key %}selected{% endif %}>{{ val }}</option>
                     {% endfor %}
                 </select>
             </div>
