@@ -105,9 +105,7 @@ def confirm_purchase_invoice(invoice_id, user=None):
                     quantity=item.quantity or 1,
                     status='Available',
                     huid=item.huid or '',
-                    cost_price=cost_price,
-                    selling_price=cost_price, # Default initial tag price matching procurement cost
-                    description=f"Procured on {invoice.purchase_number} from {invoice.supplier.name}"
+                    selling_price=cost_price # Default initial tag price matching procurement cost
                 )
                 jewellery_item.full_clean()
                 jewellery_item.save()
@@ -116,8 +114,8 @@ def confirm_purchase_invoice(invoice_id, user=None):
                 inventory_stock.record_initial_stock(
                     jewellery_item,
                     user=user,
-                    reason='Purchase Intake',
-                    notes=f"Intake from Purchase #{invoice.purchase_number} (Supplier: {invoice.supplier.name})"
+                    reason='New Stock Received',
+                    notes=f"Purchase Intake from #{invoice.purchase_number} (Supplier: {invoice.supplier.name})"
                 )
 
                 item.inventory_item = jewellery_item
@@ -181,8 +179,8 @@ def cancel_purchase_invoice(invoice_id, user=None, reason=''):
                         inv,
                         -item.quantity,
                         movement_type=StockMovement.REDUCTION,
-                        reason='Purchase Cancelled',
-                        notes=f"Cancelled Purchase #{invoice.purchase_number}",
+                        reason='Stock Correction',
+                        notes=f"Cancelled Purchase #{invoice.purchase_number}: {reason}",
                         user=user
                     )
 
@@ -404,8 +402,8 @@ def process_purchase_return(invoice_id, return_items_data, reason='Defective',
                     inv,
                     -ret_qty,
                     movement_type=StockMovement.REDUCTION,
-                    reason='Purchase Return',
-                    notes=f"Returned on Debit Note #{purchase_return.return_number} (Invoice #{invoice.purchase_number})",
+                    reason='Stock Correction',
+                    notes=f"Purchase Return on Debit Note #{purchase_return.return_number} (Invoice #{invoice.purchase_number})",
                     user=user
                 )
 

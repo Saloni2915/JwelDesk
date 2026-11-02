@@ -273,7 +273,7 @@ class InvoiceConfirmationAndStockIntegrationTests(BasePurchaseTestCase):
         self.assertIsNotNone(movement)
         self.assertEqual(movement.quantity_change, 2)
         self.assertEqual(movement.stock_after, 2)
-        self.assertIn("Purchase Intake", movement.reason)
+        self.assertIn("Purchase Intake", movement.notes)
 
         # 3. Supplier Ledger updated
         self.supplier.refresh_from_db()
@@ -460,7 +460,7 @@ class PurchaseReturnTests(BasePurchaseTestCase):
         # 3. StockMovement logged
         sm = StockMovement.objects.filter(item=stock_item).latest('created_at')
         self.assertEqual(sm.quantity_change, -2)
-        self.assertIn("Purchase Return", sm.reason)
+        self.assertIn("Purchase Return", sm.notes)
 
         # 4. Item returned_quantity updated
         self.item.refresh_from_db()

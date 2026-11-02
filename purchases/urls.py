@@ -39,7 +39,8 @@ urlpatterns = [
 
     # Reports & Settings
     path('reports/', views.reports_view, name='reports'),
-    path('reports/export/', views.reports_export_csv_view, name='reports_export'),
+    path('reports/export/', views.reports_export_csv_view, name='reports_export_csv'),
+    path('reports/export-csv/', views.reports_export_csv_view, name='reports_export'),
     path('settings/', views.settings_view, name='settings'),
 
     # AJAX APIs for calculations & supplier selection
