@@ -70,12 +70,12 @@ class SaleForm(forms.ModelForm):
             # If editing existing sale, include current item as well
             self.fields['jewellery_item'].queryset = item_qs.filter(
                 Q(status='Available') | Q(pk=self.instance.jewellery_item_id)
-            ).select_related('category')
+            ).order_by('-id').select_related('category')
             if getattr(self.instance, 'applied_coupon_code', None):
                 self.fields['coupon_code'].initial = self.instance.applied_coupon_code
         else:
             self.fields['jewellery_item'].queryset = item_qs.filter(
-                status='Available').select_related('category')
+                status='Available').order_by('-id').select_related('category')
         # Show tag number + design in the dropdown for reliable piece identification.
         self.fields['jewellery_item'].label_from_instance = (
             lambda obj: f"[{obj.tag_number or obj.item_code or ('TAG-' + str(obj.id))}] {obj.name or 'Jewellery Piece'} "
@@ -392,7 +392,12 @@ class OldGoldExchangeForm(forms.ModelForm):
             self.fields['item_description'].required = False
         if 'metal_type' in self.fields:
             self.fields['metal_type'].label = "Metal to Exchange"
-            self.fields['metal_type'].choices = [('Gold', 'Gold'), ('Silver', 'Silver')]
+            self.fields['metal_type'].choices = [
+                ('Gold', 'Gold'),
+                ('Silver', 'Silver'),
+                ('Platinum', 'Platinum'),
+                ('Other', 'Other'),
+            ]
         item_qs = JewelleryItem.objects.filter(status='Available')
         if self.tenant:
             self.fields['customer'].queryset = Customer.objects.filter(tenant=self.tenant)
@@ -490,8 +495,13 @@ class OldGoldBuybackForm(forms.ModelForm):
                     if default_b:
                         self.initial['branch'] = default_b
         if 'metal_type' in self.fields:
-            self.fields['metal_type'].label = "Metal to Exchange"
-            self.fields['metal_type'].choices = [('Gold', 'Gold'), ('Silver', 'Silver')]
+            self.fields['metal_type'].label = "Metal to Buyback"
+            self.fields['metal_type'].choices = [
+                ('Gold', 'Gold'),
+                ('Silver', 'Silver'),
+                ('Platinum', 'Platinum'),
+                ('Other', 'Other'),
+            ]
         if self.tenant:
             self.fields['customer'].queryset = Customer.objects.filter(tenant=self.tenant)
         if not self.initial.get('applicable_rate'):

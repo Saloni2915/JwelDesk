@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Old Gold Buyback — JewelDesk{% endblock %}
+{% block title %}Metal Buyback — JewelDesk{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/sales_bullion.css' %}?v={% now "U" %}" rel="stylesheet">
@@ -13,12 +13,12 @@
     <!-- Header & Actions -->
     <div class="jd-sb-header">
         <div class="jd-sb-title-wrap">
-            <h1><i class="bi bi-cash-stack text-warning me-2"></i>Old Gold Buyback</h1>
-            <p class="jd-sb-subtitle">Purchase old gold or silver from customer with cash, UPI, or bank transfer</p>
+            <h1><i class="bi bi-cash-stack text-warning me-2"></i>Metal Buyback</h1>
+            <p class="jd-sb-subtitle">Purchase old gold, silver, platinum, or scrap jewellery from customer with cash, UPI, or bank transfer</p>
         </div>
         <div class="jd-sb-header-actions">
             <a href="{% url 'old_gold_list' %}" class="jd-btn-ghost">
-                <i class="bi bi-arrow-left"></i> Transactions List
+                <i class="bi bi-clock-history"></i> Metal History
             </a>
             <a href="{% url 'old_gold_exchange_create' %}" class="jd-btn-ghost">
                 <i class="bi bi-arrow-repeat"></i> Metal Exchange
@@ -63,19 +63,19 @@
                     </div>
                 </div>
 
-                <!-- Section 2: Old Gold Valuation Details -->
+                <!-- Section 2: Metal Valuation Details -->
                 <div class="jd-og-card">
                     <div class="jd-og-card-header">
                         <h2>
                             <i class="bi bi-coin text-warning"></i>
-                            2. Old Gold Details &amp; Testing
+                            2. Scrap Metal Details &amp; Testing
                         </h2>
-                        <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">Old Gold Intake</span>
+                        <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">Metal Intake</span>
                     </div>
                     <div class="jd-og-card-body">
                         <div class="row g-3">
                             <div class="col-md-6 col-12">
-                                <label class="jd-og-field-label">Metal to Exchange</label>
+                                <label class="jd-og-field-label">Metal to Buyback</label>
                                 {{ form.metal_type }}
                             </div>
                             <div class="col-md-6 col-12">
@@ -83,9 +83,9 @@
                                 {{ form.old_gold_type }}
                             </div>
                             <div class="col-12">
-                                <label class="jd-og-field-label">Old Item Description <span class="text-danger">*</span></label>
+                                <label class="jd-og-field-label">Scrap Item Description <span class="text-danger">*</span></label>
                                 {{ form.item_description }}
-                                <small class="text-muted d-block mt-1">e.g. Broken 22K bangles, melted lump, cut pieces</small>
+                                <small class="text-muted d-block mt-1">e.g. Broken bangles, melted lump, cut pieces, payal</small>
                                 {% if form.item_description.errors %}
                                 <div class="text-danger small mt-1">{{ form.item_description.errors.0 }}</div>
                                 {% endif %}
@@ -104,13 +104,13 @@
                                 {{ form.stone_weight }}
                             </div>
                             <div class="col-md-4 col-12">
-                                <label class="jd-og-field-label">Net Gold Wt (g)</label>
+                                <label class="jd-og-field-label" id="live_net_wt_label">Net Metal Wt (g)</label>
                                 <input type="text" id="live_net_weight" class="form-control jd-og-live-net fw-bold font-monospace" readonly value="0.000">
                             </div>
 
                             <!-- Purity & Rate Row -->
                             <div class="col-md-4 col-12">
-                                <label class="jd-og-field-label">Purity / Karat <span class="text-danger">*</span></label>
+                                <label class="jd-og-field-label">Purity Grade <span class="text-danger">*</span></label>
                                 {{ form.purity }}
                             </div>
                             <div class="col-md-4 col-12" id="custom_purity_wrapper" style="display: none;">
@@ -118,7 +118,7 @@
                                 {{ form.custom_purity_percent }}
                             </div>
                             <div class="col-md-4 col-12">
-                                <label class="jd-og-field-label">24K Base Rate (₹/g) <span class="text-danger">*</span></label>
+                                <label class="jd-og-field-label" id="live_base_rate_label">Market Base Rate (₹/g) <span class="text-danger">*</span></label>
                                 {{ form.applicable_rate }}
                             </div>
                             <div class="col-md-4 col-12">
@@ -172,7 +172,7 @@
             <div class="jd-og-col-right">
                 <div class="jd-og-voucher-card">
                     <div class="jd-og-voucher-title">
-                        <span><i class="bi bi-cash-stack text-warning me-2"></i>Old Gold Payout</span>
+                        <span><i class="bi bi-cash-stack text-warning me-2"></i><span id="voucher_title_text">Scrap Metal Payout</span></span>
                         <span class="badge bg-warning text-dark font-monospace" id="live_purity_badge">22K</span>
                     </div>
 
@@ -190,7 +190,7 @@
                             <strong class="fw-bold" id="calc_net_wt">0.000 g</strong>
                         </div>
                         <div class="jd-og-calc-row">
-                            <span class="text-muted">24K Market Rate:</span>
+                            <span class="text-muted" id="calc_base_rate_label">Market Base Rate:</span>
                             <span id="calc_base_rate">₹0.00 /g</span>
                         </div>
                         <div class="jd-og-calc-row">
@@ -250,6 +250,8 @@
         '999': 1.000000,
         '925': 0.925000,
         '800': 0.800000,
+        'Pt 950': 0.950000,
+        'Pt 900': 0.900000,
         'Other': 0.916667,
     };
 
@@ -257,6 +259,8 @@
     const grossInput = document.getElementById('id_gross_weight');
     const stoneInput = document.getElementById('id_stone_weight');
     const liveNet = document.getElementById('live_net_weight');
+    const liveNetLabel = document.getElementById('live_net_wt_label');
+    const liveBaseRateLabel = document.getElementById('live_base_rate_label');
     const puritySelect = document.getElementById('id_purity');
     const customWrapper = document.getElementById('custom_purity_wrapper');
     const customPurityInput = document.getElementById('id_custom_purity_percent');
@@ -268,6 +272,7 @@
     const calcStoneWt = document.getElementById('calc_stone_wt');
     const calcNetWt = document.getElementById('calc_net_wt');
     const calcBaseRate = document.getElementById('calc_base_rate');
+    const calcBaseRateLabel = document.getElementById('calc_base_rate_label');
     const calcPurityFactor = document.getElementById('calc_purity_factor');
     const calcEffectiveRate = document.getElementById('calc_effective_rate');
     const calcGrossVal = document.getElementById('calc_gross_val');
@@ -275,6 +280,7 @@
     const calcDeductVal = document.getElementById('calc_deduct_val');
     const calcFinalBuyback = document.getElementById('calc_final_buyback');
     const livePurityBadge = document.getElementById('live_purity_badge');
+    const voucherTitleText = document.getElementById('voucher_title_text');
 
     const goldPurities = [
         { val: '24K', text: '24K (99.9% Pure Gold)' },
@@ -294,9 +300,23 @@
         { val: 'Other', text: 'Other / Custom Purity' }
     ];
 
+    const platinumPurities = [
+        { val: 'Pt 950', text: 'Pt 950 (95.0% Pure Platinum)', selected: true },
+        { val: 'Pt 900', text: 'Pt 900 (90.0% Platinum)' },
+        { val: 'Other', text: 'Other / Custom Purity' }
+    ];
+
+    const otherPurities = [
+        { val: 'Other', text: 'Custom Purity %', selected: true }
+    ];
+
     function updatePurityChoices(metal, preserveVal) {
         if (!puritySelect) return;
-        const list = (metal === 'Silver') ? silverPurities : goldPurities;
+        let list = goldPurities;
+        if (metal === 'Silver') list = silverPurities;
+        else if (metal === 'Platinum') list = platinumPurities;
+        else if (metal === 'Other') list = otherPurities;
+
         const currentVal = preserveVal || puritySelect.value;
         puritySelect.innerHTML = '';
         let matched = false;
@@ -314,6 +334,26 @@
         });
         if (!matched && !preserveVal && puritySelect.options.length > 0) {
             puritySelect.selectedIndex = 0;
+        }
+
+        // Update labels dynamically
+        if (liveNetLabel) liveNetLabel.textContent = 'Net ' + metal + ' Wt (g)';
+        if (liveBaseRateLabel) {
+            let rateTxt = '24K Gold Base Rate (₹/g)';
+            if (metal === 'Silver') rateTxt = '999 Silver Base Rate (₹/g)';
+            else if (metal === 'Platinum') rateTxt = 'Pt 950 Base Rate (₹/g)';
+            else if (metal === 'Other') rateTxt = 'Base Rate (₹/g)';
+            liveBaseRateLabel.innerHTML = rateTxt + ' <span class="text-danger">*</span>';
+        }
+        if (calcBaseRateLabel) {
+            let lbl = '24K Market Rate:';
+            if (metal === 'Silver') lbl = '999 Silver Rate:';
+            else if (metal === 'Platinum') lbl = 'Pt 950 Rate:';
+            else if (metal === 'Other') lbl = 'Base Metal Rate:';
+            calcBaseRateLabel.textContent = lbl;
+        }
+        if (voucherTitleText) {
+            voucherTitleText.textContent = metal + ' Buyback Payout';
         }
     }
 

@@ -1095,6 +1095,11 @@ def old_gold_list(request):
     if tx_type in [OldGoldTransaction.TYPE_EXCHANGE, OldGoldTransaction.TYPE_BUYBACK]:
         transactions = transactions.filter(transaction_type=tx_type)
 
+    # Metal filter (Gold, Silver, Platinum, Other)
+    metal = request.GET.get('metal', '').strip()
+    if metal:
+        transactions = transactions.filter(metal_type=metal)
+
     # Status filter
     status = request.GET.get('status', '').strip()
     if status in [OldGoldTransaction.STATUS_COMPLETED, OldGoldTransaction.STATUS_CANCELLED]:
@@ -1106,6 +1111,9 @@ def old_gold_list(request):
         completed_txs = completed_txs.filter(Q(branch=active_b) | Q(branch__isnull=True))
     total_val_all = completed_txs.aggregate(total=Sum('final_value'))['total'] or Decimal('0.00')
     total_net_wt_all = completed_txs.aggregate(total=Sum('net_weight'))['total'] or Decimal('0.000')
+    gold_net_wt = completed_txs.filter(metal_type='Gold').aggregate(total=Sum('net_weight'))['total'] or Decimal('0.000')
+    silver_net_wt = completed_txs.filter(metal_type='Silver').aggregate(total=Sum('net_weight'))['total'] or Decimal('0.000')
+    platinum_net_wt = completed_txs.filter(metal_type='Platinum').aggregate(total=Sum('net_weight'))['total'] or Decimal('0.000')
     exchange_count_all = completed_txs.filter(transaction_type=OldGoldTransaction.TYPE_EXCHANGE).count()
     buyback_count_all = completed_txs.filter(transaction_type=OldGoldTransaction.TYPE_BUYBACK).count()
 
@@ -1113,18 +1121,30 @@ def old_gold_list(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    metal_choices = [
+        ('Gold', 'Gold'),
+        ('Silver', 'Silver'),
+        ('Platinum', 'Platinum'),
+        ('Other', 'Other'),
+    ]
+
     context = {
-        'page_title': 'Old Gold Transactions',
+        'page_title': 'Metal Transactions History',
         'transactions': page_obj,
         'page_obj': page_obj,
         'selected_q': q,
         'selected_type': tx_type,
+        'selected_metal': metal,
         'selected_status': status,
         'total_val_all': total_val_all,
         'total_net_wt_all': total_net_wt_all,
+        'gold_net_wt': gold_net_wt,
+        'silver_net_wt': silver_net_wt,
+        'platinum_net_wt': platinum_net_wt,
         'exchange_count_all': exchange_count_all,
         'buyback_count_all': buyback_count_all,
         'type_choices': OldGoldTransaction.TYPE_CHOICES,
+        'metal_choices': metal_choices,
         'status_choices': OldGoldTransaction.STATUS_CHOICES,
     }
     return render(request, 'sales/old_gold_list.html', context)
@@ -1311,17 +1331,24 @@ def old_gold_buyback_create(request):
 
                 messages.success(
                     request,
-                    f"Buyback {tx_number} recorded successfully! "
-                    f"Payout of Rs. {val['final_value']:,.2f} via {og_tx.payment_method} "
+                    f"Metal Buyback {tx_number} ({og_tx.metal_type}) recorded successfully! "
+                    f"Payout of ₹{val['final_value']:,.2f} via {og_tx.payment_method} "
                     f"to {og_tx.customer.name}."
                 )
                 return redirect('old_gold_detail', pk=og_tx.pk)
     else:
         form = OldGoldBuybackForm(initial=initial_data, tenant=request.tenant, branch=active_b)
 
+    live_gold_rate = pricing.get_current_metal_rate('Gold', tenant=request.tenant)
+    live_silver_rate = pricing.get_current_metal_rate('Silver', tenant=request.tenant)
+    live_platinum_rate = pricing.get_current_metal_rate('Platinum', tenant=request.tenant)
+
     context = {
         'form': form,
-        'page_title': 'Old Gold Outright Buyback',
+        'page_title': 'Metal Buyback',
+        'live_gold_rate': float(live_gold_rate),
+        'live_silver_rate': float(live_silver_rate),
+        'live_platinum_rate': float(live_platinum_rate),
     }
     return render(request, 'sales/old_gold_buyback_form.html', context)
 

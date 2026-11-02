@@ -1379,11 +1379,48 @@ class OldGoldTransactionTests(TestCase):
         from sales.forms import OldGoldExchangeForm, OldGoldBuybackForm
         form_ex = OldGoldExchangeForm(tenant=self.tenant)
         self.assertEqual(form_ex.fields['metal_type'].label, "Metal to Exchange")
-        self.assertEqual(form_ex.fields['metal_type'].choices, [('Gold', 'Gold'), ('Silver', 'Silver')])
+        self.assertIn(('Silver', 'Silver'), form_ex.fields['metal_type'].choices)
+        self.assertIn(('Gold', 'Gold'), form_ex.fields['metal_type'].choices)
 
         form_bb = OldGoldBuybackForm(tenant=self.tenant)
-        self.assertEqual(form_bb.fields['metal_type'].label, "Metal to Exchange")
-        self.assertEqual(form_bb.fields['metal_type'].choices, [('Gold', 'Gold'), ('Silver', 'Silver')])
+        self.assertEqual(form_bb.fields['metal_type'].label, "Metal to Buyback")
+        self.assertIn(('Silver', 'Silver'), form_bb.fields['metal_type'].choices)
+        self.assertIn(('Gold', 'Gold'), form_bb.fields['metal_type'].choices)
+        self.assertIn(('Platinum', 'Platinum'), form_bb.fields['metal_type'].choices)
+
+    def test_silver_buyback_creation_and_metal_filtering(self):
+        """Test outright Silver Buyback creation and filtering by metal in list view."""
+        response = self.client.post(reverse('old_gold_buyback_create'), {
+            'customer': self.customer.id,
+            'metal_type': 'Silver',
+            'old_gold_type': 'Silver Scrap',
+            'item_description': 'Old silver payal and coins',
+            'gross_weight': '100.000',
+            'stone_weight': '0.000',
+            'purity': '925',
+            'applicable_rate': '90.00',
+            'deduction_percent': '0.00',
+            'payment_method': 'Cash',
+            'payment_status': 'Paid',
+            'payment_reference': 'CSH-SLV-001'
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        tx = OldGoldTransaction.objects.filter(customer=self.customer, metal_type='Silver', transaction_type='Buyback').first()
+        self.assertIsNotNone(tx)
+        self.assertEqual(tx.metal_type, 'Silver')
+        self.assertEqual(tx.net_weight, Decimal('100.000'))
+        # 100g * (90 * 0.925) = 100 * 83.25 = 8325.00
+        self.assertEqual(tx.final_value, Decimal('8325.00'))
+
+        # Test list view with metal filter
+        resp_filter_silver = self.client.get(reverse('old_gold_list'), {'metal': 'Silver'})
+        self.assertEqual(resp_filter_silver.status_code, 200)
+        self.assertContains(resp_filter_silver, 'Old silver payal and coins')
+
+        resp_filter_gold = self.client.get(reverse('old_gold_list'), {'metal': 'Gold'})
+        self.assertEqual(resp_filter_gold.status_code, 200)
+        self.assertNotContains(resp_filter_gold, 'Old silver payal and coins')
 
     def test_sales_report_preserves_normal_sales_totals(self):
         # Create normal sale

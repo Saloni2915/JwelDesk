@@ -77,14 +77,16 @@
             </div>
             <div class="jd-sb-kpi-label">Net Metal Weight</div>
             <div class="jd-sb-kpi-val jd-sb-kpi-val-theme">{{ total_net_wt_all|floatformat:3 }} g</div>
-            <div class="jd-sb-kpi-sub">Total scrap metal received</div>
+            <div class="jd-sb-kpi-sub">
+                Gold: <span class="text-warning fw-semibold">{{ gold_net_wt|floatformat:3 }}g</span> · Silver: <span class="text-secondary fw-semibold">{{ silver_net_wt|floatformat:3 }}g</span>
+            </div>
         </div>
     </div>
 
     <!-- 3. Search & Filter Bar -->
     <div class="jd-sb-filter-card">
         <form method="get" class="row g-2 align-items-center">
-            <div class="col-lg-5 col-md-4 col-12">
+            <div class="col-lg-4 col-md-3 col-12">
                 <div class="input-group">
                     <span class="input-group-text jd-sb-input-addon"><i class="bi bi-search"></i></span>
                     <input type="text"
@@ -94,15 +96,23 @@
                            placeholder="Search customer, voucher #, description...">
                 </div>
             </div>
-            <div class="col-lg-3 col-md-3 col-6">
+            <div class="col-lg-2 col-md-3 col-6">
                 <select name="type" class="form-select jd-sb-filter-select">
-                    <option value="">All Types (Exchange &amp; Buyback)</option>
+                    <option value="">All Types</option>
                     {% for key, val in type_choices %}
                     <option value="{{ key }}" {% if selected_type == key %}selected{% endif %}>{{ val }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-lg-2 col-md-3 col-6">
+            <div class="col-lg-2 col-md-2 col-6">
+                <select name="metal" class="form-select jd-sb-filter-select">
+                    <option value="">All Metals</option>
+                    {% for key, val in metal_choices %}
+                    <option value="{{ key }}" {% if selected_metal == key %}selected{% endif %}>{{ val }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-2 col-6">
                 <select name="status" class="form-select jd-sb-filter-select">
                     <option value="">All Statuses</option>
                     {% for key, val in status_choices %}
@@ -110,7 +120,7 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-lg-2 col-md-2 col-12 d-flex gap-1">
+            <div class="col-lg-2 col-md-2 col-6 d-flex gap-1">
                 <button type="submit" class="btn jd-btn-gold w-100 fw-bold" title="Filter Transactions">
                     <i class="bi bi-funnel"></i> Filter
                 </button>
@@ -172,9 +182,17 @@
                         </td>
                         <td>
                             <div class="text-light">{{ tx.item_description }}</div>
-                            <div class="text-muted small">
+                            <div class="text-muted small d-flex align-items-center gap-1 mt-1">
+                                {% if tx.metal_type == 'Gold' %}
+                                <span class="badge bg-warning text-dark px-1 py-0" style="font-size: 0.72rem;">Gold</span>
+                                {% elif tx.metal_type == 'Silver' %}
+                                <span class="badge bg-secondary text-light px-1 py-0" style="font-size: 0.72rem;">Silver</span>
+                                {% elif tx.metal_type == 'Platinum' %}
+                                <span class="badge bg-info text-dark px-1 py-0" style="font-size: 0.72rem;">Platinum</span>
+                                {% else %}
+                                <span class="badge bg-dark text-light border border-secondary px-1 py-0" style="font-size: 0.72rem;">{{ tx.metal_type|default:"Metal" }}</span>
+                                {% endif %}
                                 <span class="jd-sb-link-gold fw-semibold">{{ tx.purity }}</span>
-                                {% if tx.metal_type %} ({{ tx.metal_type }}){% endif %}
                             </div>
                         </td>
                         <td class="text-light font-monospace" style="font-size: 0.84rem;">
@@ -215,8 +233,8 @@
                     <tr>
                         <td colspan="10" class="text-center py-5 text-muted">
                             <i class="bi bi-coin fs-2 jd-sb-icon-theme d-block mb-2 opacity-75"></i>
-                            <div class="fw-semibold text-light mb-1">No scrap gold transactions recorded</div>
-                            <div class="small mb-3">Record customer scrap gold intake through Exchange or Buyback.</div>
+                            <div class="fw-semibold text-light mb-1">No scrap metal transactions recorded</div>
+                            <div class="small mb-3">Record customer scrap gold, silver, or platinum intake through Exchange or Buyback.</div>
                             <div class="d-flex justify-content-center gap-2">
                                 <a href="{% url 'old_gold_exchange_create' %}" class="jd-btn-gold">
                                     <i class="bi bi-arrow-repeat"></i> New Exchange

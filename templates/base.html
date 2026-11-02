@@ -461,7 +461,7 @@
                                 <li class="nav-item" data-submenu-key="sub_sales_og_buyback">
                                     <a class="nav-link {% if request.resolver_match.url_name == 'old_gold_buyback_create' %}active{% endif %}"
                                        href="{% url 'old_gold_buyback_create' %}">
-                                        <i class="bi bi-cash-stack"></i> {% if is_hindi %}पुराना सोना बायबैक{% else %}Old Gold Buyback{% endif %}
+                                        <i class="bi bi-cash-stack"></i> {% if is_hindi %}धातु बायबैक{% else %}Metal Buyback{% endif %}
                                     </a>
                                 </li>
                                 {% endif %}
@@ -469,7 +469,7 @@
                                 <li class="nav-item" data-submenu-key="sub_sales_og_history">
                                     <a class="nav-link {% if request.resolver_match.url_name == 'old_gold_list' or request.resolver_match.url_name == 'old_gold_detail' %}active{% endif %}"
                                        href="{% url 'old_gold_list' %}">
-                                        <i class="bi bi-journal-text"></i> {% if is_hindi %}पुराना सोना इतिहास{% else %}Old Gold History{% endif %}
+                                        <i class="bi bi-journal-text"></i> {% if is_hindi %}धातु इतिहास{% else %}Metal History{% endif %}
                                     </a>
                                 </li>
                                 {% endif %}

@@ -1317,7 +1317,7 @@
 
         var matches = [];
         if (!q) {
-            matches = items.slice(0, 10);
+            matches = items.slice(0, 100);
         } else {
             matches = items.filter(function(it) {
                 var nameMatch = it.name && it.name.toLowerCase().includes(q);
