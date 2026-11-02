@@ -36,7 +36,12 @@ def landing_page(request):
     Always serves the modern JewelDesk software landing page at '/'.
     Visitors can explore features, benefits, and download the digital brochure.
     Authenticated users have direct 'Go to Dashboard' access from the navbar & hero.
+    If an authenticated user launches the Progressive Web App (PWA) directly,
+    route them straight to their showroom dashboard.
     """
+    if request.user.is_authenticated and request.GET.get('source') == 'pwa':
+        return redirect('dashboard')
+
     from django.conf import settings
 
     report_pdf_path = settings.BASE_DIR / 'JewelDesk_Complete_Project_Report.pdf'
@@ -883,6 +888,12 @@ def category_delete(request, pk):
     """Delete a category with protection check."""
     category = get_object_or_404(Category.objects.annotate(items_count=Count('items')), pk=pk, tenant=request.tenant)
     if request.method == 'POST':
+        if category.items_count > 0:
+            messages.error(
+                request,
+                f"Cannot delete category '{category.name}' because {category.items_count} jewellery item(s) are assigned to it."
+            )
+            return redirect('category_list')
         try:
             cat_name = category.name
             category.delete()

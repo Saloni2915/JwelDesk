@@ -847,6 +847,58 @@ class SuperAdminPlatformArchitectureTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('dashboard'))
 
+    def test_saloni_superuser_login_redirects_to_showroom_dashboard(self):
+        """Saloni Soni (superuser showroom owner) logging into JewelDesk must open the Showroom Dashboard."""
+        User = get_user_model()
+        User.objects.create_superuser(
+            username='salonisoni15dec2002',
+            email='salonisoni15dec2002@gmail.com',
+            password='SaloniPassword123!'
+        )
+        response = self.client.post(reverse('accounts:login'), {
+            'username': 'salonisoni15dec2002',
+            'password': 'SaloniPassword123!'
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('dashboard'))
+
+    def test_saloni_explicit_admin_portal_login_redirects_to_admin(self):
+        """Saloni Soni choosing target_portal=admin redirects to Super Admin Platform."""
+        User = get_user_model()
+        User.objects.create_superuser(
+            username='salonisoni15dec2002_2',
+            email='salonisoni15dec2002_2@gmail.com',
+            password='SaloniPassword123!'
+        )
+        response = self.client.post(reverse('accounts:login'), {
+            'username': 'salonisoni15dec2002_2',
+            'password': 'SaloniPassword123!',
+            'target_portal': 'admin'
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('super_admin:dashboard'))
+
+    def test_pwa_superuser_login_redirects_to_showroom_dashboard(self):
+        """Superuser logging in from PWA source redirects to Showroom Dashboard, not Admin."""
+        response = self.client.post(reverse('accounts:login'), {
+            'username': 'arch_superadmin',
+            'password': 'AdminPassword123!',
+            'source': 'pwa'
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('dashboard'))
+
+    def test_super_admin_manifest_endpoint(self):
+        """Super Admin Portal provides a dedicated PWA manifest at /super-admin/manifest.json."""
+        response = self.client.get(reverse('super_admin:pwa_manifest'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/manifest+json')
+        data = response.json()
+        self.assertEqual(data['id'], '/super-admin/?source=admin_pwa')
+        self.assertEqual(data['short_name'], 'Admin Portal')
+        self.assertEqual(data['scope'], '/super-admin/')
+        self.assertEqual(data['display'], 'standalone')
+
     def test_tenant_middleware_does_not_leak_customer_tenant_to_super_admin(self):
         """A platform superuser without an impersonation session should have request.tenant=None."""
         from django.test import RequestFactory

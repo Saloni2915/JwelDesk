@@ -628,6 +628,8 @@
                                 <form method="post" novalidate id="jd-login-form" autocomplete="on">
                                     {% csrf_token %}
                                     {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+                                    <input type="hidden" name="source" id="id_source" value="{{ request.GET.source|default:'' }}">
+                                    <input type="hidden" name="target_portal" id="id_target_portal" value="{{ request.GET.target_portal|default:'' }}">
 
                                     <div class="jd-input-group">
                                         <label class="jd-input-label" for="id_username">Username or Email</label>
@@ -720,6 +722,23 @@
 
     <!-- Scripts: Theme switching & Password toggle -->
     <script>
+        // Auto-detect PWA & portal query parameters
+        (function() {
+            var urlParams = new URLSearchParams(window.location.search);
+            var src = urlParams.get('source');
+            var portal = urlParams.get('target_portal');
+            var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+            var srcInput = document.getElementById('id_source');
+            var portalInput = document.getElementById('id_target_portal');
+            if (src === 'pwa' || isStandalone) {
+                if (srcInput) srcInput.value = 'pwa';
+                try { document.cookie = 'app_source=pwa; path=/; max-age=86400; SameSite=Lax'; } catch(e) {}
+            }
+            if (portal && portalInput) {
+                portalInput.value = portal;
+            }
+        })();
+
         // Password visibility toggle
         (function () {
             var toggle = document.getElementById('jd-password-toggle');

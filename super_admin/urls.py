@@ -11,6 +11,7 @@ from . import sales_views
 app_name = 'super_admin'
 
 urlpatterns = [
+    path('manifest.json', views.super_admin_manifest_view, name='pwa_manifest'),
     path('', views.dashboard_view, name='dashboard'),
     path('showrooms/', views.showroom_list_view, name='showroom_list'),
     path('showrooms/<int:tenant_id>/', views.showroom_detail_view, name='showroom_detail'),

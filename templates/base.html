@@ -156,6 +156,12 @@
                 </div>
                 {% endif %}
 
+                {% if user.is_authenticated and user.is_superuser %}
+                <a href="{% url 'super_admin:dashboard' %}" class="btn btn-sm d-inline-flex align-items-center gap-1 text-decoration-none py-1 px-2 me-1" style="background: rgba(236, 200, 106, 0.15); border: 1px solid rgba(236, 200, 106, 0.4); color: #ecc86a; border-radius: 6px; font-size: 0.78rem; font-weight: 700;" title="Switch to Super Admin Platform">
+                    <i class="bi bi-shield-lock-fill"></i> <span class="d-none d-sm-inline">Super Admin</span>
+                </a>
+                {% endif %}
+
                 {% if user.is_authenticated %}
                 <!-- Desktop User Profile Dropdown (>= 768px) -->
                 <div class="dropdown d-none d-md-inline-block">
@@ -1247,6 +1253,17 @@
                                 <span class="sidebar-item-title">{% if is_hindi %}मोबाइल ऐप डाउनलोड{% else %}Get the App{% endif %}</span>
                             </span>
                             <span class="badge bg-warning text-dark ms-auto fw-bold" style="font-size: 0.65rem; padding: 0.2rem 0.45rem; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.15);">{% if is_hindi %}ऐप इंस्टॉल{% else %}APK / Install{% endif %}</span>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% if user.is_superuser %}
+                    <li class="nav-item mt-2 pt-2 border-top border-secondary border-opacity-25">
+                        <a class="nav-link nav-link-single text-warning fw-bold" href="{% url 'super_admin:dashboard' %}" title="JewelDesk Super Admin Platform" style="background: rgba(236, 200, 106, 0.12); border-radius: 6px;">
+                            <span class="sidebar-item-content">
+                                <i class="bi bi-shield-lock-fill sidebar-item-icon text-warning"></i>
+                                <span class="sidebar-item-title">Super Admin Platform</span>
+                            </span>
                         </a>
                     </li>
                     {% endif %}

@@ -2853,3 +2853,77 @@ def coupon_single_print_view(request, template_id):
     return render(request, 'super_admin/coupon_batch_print.html', context)
 
 
+
+
+def super_admin_manifest_view(request):
+    """Serve the Web App Manifest for the JewelDesk Super Admin Platform PWA."""
+    manifest_data = {
+        "id": "/super-admin/?source=admin_pwa",
+        "name": "JewelDesk Super Admin Platform",
+        "short_name": "Admin Portal",
+        "description": "Multi-tenant showroom management, sales CRM pipeline, subscription billing and platform analytics.",
+        "start_url": "/super-admin/?source=admin_pwa",
+        "scope": "/super-admin/",
+        "display": "standalone",
+        "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+        "orientation": "any",
+        "theme_color": "#15130e",
+        "background_color": "#15130e",
+        "lang": "en",
+        "dir": "ltr",
+        "categories": ["business", "finance", "productivity"],
+        "prefer_related_applications": False,
+        "icons": [
+            {
+                "src": "/static/icons/icon-192x192.png?v=2.4.0",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "any"
+            },
+            {
+                "src": "/static/icons/icon-512x512.png?v=2.4.0",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any"
+            },
+            {
+                "src": "/static/icons/icon-maskable-192x192.png?v=2.4.0",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "maskable"
+            },
+            {
+                "src": "/static/icons/icon-maskable-512x512.png?v=2.4.0",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "maskable"
+            }
+        ],
+        "shortcuts": [
+            {
+                "name": "Showrooms",
+                "short_name": "Showrooms",
+                "description": "Manage registered jewellery showrooms",
+                "url": "/super-admin/showrooms/?source=shortcut",
+                "icons": [{"src": "/static/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png"}]
+            },
+            {
+                "name": "Sales CRM",
+                "short_name": "Sales CRM",
+                "description": "View sales pipeline and demo leads",
+                "url": "/super-admin/sales/?source=shortcut",
+                "icons": [{"src": "/static/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png"}]
+            },
+            {
+                "name": "Support Tickets",
+                "short_name": "Support",
+                "description": "Showroom inquiries and tickets",
+                "url": "/super-admin/support/tickets/?source=shortcut",
+                "icons": [{"src": "/static/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png"}]
+            }
+        ]
+    }
+    response = JsonResponse(manifest_data)
+    response['Content-Type'] = 'application/manifest+json'
+    response['Cache-Control'] = 'public, max-age=86400'
+    return response

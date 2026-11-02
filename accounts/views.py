@@ -92,11 +92,48 @@ class JewelDeskLoginView(LoginView):
 
     def get_success_url(self):
         url = self.get_redirect_url()
-        if url:
-            return url
         user = self.request.user
+
+        # Detect login source / mode / portal preference
+        source = (
+            self.request.POST.get('source') or
+            self.request.GET.get('source') or
+            self.request.COOKIES.get('app_source') or
+            ''
+        ).strip().lower()
+        is_pwa = (source in ('pwa', 'standalone'))
+        target_portal = (
+            self.request.POST.get('target_portal') or
+            self.request.GET.get('target_portal') or
+            ''
+        ).strip().lower()
+
+        # Check if this user is Saloni Soni (showroom owner with superuser flag)
+        username = (getattr(user, 'username', '') or '').strip().lower()
+        email = (getattr(user, 'email', '') or '').strip().lower()
+        is_saloni = username.startswith('salonisoni') or email.startswith('salonisoni')
+
+        # If user explicitly navigated to a specific internal path (not the generic root/PWA start)
+        if url and url not in ('/', '/?source=pwa', '/?source=pwa&v=2.4.0'):
+            return url
+
+        # 1. Saloni Soni always enters the JewelDesk Showroom (/dashboard/) unless she explicitly targets admin
+        if is_saloni:
+            if target_portal == 'admin':
+                return reverse('super_admin:dashboard')
+            return reverse('dashboard')
+
+        # 2. PWA logins or explicit showroom target default to showroom dashboard
+        if is_pwa or target_portal == 'showroom':
+            return reverse('dashboard')
+
+        # 3. Superuser login from desktop web browser defaults to Super Admin Platform
         if user and user.is_authenticated and user.is_superuser:
             return reverse('super_admin:dashboard')
+
+        if url:
+            return url
+
         return super().get_success_url()
 
 
