@@ -1271,6 +1271,120 @@ class OldGoldTransactionTests(TestCase):
         self.assertAlmostEqual(data['purity_factor'], 0.75, places=2)
         self.assertGreater(data['effective_rate'], 0)
 
+    def test_rate_api_endpoint_silver(self):
+        response = self.client.get(reverse('old_gold_rate_api'), {
+            'metal_type': 'Silver',
+            'purity': '925'
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['metal_type'], 'Silver')
+        self.assertEqual(data['purity'], '925')
+        self.assertAlmostEqual(data['purity_factor'], 0.925, places=3)
+        self.assertGreater(data['effective_rate'], 0)
+
+    def test_silver_exchange_creation_workflow(self):
+        """Silver exchange against new jewellery item."""
+        silver_piece = JewelleryItem.objects.create(
+            tenant=self.tenant,
+            item_code='SLV-RING-01',
+            name='Sterling Silver Floral Ring',
+            category=self.category,
+            metal_type='Silver',
+            purity='925',
+            gross_weight=Decimal('6.000'),
+            net_weight=Decimal('6.000'),
+            selling_price=Decimal('5000.00'),
+            quantity=1,
+            status='Available'
+        )
+
+        response = self.client.post(reverse('old_gold_exchange_create'), {
+            'customer': self.customer.id,
+            'metal_type': 'Silver',
+            'old_gold_type': 'Silver Scrap',
+            'item_description': 'Old silver anklets (payal)',
+            'gross_weight': '50.000',
+            'stone_weight': '0.000',
+            'purity': '925',
+            'applicable_rate': '90.00',
+            'deduction_percent': '0.00',
+            'new_jewellery_item': silver_piece.id,
+            'new_sale_price': '5000.00',
+            'settlement_payment_method': 'Cash',
+            'notes': 'Silver exchange test'
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        tx = OldGoldTransaction.objects.filter(customer=self.customer, metal_type='Silver').first()
+        self.assertIsNotNone(tx)
+        self.assertEqual(tx.metal_type, 'Silver')
+        self.assertEqual(tx.purity, '925')
+        self.assertEqual(tx.purity_factor, Decimal('0.925000'))
+        self.assertEqual(tx.applicable_rate, Decimal('90.00'))
+        self.assertEqual(tx.effective_rate, Decimal('83.25'))  # 90 * 0.925
+        self.assertEqual(tx.gross_valuation, Decimal('4162.50'))  # 50 * 83.25
+        self.assertEqual(tx.final_value, Decimal('4162.50'))
+        self.assertEqual(tx.difference_amount, Decimal('837.50'))  # 5000 - 4162.50
+
+        # Linked sale
+        self.assertIsNotNone(tx.new_sale)
+        self.assertEqual(tx.new_sale.sale_price, Decimal('5000.00'))
+
+    def test_pos_inline_silver_exchange_creation(self):
+        """POS /sales/add/ form submission with inline Silver exchange."""
+        ring = JewelleryItem.objects.create(
+            tenant=self.tenant,
+            item_code='POS-SLV-01',
+            name='Modern Silver Bracelet',
+            category=self.category,
+            metal_type='Silver',
+            purity='925',
+            gross_weight=Decimal('15.000'),
+            net_weight=Decimal('15.000'),
+            selling_price=Decimal('8000.00'),
+            quantity=1,
+            status='Available'
+        )
+
+        response = self.client.post(reverse('sale_add'), {
+            'customer': self.customer.id,
+            'jewellery_item': ring.id,
+            'sale_price': '6300.00',  # 8000 - 1700 credit
+            'payment_method': 'Cash',
+            'primary_paid_amount': '6300.00',
+            'sale_date': timezone.now().strftime('%Y-%m-%d'),
+            # Inline Metal Exchange fields
+            'has_old_gold': '1',
+            'old_gold_metal_type': 'Silver',
+            'old_gold_description': 'Old silver spoon/utensil',
+            'old_gold_purity': '925',
+            'old_gold_gross_weight': '20.000',
+            'old_gold_melting_loss': '0.000',
+            'old_gold_rate': '85.00',
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        sale = Sale.objects.filter(jewellery_item=ring).first()
+        self.assertIsNotNone(sale)
+        og_tx = getattr(sale, 'old_gold_exchange', None)
+        self.assertIsNotNone(og_tx)
+        self.assertEqual(og_tx.metal_type, 'Silver')
+        self.assertEqual(og_tx.purity, '925')
+        self.assertEqual(og_tx.gross_weight, Decimal('20.000'))
+        self.assertEqual(og_tx.net_weight, Decimal('20.000'))
+        self.assertEqual(og_tx.final_value, Decimal('1572.60'))  # 20 * round_curr(85 * 0.925) = 20 * 78.63 = 1572.60
+
+    def test_old_gold_form_labels_and_choices(self):
+        from sales.forms import OldGoldExchangeForm, OldGoldBuybackForm
+        form_ex = OldGoldExchangeForm(tenant=self.tenant)
+        self.assertEqual(form_ex.fields['metal_type'].label, "Metal to Exchange")
+        self.assertEqual(form_ex.fields['metal_type'].choices, [('Gold', 'Gold'), ('Silver', 'Silver')])
+
+        form_bb = OldGoldBuybackForm(tenant=self.tenant)
+        self.assertEqual(form_bb.fields['metal_type'].label, "Metal to Exchange")
+        self.assertEqual(form_bb.fields['metal_type'].choices, [('Gold', 'Gold'), ('Silver', 'Silver')])
+
     def test_sales_report_preserves_normal_sales_totals(self):
         # Create normal sale
         sale = Sale.objects.create(

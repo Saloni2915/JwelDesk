@@ -50,6 +50,7 @@
         "All Sales": "सभी बिक्री",
         "All Sales & Bills": "सभी बिक्री एवं बिल",
         "Quick Sale": "त्वरित बिक्री",
+        "Metal Exchange": "धातु एक्सचेंज",
         "Old Gold Exchange": "पुराना सोना एक्सचेंज",
         "Old Gold Buyback": "पुराना सोना बायबैक",
         "Old Gold History": "पुराना सोना इतिहास",

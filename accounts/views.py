@@ -419,11 +419,11 @@ SIDEBAR_MENU_OPTIONS = (
             {
                 'key': 'sub_sales_og_exchange',
                 'business_type': 'retail',
-                'name': 'Old Gold Exchange',
-                'name_hi': 'पुराना सोना एक्सचेंज',
+                'name': 'Metal Exchange',
+                'name_hi': 'धातु एक्सचेंज',
                 'icon': 'bi-arrow-repeat',
-                'desc': 'Exchange customer old jewellery towards new bill',
-                'desc_hi': 'पुराने आभूषण के बदले नए बिल में एक्सचेंज',
+                'desc': 'Exchange customer old gold or silver jewellery towards new bill',
+                'desc_hi': 'पुराने सोने/चांदी के आभूषण के बदले नए बिल में एक्सचेंज',
             },
             {
                 'key': 'sub_sales_og_buyback',

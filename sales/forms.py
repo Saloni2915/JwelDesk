@@ -390,6 +390,9 @@ class OldGoldExchangeForm(forms.ModelForm):
                         self.initial['branch'] = default_b
         if 'item_description' in self.fields:
             self.fields['item_description'].required = False
+        if 'metal_type' in self.fields:
+            self.fields['metal_type'].label = "Metal to Exchange"
+            self.fields['metal_type'].choices = [('Gold', 'Gold'), ('Silver', 'Silver')]
         item_qs = JewelleryItem.objects.filter(status='Available')
         if self.tenant:
             self.fields['customer'].queryset = Customer.objects.filter(tenant=self.tenant)
@@ -403,12 +406,14 @@ class OldGoldExchangeForm(forms.ModelForm):
         )
         if not self.initial.get('applicable_rate'):
             from inventory.pricing import get_current_metal_rate
-            self.initial['applicable_rate'] = get_current_metal_rate('Gold', tenant=self.tenant)
+            init_metal = self.initial.get('metal_type') or (self.instance.metal_type if self.instance and self.instance.pk else 'Gold')
+            self.initial['applicable_rate'] = get_current_metal_rate(init_metal, tenant=self.tenant)
 
     def clean(self):
         cleaned_data = super().clean()
+        metal = cleaned_data.get('metal_type') or 'Gold'
         if not cleaned_data.get('item_description'):
-            cleaned_data['item_description'] = 'Old Gold Exchange Scrap'
+            cleaned_data['item_description'] = f'Old {metal} Exchange Scrap'
         gross = cleaned_data.get('gross_weight')
         stone = cleaned_data.get('stone_weight') or Decimal('0.000')
         if gross and stone >= gross:
@@ -484,19 +489,21 @@ class OldGoldBuybackForm(forms.ModelForm):
                     default_b = Branch.objects.filter(tenant=self.tenant, is_default=True, is_active=True).first()
                     if default_b:
                         self.initial['branch'] = default_b
+        if 'metal_type' in self.fields:
+            self.fields['metal_type'].label = "Metal to Exchange"
+            self.fields['metal_type'].choices = [('Gold', 'Gold'), ('Silver', 'Silver')]
         if self.tenant:
             self.fields['customer'].queryset = Customer.objects.filter(tenant=self.tenant)
         if not self.initial.get('applicable_rate'):
             from inventory.pricing import get_current_metal_rate
-            self.initial['applicable_rate'] = get_current_metal_rate('Gold', tenant=self.tenant)
-        if self.tenant:
-            self.fields['customer'].queryset = Customer.objects.filter(tenant=self.tenant)
-        if not self.initial.get('applicable_rate'):
-            from inventory.pricing import get_current_metal_rate
-            self.initial['applicable_rate'] = get_current_metal_rate('Gold', tenant=self.tenant)
+            init_metal = self.initial.get('metal_type') or (self.instance.metal_type if self.instance and self.instance.pk else 'Gold')
+            self.initial['applicable_rate'] = get_current_metal_rate(init_metal, tenant=self.tenant)
 
     def clean(self):
         cleaned_data = super().clean()
+        metal = cleaned_data.get('metal_type') or 'Gold'
+        if not cleaned_data.get('item_description'):
+            cleaned_data['item_description'] = f'Old {metal} Buyback Scrap'
         gross = cleaned_data.get('gross_weight')
         stone = cleaned_data.get('stone_weight') or Decimal('0.000')
         if gross and stone >= gross:

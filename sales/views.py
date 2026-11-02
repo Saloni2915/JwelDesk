@@ -298,47 +298,58 @@ def sale_add(request):
                     )
                     created_payments.append(p2)
 
-                # Optional Old Gold transaction record if exchange old gold was enabled
+                # Optional Old Gold / Metal Exchange transaction record if exchange was enabled
                 if request.POST.get('has_old_gold'):
                     try:
+                        og_metal = (request.POST.get('old_gold_metal_type') or 'Gold').strip().title()
+                        if og_metal not in ('Gold', 'Silver'):
+                            og_metal = 'Gold'
                         og_gross = Decimal(request.POST.get('old_gold_gross_weight', '0').strip() or '0')
                         og_loss = Decimal(request.POST.get('old_gold_melting_loss', '0').strip() or '0')
                         og_rate = Decimal(request.POST.get('old_gold_rate', '0').strip() or '0')
-                        og_purity = request.POST.get('old_gold_purity', '22K')
-                        og_desc = request.POST.get('old_gold_description', 'Old Scrap Gold')
+                        default_purity = '22K' if og_metal == 'Gold' else '925'
+                        og_purity = request.POST.get('old_gold_purity') or default_purity
+                        default_desc = f'Old Scrap {og_metal}'
+                        og_desc = (request.POST.get('old_gold_description') or '').strip() or default_desc
                         if og_gross > 0 and og_rate > 0:
                             og_net = max(Decimal('0.000'), og_gross - og_loss)
                             val = OldGoldTransaction.compute_valuation(
                                 gross_weight=og_gross,
                                 stone_weight=Decimal('0.000'),
-                                metal_type='Gold',
-                                purity=og_purity if og_purity in dict(OldGoldTransaction.PURITY_CHOICES) else '22K',
+                                metal_type=og_metal,
+                                purity=og_purity if og_purity in dict(OldGoldTransaction.PURITY_CHOICES) else default_purity,
                                 applicable_rate=og_rate,
                                 deduction_percent=Decimal('0.00'),
                             )
                             tx_num = generate_old_gold_number(OldGoldTransaction.TYPE_EXCHANGE, tenant=request.tenant)
                             OldGoldTransaction.objects.create(
                                 tenant=request.tenant,
+                                branch=sale.branch,
                                 customer=sale.customer,
-                                new_jewellery_item=sale.jewellery_item,
+                                new_sale=sale,
                                 transaction_number=tx_num,
                                 transaction_type=OldGoldTransaction.TYPE_EXCHANGE,
                                 status=OldGoldTransaction.STATUS_COMPLETED,
-                                old_gold_type='Old Jewellery',
-                                metal_type='Gold',
-                                purity=og_purity if og_purity in dict(OldGoldTransaction.PURITY_CHOICES) else '22K',
+                                old_gold_type='Old Jewellery' if og_metal == 'Gold' else 'Silver Scrap',
+                                metal_type=og_metal,
+                                purity=og_purity if og_purity in dict(OldGoldTransaction.PURITY_CHOICES) else default_purity,
+                                item_description=og_desc,
                                 gross_weight=og_gross,
                                 stone_weight=Decimal('0.000'),
                                 net_weight=og_net,
                                 purity_factor=val['purity_factor'],
                                 pure_weight=val['pure_weight'],
                                 applicable_rate=og_rate,
+                                effective_rate=val['effective_rate'],
                                 deduction_percent=Decimal('0.00'),
-                                gross_value=val['gross_value'],
+                                gross_valuation=val['gross_valuation'],
                                 deduction_amount=Decimal('0.00'),
                                 final_value=val['final_value'],
+                                new_item_price=sale.sale_price,
+                                difference_amount=sale.sale_price - val['final_value'],
                                 notes=f"Adjusted in POS Sale #{sale.id} ({og_desc})",
                                 payment_method='Adjusted in Sale',
+                                processed_by=request.user,
                             )
                     except Exception as e:
                         logger.warning(f"Failed to record OldGoldTransaction in sale_add: {e}")
@@ -424,10 +435,15 @@ def sale_add(request):
     next_inv_id = (last_sale.id + 1) if last_sale else 1
     draft_invoice_number = f"INV-2026-{next_inv_id:04d}"
 
+    live_gold_rate = pricing.get_current_metal_rate('Gold', tenant=request.tenant)
+    live_silver_rate = pricing.get_current_metal_rate('Silver', tenant=request.tenant)
+
     context = {
         'form': form,
         'page_title': 'Showroom Counter POS & Invoice Billing',
         'metal_prices': metal_price_snapshot,
+        'live_gold_rate': float(live_gold_rate),
+        'live_silver_rate': float(live_silver_rate),
         'items_json': json.dumps(items_data),
         'customers_json': json.dumps(customers_data),
         'draft_invoice_number': draft_invoice_number,
@@ -1231,7 +1247,7 @@ def old_gold_exchange_create(request):
                     request,
                     f"Exchange {tx_number} completed successfully! "
                     f"New piece '{locked_item.name}' sold to {raw_data['customer'].name}. "
-                    f"Old Gold Credit: Rs. {val['final_value']:,.2f}."
+                    f"Metal Exchange Credit: Rs. {val['final_value']:,.2f}."
                 )
                 return redirect('old_gold_detail', pk=og_tx.pk)
     else:
@@ -1239,7 +1255,7 @@ def old_gold_exchange_create(request):
 
     context = {
         'form': form,
-        'page_title': 'Old Gold Exchange with New Jewellery',
+        'page_title': 'Metal Exchange with New Jewellery',
     }
     return render(request, 'sales/old_gold_exchange_form.html', context)
 

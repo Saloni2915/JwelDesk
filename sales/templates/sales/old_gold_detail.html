@@ -29,7 +29,7 @@
     </button>
     {% endif %}
     <a href="{% url 'old_gold_list' %}" class="btn jd-btn-ghost btn-sm d-inline-flex align-items-center">
-        <i class="bi bi-arrow-left me-1"></i> Back to Old Gold List
+        <i class="bi bi-arrow-left me-1"></i> Back to Metal Transactions
     </a>
 </div>
 {% endblock %}
@@ -62,7 +62,7 @@
                 </div>
                 <div class="col-sm-5 text-sm-end mt-3 mt-sm-0">
                     <h5 class="fw-bold text-uppercase text-secondary mb-1">
-                        {% if tx.is_exchange %}OLD GOLD EXCHANGE RECEIPT{% else %}OLD GOLD BUYBACK RECEIPT{% endif %}
+                        {% if tx.is_exchange %}METAL EXCHANGE RECEIPT{% else %}METAL BUYBACK RECEIPT{% endif %}
                     </h5>
                     <div class="font-monospace fs-5 fw-bold text-dark">{{ tx.transaction_number }}</div>
                     <div class="text-muted small">Date: {{ tx.created_at|date:"d M Y, h:i A" }}</div>
@@ -90,9 +90,9 @@
                 </div>
             </div>
 
-            <!-- Old Gold Appraisal Table -->
+            <!-- Metal Appraisal Table -->
             <h6 class="fw-bold text-dark mb-3 border-bottom pb-2">
-                <i class="bi bi-gem me-1 text-warning"></i> Old Gold Details &amp; Value
+                <i class="bi bi-gem me-1 text-warning"></i> Metal Appraisal &amp; Value
             </h6>
             <div class="table-responsive mb-4">
                 <table class="table table-bordered align-middle">
@@ -122,14 +122,14 @@
                             <td class="text-end fw-bold text-success">{{ tx.net_weight }} g</td>
                             <td class="text-end">
                                 <div>₹{{ tx.effective_rate }}</div>
-                                <small class="text-muted">(24K: ₹{{ tx.applicable_rate }})</small>
+                                <small class="text-muted">(Base: ₹{{ tx.applicable_rate }})</small>
                             </td>
                             <td class="text-end fw-semibold">₹{{ tx.gross_valuation|floatformat:2 }}</td>
                         </tr>
                     </tbody>
                     <tfoot class="table-light">
                         <tr>
-                            <td colspan="6" class="text-end">Gross Gold Value:</td>
+                            <td colspan="6" class="text-end">Gross Metal Value:</td>
                             <td class="text-end fw-bold">₹{{ tx.gross_valuation|floatformat:2 }}</td>
                         </tr>
                         <tr>
@@ -140,7 +140,7 @@
                         </tr>
                         <tr class="table-warning">
                             <td colspan="6" class="text-end fw-bold fs-6">
-                                Final Old Gold Value ({% if tx.is_exchange %}Exchange Credit{% else %}Payout Value{% endif %}):
+                                Final Metal Value ({% if tx.is_exchange %}Exchange Credit{% else %}Payout Value{% endif %}):
                             </td>
                             <td class="text-end fw-bolder fs-6 text-dark">₹{{ tx.final_value|floatformat:2 }}</td>
                         </tr>
@@ -182,7 +182,7 @@
                             <span class="fw-semibold">₹{{ tx.new_item_price|floatformat:2 }}</span>
                         </div>
                         <div class="d-flex justify-content-between mb-2">
-                            <span class="text-muted">Old Gold Value Deducted:</span>
+                            <span class="text-muted">Metal Exchange Value Deducted:</span>
                             <span class="text-success fw-semibold">- ₹{{ tx.final_value|floatformat:2 }}</span>
                         </div>
                         <hr class="my-2">
@@ -259,7 +259,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title text-danger" id="cancelModalLabel">
-                        <i class="bi bi-exclamation-triangle-fill me-1"></i> Cancel Old Gold Transaction
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i> Cancel Metal Transaction
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>

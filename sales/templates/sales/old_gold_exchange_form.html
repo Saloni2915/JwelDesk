@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Old Gold Exchange — JewelDesk{% endblock %}
+{% block title %}Metal Exchange — JewelDesk{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/sales_bullion.css' %}?v={% now "U" %}" rel="stylesheet">
@@ -13,8 +13,8 @@
     <!-- Header & Back Action -->
     <div class="jd-sb-header">
         <div class="jd-sb-title-wrap">
-            <h1><i class="bi bi-arrow-repeat text-warning me-2"></i>Old Gold Exchange</h1>
-            <p class="jd-sb-subtitle">Exchange customer old jewellery for new jewellery items</p>
+            <h1><i class="bi bi-arrow-repeat text-warning me-2"></i>Metal Exchange</h1>
+            <p class="jd-sb-subtitle">Exchange customer old gold or silver jewellery for new jewellery items</p>
         </div>
         <div class="jd-sb-header-actions">
             <a href="{% url 'old_gold_list' %}" class="jd-btn-ghost">
@@ -63,19 +63,19 @@
                     </div>
                 </div>
 
-                <!-- Section 2: Old Gold Intake & Purity Details -->
+                <!-- Section 2: Metal Exchange Intake & Purity Details -->
                 <div class="jd-og-card">
                     <div class="jd-og-card-header">
                         <h2>
                             <i class="bi bi-coin text-warning"></i>
-                            2. Old Gold Valuation
+                            2. Metal Valuation
                         </h2>
-                        <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">Old Gold</span>
+                        <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25" id="live_metal_badge">Metal Exchange</span>
                     </div>
                     <div class="jd-og-card-body">
                         <div class="row g-3">
                             <div class="col-md-6 col-12">
-                                <label class="jd-og-field-label">Precious Metal</label>
+                                <label class="jd-og-field-label">Metal to Exchange <span class="text-danger">*</span></label>
                                 {{ form.metal_type }}
                             </div>
                             <div class="col-md-6 col-12">
@@ -104,7 +104,7 @@
                                 {{ form.stone_weight }}
                             </div>
                             <div class="col-md-4 col-12">
-                                <label class="jd-og-field-label">Net Gold Wt (g)</label>
+                                <label class="jd-og-field-label"><span id="live_metal_net_label">Net Metal</span> Wt (g)</label>
                                 <input type="text" id="live_net_weight" class="form-control jd-og-live-net fw-bold font-monospace" readonly value="0.000">
                             </div>
 
@@ -118,7 +118,7 @@
                                 {{ form.custom_purity_percent }}
                             </div>
                             <div class="col-md-4 col-12">
-                                <label class="jd-og-field-label">24K Base Rate (₹/g) <span class="text-danger">*</span></label>
+                                <label class="jd-og-field-label"><span id="live_metal_base_label">Base Rate</span> (₹/g) <span class="text-danger">*</span></label>
                                 {{ form.applicable_rate }}
                             </div>
                             <div class="col-md-4 col-12">
@@ -216,10 +216,10 @@
                             <span id="calc_deduct_val">- ₹0.00</span>
                         </div>
 
-                        <!-- Old Gold Credit -->
+                        <!-- Exchange Credit -->
                         <div class="jd-og-credit-highlight mt-2">
                             <div class="d-flex justify-content-between align-items-center">
-                                <span class="jd-og-credit-label">Old Gold Credit</span>
+                                <span class="jd-og-credit-label">Exchange Credit</span>
                                 <span class="jd-og-credit-val" id="calc_final_old_gold">₹0.00</span>
                             </div>
                         </div>
@@ -271,9 +271,14 @@
         '18K': 18 / 24,
         '14K': 14 / 24,
         '10K': 10 / 24,
+        '9K': 9 / 24,
+        '999': 1.000000,
         '925': 0.925000,
+        '800': 0.800000,
+        'Other': 0.916667,
     };
 
+    const metalSelect = document.getElementById('id_metal_type');
     const grossInput = document.getElementById('id_gross_weight');
     const stoneInput = document.getElementById('id_stone_weight');
     const liveNet = document.getElementById('live_net_weight');
@@ -284,6 +289,11 @@
     const deductInput = document.getElementById('id_deduction_percent');
     const newItemSelect = document.getElementById('id_new_jewellery_item');
     const newPriceInput = document.getElementById('id_new_sale_price');
+    const descInput = document.getElementById('id_item_description');
+
+    const liveMetalNetLabel = document.getElementById('live_metal_net_label');
+    const liveMetalBaseLabel = document.getElementById('live_metal_base_label');
+    const liveMetalBadge = document.getElementById('live_metal_badge');
 
     const calcGrossWt = document.getElementById('calc_gross_wt');
     const calcStoneWt = document.getElementById('calc_stone_wt');
@@ -302,6 +312,60 @@
     const balanceSubtitle = document.getElementById('balance_subtitle');
     const livePurityBadge = document.getElementById('live_purity_badge');
 
+    const goldPurities = [
+        { val: '24K', text: '24K (99.9% Pure Gold)' },
+        { val: '22K', text: '22K / 916 (91.6% Hallmark Gold)', selected: true },
+        { val: '20K', text: '20K (83.3% Gold)' },
+        { val: '18K', text: '18K / 750 (75.0% Gold)' },
+        { val: '14K', text: '14K / 585 (58.5% Gold)' },
+        { val: '10K', text: '10K (41.7% Gold)' },
+        { val: '9K', text: '9K (37.5% Gold)' },
+        { val: 'Other', text: 'Other / Custom Purity' }
+    ];
+
+    const silverPurities = [
+        { val: '999', text: '999 Fine Silver (100%)' },
+        { val: '925', text: '925 Sterling Silver (92.5%)', selected: true },
+        { val: '800', text: '800 Silver (80.0%)' },
+        { val: 'Other', text: 'Other / Custom Purity' }
+    ];
+
+    function updatePurityChoices(metal, preserveVal) {
+        if (!puritySelect) return;
+        const list = (metal === 'Silver') ? silverPurities : goldPurities;
+        const currentVal = preserveVal || puritySelect.value;
+        puritySelect.innerHTML = '';
+        let matched = false;
+        list.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.val;
+            opt.textContent = p.text;
+            if (p.val === currentVal) {
+                opt.selected = true;
+                matched = true;
+            } else if (!matched && !preserveVal && p.selected) {
+                opt.selected = true;
+            }
+            puritySelect.appendChild(opt);
+        });
+        if (!matched && !preserveVal && puritySelect.options.length > 0) {
+            puritySelect.selectedIndex = 0;
+        }
+    }
+
+    function syncMetalRate(metal, purity) {
+        if (!rateInput) return;
+        fetch(`/sales/old-gold/api/rate/?metal_type=${encodeURIComponent(metal)}&purity=${encodeURIComponent(purity)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.base_rate) {
+                    rateInput.value = data.base_rate.toFixed(2);
+                    recalculate();
+                }
+            })
+            .catch(() => {});
+    }
+
     function formatInr(val) {
         return '₹' + Number(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
@@ -312,11 +376,12 @@
         const net = Math.max(0, gross - stone);
         if (liveNet) liveNet.value = net.toFixed(3);
 
-        const purityKey = puritySelect ? puritySelect.value : '22K';
+        const currentMetal = metalSelect ? metalSelect.value : 'Gold';
+        const purityKey = puritySelect ? puritySelect.value : (currentMetal === 'Silver' ? '925' : '22K');
         if (livePurityBadge) livePurityBadge.textContent = purityKey;
 
-        let purityFactor = purityMap[purityKey] || 0.916667;
-        if (purityKey === 'Custom' && customPurityInput) {
+        let purityFactor = purityMap[purityKey] || (currentMetal === 'Silver' ? 0.925 : 0.916667);
+        if (purityKey === 'Other' && customPurityInput) {
             if (customWrapper) customWrapper.style.display = 'block';
             purityFactor = (parseFloat(customPurityInput.value) || 0) / 100;
         } else {
@@ -355,15 +420,30 @@
         } else if (balance < 0) {
             if (balanceTitle) balanceTitle.textContent = 'Refund to Customer';
             if (calcBalanceAmount) calcBalanceAmount.textContent = formatInr(Math.abs(balance));
-            if (balanceSubtitle) balanceSubtitle.textContent = 'Old gold value is more than new jewellery price';
+            if (balanceSubtitle) balanceSubtitle.textContent = 'Metal exchange value is more than new jewellery price';
         } else {
             if (balanceTitle) balanceTitle.textContent = 'Zero Balance';
             if (calcBalanceAmount) calcBalanceAmount.textContent = '₹0.00';
-            if (balanceSubtitle) balanceSubtitle.textContent = 'Old gold value matches new item price';
+            if (balanceSubtitle) balanceSubtitle.textContent = 'Metal exchange value matches new item price';
         }
     }
 
-    [grossInput, stoneInput, puritySelect, customPurityInput, rateInput, deductInput, newPriceInput].forEach(el => {
+    if (metalSelect) {
+        metalSelect.addEventListener('change', function() {
+            const m = this.value || 'Gold';
+            if (liveMetalNetLabel) liveMetalNetLabel.textContent = (m === 'Silver') ? 'Net Silver' : 'Net Gold';
+            if (liveMetalBaseLabel) liveMetalBaseLabel.textContent = (m === 'Silver') ? '999 Silver Base Rate' : '24K Gold Base Rate';
+            if (liveMetalBadge) liveMetalBadge.textContent = m + ' Exchange';
+            if (descInput && (!descInput.value || descInput.value.includes('Exchange Scrap'))) {
+                descInput.value = `Old ${m} Exchange Scrap`;
+            }
+            updatePurityChoices(m, false);
+            syncMetalRate(m, puritySelect ? puritySelect.value : '');
+            recalculate();
+        });
+    }
+
+    [metalSelect, grossInput, stoneInput, puritySelect, customPurityInput, rateInput, deductInput, newPriceInput].forEach(el => {
         if (el) el.addEventListener('input', recalculate);
         if (el) el.addEventListener('change', recalculate);
     });
@@ -379,6 +459,14 @@
                 }
             }
         });
+    }
+
+    if (metalSelect) {
+        const initM = metalSelect.value || 'Gold';
+        if (liveMetalNetLabel) liveMetalNetLabel.textContent = (initM === 'Silver') ? 'Net Silver' : 'Net Gold';
+        if (liveMetalBaseLabel) liveMetalBaseLabel.textContent = (initM === 'Silver') ? '999 Silver Base Rate' : '24K Base Rate';
+        if (liveMetalBadge) liveMetalBadge.textContent = initM + ' Exchange';
+        updatePurityChoices(initM, puritySelect ? puritySelect.value : '');
     }
 
     recalculate();

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Old Gold Transactions — JewelDesk{% endblock %}
+{% block title %}Metal Transactions — JewelDesk{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/sales_bullion.css' %}?v={% now "U" %}" rel="stylesheet">
@@ -13,12 +13,12 @@
     <!-- 1. Header & Quick Actions -->
     <div class="jd-sb-header">
         <div class="jd-sb-title-wrap">
-            <h1><i class="bi bi-coin jd-sb-icon-theme me-2"></i>Old Gold Transactions</h1>
-            <p class="jd-sb-subtitle">Record of customer old gold exchanges and cash buybacks</p>
+            <h1><i class="bi bi-coin jd-sb-icon-theme me-2"></i>Metal Transactions</h1>
+            <p class="jd-sb-subtitle">Record of customer gold and silver exchanges and cash buybacks</p>
         </div>
         <div class="jd-sb-header-actions">
             <a href="{% url 'old_gold_exchange_create' %}" class="jd-btn-gold">
-                <i class="bi bi-arrow-repeat"></i> + New Exchange
+                <i class="bi bi-arrow-repeat"></i> + New Metal Exchange
             </a>
             <a href="{% url 'old_gold_buyback_create' %}" class="jd-btn-ghost">
                 <i class="bi bi-cash-stack"></i> + New Buyback
@@ -36,7 +36,7 @@
                 </div>
                 <span class="badge jd-sb-badge-theme">Acquired</span>
             </div>
-            <div class="jd-sb-kpi-label">Total Old Gold Value</div>
+            <div class="jd-sb-kpi-label">Total Metal Value</div>
             <div class="jd-sb-kpi-val jd-sb-kpi-val-theme">₹{{ total_val_all|floatformat:2 }}</div>
             <div class="jd-sb-kpi-sub">Total credit &amp; payout value</div>
         </div>
@@ -49,7 +49,7 @@
                 </div>
                 <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25">Exchange</span>
             </div>
-            <div class="jd-sb-kpi-label">Exchanges</div>
+            <div class="jd-sb-kpi-label">Metal Exchanges</div>
             <div class="jd-sb-kpi-val text-success">{{ exchange_count_all }}</div>
             <div class="jd-sb-kpi-sub">Applied toward new jewellery bills</div>
         </div>
@@ -75,9 +75,9 @@
                 </div>
                 <span class="badge jd-sb-badge-theme">Metal Stock</span>
             </div>
-            <div class="jd-sb-kpi-label">Net Old Gold Weight</div>
+            <div class="jd-sb-kpi-label">Net Metal Weight</div>
             <div class="jd-sb-kpi-val jd-sb-kpi-val-theme">{{ total_net_wt_all|floatformat:3 }} g</div>
-            <div class="jd-sb-kpi-sub">Total old gold received</div>
+            <div class="jd-sb-kpi-sub">Total scrap metal received</div>
         </div>
     </div>
 

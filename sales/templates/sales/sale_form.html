@@ -293,14 +293,14 @@
                     </div>
                 </div>
 
-                <!-- SECTION C: Old Gold Exchange & Adjustment (Collapsible) -->
+                <!-- SECTION C: Metal Exchange & Adjustment (Collapsible) -->
                 <div class="jd-pos-card" id="oldGoldExchangeCard">
                     <div class="jd-pos-card-header" id="exchangeHeader" style="cursor: pointer; user-select: none;">
                         <div class="jd-pos-exchange-toggle-wrap w-100 m-0 d-flex justify-content-between align-items-center">
                             <span class="d-flex align-items-center gap-2">
                                 <input type="checkbox" id="exchange_toggle" name="has_old_gold" value="1" class="jd-pos-exchange-checkbox">
                                 <label for="exchange_toggle" class="fw-bold m-0" style="color: var(--jd-pos-ivory); cursor: pointer;">
-                                    <i class="bi bi-arrow-repeat text-warning me-1"></i> Exchange Old Gold
+                                    <i class="bi bi-arrow-repeat text-warning me-1"></i> Metal Exchange
                                 </label>
                             </span>
                             <span class="text-danger fw-bold font-monospace" id="exchangeDeductionBadge">0.00 Deduction</span>
@@ -308,26 +308,33 @@
                     </div>
                     <div class="jd-pos-card-body" id="exchangePanelBody" style="display: none;">
                         <div class="row g-2 mb-2">
-                            <div class="col-md-4 col-12">
+                            <div class="col-md-2 col-6">
+                                <label class="jd-pos-spec-label">Metal to Exchange</label>
+                                <select id="ogMetalType" name="old_gold_metal_type" class="form-select py-1 px-2" style="font-size: 0.85rem;">
+                                    <option value="Gold" selected>Gold</option>
+                                    <option value="Silver">Silver</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 col-6">
                                 <label class="jd-pos-spec-label">Scrap Description</label>
                                 <input type="text" id="ogDesc" name="old_gold_description" class="jd-pos-input py-1 px-2" value="Old Scrap Gold" placeholder="e.g. Old 22K Bangle / Chain">
                             </div>
                             <div class="col-md-2 col-6">
                                 <label class="jd-pos-spec-label">Purity</label>
                                 <select id="ogPurity" name="old_gold_purity" class="form-select py-1 px-2" style="font-size: 0.85rem;">
-                                    <option value="24K">24K Gold</option>
+                                    <option value="24K">24K Gold (99.9%)</option>
                                     <option value="22K" selected>22K Gold (91.6%)</option>
                                     <option value="18K">18K Gold (75.0%)</option>
                                     <option value="14K">14K Gold (58.5%)</option>
-                                    <option value="Silver">Silver</option>
+                                    <option value="Other">Other / Custom</option>
                                 </select>
                             </div>
                             <div class="col-md-2 col-6">
                                 <label class="jd-pos-spec-label">Gross Wt (g)</label>
                                 <input type="number" step="0.001" id="ogGross" name="old_gold_gross_weight" class="jd-pos-input py-1 px-2 font-monospace" value="0.000">
                             </div>
-                            <div class="col-md-2 col-6">
-                                <label class="jd-pos-spec-label">Loss / Waste (g)</label>
+                            <div class="col-md-1 col-6">
+                                <label class="jd-pos-spec-label">Loss (g)</label>
                                 <input type="number" step="0.001" id="ogLoss" name="old_gold_melting_loss" class="jd-pos-input py-1 px-2 font-monospace" value="0.000">
                             </div>
                             <div class="col-md-2 col-6">
@@ -417,7 +424,7 @@
                             <span class="fw-bold" id="billSubtotal" style="color: var(--jd-pos-ivory);">₹0.00</span>
                         </div>
                         <div class="jd-pos-ledger-row is-deduction">
-                            <span>Less Old Gold Exchange</span>
+                            <span>Less Metal Exchange</span>
                             <span id="billOldGold">-₹0.00</span>
                         </div>
                         <div class="jd-pos-ledger-row is-deduction" id="billCouponRow" style="display:none;">
@@ -645,10 +652,10 @@
                 </div>
             </div>
 
-            <!-- 5. Old Gold Exchange (Conditional) -->
+            <!-- 5. Metal Exchange (Conditional) -->
             <div id="ptsOldGoldSection" style="display: none;">
                 <div class="pts-divider-dashed">--------------------------------</div>
-                <div class="pts-section-title">OLD GOLD EXCHANGE:</div>
+                <div class="pts-section-title">METAL EXCHANGE:</div>
                 <div class="pts-row">
                     <span>Gross / Net Wt:</span>
                     <span id="ptsOldGoldWeights">0.000g / 0.000g</span>
@@ -834,11 +841,12 @@
     var itemTotalVal = document.getElementById('itemTotalVal');
     var itemThumbBox = document.getElementById('itemThumbBox');
 
-    // 3. Old Gold Exchange Elements
+    // 3. Metal Exchange Elements
     var exchangeToggle = document.getElementById('exchange_toggle');
     var exchangePanel = document.getElementById('exchangePanelBody');
     var exchangeHeader = document.getElementById('exchangeHeader');
     var exchangeDeductionBadge = document.getElementById('exchangeDeductionBadge');
+    var ogMetalType = document.getElementById('ogMetalType');
     var ogDesc = document.getElementById('ogDesc');
     var ogPurity = document.getElementById('ogPurity');
     var ogGross = document.getElementById('ogGross');
@@ -876,8 +884,9 @@
     var currentCouponDiscount = 0;
     var currentCouponCode = '';
 
-    // Live metal rate
-    var goldRate = {% if metal_prices.gold_price_per_gram %}{{ metal_prices.gold_price_per_gram }}{% else %}6650.00{% endif %};
+    // Live metal rates
+    var goldRate = {% if live_gold_rate %}{{ live_gold_rate }}{% elif metal_prices.gold_price_per_gram %}{{ metal_prices.gold_price_per_gram }}{% else %}6650.00{% endif %};
+    var silverRate = {% if live_silver_rate %}{{ live_silver_rate }}{% elif metal_prices.silver_price_per_gram %}{{ metal_prices.silver_price_per_gram }}{% else %}88.50{% endif %};
 
     // Fallback: Populate customers list from select options if needed
     if (custSelect && custSelect.options) {
@@ -1535,22 +1544,91 @@
         });
     }
 
-    if (ogPurity) {
-        ogPurity.addEventListener('change', function() {
-            var p = this.value;
-            if (ogRate) {
-                if (p === '24K') ogRate.value = (goldRate * 1.0).toFixed(2);
-                else if (p === '22K') ogRate.value = (goldRate * 0.916).toFixed(2);
-                else if (p === '18K') ogRate.value = (goldRate * 0.750).toFixed(2);
-                else if (p === '14K') ogRate.value = (goldRate * 0.585).toFixed(2);
-                else if (p === 'Silver') ogRate.value = '80.00';
+    var goldPurities = [
+        { val: '24K', text: '24K Gold (99.9%)', factor: 1.0 },
+        { val: '22K', text: '22K Gold (91.6%)', factor: 22 / 24, selected: true },
+        { val: '18K', text: '18K Gold (75.0%)', factor: 18 / 24 },
+        { val: '14K', text: '14K Gold (58.5%)', factor: 14 / 24 },
+        { val: 'Other', text: 'Other / Custom', factor: 22 / 24 }
+    ];
+
+    var silverPurities = [
+        { val: '999', text: '999 Fine Silver (100%)', factor: 1.0 },
+        { val: '925', text: '925 Sterling Silver (92.5%)', factor: 0.925, selected: true },
+        { val: '800', text: '800 Silver (80.0%)', factor: 0.80 },
+        { val: 'Other', text: 'Other / Custom', factor: 0.925 }
+    ];
+
+    function updateOgPurities(metal, keepSelected) {
+        if (!ogPurity) return;
+        var purities = (metal === 'Silver') ? silverPurities : goldPurities;
+        var prevVal = keepSelected ? ogPurity.value : '';
+        ogPurity.innerHTML = '';
+        var foundPrev = false;
+        purities.forEach(function(item) {
+            var opt = document.createElement('option');
+            opt.value = item.val;
+            opt.textContent = item.text;
+            if (prevVal && item.val === prevVal) {
+                opt.selected = true;
+                foundPrev = true;
+            } else if (!prevVal && item.selected) {
+                opt.selected = true;
             }
-            recalculateBill();
+            ogPurity.appendChild(opt);
+        });
+        if (prevVal && !foundPrev && ogPurity.options.length > 0) {
+            ogPurity.selectedIndex = 0;
+        }
+        updateOgRate();
+    }
+
+    function updateOgRate() {
+        if (!ogRate || !ogPurity) return;
+        var metal = ogMetalType ? ogMetalType.value : 'Gold';
+        var p = ogPurity.value;
+        var base = (metal === 'Silver') ? silverRate : goldRate;
+        var factor = 1.0;
+
+        if (metal === 'Silver') {
+            if (p === '999') factor = 1.0;
+            else if (p === '925') factor = 0.925;
+            else if (p === '800') factor = 0.80;
+            else factor = 0.925;
+        } else {
+            if (p === '24K') factor = 1.0;
+            else if (p === '22K') factor = 22 / 24;
+            else if (p === '18K') factor = 18 / 24;
+            else if (p === '14K') factor = 14 / 24;
+            else factor = 22 / 24;
+        }
+        ogRate.value = (base * factor).toFixed(2);
+        recalculateBill();
+    }
+
+    if (ogMetalType) {
+        ogMetalType.addEventListener('change', function() {
+            var m = this.value;
+            if (ogDesc) {
+                if (m === 'Silver' && (!ogDesc.value || ogDesc.value === 'Old Scrap Gold')) {
+                    ogDesc.value = 'Old Scrap Silver';
+                } else if (m === 'Gold' && (!ogDesc.value || ogDesc.value === 'Old Scrap Silver')) {
+                    ogDesc.value = 'Old Scrap Gold';
+                }
+            }
+            updateOgPurities(m, false);
         });
     }
 
-    [ogGross, ogLoss, ogRate].forEach(function(el) {
+    if (ogPurity) {
+        ogPurity.addEventListener('change', function() {
+            updateOgRate();
+        });
+    }
+
+    [ogMetalType, ogGross, ogLoss, ogRate].forEach(function(el) {
         if (el) el.addEventListener('input', recalculateBill);
+        if (el) el.addEventListener('change', recalculateBill);
     });
 
     if (exchangeToggle && exchangeToggle.checked) {
