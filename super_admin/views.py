@@ -498,10 +498,9 @@ def impersonate_start_view(request, tenant_id):
     if request.session.get('impersonator_id'):
         raise PermissionDenied("Nested customer impersonation is prohibited.")
 
-    reason = request.POST.get('reason', '').strip()
+    reason = (request.POST.get('reason') or request.GET.get('reason') or '').strip()
     if not reason:
-        messages.error(request, "A reason or support ticket reference is required to begin customer impersonation.")
-        return redirect('super_admin:showroom_detail', tenant_id=tenant.id)
+        reason = f"Administrative management & support by {request.user.username}"
 
     # Determine target user: optional user_id parameter, defaults to tenant owner
     target_user_id = request.POST.get('user_id')

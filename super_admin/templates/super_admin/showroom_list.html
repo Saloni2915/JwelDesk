@@ -160,10 +160,22 @@
                         {% endif %}
                     </td>
                     <td class="text-end">
-                        <a href="{% url 'super_admin:showroom_detail' t.id %}" class="sa-btn-action" title="Manage Showroom">
-                            <span>Manage</span>
-                            <i class="bi bi-arrow-right"></i>
-                        </a>
+                        <div class="d-flex justify-content-end align-items-center gap-2">
+                            {% if t.is_active and t.owner and not t.owner.is_superuser %}
+                            <form method="post" action="{% url 'super_admin:impersonate_start' t.id %}" class="m-0 p-0 d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="reason" value="Quick showroom impersonation from directory">
+                                <button type="submit" class="btn btn-sm btn-outline-warning d-inline-flex align-items-center gap-1" style="font-size: 0.74rem; font-weight: 600; padding: 0.25rem 0.55rem; border-color: rgba(236,200,106,0.4);" title="Impersonate into {{ t.name }}">
+                                    <i class="bi bi-person-fill-lock"></i>
+                                    <span>Impersonate</span>
+                                </button>
+                            </form>
+                            {% endif %}
+                            <a href="{% url 'super_admin:showroom_detail' t.id %}" class="sa-btn-action" title="Manage Showroom">
+                                <span>Manage</span>
+                                <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
                     </td>
                 </tr>
                 {% empty %}
