@@ -345,6 +345,51 @@ class CompanySettingsTests(TestCase):
         self.assertContains(response, 'Company Settings')
         self.assertContains(response, 'Business Profile')
 
+    def test_language_switch_in_company_settings_with_lowercase_business_type(self):
+        """Changing language in CompanySettings must succeed even when tenant has lowercase business_type."""
+        self.tenant.business_type = 'both'
+        self.tenant.save(update_fields=['business_type'])
+        self.client.login(username='adminuser', password='Password123')
+
+        # 1. POST switch to Hindi
+        resp = self.client.post(self.url, data={
+            'company_name': 'JewelDesk Hindi Store',
+            'language': 'hi',
+            'business_type': 'both',
+            'item_code_series_mode': 'prefix_number',
+            'item_code_prefix': 'JW',
+            'item_code_digits': 5,
+            'item_code_next_number': 1,
+        })
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.cookies.get('django_language').value, 'hi')
+        self.assertEqual(resp.cookies.get('jd_language').value, 'hi')
+
+        from accounts.models import CompanySettings
+        cs = CompanySettings.load(tenant=self.tenant)
+        self.assertEqual(cs.language, 'hi')
+
+        # Verify page renders in Hindi
+        resp_get = self.client.get(self.url)
+        self.assertEqual(resp_get.status_code, 200)
+        self.assertEqual(resp_get.context['current_language'], 'hi')
+        self.assertTrue(resp_get.context['is_hindi'])
+
+        # 2. Switch back to English
+        resp_en = self.client.post(self.url, data={
+            'company_name': 'JewelDesk English Store',
+            'language': 'en',
+            'business_type': 'both',
+            'item_code_series_mode': 'prefix_number',
+            'item_code_prefix': 'JW',
+            'item_code_digits': 5,
+            'item_code_next_number': 1,
+        })
+        self.assertEqual(resp_en.status_code, 302)
+        self.assertEqual(resp_en.cookies.get('django_language').value, 'en')
+        cs.refresh_from_db()
+        self.assertEqual(cs.language, 'en')
+
 
     def test_logo_updates_dynamically(self):
         """Logo should be reflected in sidebar when updated."""

@@ -85,78 +85,17 @@ def apply_branch_filter(qs, request, branch_field='branch'):
 
 
 # ==============================================================================
-# 1. PURCHASE DASHBOARD
+# 1. PURCHASE DASHBOARD -- DELEGATES TO CENTRALIZED DASHBOARD
 # ==============================================================================
 
 @login_required
 def dashboard_view(request):
     """
-    Main Purchase Management Cockpit with KPI metrics, recent vouchers,
-    outstanding supplier payables, and top suppliers.
+    Purchase Dashboard entrypoint -- unified into Central Dashboard.
     """
-    tenant = request.tenant
-    today = timezone.localdate()
-    month_start = today.replace(day=1)
-
-    invoices = PurchaseInvoice.objects.filter(tenant=tenant)
-    invoices = apply_branch_filter(invoices, request)
-
-    # Key Metrics
-    today_purchases = invoices.filter(purchase_date=today).exclude(status='CANCELLED')
-    today_total = today_purchases.aggregate(total=Sum('grand_total'))['total'] or Decimal('0.00')
-    today_count = today_purchases.count()
-
-    month_purchases = invoices.filter(purchase_date__gte=month_start).exclude(status='CANCELLED')
-    month_total = month_purchases.aggregate(total=Sum('grand_total'))['total'] or Decimal('0.00')
-    month_count = month_purchases.count()
-
-    total_procurement = invoices.exclude(status='CANCELLED').aggregate(total=Sum('grand_total'))['total'] or Decimal('0.00')
-
-    # Supplier Payables
-    suppliers_qs = Supplier.objects.filter(tenant=tenant, is_active=True)
-    suppliers_qs = apply_branch_filter(suppliers_qs, request)
-    total_outstanding = suppliers_qs.filter(current_balance__gt=0).aggregate(total=Sum('current_balance'))['total'] or Decimal('0.00')
-
-    # Payments & Returns
-    payments_qs = SupplierPayment.objects.filter(tenant=tenant, is_cancelled=False, payment_date__gte=month_start)
-    payments_qs = apply_branch_filter(payments_qs, request)
-    month_payments_total = payments_qs.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-
-    returns_qs = PurchaseReturn.objects.filter(tenant=tenant, status='CONFIRMED', return_date__gte=month_start)
-    returns_qs = apply_branch_filter(returns_qs, request)
-    month_returns_total = returns_qs.aggregate(total=Sum('total_return_amount'))['total'] or Decimal('0.00')
-    month_returns_count = returns_qs.count()
-
-    # Recent Invoices
-    recent_invoices = invoices.select_related('supplier', 'branch').order_by('-purchase_date', '-id')[:8]
-
-    # Invoices Due Soon
-    due_invoices = invoices.filter(status__in=['CONFIRMED', 'PARTIALLY_PAID'], balance_amount__gt=0).order_by('due_date')[:6]
-
-    # Top Suppliers
-    top_suppliers = suppliers_qs.annotate(
-        purchase_sum=Sum('purchases__grand_total', filter=~Q(purchases__status='CANCELLED'))
-    ).filter(purchase_sum__isnull=False).order_by('-purchase_sum')[:5]
-
-    branches = get_tenant_branches(request)
-
-    context = {
-        'today_total': today_total,
-        'today_count': today_count,
-        'month_total': month_total,
-        'month_count': month_count,
-        'total_procurement': total_procurement,
-        'total_outstanding': total_outstanding,
-        'month_payments_total': month_payments_total,
-        'month_returns_total': month_returns_total,
-        'month_returns_count': month_returns_count,
-        'recent_invoices': recent_invoices,
-        'due_invoices': due_invoices,
-        'top_suppliers': top_suppliers,
-        'branches': branches,
-        'selected_branch_id': request.GET.get('branch', ''),
-    }
-    return render(request, 'purchases/dashboard.html', context)
+    from inventory.dashboard_service import get_central_dashboard_context
+    context = get_central_dashboard_context(request)
+    return render(request, 'inventory/dashboard.html', context)
 
 
 # ==============================================================================

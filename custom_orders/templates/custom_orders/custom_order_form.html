@@ -10,7 +10,12 @@
     <div class="jd-header">
         <div>
             <div class="jd-badge"><i class="bi bi-hammer me-1"></i> Custom Order</div>
-            <h1 class="jd-title">{% if is_edit %}Edit {{ order.order_number }}{% else %}New Custom Order{% endif %}</h1>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="jd-page-back-icon-btn" onclick="handleGlobalBackNavigation()" title="Go Back" aria-label="Go Back">
+                    <i class="bi bi-arrow-left"></i>
+                </button>
+                <h1 class="jd-title mb-0">{% if is_edit %}Edit {{ order.order_number }}{% else %}New Custom Order{% endif %}</h1>
+            </div>
             <p class="jd-subtitle">Enter customer requirements, design photos, metal weights, and pricing.</p>
         </div>
         <div>

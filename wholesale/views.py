@@ -87,108 +87,19 @@ def check_wholesale_access(request, action='view'):
 
 
 # ==============================================================================
-# 1. WHOLESALE DASHBOARD
+# 1. WHOLESALE DASHBOARD — DELEGATES TO CENTRALIZED DASHBOARD
 # ==============================================================================
 
 @login_required
 def dashboard(request):
     allowed, tenant = check_wholesale_access(request, 'view')
     if not allowed or not tenant:
-        messages.error(request, "Access restricted. You do not have permission to view Wholesale.")
+        messages.error(request, 'Access restricted. You do not have permission to view Wholesale.')
         return redirect('dashboard')
 
-    # Date range filters
-    range_filter = request.GET.get('range', '30d')
-    today = timezone.localdate()
-    if range_filter == 'today':
-        start_date = today
-    elif range_filter == '7d':
-        start_date = today - timezone.timedelta(days=7)
-    elif range_filter == 'month':
-        start_date = today.replace(day=1)
-    elif range_filter == 'year':
-        start_date = today.replace(month=1, day=1)
-    else:  # default '30d'
-        start_date = today - timezone.timedelta(days=30)
-
-    # 1. Orders metrics
-    orders_qs = WholesaleOrder.objects.filter(tenant=tenant)
-    period_orders = orders_qs.filter(order_date__gte=start_date)
-
-    total_wholesale_sales = period_orders.exclude(status=WholesaleOrder.STATUS_CANCELLED).aggregate(
-        total=Coalesce(Sum('total_amount'), Decimal('0.00'), output_field=DecimalField())
-    )['total']
-
-    order_count = period_orders.exclude(status=WholesaleOrder.STATUS_CANCELLED).count()
-    awaiting_confirmation = orders_qs.filter(status=WholesaleOrder.STATUS_DRAFT).count()
-    ready_for_dispatch = orders_qs.filter(status=WholesaleOrder.STATUS_READY_FOR_DISPATCH).count()
-    dispatched_orders = orders_qs.filter(status__in=[WholesaleOrder.STATUS_DISPATCHED, WholesaleOrder.STATUS_COMPLETED]).count()
-
-    # 2. Payments & Receivables
-    payments_qs = RetailerPayment.objects.filter(tenant=tenant)
-    period_payments = payments_qs.filter(payment_date__gte=start_date).aggregate(
-        total=Coalesce(Sum('amount'), Decimal('0.00'), output_field=DecimalField())
-    )['total']
-
-    # Outstanding retailer balances (computed in 4 bulk tenant-wide aggregate queries instead of 3*N queries)
-    active_parties = RetailerParty.objects.filter(tenant=tenant, is_active=True)
-    active_party_ids = list(active_parties.values_list('id', flat=True))
-    if active_party_ids:
-        total_opening = active_parties.aggregate(
-            total=Coalesce(Sum('opening_balance'), Decimal('0.00'), output_field=DecimalField())
-        )['total']
-        total_invoiced = WholesaleInvoice.objects.filter(
-            tenant=tenant, party_id__in=active_party_ids
-        ).exclude(status=WholesaleInvoice.STATUS_CANCELLED).aggregate(
-            total=Coalesce(Sum('total_amount'), Decimal('0.00'), output_field=DecimalField())
-        )['total']
-        total_paid_cust = payments_qs.filter(party_id__in=active_party_ids).aggregate(
-            total=Coalesce(Sum('amount'), Decimal('0.00'), output_field=DecimalField())
-        )['total']
-        total_returns_credit = WholesaleReturn.objects.filter(
-            tenant=tenant,
-            party_id__in=active_party_ids,
-            status__in=[WholesaleReturn.STATUS_APPROVED, WholesaleReturn.STATUS_RESTOCKED, WholesaleReturn.STATUS_COMPLETED],
-            credit_note_issued=True
-        ).aggregate(
-            total=Coalesce(Sum('total_credit_amount'), Decimal('0.00'), output_field=DecimalField())
-        )['total']
-        total_outstanding = total_opening + total_invoiced - total_paid_cust - total_returns_credit
-    else:
-        total_outstanding = Decimal('0.00')
-
-    # 3. Returns awaiting inspection
-    returns_pending = WholesaleReturn.objects.filter(tenant=tenant, status=WholesaleReturn.STATUS_REQUESTED).count()
-
-    # 4. Low stock products in tenant inventory
-    threshold = get_low_stock_threshold()
-    low_stock_items = JewelleryItem.objects.filter(
-        tenant=tenant,
-        status='Available',
-        quantity__lte=threshold
-    ).order_by('quantity')[:5]
-
-    # 5. Recent activity
-    recent_orders = orders_qs.select_related('party').order_by('-created_at')[:6]
-    recent_payments = payments_qs.select_related('party').order_by('-payment_date', '-id')[:6]
-
-    context = {
-        'tenant': tenant,
-        'range_filter': range_filter,
-        'start_date': start_date,
-        'total_wholesale_sales': total_wholesale_sales,
-        'order_count': order_count,
-        'awaiting_confirmation': awaiting_confirmation,
-        'ready_for_dispatch': ready_for_dispatch,
-        'dispatched_orders': dispatched_orders,
-        'period_payments': period_payments,
-        'total_outstanding': total_outstanding,
-        'returns_pending': returns_pending,
-        'low_stock_items': low_stock_items,
-        'recent_orders': recent_orders,
-        'recent_payments': recent_payments,
-    }
-    return render(request, 'wholesale/dashboard.html', context)
+    from inventory.dashboard_service import get_central_dashboard_context
+    context = get_central_dashboard_context(request)
+    return render(request, 'inventory/dashboard.html', context)
 
 
 # ==============================================================================

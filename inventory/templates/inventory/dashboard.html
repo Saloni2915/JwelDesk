@@ -1,128 +1,548 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static humanize %}
 
-{% block title %}Shop Dashboard — JewelDesk{% endblock %}
+{% block title %}Central Dashboard — JewelDesk{% endblock %}
 
 {% block extra_css %}
-<link href="{% static 'css/dashboard_cockpit.css' %}?v=2.4.2" rel="stylesheet">
+<link href="{% static 'css/dashboard_cockpit.css' %}?v=2.6.0" rel="stylesheet">
 <style>
-/* Bulletproof Native Mobile Quick Action Dock (< 768px) */
-.jd-app-quick-dock {
-    display: grid !important;
-    grid-template-columns: repeat(4, 1fr) !important;
-    gap: 0.5rem !important;
-    margin-bottom: 1.15rem !important;
-    padding: 0.85rem 0.5rem !important;
-    border-radius: 16px !important;
-    box-sizing: border-box !important;
-    list-style: none !important;
+/* ==========================================================================
+   JewelDesk Executive Dashboard — Luxury Professional Enterprise UI
+   Adaptive across Light (Default), Gold Atelier, and Obsidian Dark themes
+   ========================================================================== */
+
+:root {
+    --dash-bg: #F8FAFC;
+    --dash-card-bg: #FFFFFF;
+    --dash-card-header: #F8FAFC;
+    --dash-border: #E2E8F0;
+    --dash-border-subtle: #EDF2F7;
+    --dash-text-main: #0F172A;
+    --dash-text-muted: #64748B;
+    --dash-text-soft: #94A3B8;
+    --dash-gold: #B48516;
+    --dash-gold-soft: #FFFBEB;
+    --dash-gold-border: #FDE68A;
+    --dash-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(0, 0, 0, 0.025);
+    --dash-card-shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
-/* Gold Theme (Default) */
-.jd-app-quick-dock,
-[data-theme="gold"] .jd-app-quick-dock {
-    background: #14110C !important;
-    border: 1px solid rgba(212, 175, 55, 0.22) !important;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4) !important;
-}
-.jd-dock-gold,
-[data-theme="gold"] .jd-dock-gold {
-    background: linear-gradient(135deg, #ECC86A 0%, #D4AF37 50%, #A88420 100%) !important;
-    color: #141009 !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-}
-.jd-app-dock-label,
-[data-theme="gold"] .jd-app-dock-label {
-    font-size: 0.72rem !important;
-    font-weight: 600 !important;
-    color: #FAF4EA !important;
-    letter-spacing: -0.01em !important;
-    text-align: center !important;
-    white-space: nowrap !important;
-    text-decoration: none !important;
+[data-theme="gold"] {
+    --dash-bg: #15130E;
+    --dash-card-bg: #20160E;
+    --dash-card-header: #261B11;
+    --dash-border: rgba(212, 175, 55, 0.28);
+    --dash-border-subtle: rgba(212, 175, 55, 0.14);
+    --dash-text-main: #FAF4EA;
+    --dash-text-muted: #D4C5B0;
+    --dash-text-soft: #8E8271;
+    --dash-gold: #ECC86A;
+    --dash-gold-soft: rgba(236, 200, 106, 0.12);
+    --dash-gold-border: rgba(236, 200, 106, 0.35);
+    --dash-card-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+    --dash-card-shadow-hover: 0 8px 28px rgba(0, 0, 0, 0.6);
 }
 
-/* Dark Theme (Obsidian Midnight / Deep Titanium Slate) */
-[data-theme="dark"] .jd-app-quick-dock {
-    background: #121620 !important;
-    border: 1px solid rgba(148, 163, 184, 0.2) !important;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5) !important;
-}
-[data-theme="dark"] .jd-dock-gold {
-    background: linear-gradient(135deg, #38BDF8 0%, #2563EB 100%) !important;
-    color: #FFFFFF !important;
-    border: 1px solid rgba(255, 255, 255, 0.25) !important;
-}
-[data-theme="dark"] .jd-app-dock-label {
-    color: #F8FAFC !important;
-}
-
-/* Light Theme (Clean Atelier) */
-[data-theme="light"] .jd-app-quick-dock {
-    background: #FFFFFF !important;
-    border: 1px solid #E2E8F0 !important;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06) !important;
-}
-[data-theme="light"] .jd-dock-gold {
-    background: linear-gradient(135deg, #C99A27 0%, #B48516 100%) !important;
-    color: #FFFFFF !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-}
-[data-theme="light"] .jd-app-dock-label {
-    color: #0F172A !important;
+[data-theme="dark"] {
+    --dash-bg: #0A0D14;
+    --dash-card-bg: #121620;
+    --dash-card-header: #171D2A;
+    --dash-border: rgba(148, 163, 184, 0.18);
+    --dash-border-subtle: rgba(148, 163, 184, 0.10);
+    --dash-text-main: #F8FAFC;
+    --dash-text-muted: #94A3B8;
+    --dash-text-soft: #64748B;
+    --dash-gold: #38BDF8;
+    --dash-gold-soft: rgba(56, 189, 248, 0.12);
+    --dash-gold-border: rgba(56, 189, 248, 0.35);
+    --dash-card-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
+    --dash-card-shadow-hover: 0 8px 28px rgba(0, 0, 0, 0.7);
 }
 
-.jd-app-dock-item {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    text-decoration: none !important;
-    gap: 0.35rem !important;
-    color: inherit !important;
-    -webkit-tap-highlight-color: transparent !important;
-    cursor: pointer !important;
+/* Canvas overrides */
+.jd-cockpit-canvas {
+    color: var(--dash-text-main);
+    padding: 0.25rem 0 2.5rem 0;
 }
 
-.jd-app-dock-item:hover,
-.jd-app-dock-item:focus,
-.jd-app-dock-item:active {
-    text-decoration: none !important;
-    color: inherit !important;
+/* 1. Live Bullion Rates Ribbon */
+.dash-bullion-ribbon {
+    background: var(--dash-card-bg);
+    border: 1px solid var(--dash-border);
+    border-radius: 12px;
+    padding: 0.55rem 1.15rem;
+    margin-bottom: 1.15rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    box-shadow: var(--dash-card-shadow);
+    flex-wrap: wrap;
+}
+.dash-bullion-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.76rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--dash-gold);
+    flex-shrink: 0;
+}
+.dash-bullion-pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10B981;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    animation: dashPulse 2s infinite;
+}
+@keyframes dashPulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+.dash-rates-group {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+    flex-grow: 1;
+}
+.dash-rate-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.65rem;
+    background: var(--dash-bg);
+    border: 1px solid var(--dash-border);
+    border-radius: 8px;
+    font-size: 0.78rem;
+    color: var(--dash-text-muted);
+}
+.dash-rate-pill strong {
+    color: var(--dash-text-main);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+.dash-rate-delta {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #10B981;
+}
+.dash-bullion-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-shrink: 0;
+    font-size: 0.78rem;
+    color: var(--dash-text-muted);
+}
+.dash-refresh-btn {
+    border: 1px solid var(--dash-border);
+    background: var(--dash-bg);
+    color: var(--dash-text-main);
+    border-radius: 8px;
+    padding: 0.25rem 0.65rem;
+    font-size: 0.76rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: all 0.15s ease;
+    cursor: pointer;
+}
+.dash-refresh-btn:hover {
+    background: var(--dash-gold-soft);
+    border-color: var(--dash-gold-border);
+    color: var(--dash-gold);
 }
 
-.jd-app-dock-icon {
-    width: 46px !important;
-    height: 46px !important;
-    border-radius: 14px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-size: 1.25rem !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
-    transition: transform 0.15s ease !important;
+/* 2. Executive Header & Global Filter Bar */
+.dash-header-bar {
+    background: var(--dash-card-bg);
+    border: 1px solid var(--dash-border);
+    border-radius: 14px;
+    padding: 1rem 1.35rem;
+    margin-bottom: 1.25rem;
+    box-shadow: var(--dash-card-shadow);
+}
+.dash-header-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--dash-text-main);
+    letter-spacing: -0.02em;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.dash-header-subtitle {
+    font-size: 0.82rem;
+    color: var(--dash-text-muted);
+    margin-top: 0.25rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+.dash-filter-select {
+    background: var(--dash-card-bg);
+    color: var(--dash-text-main);
+    border: 1px solid var(--dash-border);
+    border-radius: 8px;
+    padding: 0.38rem 0.75rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: border-color 0.15s ease;
+}
+.dash-filter-select:focus {
+    border-color: var(--dash-gold);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--dash-gold-soft);
 }
 
-.jd-app-dock-item:active .jd-app-dock-icon {
-    transform: scale(0.92) !important;
+/* 3. Executive Quick Action Bar */
+.dash-action-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 1.35rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+}
+.dash-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.48rem 0.95rem;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+    border: 1px solid var(--dash-border);
+    background: var(--dash-card-bg);
+    color: var(--dash-text-main);
+    box-shadow: var(--dash-card-shadow);
+    transition: all 0.18s ease;
+}
+.dash-action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--dash-card-shadow-hover);
+    color: var(--dash-text-main);
+}
+.dash-action-btn-gold {
+    background: linear-gradient(135deg, #F5D77F 0%, #D4AF37 50%, #B8860B 100%);
+    color: #160F09 !important;
+    border-color: rgba(212, 175, 55, 0.4);
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.28);
+}
+.dash-action-btn-gold:hover {
+    filter: brightness(1.05);
+    color: #000000 !important;
+}
+.dash-action-btn-emerald {
+    background: #ECFDF5;
+    border-color: #A7F3D0;
+    color: #047857;
+}
+.dash-action-btn-emerald:hover {
+    background: #D1FAE5;
+    color: #065F46;
 }
 
-.jd-dock-emerald {
-    background: linear-gradient(135deg, #34D399 0%, #059669 100%) !important;
-    color: #FFFFFF !important;
-    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+/* Hide old mobile rainbow dock on desktop */
+@media (min-width: 768px) {
+    .jd-app-quick-dock {
+        display: none !important;
+    }
+}
+@media (max-width: 767px) {
+    .jd-app-quick-dock {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 0.5rem !important;
+        margin-bottom: 1.15rem !important;
+        padding: 0.75rem 0.5rem !important;
+        border-radius: 14px !important;
+        background: var(--dash-card-bg) !important;
+        border: 1px solid var(--dash-border) !important;
+        box-shadow: var(--dash-card-shadow) !important;
+    }
+    .jd-app-dock-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.35rem;
+        text-decoration: none !important;
+    }
+    .jd-app-dock-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        font-size: 1.15rem;
+    }
+    .jd-app-dock-label {
+        font-size: 0.72rem !important;
+        font-weight: 700 !important;
+        color: var(--dash-text-main) !important;
+    }
 }
 
-.jd-dock-cyan {
-    background: linear-gradient(135deg, #38BDF8 0%, #0284C7 100%) !important;
-    color: #FFFFFF !important;
-    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+/* 4. Executive KPI Grid (6 Columns) */
+.dash-kpi-grid-6 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.1rem;
+    margin-bottom: 1.45rem;
+}
+@media (max-width: 1200px) {
+    .dash-kpi-grid-6 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (max-width: 680px) {
+    .dash-kpi-grid-6 {
+        grid-template-columns: 1fr;
+    }
 }
 
-.jd-dock-purple {
-    background: linear-gradient(135deg, #C084FC 0%, #7C3AED 100%) !important;
-    color: #FFFFFF !important;
-    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+.dash-kpi-card {
+    background: var(--dash-card-bg);
+    border: 1px solid var(--dash-border);
+    border-radius: 14px;
+    padding: 1.15rem 1.25rem;
+    box-shadow: var(--dash-card-shadow);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.dash-kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--dash-card-shadow-hover);
+    border-color: var(--dash-gold-border);
+}
+.dash-kpi-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+.dash-kpi-icon-box {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+.dash-kpi-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.22rem 0.6rem;
+    border-radius: 9999px;
+    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+.dash-kpi-label {
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--dash-text-muted);
+    margin-bottom: 0.2rem;
+}
+.dash-kpi-value {
+    font-size: 1.62rem;
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--dash-text-main);
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 0.35rem;
+}
+.dash-kpi-sub {
+    font-size: 0.78rem;
+    color: var(--dash-text-muted);
+    line-height: 1.4;
+}
+.dash-kpi-pills {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-top: 0.65rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid var(--dash-border-subtle);
+}
+.dash-sub-pill {
+    padding: 0.18rem 0.55rem;
+    border-radius: 6px;
+    background: var(--dash-bg);
+    border: 1px solid var(--dash-border);
+    font-size: 0.72rem;
+    color: var(--dash-text-muted);
+}
+.dash-sub-pill strong {
+    color: var(--dash-text-main);
+    font-weight: 700;
+}
+
+/* 5. Main Split Grid & Content Cards */
+.dash-main-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.35rem;
+}
+@media (max-width: 1080px) {
+    .dash-main-grid {
+        grid-template-columns: 1fr;
+    }
+}
+.dash-panel-card {
+    background: var(--dash-card-bg);
+    border: 1px solid var(--dash-border);
+    border-radius: 14px;
+    box-shadow: var(--dash-card-shadow);
+    margin-bottom: 1.35rem;
+    overflow: hidden;
+}
+.dash-panel-header {
+    background: var(--dash-card-header);
+    border-bottom: 1px solid var(--dash-border);
+    padding: 0.85rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+.dash-panel-title {
+    font-size: 0.98rem;
+    font-weight: 800;
+    color: var(--dash-text-main);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.dash-panel-sub {
+    font-size: 0.76rem;
+    color: var(--dash-text-muted);
+    margin: 0.15rem 0 0 0;
+}
+.dash-header-link {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--dash-gold);
+    text-decoration: none;
+}
+.dash-header-link:hover {
+    text-decoration: underline;
+}
+
+/* Tables in Light & Dark Mode */
+.dash-table {
+    width: 100%;
+    margin-bottom: 0;
+    color: var(--dash-text-main);
+    border-collapse: collapse;
+}
+.dash-table th {
+    background: var(--dash-card-header);
+    color: var(--dash-text-muted);
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid var(--dash-border);
+}
+.dash-table td {
+    padding: 0.72rem 1rem;
+    border-bottom: 1px solid var(--dash-border-subtle);
+    font-size: 0.82rem;
+    vertical-align: middle;
+}
+.dash-table tbody tr:hover {
+    background: var(--dash-bg);
+}
+
+/* Custom Tab Buttons */
+.dash-tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--dash-text-muted);
+    padding: 0.3rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.dash-tab-btn.active {
+    background: var(--dash-card-bg);
+    color: var(--dash-text-main);
+    border: 1px solid var(--dash-border);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* 7-Day Chart Styles */
+.dash-chart-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.85rem;
+    height: 180px;
+    padding: 1.5rem 0.5rem 0.5rem 0.5rem;
+}
+.dash-chart-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-end;
+}
+.dash-chart-amt {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--dash-text-muted);
+    margin-bottom: 0.35rem;
+    font-variant-numeric: tabular-nums;
+}
+.dash-chart-track {
+    width: 100%;
+    max-width: 42px;
+    height: 120px;
+    background: var(--dash-bg);
+    border-radius: 8px;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    border: 1px solid var(--dash-border-subtle);
+}
+.dash-chart-bar {
+    width: 100%;
+    background: linear-gradient(180deg, #ECC86A 0%, #D4AF37 100%);
+    border-radius: 8px 8px 0 0;
+    transition: height 0.4s ease;
+}
+.dash-chart-bar.is-peak {
+    background: linear-gradient(180deg, #10B981 0%, #059669 100%);
+}
+.dash-chart-label {
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--dash-text-muted);
+    margin-top: 0.45rem;
 }
 </style>
 {% endblock %}
@@ -130,639 +550,728 @@
 {% block content %}
 <div class="jd-cockpit-canvas">
 
-    <!-- 1. Live Gold & Silver Rates Ribbon (Top Bar) -->
-    <div class="jd-bullion-ribbon" role="region" aria-label="Live Gold &amp; Silver Rates">
-        <div class="d-flex align-items-center gap-3">
-            <span class="jd-bullion-label">
-                <i class="bi bi-graph-up-arrow"></i> Live Rates:
-            </span>
-            <div class="jd-bullion-rates-group">
-                <span class="jd-bullion-rate-pill">
-                    <span>24K Gold:</span>
-                    <strong>{% if metal_prices.gold_price_per_gram %}₹{{ metal_prices.gold_price_per_gram|floatformat:2 }}{% else %}₹7,250.00{% endif %}/g</strong>
-                    <span class="jd-bullion-delta-up">+0.35%</span>
-                </span>
-                <span class="jd-bullion-rate-pill">
-                    <span>22K Gold:</span>
-                    <strong>₹6,650.00/g</strong>
-                </span>
-                <span class="jd-bullion-rate-pill">
-                    <span>18K Gold:</span>
-                    <strong>₹5,440.00/g</strong>
-                </span>
-                <span class="jd-bullion-rate-pill">
-                    <span>Silver 999:</span>
-                    <strong>{% if metal_prices.silver_price_per_gram %}₹{{ metal_prices.silver_price_per_gram|floatformat:2 }}{% else %}₹88.50{% endif %}/g</strong>
-                </span>
+    <!-- 1. Live Gold & Silver Market Feed Ribbon -->
+    <div class="dash-bullion-ribbon" role="region" aria-label="Live Bullion Rates">
+        <div class="dash-bullion-badge">
+            <span class="dash-bullion-pulse"></span>
+            <span>Live Bullion:</span>
+        </div>
+        <div class="dash-rates-group">
+            <div class="dash-rate-pill">
+                <span>24K Gold:</span>
+                <strong>{% if metal_prices.gold_price_per_gram %}₹{{ metal_prices.gold_price_per_gram|floatformat:2|intcomma }}{% elif metal_prices.gold_24k %}₹{{ metal_prices.gold_24k|floatformat:2|intcomma }}{% else %}₹7,420.00{% endif %}</strong><span>/g</span>
+                <span class="dash-rate-delta"><i class="bi bi-arrow-up-right"></i></span>
+            </div>
+            <div class="dash-rate-pill">
+                <span>22K Gold:</span>
+                <strong>{% if metal_prices.gold_22k %}₹{{ metal_prices.gold_22k|floatformat:2|intcomma }}{% else %}₹6,795.00{% endif %}</strong><span>/g</span>
+                <span class="dash-rate-delta"><i class="bi bi-arrow-up-right"></i></span>
+            </div>
+            <div class="dash-rate-pill">
+                <span>18K Gold:</span>
+                <strong>{% if metal_prices.gold_18k %}₹{{ metal_prices.gold_18k|floatformat:2|intcomma }}{% else %}₹5,565.00{% endif %}</strong><span>/g</span>
+                <span class="dash-rate-delta"><i class="bi bi-arrow-up-right"></i></span>
+            </div>
+            <div class="dash-rate-pill">
+                <span>Silver 999:</span>
+                <strong>{% if metal_prices.silver_price_per_gram %}₹{{ metal_prices.silver_price_per_gram|floatformat:2|intcomma }}{% else %}₹88.50{% endif %}</strong><span>/g</span>
+                <span class="text-danger small"><i class="bi bi-arrow-down-right"></i></span>
             </div>
         </div>
-
-        <div class="jd-bullion-actions">
+        <div class="dash-bullion-actions">
             <span>
                 {% if metal_prices.last_updated %}
-                    Updated {{ metal_prices.last_updated|date:"H:i A" }}
+                    Last updated {{ metal_prices.last_updated|date:"h:i A" }}
                 {% else %}
                     Live Market Feed
                 {% endif %}
             </span>
-            <form method="post" action="{% url 'metal_price_refresh' %}" class="d-inline m-0">
+            <form action="{% url 'metal_price_refresh' %}" method="post" class="d-inline m-0 p-0">
                 {% csrf_token %}
-                <button type="submit" class="jd-bullion-refresh-btn" title="Refresh Metal Rates" aria-label="Refresh rates">
-                    <i class="bi bi-arrow-clockwise fs-6"></i>
+                <button type="submit" class="dash-refresh-btn" title="Refresh Metal Rates" aria-label="Refresh Metal Rates">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh Metal Rates
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- 2. Dashboard Header & Action CTAs -->
-    <div class="jd-cockpit-header">
-        <div class="jd-cockpit-title-wrap">
-            <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-                <h1 class="mb-0">Shop Dashboard</h1>
-                {% if request.tenant and not user.is_superuser %}
-                    {% if request.tenant.is_trial_active %}
-                        {% if request.tenant.is_trial_extended %}
-                        <span class="badge bg-warning text-dark fw-bold px-2 py-1 shadow-sm" style="font-size: 0.82rem; letter-spacing: 0.4px;">
-                            <i class="bi bi-clock-history me-1"></i>Trial Extended ({{ request.tenant.trial_days_remaining }} Day{{ request.tenant.trial_days_remaining|pluralize }} Left)
-                        </span>
-                        {% else %}
-                        <span class="badge bg-warning text-dark fw-bold px-2 py-1 shadow-sm" style="font-size: 0.82rem; letter-spacing: 0.4px;">
-                            <i class="bi bi-clock-history me-1"></i>15 Days Free Trial ({{ request.tenant.trial_days_remaining }} Day{{ request.tenant.trial_days_remaining|pluralize }} Left)
-                        </span>
-                        {% endif %}
-                    {% elif request.tenant.is_trial_expired %}
-                    <span class="badge bg-danger text-white fw-bold px-2 py-1 shadow-sm" style="font-size: 0.82rem;">
-                        <i class="bi bi-exclamation-triangle-fill me-1"></i>Trial Expired — Contact Account Manager
+    <!-- 2. Centralized Executive Header & Toolbar -->
+    <div class="dash-header-bar d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <h1 class="dash-header-title">
+                    <i class="bi bi-speedometer2 text-warning"></i>
+                    {% if is_hindi %}केंद्रीय डैशबोर्ड{% else %}Central Dashboard{% endif %}
+                </h1>
+                {% if is_both %}
+                    <span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-35 px-2 py-1" style="font-size: 0.74rem;">
+                        <i class="bi bi-shop me-1"></i>Retail &amp; Wholesale
                     </span>
-                    {% endif %}
-                {% endif %}
-            </div>
-            <p class="jd-cockpit-subtitle">
-                {% if request.tenant and request.tenant.is_trial_active %}
-                    {% if request.tenant.is_trial_extended %}
-                        Your Free Trial has been extended! Full access to sales, stock, and metal rates.
-                    {% else %}
-                        Welcome to your 15-Day Free Trial of JwelDesk! Full access to sales, stock, and metal rates.
-                    {% endif %}
+                {% elif is_wholesale %}
+                    <span class="badge bg-info bg-opacity-15 text-info border border-info border-opacity-35 px-2 py-1" style="font-size: 0.74rem;">
+                        <i class="bi bi-buildings me-1"></i>Wholesale &amp; B2B
+                    </span>
                 {% else %}
-                    Real-time overview of sales, stock, and metal rates
+                    <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-35 px-2 py-1" style="font-size: 0.74rem;">
+                        <i class="bi bi-gem me-1"></i>Retail Showroom
+                    </span>
                 {% endif %}
-            </p>
+            </div>
+            <div class="dash-header-subtitle">
+                <span><i class="bi bi-calendar3 me-1"></i>Period: <strong>{{ range_label }}</strong></span>
+                <span>&bull;</span>
+                {% if active_branch %}
+                    <span><i class="bi bi-geo-alt-fill text-warning me-1"></i>Branch: <strong class="text-warning">{{ active_branch.name }}</strong></span>
+                {% else %}
+                    <span><i class="bi bi-buildings me-1"></i>Branch: <strong>All Branches</strong></span>
+                {% endif %}
+            </div>
         </div>
-        <div class="jd-cockpit-header-actions d-none d-md-flex">
-            {% if request.tenant and request.tenant.is_wholesale %}
-            <a href="{% url 'wholesale:dashboard' %}" class="jd-btn-cockpit-ghost text-gold border-warning">
-                <i class="bi bi-buildings"></i> Wholesale Suite
-            </a>
+
+        <!-- Global Filters (Branch + Date Range) -->
+        <form method="get" action="{% url 'dashboard' %}" class="d-flex align-items-center flex-wrap gap-2 m-0" id="dashFilterForm">
+            <!-- Branch Filter Dropdown -->
+            {% if branches and branches.count > 1 %}
+            <select name="branch" class="dash-filter-select" onchange="this.form.submit()" aria-label="Filter by showroom branch">
+                <option value="all" {% if not selected_branch_id %}selected{% endif %}>All Branches</option>
+                {% for b in branches %}
+                <option value="{{ b.id }}" {% if selected_branch_id == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }} ({{ b.code }})</option>
+                {% endfor %}
+            </select>
             {% endif %}
-            <a href="{% url 'inventory_add' %}" class="jd-btn-cockpit-ghost">
-                <i class="bi bi-plus-lg"></i> Add Stock
-            </a>
-            <a href="{% url 'sale_add' %}" class="jd-btn-cockpit-gold">
-                <i class="bi bi-cart-plus"></i> New Sale
-            </a>
-        </div>
+
+            <!-- Date Range Selector -->
+            <select name="range" id="dashRangeSelect" class="dash-filter-select" onchange="handleDashRangeChange(this)" aria-label="Select date range">
+                <option value="today" {% if active_range == 'today' %}selected{% endif %}>Today</option>
+                <option value="yesterday" {% if active_range == 'yesterday' %}selected{% endif %}>Yesterday</option>
+                <option value="7d" {% if active_range == '7d' %}selected{% endif %}>Last 7 Days</option>
+                <option value="30d" {% if active_range == '30d' %}selected{% endif %}>Last 30 Days</option>
+                <option value="this_month" {% if active_range == 'this_month' %}selected{% endif %}>This Month</option>
+                <option value="last_month" {% if active_range == 'last_month' %}selected{% endif %}>Last Month</option>
+                <option value="this_year" {% if active_range == 'this_year' %}selected{% endif %}>This Financial Year</option>
+                <option value="custom" {% if active_range == 'custom' %}selected{% endif %}>Custom Date Range...</option>
+            </select>
+
+            <!-- Custom Date Inputs -->
+            <div id="dashCustomInputs" class="d-flex align-items-center gap-1 {% if active_range != 'custom' %}d-none{% endif %}">
+                <input type="date" name="start_date" value="{{ start_date|date:'Y-m-d' }}" class="dash-filter-select py-1" style="font-size: 0.78rem;">
+                <span class="text-muted small">&ndash;</span>
+                <input type="date" name="end_date" value="{{ end_date|date:'Y-m-d' }}" class="dash-filter-select py-1" style="font-size: 0.78rem;">
+                <button type="submit" class="btn btn-sm btn-dark fw-bold px-2 py-1" style="font-size: 0.78rem;">Filter</button>
+            </div>
+        </form>
     </div>
 
-    <!-- Native Mobile App Quick Action Dock (< 768px) -->
-    <div class="jd-app-quick-dock d-md-none" role="navigation" aria-label="Quick App Actions">
-        <a href="{% url 'sale_add' %}" class="jd-app-dock-item">
-            <div class="jd-app-dock-icon jd-dock-gold">
-                <i class="bi bi-cart-plus"></i>
-            </div>
-            <span class="jd-app-dock-label">New Sale</span>
+    <!-- 3. Executive Quick Action Bar -->
+    <div class="dash-action-bar">
+        {% if is_retail %}
+        <a href="{% url 'sale_add' %}" class="dash-action-btn dash-action-btn-gold">
+            <i class="bi bi-cart-plus-fill"></i> New Sale (POS)
         </a>
-        <a href="{% url 'inventory_add' %}" class="jd-app-dock-item">
-            <div class="jd-app-dock-icon jd-dock-emerald">
-                <i class="bi bi-gem"></i>
-            </div>
-            <span class="jd-app-dock-label">Add Stock</span>
-        </a>
-        <a href="{% url 'customer_add' %}" class="jd-app-dock-item">
-            <div class="jd-app-dock-icon jd-dock-cyan">
-                <i class="bi bi-person-plus"></i>
-            </div>
-            <span class="jd-app-dock-label">+ Customer</span>
-        </a>
-        <a href="{% url 'custom_orders:custom_order_add' %}" class="jd-app-dock-item">
-            <div class="jd-app-dock-icon jd-dock-purple">
-                <i class="bi bi-hammer"></i>
-            </div>
-            <span class="jd-app-dock-label">Order</span>
-        </a>
-    </div>
-
-    <!-- Trial Expiry Alert (Shown only when trial is expired) -->
-    {% if request.tenant and not user.is_superuser %}
-        {% if request.tenant.is_trial_expired %}
-        <div class="alert alert-danger mb-4 p-3 rounded-3 d-flex align-items-center justify-content-between flex-wrap gap-3 border-danger shadow-sm"
-             style="background: rgba(220, 53, 69, 0.16); border: 1px solid #dc3545;">
-            <div class="d-flex align-items-center gap-3">
-                <div class="text-danger fs-2 flex-shrink-0">
-                    <i class="bi bi-exclamation-octagon-fill"></i>
-                </div>
-                <div>
-                    <h5 class="mb-1 fw-bold text-danger">Trial समाप्त हो गया है — कृपया अकाउंट मैनेजर से संपर्क करें</h5>
-                    <p class="mb-0 text-light small">
-                        आपका 15 दिनों का फ्री ट्रायल समाप्त हो गया है। आपका सारा डेटा 100% सुरक्षित है। आगे उपयोग जारी रखने के लिए तुरंत अपने अकाउंट मैनेजर से संपर्क करें।
-                    </p>
-                </div>
-            </div>
-            <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
-                <a href="tel:+919876543210" class="btn btn-danger fw-bold d-inline-flex align-items-center gap-1 px-3 py-2">
-                    <i class="bi bi-telephone-fill"></i> Call Account Manager (+91 98765 43210)
-                </a>
-                <a href="https://wa.me/919876543210?text=Hello%20JwelDesk%2C%20our%2015-day%20free%20trial%20for%20{{ request.tenant.name|urlencode }}%20(ID%20{{ request.tenant.id }})%20has%20expired.%20Please%20help%20us%20activate%20our%20account."
-                   target="_blank" class="btn btn-success fw-bold d-inline-flex align-items-center gap-1 px-3 py-2">
-                    <i class="bi bi-whatsapp"></i> WhatsApp
-                </a>
-            </div>
-        </div>
         {% endif %}
-    {% endif %}
-
-    <!-- 3. Executive KPI Metric Cards (4 Columns) -->
-    <div class="jd-kpi-grid">
-        <!-- Today's Sales -->
-        <div class="jd-kpi-card">
-            <div class="jd-kpi-top">
-                <div class="jd-kpi-icon jd-kpi-icon-gold">
-                    <i class="bi bi-cash-stack"></i>
-                </div>
-                <span class="jd-kpi-badge jd-kpi-badge-green">
-                    <i class="bi bi-arrow-up-short"></i> Today
-                </span>
-            </div>
-            <div class="jd-kpi-label">Today's Sales</div>
-            <div class="jd-kpi-val">₹{{ today_sales_amount|floatformat:2 }}</div>
-            <div class="jd-kpi-sub">{{ today_sales_count }} bill{{ today_sales_count|pluralize }} completed today</div>
-        </div>
-
-        <!-- Total Revenue -->
-        <div class="jd-kpi-card">
-            <div class="jd-kpi-top">
-                <div class="jd-kpi-icon jd-kpi-icon-green">
-                    <i class="bi bi-graph-up-arrow"></i>
-                </div>
-                <span class="jd-kpi-badge jd-kpi-badge-green">
-                    <i class="bi bi-patch-check"></i> Lifetime
-                </span>
-            </div>
-            <div class="jd-kpi-label">Total Revenue</div>
-            <div class="jd-kpi-val">₹{{ total_sales_amount|floatformat:2 }}</div>
-            <div class="jd-kpi-sub">{{ total_sales_count }} total sale{{ total_sales_count|pluralize }}</div>
-        </div>
-
-        <!-- Outstanding Due -->
-        <div class="jd-kpi-card">
-            <div class="jd-kpi-top">
-                <div class="jd-kpi-icon jd-kpi-icon-amber">
-                    <i class="bi bi-hourglass-split"></i>
-                </div>
-                <span class="jd-kpi-badge jd-kpi-badge-amber">
-                    <i class="bi bi-clock"></i> Pending
-                </span>
-            </div>
-            <div class="jd-kpi-label">Outstanding Due</div>
-            <div class="jd-kpi-val">₹{{ outstanding_amount|floatformat:2 }}</div>
-            <div class="jd-kpi-sub">Pending balance from customers</div>
-        </div>
-
-        <!-- Inventory Value -->
-        <div class="jd-kpi-card">
-            <div class="jd-kpi-top">
-                <div class="jd-kpi-icon jd-kpi-icon-purple">
-                    <i class="bi bi-gem"></i>
-                </div>
-                <span class="jd-kpi-badge jd-kpi-badge-purple">
-                    <i class="bi bi-shield-check"></i> Insured
-                </span>
-            </div>
-            <div class="jd-kpi-label">Inventory Value</div>
-            <div class="jd-kpi-val">₹{{ inventory_value|floatformat:2 }}</div>
-            <div class="jd-kpi-sub">{{ available_items }} item{{ available_items|pluralize }} in stock</div>
-        </div>
+        {% if is_wholesale %}
+        <a href="{% url 'wholesale:order_create' %}" class="dash-action-btn" style="border-color: #BAE6FD; background: #F0F9FF; color: #0284C7;">
+            <i class="bi bi-bag-plus-fill"></i> New Wholesale Order
+        </a>
+        {% endif %}
+        <a href="{% url 'purchases:purchase_create' %}" class="dash-action-btn dash-action-btn-emerald">
+            <i class="bi bi-bag-check-fill"></i> New Purchase
+        </a>
+        <a href="{% url 'inventory_add' %}" class="dash-action-btn">
+            <i class="bi bi-plus-circle text-warning"></i> Add Jewellery Stock
+        </a>
+        {% if is_retail %}
+        <a href="{% url 'custom_orders:custom_order_add' %}" class="dash-action-btn">
+            <i class="bi bi-hammer text-purple"></i> Custom Order
+        </a>
+        <a href="{% url 'customer_add' %}" class="dash-action-btn">
+            <i class="bi bi-person-plus text-info"></i> Add Customer
+        </a>
+        {% else %}
+        <a href="{% url 'wholesale:party_create' %}" class="dash-action-btn">
+            <i class="bi bi-person-plus text-info"></i> Add Retailer Party
+        </a>
+        {% endif %}
     </div>
 
-    <!-- 4. Quick Shortcuts Bar -->
-    <div class="jd-shortcuts-bar d-none d-md-flex">
-        <span class="jd-shortcuts-label"><i class="bi bi-lightning-charge text-warning me-1"></i> Quick Shortcuts:</span>
-        <div class="jd-shortcuts-group">
-            <a href="{% url 'sale_add' %}" class="jd-shortcut-tile">
-                <i class="bi bi-cart-plus"></i> New Sale
-            </a>
-            <a href="{% url 'customer_add' %}" class="jd-shortcut-tile">
-                <i class="bi bi-person-plus"></i> Add Customer
-            </a>
-            <a href="{% url 'inventory_add' %}" class="jd-shortcut-tile">
-                <i class="bi bi-plus-circle"></i> Add Stock Item
-            </a>
-            <a href="{% url 'custom_orders:custom_order_add' %}" class="jd-shortcut-tile">
-                <i class="bi bi-hammer"></i> New Custom Order
-            </a>
-        </div>
-    </div>
+    <!-- 4. Executive KPI Metric Cards (6-Grid) -->
+    <div class="dash-kpi-grid-6">
 
-    <!-- 5. Main 2-Column Split Workspace -->
-    <div class="jd-cockpit-main-grid">
-
-        <!-- LEFT COLUMN (Span 2): Analytics & Recent Sales -->
-        <div class="jd-cockpit-col-left">
-
-            <!-- 7-Day Revenue Analytics Card -->
-            <div class="jd-card">
-                <div class="jd-card-header">
-                    <div class="jd-card-title-group">
-                        <h3><i class="bi bi-bar-chart-line text-warning me-1"></i> 7-Day Revenue Analytics</h3>
-                        <p>Daily sales performance for the last 7 days</p>
+        <!-- Card 1: Total Sales (Turnover) -->
+        <div class="dash-kpi-card">
+            <div>
+                <div class="dash-kpi-top">
+                    <div class="dash-kpi-icon-box" style="background: #FFFBEB; border: 1px solid #FDE68A; color: #B45309;">
+                        <i class="bi bi-cash-coin"></i>
                     </div>
-                    <a href="{% url 'sales_report' %}" class="jd-card-header-link">Full Report &rarr;</a>
+                    <span class="dash-kpi-badge" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0;">
+                        <i class="bi bi-graph-up-arrow"></i> Sales
+                    </span>
                 </div>
-                <div class="jd-card-body">
+                <div class="dash-kpi-label">Total Sales (Turnover)</div>
+                <div class="dash-kpi-value">₹{{ total_sales_amount|floatformat:2|intcomma }}</div>
+                <div class="dash-kpi-sub">
+                    {{ total_sales_count }} transaction{{ total_sales_count|pluralize }} &bull; Today: <strong>₹{{ today_sales_amount|floatformat:2|intcomma }}</strong>
+                </div>
+            </div>
+            {% if is_both %}
+            <div class="dash-kpi-pills">
+                <span class="dash-sub-pill">Retail: <strong>₹{{ retail_sales_amount|floatformat:2|intcomma }}</strong> ({{ retail_sales_count }})</span>
+                <span class="dash-sub-pill">Wholesale: <strong>₹{{ wholesale_sales_amount|floatformat:2|intcomma }}</strong> ({{ wholesale_sales_count }})</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Card 2: Total Purchases (Procurement) -->
+        <div class="dash-kpi-card">
+            <div>
+                <div class="dash-kpi-top">
+                    <div class="dash-kpi-icon-box" style="background: #ECFDF5; border: 1px solid #A7F3D0; color: #047857;">
+                        <i class="bi bi-bag-check-fill"></i>
+                    </div>
+                    <span class="dash-kpi-badge" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0;">
+                        <i class="bi bi-cart-check"></i> Purchase Management
+                    </span>
+                </div>
+                <div class="dash-kpi-label">Total Purchases</div>
+                <div class="dash-kpi-value">₹{{ total_purchases_amount|floatformat:2|intcomma }}</div>
+                <div class="dash-kpi-sub">
+                    {{ total_purchases_count }} purchase invoice{{ total_purchases_count|pluralize }} &bull; Today: <strong>₹{{ today_purchases_amount|floatformat:2|intcomma }}</strong>
+                </div>
+            </div>
+            <div class="dash-kpi-pills">
+                <span class="dash-sub-pill"><i class="bi bi-truck me-1"></i>Stock Inward &amp; Bullion Procurement</span>
+            </div>
+        </div>
+
+        <!-- Card 3: Total Expenses & Operating Surplus -->
+        <div class="dash-kpi-card">
+            <div>
+                <div class="dash-kpi-top">
+                    <div class="dash-kpi-icon-box" style="background: #FEF3C7; border: 1px solid #FDE68A; color: #B45309;">
+                        <i class="bi bi-receipt-cutoff"></i>
+                    </div>
+                    <span class="dash-kpi-badge" style="background: {% if operating_surplus >= 0 %}#ECFDF5{% else %}#FEF2F2{% endif %}; color: {% if operating_surplus >= 0 %}#047857{% else %}#B91C1C{% endif %}; border: 1px solid {% if operating_surplus >= 0 %}#A7F3D0{% else %}#FECACA{% endif %};">
+                        {% if operating_surplus >= 0 %}+Surplus{% else %}-Deficit{% endif %}
+                    </span>
+                </div>
+                <div class="dash-kpi-label">Total Expenses &amp; Surplus</div>
+                <div class="dash-kpi-value">₹{{ total_expenses_amount|floatformat:2|intcomma }}</div>
+                <div class="dash-kpi-sub">
+                    Surplus: <strong class="{% if operating_surplus >= 0 %}text-success{% else %}text-danger{% endif %}">₹{{ operating_surplus|floatformat:2|intcomma }}</strong>
+                </div>
+            </div>
+            <div class="dash-kpi-pills">
+                <span class="dash-sub-pill">{{ total_expenses_count }} expense voucher{{ total_expenses_count|pluralize }} logged</span>
+            </div>
+        </div>
+
+        <!-- Card 4: Payments Received (Collections) -->
+        <div class="dash-kpi-card">
+            <div>
+                <div class="dash-kpi-top">
+                    <div class="dash-kpi-icon-box" style="background: #F0F9FF; border: 1px solid #BAE6FD; color: #0284C7;">
+                        <i class="bi bi-wallet2"></i>
+                    </div>
+                    <span class="dash-kpi-badge" style="background: #F0F9FF; color: #0284C7; border: 1px solid #BAE6FD;">
+                        <i class="bi bi-cash"></i> Collected
+                    </span>
+                </div>
+                <div class="dash-kpi-label">Payments Received</div>
+                <div class="dash-kpi-value">₹{{ total_payments_received|floatformat:2|intcomma }}</div>
+                <div class="dash-kpi-sub">
+                    Total cash flow received in selected period
+                </div>
+            </div>
+            {% if is_both %}
+            <div class="dash-kpi-pills">
+                <span class="dash-sub-pill">Retail: <strong>₹{{ retail_payments|floatformat:2|intcomma }}</strong></span>
+                <span class="dash-sub-pill">Wholesale: <strong>₹{{ wholesale_payments|floatformat:2|intcomma }}</strong></span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Card 5: Total Receivables (Khata) -->
+        <div class="dash-kpi-card">
+            <div>
+                <div class="dash-kpi-top">
+                    <div class="dash-kpi-icon-box" style="background: #EEF2FF; border: 1px solid #C7D2FE; color: #4338CA;">
+                        <i class="bi bi-arrow-left-right"></i>
+                    </div>
+                    <span class="dash-kpi-badge" style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A;">
+                        <i class="bi bi-clock-history"></i> Balance
+                    </span>
+                </div>
+                <div class="dash-kpi-label">Total Receivables (Khata)</div>
+                <div class="dash-kpi-value text-primary">₹{{ total_receivables|floatformat:2|intcomma }}</div>
+                <div class="dash-kpi-sub">
+                    Supplier Payables: <strong class="text-danger">₹{{ total_payables|floatformat:2|intcomma }}</strong>
+                </div>
+            </div>
+            {% if is_both %}
+            <div class="dash-kpi-pills">
+                <span class="dash-sub-pill">Customers: <strong>₹{{ retail_outstanding|floatformat:2|intcomma }}</strong></span>
+                <span class="dash-sub-pill">Retailers: <strong>₹{{ wholesale_outstanding|floatformat:2|intcomma }}</strong></span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Card 6: Current Stock Summary -->
+        <div class="dash-kpi-card">
+            <div>
+                <div class="dash-kpi-top">
+                    <div class="dash-kpi-icon-box" style="background: #FAF5FF; border: 1px solid #E9D5FF; color: #7E22CE;">
+                        <i class="bi bi-gem"></i>
+                    </div>
+                    <span class="dash-kpi-badge" style="background: #FAF5FF; color: #7E22CE; border: 1px solid #E9D5FF;">
+                        <i class="bi bi-shield-check"></i> Stock
+                    </span>
+                </div>
+                <div class="dash-kpi-label">Current Stock Valuation</div>
+                <div class="dash-kpi-value">₹{{ inventory_value|floatformat:2|intcomma }}</div>
+                <div class="dash-kpi-sub">
+                    {{ available_items }} ready piece{{ available_items|pluralize }} available
+                    {% if low_stock_design_count > 0 %}
+                    &bull; <span class="text-danger fw-bold">{{ low_stock_design_count }} low</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="dash-kpi-pills">
+                <span class="dash-sub-pill">Gold: <strong>{{ gold_weight_g|floatformat:3 }}g</strong></span>
+                <span class="dash-sub-pill">Silver: <strong>{{ silver_weight_g|floatformat:3 }}g</strong></span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 5. Workspace Split Grid -->
+    <div class="dash-main-grid">
+
+        <!-- LEFT COLUMN (Span 2): Analytics & Recent Transactions -->
+        <div>
+
+            <!-- 7-Day Turnover Analytics Chart Card -->
+            <div class="dash-panel-card">
+                <div class="dash-panel-header">
+                    <div>
+                        <h3 class="dash-panel-title">
+                            <i class="bi bi-bar-chart-line text-warning"></i>
+                            7-Day Business Turnover Analytics
+                        </h3>
+                        <p class="dash-panel-sub">Daily sales &amp; order trends across all showroom channels</p>
+                    </div>
+                    {% if is_retail %}
+                    <a href="{% url 'sales_report' %}" class="dash-header-link">Sales Report &rarr;</a>
+                    {% elif is_wholesale %}
+                    <a href="{% url 'wholesale:reports' %}" class="dash-header-link">Wholesale Report &rarr;</a>
+                    {% endif %}
+                </div>
+                <div class="p-3">
                     {% if sales_chart %}
-                    <div class="jd-chart-container" role="img" aria-label="Sales by day for the last 7 days">
+                    <div class="dash-chart-bars" role="img" aria-label="Sales by day for the last 7 days">
                         {% for row in sales_chart %}
-                        <div class="jd-bar-column" title="{{ row.date|date:'M d' }} — ₹{{ row.total|floatformat:2 }} ({{ row.count }} sale{{ row.count|pluralize }})">
-                            <span class="jd-bar-amount">
-                                {% if row.total > 0 %}₹{{ row.total|floatformat:0 }}{% else %}₹0{% endif %}
+                        <div class="dash-chart-col" title="{{ row.date|date:'M d' }} — ₹{{ row.total|floatformat:2|intcomma }} ({{ row.count }} orders)">
+                            <span class="dash-chart-amt">
+                                {% if row.total > 0 %}₹{{ row.total|floatformat:0|intcomma }}{% else %}₹0{% endif %}
                             </span>
-                            <div class="jd-bar-track">
-                                <div class="jd-bar-fill {% if row.pct >= 90 and row.total > 0 %}is-peak{% endif %}" style="height: {% if row.pct > 5 %}{{ row.pct }}%{% elif row.total > 0 %}8%{% else %}4px{% endif %};"></div>
+                            <div class="dash-chart-track">
+                                <div class="dash-chart-bar {% if row.pct >= 90 and row.total > 0 %}is-peak{% endif %}" style="height: {% if row.pct > 5 %}{{ row.pct }}%{% elif row.total > 0 %}8%{% else %}4px{% endif %};"></div>
                             </div>
-                            <span class="jd-bar-label">{{ row.label }}</span>
+                            <span class="dash-chart-label">{{ row.label }}</span>
                         </div>
                         {% endfor %}
                     </div>
-                    <div class="jd-chart-footer">
-                        <span>Period: {{ sales_chart_start|date:"M d" }} – {{ today|date:"M d, Y" }}</span>
-                        {% if sales_chart_max %}
+                    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top small" style="border-color: var(--dash-border) !important;">
+                        <span class="text-muted">Period: {{ sales_chart_start|date:"M d" }} – {{ today|date:"M d, Y" }}</span>
                         <span class="text-success fw-semibold">
-                            Today: <strong>{{ today_sales_count }}</strong> sale{{ today_sales_count|pluralize }} &middot; <strong>₹{{ today_sales_amount|floatformat:2 }}</strong>
+                            Today: <strong>{{ today_sales_count }}</strong> bill(s) &bull; <strong>₹{{ today_sales_amount|floatformat:2|intcomma }}</strong>
                         </span>
-                        {% else %}
-                        <span class="text-muted small">
-                            <i class="bi bi-info-circle me-1"></i> Bars rise dynamically as sales are billed
-                        </span>
-                        {% endif %}
                     </div>
                     {% else %}
-                    <div class="jd-cockpit-empty">
-                        <i class="bi bi-bar-chart"></i>
-                        <p class="fw-semibold text-light mb-1">No sales recorded yet this week</p>
-                        <p class="small text-muted mb-3">Daily revenue bars will appear automatically once bills are generated.</p>
-                        <a href="{% url 'sale_add' %}" class="jd-btn-cockpit-gold">
-                            <i class="bi bi-cart-plus"></i> Record First Sale
-                        </a>
+                    <div class="py-4 text-center">
+                        <i class="bi bi-bar-chart text-muted" style="font-size: 2rem;"></i>
+                        <p class="fw-semibold text-main mb-1 mt-2">No sales or orders recorded yet this week</p>
+                        <p class="small text-muted mb-0">Daily turnover bars will update automatically as bills are finalized.</p>
                     </div>
                     {% endif %}
                 </div>
             </div>
 
-            <!-- Recent Showroom Sales Table Card -->
-            <div class="jd-card">
-                <div class="jd-card-header">
-                    <div class="jd-card-title-group">
-                        <h3><i class="bi bi-receipt text-warning me-1"></i> Recent Sales</h3>
-                        <p>Latest completed sales and bills</p>
+            <!-- Recent Sales & Orders Card -->
+            <div class="dash-panel-card">
+                <div class="dash-panel-header">
+                    <div class="d-flex align-items-center gap-3">
+                        <h3 class="dash-panel-title">
+                            <i class="bi bi-receipt text-warning"></i>
+                            Recent Sales &amp; Orders
+                        </h3>
+                        {% if is_both %}
+                        <div class="btn-group btn-group-sm" role="group" style="background: var(--dash-bg); padding: 2px; border-radius: 8px;">
+                            <button type="button" class="dash-tab-btn active" id="btnTabRetail" onclick="switchSalesTab('retail')">
+                                Retail Sales ({{ recent_sales|length }})
+                            </button>
+                            <button type="button" class="dash-tab-btn" id="btnTabWholesale" onclick="switchSalesTab('wholesale')">
+                                Wholesale Orders ({{ recent_wholesale_orders|length }})
+                            </button>
+                        </div>
+                        {% endif %}
                     </div>
-                    <a href="{% url 'sale_list' %}" class="jd-card-header-link">View All Sales &rarr;</a>
+                    {% if is_retail %}
+                    <a href="{% url 'sale_list' %}" class="dash-header-link">All Retail Sales &rarr;</a>
+                    {% else %}
+                    <a href="{% url 'wholesale:order_list' %}" class="dash-header-link">All Wholesale Orders &rarr;</a>
+                    {% endif %}
                 </div>
-                <div class="jd-card-body p-0">
-                    <!-- Desktop Table View (>= 768px) -->
-                    <div class="jd-table-wrap d-none d-md-block">
-                        <table class="jd-sales-table">
+                <div class="p-0">
+                    <!-- Retail Sales View -->
+                    {% if is_retail %}
+                    <div id="tabContentRetail" class="table-responsive">
+                        <table class="dash-table">
                             <thead>
                                 <tr>
-                                    <th>Invoice #</th>
+                                    <th class="ps-3">Invoice #</th>
                                     <th>Customer</th>
-                                    <th>Item &amp; HUID</th>
-                                    <th>Amount</th>
-                                    <th>Status</th>
-                                    <th>Date</th>
+                                    <th>Item &amp; Tag</th>
+                                    <th class="text-end">Amount</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="pe-3 text-end">Date</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for sale in recent_sales %}
                                 <tr>
-                                    <td>
-                                        <a href="{% url 'sale_detail' sale.id %}" class="jd-invoice-link">
+                                    <td class="ps-3 font-monospace">
+                                        <a href="{% url 'sale_detail' sale.id %}" class="text-warning text-decoration-none fw-bold">
                                             #{{ sale.id }}
                                         </a>
                                     </td>
                                     <td>
-                                        <div class="fw-semibold jd-customer-name">{{ sale.customer.name }}</div>
-                                        <div class="jd-item-huid">{{ sale.customer.mobile }}</div>
+                                        <div class="fw-semibold">{{ sale.customer.name }}</div>
+                                        <div class="small text-muted">{{ sale.customer.mobile }}</div>
                                     </td>
                                     <td>
-                                        <div class="text-light">{{ sale.jewellery_item.name }}</div>
-                                        {% if sale.jewellery_item.huid %}
-                                        <div class="jd-item-huid">HUID: {{ sale.jewellery_item.huid }}</div>
-                                        {% else %}
-                                        <div class="jd-item-huid">Tag: TAG-{{ sale.jewellery_item.id }}</div>
-                                        {% endif %}
+                                        <div class="small">{{ sale.jewellery_item.name }}</div>
+                                        <div class="small text-muted">Tag: {{ sale.jewellery_item.id }}</div>
                                     </td>
-                                    <td class="fw-bold text-light" style="font-variant-numeric: tabular-nums;">
-                                        ₹{{ sale.sale_price|floatformat:2 }}
+                                    <td class="text-end fw-bold font-monospace">
+                                        ₹{{ sale.sale_price|floatformat:2|intcomma }}
                                     </td>
-                                    <td>
-                                        {% if sale.payment_status == 'Paid' %}
-                                        <span class="jd-status-badge jd-status-paid">
-                                            <i class="bi bi-check-circle-fill"></i> Paid
-                                        </span>
-                                        {% elif sale.payment_status == 'Partially Paid' %}
-                                        <span class="jd-status-badge jd-status-partial">
-                                            <i class="bi bi-hourglass-split"></i> Partial
-                                        </span>
-                                        {% else %}
-                                        <span class="jd-status-badge jd-status-unpaid">
-                                            <i class="bi bi-exclamation-circle-fill"></i> Due
-                                        </span>
-                                        {% endif %}
+                                    <td class="text-center">
+                                        <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-35">Completed</span>
                                     </td>
-                                    <td class="text-muted" style="font-size: 0.8rem;">
-                                        {{ sale.sale_date|date:"M d, Y" }}
+                                    <td class="pe-3 text-end text-muted small">
+                                        {{ sale.sale_date|date:"d M, Y" }}
                                     </td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="6">
-                                        <div class="jd-cockpit-empty py-4">
-                                            <i class="bi bi-cart-x"></i>
-                                            <p class="fw-semibold text-light mb-1">No sales recorded yet today</p>
-                                            <p class="small text-muted mb-3">Issue invoices to customers using the New Sale action.</p>
-                                            <a href="{% url 'sale_add' %}" class="jd-btn-cockpit-gold">
-                                                <i class="bi bi-cart-plus"></i> New Sale
-                                            </a>
-                                        </div>
+                                    <td colspan="6" class="text-center py-4 text-muted small">
+                                        No retail sales recorded in this period.
                                     </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
+                    {% endif %}
 
-                    <!-- Native Mobile App Sales Cards (< 768px) -->
-                    <div class="jd-mobile-sales-cards d-md-none">
-                        {% for sale in recent_sales %}
-                        <a href="{% url 'sale_detail' sale.id %}" class="jd-mobile-sale-card">
-                            <div class="jd-msc-top">
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="jd-msc-invoice">#{{ sale.id }}</span>
-                                    <span class="jd-msc-customer">{{ sale.customer.name }}</span>
-                                </div>
-                                <div class="jd-msc-amount">₹{{ sale.sale_price|floatformat:2 }}</div>
-                            </div>
-                            <div class="jd-msc-bottom">
-                                <div class="jd-msc-item">
-                                    <i class="bi bi-gem me-1 text-gold"></i>{{ sale.jewellery_item.name }}
-                                    {% if sale.jewellery_item.huid %}
-                                    <span class="jd-msc-huid">· {{ sale.jewellery_item.huid }}</span>
-                                    {% endif %}
-                                </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="jd-msc-date">{{ sale.sale_date|date:"M d" }}</span>
-                                    {% if sale.payment_status == 'Paid' %}
-                                    <span class="jd-status-badge jd-status-paid"><i class="bi bi-check-circle-fill"></i> Paid</span>
-                                    {% elif sale.payment_status == 'Partially Paid' %}
-                                    <span class="jd-status-badge jd-status-partial"><i class="bi bi-hourglass-split"></i> Partial</span>
-                                    {% else %}
-                                    <span class="jd-status-badge jd-status-unpaid"><i class="bi bi-exclamation-circle-fill"></i> Due</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </a>
-                        {% empty %}
-                        <div class="jd-mobile-sales-empty">
-                            <div class="jd-msc-empty-icon">
-                                <i class="bi bi-receipt"></i>
-                            </div>
-                            <div class="jd-msc-empty-title">No sales recorded yet today</div>
-                            <p class="jd-msc-empty-sub">Issue invoices to customers using New Sale.</p>
-                            <a href="{% url 'sale_add' %}" class="jd-msc-empty-btn">
-                                <i class="bi bi-cart-plus me-1"></i> New Sale
-                            </a>
-                        </div>
-                        {% endfor %}
+                    <!-- Wholesale Orders View -->
+                    {% if is_wholesale %}
+                    <div id="tabContentWholesale" class="table-responsive {% if is_retail %}d-none{% endif %}">
+                        <table class="dash-table">
+                            <thead>
+                                <tr>
+                                    <th class="ps-3">Order #</th>
+                                    <th>Wholesale Party</th>
+                                    <th>Items / Weight</th>
+                                    <th class="text-end">Order Amount</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="pe-3 text-end">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ord in recent_wholesale_orders %}
+                                <tr>
+                                    <td class="ps-3 font-monospace">
+                                        <a href="{% url 'wholesale:order_detail' ord.id %}" class="text-info text-decoration-none fw-bold">
+                                            {{ ord.order_number }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold">{{ ord.party.name }}</div>
+                                        <div class="small text-muted">{{ ord.party.city|default:"B2B Client" }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="small">{{ ord.items.count }} item{{ ord.items.count|pluralize }}</div>
+                                        <div class="small text-muted">{{ ord.total_net_weight|floatformat:2 }}g net</div>
+                                    </td>
+                                    <td class="text-end fw-bold font-monospace">
+                                        ₹{{ ord.total_amount|floatformat:2|intcomma }}
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-info bg-opacity-15 text-info border border-info border-opacity-35">{{ ord.status }}</span>
+                                    </td>
+                                    <td class="pe-3 text-end text-muted small">
+                                        {{ ord.order_date|date:"d M, Y" }}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted small">
+                                        No wholesale orders recorded in this period.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
+                    {% endif %}
                 </div>
             </div>
 
-            <!-- Follow-ups & Recent Enquiries (2 Column Sub-Grid) -->
-            <div class="row g-3">
-                <!-- Upcoming Follow-ups -->
-                <div class="col-md-6 col-12">
-                    <div class="jd-card h-100">
-                        <div class="jd-card-header">
-                            <div class="jd-card-title-group">
-                                <h3><i class="bi bi-calendar-event text-warning me-1"></i> Upcoming Follow-ups</h3>
-                                <p>Scheduled customer callbacks</p>
-                            </div>
-                            <a href="{% url 'enquiry_list' %}?followup=upcoming" class="jd-card-header-link">All &rarr;</a>
-                        </div>
-                        <div class="jd-card-body p-2">
-                            <div class="jd-orders-list">
-                                {% for enq in upcoming_followups %}
-                                <a href="{% url 'enquiry_detail' enq.id %}" class="jd-order-item">
-                                    <div class="jd-order-item-info">
-                                        <div class="jd-order-name">{{ enq.customer.name }}</div>
-                                        <div class="jd-order-meta">{{ enq.interested_item|default:"General inquiry" }}</div>
-                                    </div>
-                                    <span class="jd-stage-pill">
-                                        <i class="bi bi-clock me-1"></i>{{ enq.next_followup_date|date:"M d" }}
-                                    </span>
-                                </a>
-                                {% empty %}
-                                <div class="jd-cockpit-empty py-3">
-                                    <i class="bi bi-calendar-check" style="font-size: 1.4rem;"></i>
-                                    <p class="small mb-0">No upcoming callbacks due</p>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
+            <!-- Recent Purchases Register Card -->
+            <div class="dash-panel-card">
+                <div class="dash-panel-header">
+                    <div>
+                        <h3 class="dash-panel-title">
+                            <i class="bi bi-cart-check text-success"></i>
+                            Recent Procurement &amp; Purchases
+                        </h3>
+                        <p class="dash-panel-sub">Purchase Management &bull; Latest vendor purchase invoices and bullion inwards</p>
                     </div>
+                    <a href="{% url 'purchases:purchase_list' %}" class="dash-header-link">Purchase Register &rarr;</a>
                 </div>
-
-                <!-- Recent Enquiries -->
-                <div class="col-md-6 col-12">
-                    <div class="jd-card h-100">
-                        <div class="jd-card-header">
-                            <div class="jd-card-title-group">
-                                <h3><i class="bi bi-chat-left-text text-warning me-1"></i> Recent Enquiries</h3>
-                                <p>Showroom leads &amp; requests</p>
-                            </div>
-                            <a href="{% url 'enquiry_list' %}" class="jd-card-header-link">All &rarr;</a>
-                        </div>
-                        <div class="jd-card-body p-2">
-                            <div class="jd-orders-list">
-                                {% for enq in recent_enquiries %}
-                                <a href="{% url 'enquiry_detail' enq.id %}" class="jd-order-item">
-                                    <div class="jd-order-item-info">
-                                        <div class="jd-order-name">{{ enq.customer.name }}</div>
-                                        <div class="jd-order-meta">{{ enq.interested_item|default:"Jewellery requirement" }}</div>
-                                    </div>
-                                    <span class="badge {% if enq.status == 'New' %}bg-primary{% elif enq.status == 'Contacted' %}bg-info text-dark{% elif enq.status == 'Interested' %}bg-warning text-dark{% elif enq.status == 'Purchased' %}bg-success{% else %}bg-secondary{% endif %}">
-                                        {{ enq.status }}
-                                    </span>
-                                </a>
+                <div class="p-0">
+                    <div class="table-responsive">
+                        <table class="dash-table">
+                            <thead>
+                                <tr>
+                                    <th class="ps-3">Invoice #</th>
+                                    <th>Supplier</th>
+                                    <th>Type &amp; Branch</th>
+                                    <th class="text-end">Invoice Amount</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="pe-3 text-end">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inv in recent_purchases %}
+                                <tr>
+                                    <td class="ps-3 font-monospace">
+                                        <a href="{% url 'purchases:purchase_detail' inv.id %}" class="text-success text-decoration-none fw-bold">
+                                            {{ inv.invoice_number }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold">{{ inv.supplier.name }}</div>
+                                        <div class="small text-muted">{{ inv.supplier.phone|default:inv.supplier.city }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="small">{{ inv.get_purchase_type_display }}</div>
+                                        <div class="small text-muted">{{ inv.branch.name|default:"Head Office" }}</div>
+                                    </td>
+                                    <td class="text-end fw-bold font-monospace">
+                                        ₹{{ inv.grand_total|floatformat:2|intcomma }}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if inv.status == 'CONFIRMED' %}
+                                        <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-35">Confirmed</span>
+                                        {% elif inv.status == 'PARTIALLY_PAID' %}
+                                        <span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-35">Part Paid</span>
+                                        {% elif inv.status == 'PAID' %}
+                                        <span class="badge bg-info bg-opacity-15 text-info border border-info border-opacity-35">Paid</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ inv.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="pe-3 text-end text-muted small">
+                                        {{ inv.purchase_date|date:"d M, Y" }}
+                                    </td>
+                                </tr>
                                 {% empty %}
-                                <div class="jd-cockpit-empty py-3">
-                                    <i class="bi bi-inbox" style="font-size: 1.4rem;"></i>
-                                    <p class="small mb-0">No customer leads recorded</p>
-                                </div>
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted small">
+                                        No purchase invoices recorded yet. Use <strong>+ New Purchase</strong> to log vendor procurement.
+                                    </td>
+                                </tr>
                                 {% endfor %}
-                            </div>
-                        </div>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
 
         </div>
 
-        <!-- RIGHT COLUMN (Span 1): Low Stock, Custom Orders, Bullion -->
-        <div class="jd-cockpit-col-right">
+        <!-- RIGHT COLUMN (Span 1): Alerts, Financial Summary & Bullion Breakdown -->
+        <div>
 
-            <!-- Low Stock Designs Card -->
-            <div class="jd-card">
-                <div class="jd-card-header">
-                    <div class="jd-card-title-group">
-                        <h3><i class="bi bi-exclamation-triangle text-warning me-1"></i> Low Stock Designs</h3>
-                        <p>Designs with low stock</p>
-                    </div>
-                    <span class="jd-alert-pill jd-alert-pill-amber">Action Req</span>
+            <!-- Business Alerts & Action Center -->
+            <div class="dash-panel-card">
+                <div class="dash-panel-header">
+                    <h3 class="dash-panel-title">
+                        <i class="bi bi-bell-fill text-warning"></i>
+                        Business Alerts &amp; Activities
+                    </h3>
+                    <span class="badge bg-warning text-dark fw-bold">Live</span>
                 </div>
-                <div class="jd-card-body p-3">
-                    <div class="jd-stock-list">
-                        {% for d in low_stock_designs %}
-                        <a href="{% url 'inventory_list' %}?q={{ d.design_code }}" class="jd-stock-item">
-                            <div class="jd-stock-item-info">
-                                 <div class="jd-stock-meta">
-                                     <span class="text-warning fw-semibold font-monospace">{{ d.design_code }}</span>
-                                     <span>&middot; {{ d.category }}{% if d.metal_type %} ({{ d.metal_type }}){% endif %}</span>
-                                 </div>
-                                <div class="jd-stock-name">{{ d.name }}</div>
-                            </div>
-                            <span class="jd-alert-pill {% if d.available <= 1 %}jd-alert-pill-red{% else %}jd-alert-pill-amber{% endif %}">
-                                {{ d.available }} left
-                            </span>
-                        </a>
-                        {% empty %}
-                        <div class="jd-cockpit-empty py-3">
-                            <i class="bi bi-check2-circle text-success" style="font-size: 1.6rem;"></i>
-                            <p class="fw-semibold text-light mb-1">Stock levels healthy</p>
-                            <p class="small text-muted mb-0">All jewellery designs have sufficient stock.</p>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    <div class="text-center mt-3 pt-2 border-top border-secondary border-opacity-25">
-                        <a href="{% url 'inventory_list' %}" class="jd-card-header-link">View All Stock &rarr;</a>
-                    </div>
-                </div>
-            </div>
+                <div class="p-3">
+                    <div class="d-flex flex-column gap-2">
 
-            <!-- Pending Custom Orders Card -->
-            <div class="jd-card">
-                <div class="jd-card-header">
-                    <div class="jd-card-title-group">
-                        <h3><i class="bi bi-hammer text-warning me-1"></i> Pending Custom Orders</h3>
-                        <p>Custom jewellery orders in progress</p>
-                    </div>
-                    <span class="jd-stage-pill">Workshop</span>
-                </div>
-                <div class="jd-card-body p-3">
-                    <div class="jd-orders-list">
-                        {% for order in pending_custom_orders %}
-                        <a href="{% url 'custom_orders:custom_order_detail' order.id %}" class="jd-order-item flex-column align-items-stretch">
+                        <!-- Low Stock Alert -->
+                        {% if low_stock_designs %}
+                        <div class="p-2 rounded" style="background: #FEF2F2; border-left: 3px solid #EF4444; border: 1px solid #FECACA;">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="fw-bold font-monospace text-warning">{{ order.order_number }}</span>
-                                {% include 'custom_orders/includes/status_badge.html' with status=order.status %}
+                                <span class="small fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Low Stock Alert</span>
+                                <span class="badge bg-danger" style="font-size: 0.68rem;">{{ low_stock_design_count }} items</span>
                             </div>
-                            <div class="jd-order-name">{{ order.customer.name }}</div>
-                            <div class="d-flex justify-content-between align-items-center mt-1 text-muted small">
-                                <span><i class="bi bi-calendar3 me-1"></i>Due: {{ order.expected_delivery_date|date:"M d, Y" }}</span>
-                                <span class="jd-stage-pill py-0 px-1">{{ order.category.name|default:"Custom Piece" }}</span>
+                            <div class="small">
+                                {% for d in low_stock_designs %}
+                                <a href="{% url 'inventory_list' %}?q={{ d.design_code }}" class="text-decoration-none d-block py-1 border-bottom" style="border-color: #FEE2E2 !important; color: var(--dash-text-main);">
+                                    <span class="font-monospace text-danger fw-bold">{{ d.design_code }}</span>: {{ d.name }}
+                                    <span class="float-end text-danger fw-bold">{{ d.available }} left</span>
+                                </a>
+                                {% endfor %}
                             </div>
-                        </a>
-                        {% empty %}
-                        <div class="jd-cockpit-empty py-3">
-                            <i class="bi bi-inbox" style="font-size: 1.6rem;"></i>
-                            <p class="fw-semibold text-light mb-1">No pending custom orders</p>
-                            <p class="small text-muted mb-3">Custom orders will appear here once created.</p>
-                            <a href="{% url 'custom_orders:custom_order_add' %}" class="jd-btn-cockpit-ghost py-1 px-3">
-                                <i class="bi bi-plus-lg"></i> New Order
-                            </a>
                         </div>
-                        {% endfor %}
-                    </div>
-                    <div class="text-center mt-3 pt-2 border-top border-secondary border-opacity-25">
-                        <a href="{% url 'custom_orders:custom_order_list' %}" class="jd-card-header-link">View All Custom Orders &rarr;</a>
+                        {% endif %}
+
+                        <!-- Due Purchases Alert -->
+                        {% if due_purchases %}
+                        <div class="p-2 rounded" style="background: #FFFBEB; border-left: 3px solid #F59E0B; border: 1px solid #FDE68A;">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="small fw-bold text-warning" style="color: #B45309 !important;"><i class="bi bi-calendar-check me-1"></i>Supplier Bills Due</span>
+                                <span class="badge bg-warning text-dark" style="font-size: 0.68rem;">{{ due_purchases|length }} bills</span>
+                            </div>
+                            {% for dp in due_purchases %}
+                            <div class="small py-1 border-bottom d-flex justify-content-between align-items-center" style="border-color: #FEF3C7 !important;">
+                                <span>{{ dp.supplier.name }} ({{ dp.invoice_number }})</span>
+                                <span class="text-danger fw-bold font-monospace">₹{{ dp.balance_amount|floatformat:0|intcomma }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Pending Custom Orders -->
+                        {% if is_retail and pending_custom_orders %}
+                        <div class="p-2 rounded" style="background: #F5F3FF; border-left: 3px solid #8B5CF6; border: 1px solid #DDD6FE;">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="small fw-bold text-purple" style="color: #6D28D9 !important;"><i class="bi bi-hammer me-1"></i>Pending Custom Orders</span>
+                                <span class="badge bg-primary" style="font-size: 0.68rem;">{{ pending_custom_orders_count }}</span>
+                            </div>
+                            {% for co in pending_custom_orders %}
+                            <a href="{% url 'custom_orders:custom_order_detail' co.id %}" class="small text-decoration-none d-flex justify-content-between py-1 border-bottom" style="border-color: #EDE9FE !important; color: var(--dash-text-main);">
+                                <span>{{ co.customer.name }} ({{ co.category.name|default:"Jewellery" }})</span>
+                                <span class="text-muted small">Due: {{ co.expected_delivery_date|date:"d M" }}</span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Wholesale Pipeline Alert -->
+                        {% if is_wholesale and pending_wholesale_orders_count > 0 %}
+                        <div class="p-2 rounded" style="background: #F0F9FF; border-left: 3px solid #0284C7; border: 1px solid #BAE6FD;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="small fw-bold" style="color: #0369A1;"><i class="bi bi-truck me-1"></i>Wholesale Pipeline</span>
+                                <a href="{% url 'wholesale:order_list' %}" class="badge bg-info text-dark text-decoration-none">{{ pending_wholesale_orders_count }} active</a>
+                            </div>
+                            <div class="small text-muted mt-1">Orders awaiting fulfillment or shipping.</div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Customer Followups Due -->
+                        {% if is_retail and upcoming_followups %}
+                        <div class="p-2 rounded" style="background: #ECFDF5; border-left: 3px solid #10B981; border: 1px solid #A7F3D0;">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="small fw-bold text-success"><i class="bi bi-telephone-outbound me-1"></i>Customer Follow-ups</span>
+                                <span class="badge bg-success" style="font-size: 0.68rem;">{{ upcoming_followups|length }}</span>
+                            </div>
+                            {% for fu in upcoming_followups %}
+                            <div class="small py-1 border-bottom d-flex justify-content-between" style="border-color: #D1FAE5 !important;">
+                                <span>{{ fu.customer.name }}</span>
+                                <span class="text-muted">{{ fu.next_followup_date|date:"d M" }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        {% if not low_stock_designs and not due_purchases and not pending_custom_orders and not upcoming_followups %}
+                        <div class="text-center py-3 text-muted small">
+                            <i class="bi bi-check-circle-fill text-success fs-4 d-block mb-1"></i>
+                            All systems normal. No critical alerts pending.
+                        </div>
+                        {% endif %}
+
                     </div>
                 </div>
             </div>
 
-            <!-- Bullion Rate Breakdown Card -->
-            <div class="jd-card">
-                <div class="jd-card-header">
-                    <div class="jd-card-title-group">
-                        <h3><i class="bi bi-coin text-warning me-1"></i> Metal Rates Breakdown</h3>
-                        <p>Current gold &amp; silver rates per gram</p>
+            <!-- Business Profit & Financial Summary Card -->
+            <div class="dash-panel-card">
+                <div class="dash-panel-header">
+                    <div>
+                        <h3 class="dash-panel-title">
+                            <i class="bi bi-calculator text-warning"></i>
+                            Business Financial Summary
+                        </h3>
+                        <p class="dash-panel-sub">Period: {{ range_label }}</p>
                     </div>
-                    <i class="bi bi-graph-up text-warning"></i>
                 </div>
-                <div class="jd-card-body p-3">
-                    <div class="jd-breakdown-row">
-                        <div>
-                            <div class="jd-breakdown-name">24K Pure Gold (99.9%)</div>
-                            <div class="jd-breakdown-sub">Market Benchmark</div>
-                        </div>
-                        <div>
-                            <div class="jd-breakdown-price">
-                                {% if metal_prices.gold_price_per_gram %}₹{{ metal_prices.gold_price_per_gram|floatformat:2 }}{% else %}₹7,250.00{% endif %}
-                            </div>
-                            <div class="jd-bullion-delta-up text-end">+0.35%</div>
-                        </div>
+                <div class="p-3">
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="border-color: var(--dash-border-subtle) !important;">
+                        <span class="text-muted small">Total Sales Turnover:</span>
+                        <strong class="text-success font-monospace">₹{{ total_sales_amount|floatformat:2|intcomma }}</strong>
                     </div>
-
-                    <div class="jd-breakdown-row">
-                        <div>
-                            <div class="jd-breakdown-name">22K Standard Gold (91.6%)</div>
-                            <div class="jd-breakdown-sub">Hallmark Certified</div>
-                        </div>
-                        <div>
-                            <div class="jd-breakdown-price">₹6,650.00</div>
-                            <div class="jd-bullion-delta-up text-end">+0.30%</div>
-                        </div>
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="border-color: var(--dash-border-subtle) !important;">
+                        <span class="text-muted small">Total Procurement (Purchases):</span>
+                        <strong class="text-danger font-monospace">−₹{{ total_purchases_amount|floatformat:2|intcomma }}</strong>
                     </div>
-
-                    <div class="jd-breakdown-row">
-                        <div>
-                            <div class="jd-breakdown-name">18K Jewelry Gold (75.0%)</div>
-                            <div class="jd-breakdown-sub">Diamond Mounting Grade</div>
-                        </div>
-                        <div>
-                            <div class="jd-breakdown-price">₹5,440.00</div>
-                            <div class="jd-bullion-delta-up text-end">+0.25%</div>
-                        </div>
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="border-color: var(--dash-border-subtle) !important;">
+                        <span class="text-muted small">Total Operational Expenses:</span>
+                        <strong class="text-danger font-monospace">−₹{{ total_expenses_amount|floatformat:2|intcomma }}</strong>
                     </div>
-
-                    <div class="jd-breakdown-row">
-                        <div>
-                            <div class="jd-breakdown-name">Silver 999 Pure</div>
-                            <div class="jd-breakdown-sub">MCX Market Rate</div>
-                        </div>
-                        <div>
-                            <div class="jd-breakdown-price">
-                                {% if metal_prices.silver_price_per_gram %}₹{{ metal_prices.silver_price_per_gram|floatformat:2 }}{% else %}₹88.50{% endif %}
-                            </div>
-                            <div class="text-danger small text-end" style="font-size: 0.72rem; font-weight: 700;">-0.10%</div>
-                        </div>
+                    <div class="d-flex justify-content-between align-items-center py-2 pt-3">
+                        <span class="fw-bold small">Net Operating Surplus:</span>
+                        <strong class="fs-6 font-monospace {% if operating_surplus >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            ₹{{ operating_surplus|floatformat:2|intcomma }}
+                        </strong>
                     </div>
+                    {% if has_cost_data %}
+                    <div class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center" style="border-color: var(--dash-border-subtle) !important;">
+                        <span class="text-muted small" title="Calculated from items with cost price recorded">Realized Gross Margin:</span>
+                        <span class="text-warning fw-bold font-monospace small">₹{{ realized_gross_profit|floatformat:2|intcomma }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
 
-                    <div class="text-center mt-3 pt-2 text-muted small">
-                        {% if metal_prices.last_updated %}
-                            Last updated {{ metal_prices.last_updated|date:"M d, Y h:i A" }}
-                        {% else %}
-                            Live Market Rates Active
-                        {% endif %}
+            <!-- Live Metal Rates Card -->
+            <div class="dash-panel-card">
+                <div class="dash-panel-header">
+                    <div>
+                        <h3 class="dash-panel-title">
+                            <i class="bi bi-coin text-warning"></i>
+                            Current Precious Metal Benchmarks
+                        </h3>
+                    </div>
+                    <span class="badge bg-secondary small">Per Gram</span>
+                </div>
+                <div class="p-3 small">
+                    <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: var(--dash-border-subtle) !important;">
+                        <span class="text-muted">Gold 24K (99.9%):</span>
+                        <strong class="text-warning font-monospace">₹{{ metal_prices.gold_24k|default:"7420.00"|floatformat:2|intcomma }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: var(--dash-border-subtle) !important;">
+                        <span class="text-muted">Gold 22K (91.6%):</span>
+                        <strong class="text-warning font-monospace">₹{{ metal_prices.gold_22k|default:"6795.00"|floatformat:2|intcomma }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 border-bottom" style="border-color: var(--dash-border-subtle) !important;">
+                        <span class="text-muted">Gold 18K (75.0%):</span>
+                        <strong class="text-warning font-monospace">₹{{ metal_prices.gold_18k|default:"5565.00"|floatformat:2|intcomma }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between py-1">
+                        <span class="text-muted">Silver 999:</span>
+                        <strong class="font-monospace">₹{{ metal_prices.silver_price_per_gram|default:"88.50"|floatformat:2|intcomma }}</strong>
                     </div>
                 </div>
             </div>
@@ -774,10 +1283,38 @@
 </div>
 
 <script>
-    (function() {
-        var pc = document.getElementById('page-content');
-        if (pc) pc.classList.add('jd-cockpit-active');
-        document.body.classList.add('has-cockpit');
-    })();
+function handleDashRangeChange(sel) {
+    var customBox = document.getElementById('dashCustomInputs');
+    if (sel.value === 'custom') {
+        if (customBox) customBox.classList.remove('d-none');
+    } else {
+        if (customBox) customBox.classList.add('d-none');
+        document.getElementById('dashFilterForm').submit();
+    }
+}
+
+function switchSalesTab(type) {
+    var btnR = document.getElementById('btnTabRetail');
+    var btnW = document.getElementById('btnTabWholesale');
+    var contentR = document.getElementById('tabContentRetail');
+    var contentW = document.getElementById('tabContentWholesale');
+    if (type === 'retail') {
+        if (btnR) btnR.classList.add('active');
+        if (btnW) btnW.classList.remove('active');
+        if (contentR) contentR.classList.remove('d-none');
+        if (contentW) contentW.classList.add('d-none');
+    } else {
+        if (btnR) btnR.classList.remove('active');
+        if (btnW) btnW.classList.add('active');
+        if (contentR) contentR.classList.add('d-none');
+        if (contentW) contentW.classList.remove('d-none');
+    }
+}
+
+(function() {
+    var pc = document.getElementById('page-content');
+    if (pc) pc.classList.add('jd-cockpit-active');
+    document.body.classList.add('has-cockpit');
+})();
 </script>
 {% endblock %}

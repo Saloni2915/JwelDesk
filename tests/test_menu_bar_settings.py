@@ -350,7 +350,7 @@ class MenuBarSettingsTestCase(TestCase):
 
         # Wholesale items are filtered out
         self.assertNotContains(resp, 'Wholesale &amp; B2B')
-        self.assertNotContains(resp, 'switch-sub_wholesale_dashboard')
+        self.assertNotContains(resp, 'switch-sub_wholesale_parties')
         self.assertNotContains(resp, 'switch-sub_reports_wholesale')
 
     def test_wholesale_tenant_menu_settings_filtering(self):
@@ -364,7 +364,7 @@ class MenuBarSettingsTestCase(TestCase):
 
         # Wholesale items are visible
         self.assertContains(resp, 'Wholesale &amp; B2B')
-        self.assertContains(resp, 'switch-sub_wholesale_dashboard')
+        self.assertContains(resp, 'switch-sub_wholesale_parties')
         self.assertContains(resp, 'switch-sub_reports_wholesale')
 
         # Retail-only items are filtered out from menu options table
@@ -386,7 +386,7 @@ class MenuBarSettingsTestCase(TestCase):
         self.assertContains(resp, 'Sales &amp; Exchange')
         self.assertContains(resp, 'Wholesale &amp; B2B')
         self.assertContains(resp, 'switch-sub_sales_add')
-        self.assertContains(resp, 'switch-sub_wholesale_dashboard')
+        self.assertContains(resp, 'switch-sub_wholesale_parties')
 
     def test_toggle_api_rejects_incompatible_business_model_menu(self):
         """Attempting to toggle a wholesale menu on a pure retail tenant returns 400 error."""

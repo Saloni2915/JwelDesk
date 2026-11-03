@@ -38,6 +38,101 @@
             document.cookie = 'jd-theme=' + t + '; path=/; max-age=31536000; SameSite=Lax';
         })();
     </script>
+
+
+
+
+
+
+<style>
+/* Universal Global Back Navigation Buttons */
+.jd-navbar-back-btn {
+    color: var(--jd-text-primary, #1E293B) !important;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    padding: 0.25rem 0.45rem !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    line-height: 1;
+}
+.jd-navbar-back-btn:hover {
+    background: rgba(180, 133, 22, 0.12) !important;
+    color: #B48516 !important;
+    transform: translateX(-2px);
+}
+[data-theme="light"] .jd-navbar-back-btn {
+    color: #0F172A !important;
+}
+[data-theme="light"] .jd-navbar-back-btn:hover {
+    background: #F1F5F9 !important;
+    color: #B48516 !important;
+}
+[data-theme="gold"] .jd-navbar-back-btn {
+    color: #ECC86A !important;
+}
+[data-theme="gold"] .jd-navbar-back-btn:hover {
+    background: rgba(236, 200, 106, 0.18) !important;
+    color: #F5D77F !important;
+}
+[data-theme="dark"] .jd-navbar-back-btn {
+    color: #38BDF8 !important;
+}
+[data-theme="dark"] .jd-navbar-back-btn:hover {
+    background: rgba(56, 189, 248, 0.18) !important;
+    color: #7DD3FC !important;
+}
+
+.jd-page-back-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--jd-card, #FFFFFF);
+    border: 1px solid var(--jd-border, #CBD5E1);
+    color: var(--jd-text-primary, #0F172A);
+    font-size: 1.15rem;
+    cursor: pointer;
+    text-decoration: none !important;
+    transition: all 0.18s ease;
+    flex-shrink: 0;
+    vertical-align: middle;
+    margin-right: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+.jd-page-back-icon-btn:hover {
+    background: #F8FAFC;
+    border-color: #B48516;
+    color: #B48516;
+    transform: translateX(-2px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+[data-theme="gold"] .jd-page-back-icon-btn {
+    background: #20160E;
+    border-color: rgba(212, 175, 55, 0.35);
+    color: #ECC86A;
+}
+[data-theme="gold"] .jd-page-back-icon-btn:hover {
+    background: #2C1E12;
+    border-color: #ECC86A;
+    color: #F5D77F;
+}
+[data-theme="dark"] .jd-page-back-icon-btn {
+    background: #121620;
+    border-color: rgba(148, 163, 184, 0.25);
+    color: #38BDF8;
+}
+[data-theme="dark"] .jd-page-back-icon-btn:hover {
+    background: #1A2234;
+    border-color: #38BDF8;
+    color: #7DD3FC;
+}
+</style>
 </head>
 <body data-lang="{{ current_language|default:'en' }}" class="{% if is_hindi %}jd-lang-hi{% endif %}">
 
@@ -47,10 +142,14 @@
             <!-- Left Top Corner: Sidebar Toggler + Brand -->
             <div class="d-flex align-items-center flex-shrink-0 me-auto min-w-0">
                 <!-- Mobile/Tablet Sidebar Toggler (active < 992px) -->
-                <button class="btn btn-link d-lg-none me-2 p-1 border-0 flex-shrink-0 jd-sidebar-toggle-btn" id="sidebarToggle" type="button" aria-label="Toggle navigation">
+                <button class="btn btn-link d-lg-none me-1 p-1 border-0 flex-shrink-0 jd-sidebar-toggle-btn" id="sidebarToggle" type="button" aria-label="Toggle navigation">
                     <i class="bi bi-list fs-2"></i>
                 </button>
-                <a class="navbar-brand d-inline-flex align-items-center text-truncate min-w-0 p-0 m-0" href="{% if request.tenant and not request.tenant.is_retail %}{% url 'wholesale:dashboard' %}{% else %}{% url 'dashboard' %}{% endif %}" style="line-height: 1.2;">
+                <!-- Universal Back Navigation Button (Present Across All Pages) -->
+                <button type="button" class="btn btn-link text-decoration-none p-1 me-1 me-sm-2 flex-shrink-0 jd-navbar-back-btn" id="globalNavbarBackBtn" onclick="handleGlobalBackNavigation()" title="Go Back to Previous Page" aria-label="Go back">
+                    <i class="bi bi-arrow-left fs-4"></i>
+                </button>
+                <a class="navbar-brand d-inline-flex align-items-center text-truncate min-w-0 p-0 m-0" href="{% url 'dashboard' %}" style="line-height: 1.2;">
                     {% if company.logo_url %}
                     <img src="{{ company.logo_url }}" alt="{{ company.name }}" class="me-1 me-sm-2 rounded flex-shrink-0 navbar-brand-logo" style="height: 32px; max-height: 36px; width: auto; max-width: 110px; object-fit: contain; background: #ffffff; padding: 2px 5px; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.18);" onerror="this.onerror=null; this.src='{% static 'icons/favicon-32x32.png' %}';">
                     {% else %}
@@ -398,7 +497,7 @@
                     {% if 'dashboard' not in hidden_menus %}
                     <li class="nav-item" data-menu-key="dashboard">
                         <a class="nav-link nav-link-single {% if request.resolver_match.url_name == 'dashboard' and request.resolver_match.app_name != 'karigar' %}active{% endif %}"
-                           href="{% if request.tenant and not request.tenant.is_retail %}{% url 'wholesale:dashboard' %}{% else %}{% url 'dashboard' %}{% endif %}">
+                           href="{% url 'dashboard' %}">
                             <span class="sidebar-item-content">
                                 <i class="bi bi-speedometer2 sidebar-item-icon"></i>
                                 <span class="sidebar-item-title">{% if is_hindi %}डैशबोर्ड{% else %}Dashboard{% endif %}</span>
@@ -498,14 +597,6 @@
                         </a>
                         <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name != 'reports' or '/wholesale/' in request.path and '/wholesale/reports/' not in request.path %}show{% endif %}" id="submenu-wholesale">
                             <ul class="nav flex-column sidebar-submenu">
-                                {% if 'sub_wholesale_dashboard' not in hidden_menus %}
-                                <li class="nav-item" data-submenu-key="sub_wholesale_dashboard">
-                                    <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
-                                       href="{% url 'wholesale:dashboard' %}">
-                                        <i class="bi bi-speedometer2"></i> {% if is_hindi %}थोक डैशबोर्ड{% else %}Wholesale Dashboard{% endif %}
-                                    </a>
-                                </li>
-                                {% endif %}
                                 {% if 'sub_wholesale_parties' not in hidden_menus %}
                                 <li class="nav-item" data-submenu-key="sub_wholesale_parties">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'wholesale' and 'party' in request.resolver_match.url_name %}active{% endif %}"
@@ -649,14 +740,6 @@
                         </a>
                         <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.app_name == 'purchases' or '/purchases/' in request.path %}show{% endif %}" id="submenu-purchases">
                             <ul class="nav flex-column sidebar-submenu">
-                                {% if 'sub_purchases_dashboard' not in hidden_menus %}
-                                <li class="nav-item" data-submenu-key="sub_purchases_dashboard">
-                                    <a class="nav-link {% if request.resolver_match.app_name == 'purchases' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
-                                       href="{% url 'purchases:dashboard' %}">
-                                        <i class="bi bi-speedometer2"></i> {% if is_hindi %}खरीद डैशबोर्ड{% else %}Purchase Dashboard{% endif %}
-                                    </a>
-                                </li>
-                                {% endif %}
                                 {% if 'sub_purchases_create' not in hidden_menus %}
                                 <li class="nav-item" data-submenu-key="sub_purchases_create">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'purchases' and request.resolver_match.url_name == 'purchase_create' %}active{% endif %}"
@@ -959,14 +1042,6 @@
                         </a>
                         <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name != 'reports' or '/karigar/' in request.path and '/karigar/reports/' not in request.path %}show{% endif %}" id="submenu-karigar">
                             <ul class="nav flex-column sidebar-submenu">
-                                {% if 'sub_karigar_dashboard' not in hidden_menus %}
-                                <li class="nav-item" data-submenu-key="sub_karigar_dashboard">
-                                    <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
-                                       href="{% url 'karigar:dashboard' %}">
-                                        <i class="bi bi-speedometer2"></i> {% if is_hindi %}कारीगर डैशबोर्ड{% else %}Karigar Dashboard{% endif %}
-                                    </a>
-                                </li>
-                                {% endif %}
                                 {% if 'sub_karigar_list' not in hidden_menus %}
                                 <li class="nav-item" data-submenu-key="sub_karigar_list">
                                     <a class="nav-link {% if request.resolver_match.app_name == 'karigar' and 'karigar_' in request.resolver_match.url_name %}active{% endif %}"
@@ -1042,22 +1117,6 @@
                         <div class="collapse sidebar-submenu-collapse {% if request.resolver_match.app_name == 'girvi' or '/girvi/' in request.path %}show{% endif %}" id="submenu-girvi">
 
                             <ul class="nav flex-column sidebar-submenu">
-
-                                {% if 'sub_girvi_dashboard' not in hidden_menus %}
-
-                                <li class="nav-item" data-submenu-key="sub_girvi_dashboard">
-
-                                    <a class="nav-link {% if request.resolver_match.app_name == 'girvi' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
-
-                                       href="{% url 'girvi:dashboard' %}">
-
-                                        <i class="bi bi-speedometer2"></i> {% if is_hindi %}गिरवी डैशबोर्ड{% else %}Girvi Dashboard{% endif %}
-
-                                    </a>
-
-                                </li>
-
-                                {% endif %}
 
                                 {% if user.is_superuser or user.is_staff or user_perms.girvi.can_add or not user.employee_profile %}
 
@@ -1481,9 +1540,14 @@
 
             <!-- Breadcrumb / Page Header -->
             <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4 page-header-wrapper">
-                <h4 class="mb-0 fw-semibold page-header-title">
-                    {% block page_title %}Dashboard{% endblock %}
-                </h4>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm jd-page-back-icon-btn d-inline-flex" onclick="handleGlobalBackNavigation()" title="Go Back" aria-label="Go Back">
+                        <i class="bi bi-arrow-left"></i>
+                    </button>
+                    <h4 class="mb-0 fw-semibold page-header-title">
+                        {% block page_title %}Dashboard{% endblock %}
+                    </h4>
+                </div>
                 <div class="page-header-actions d-flex flex-wrap gap-2">
                     {% block page_actions %}{% endblock %}
                 </div>
@@ -1510,7 +1574,7 @@
     <nav class="mobile-bottom-nav d-lg-none" id="mobileBottomNav" aria-label="Mobile Navigation">
         {% if request.tenant and not request.tenant.is_retail %}
             <!-- Wholesale Tenant Bottom App Bar -->
-            <a href="{% url 'wholesale:dashboard' %}" class="mobile-nav-item {% if request.resolver_match.app_name == 'wholesale' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <a href="{% url 'dashboard' %}" class="mobile-nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
                 <i class="bi bi-speedometer2 mobile-nav-icon"></i>
                 <span class="mobile-nav-label">Home</span>
             </a>
@@ -2053,5 +2117,86 @@
     {% include 'includes/support_chatbot.html' %}
 
     {% block extra_js %}{% endblock %}
+
+
+
+
+
+
+<script>
+window.handleGlobalBackNavigation = function () {
+    // 1. If referrer exists and belongs to the same origin and is not the current URL
+    if (document.referrer && document.referrer.indexOf(window.location.host) !== -1) {
+        try {
+            var refUrl = new URL(document.referrer);
+            if (refUrl.pathname !== window.location.pathname) {
+                window.location.href = document.referrer;
+                return;
+            }
+        } catch (e) {}
+    }
+    // 2. If browser history steps exist
+    if (window.history.length > 1) {
+        window.history.back();
+        return;
+    }
+    // 3. Fallback safely to dashboard
+    window.location.href = "{% url 'dashboard' %}";
+};
+
+document.addEventListener('DOMContentLoaded', function () {
+    var currentPath = window.location.pathname;
+    var isDashboard = (currentPath === '/' || currentPath === '/dashboard/' || currentPath === '/dashboard');
+    
+    // On root dashboard, hide the navbar back button
+    var navBackBtn = document.getElementById('globalNavbarBackBtn');
+    if (navBackBtn && isDashboard) {
+        navBackBtn.style.display = 'none';
+    }
+
+    // On non-dashboard pages, ensure page title has a back button if missing
+    if (!isDashboard) {
+        var titleSelectors = [
+            '.jd-header .jd-title',
+            '.jd-title-wrap h1',
+            '.jd-sb-title-wrap h1',
+            '.jd-header h1',
+            '.page-header-wrapper .page-header-title',
+            '.page-header-title'
+        ];
+        for (var i = 0; i < titleSelectors.length; i++) {
+            var titleEl = document.querySelector(titleSelectors[i]);
+            if (titleEl && !titleEl.dataset.hasBackBtn) {
+                var parentContainer = titleEl.closest('.jd-header, .jd-sb-title-wrap, .jd-title-wrap, .page-header-wrapper') || titleEl.parentElement;
+                var existing = parentContainer ? parentContainer.querySelector('.jd-page-back-icon-btn, .btn-back') : null;
+                if (!existing) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'jd-page-back-icon-btn';
+                    btn.setAttribute('onclick', 'handleGlobalBackNavigation()');
+                    btn.setAttribute('title', 'Go Back to previous page');
+                    btn.setAttribute('aria-label', 'Go Back to previous page');
+                    btn.innerHTML = '<i class="bi bi-arrow-left"></i>';
+                    
+                    titleEl.parentNode.insertBefore(btn, titleEl);
+                    titleEl.dataset.hasBackBtn = 'true';
+                }
+                break;
+            }
+        }
+    }
+});
+
+// Keyboard shortcut: Alt + ArrowLeft
+document.addEventListener('keydown', function(e) {
+    if (e.altKey && e.key === 'ArrowLeft') {
+        var activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+        if (activeTag !== 'input' && activeTag !== 'textarea') {
+            e.preventDefault();
+            window.handleGlobalBackNavigation();
+        }
+    }
+});
+</script>
 </body>
 </html>

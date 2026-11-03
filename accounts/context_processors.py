@@ -30,15 +30,13 @@ def company_settings_context(request):
 
     company_obj = _load_company(tenant=tenant)
 
-    # Resolve current language: check session, cookie, or company setting
+    # Resolve current language: check session first, then company setting, then cookies
     lang = (
         (request.session.get('django_language') if hasattr(request, 'session') else None)
+        or (company_obj.language if company_obj and getattr(company_obj, 'language', None) else None)
         or request.COOKIES.get('django_language')
         or request.COOKIES.get('jd_language')
     )
-
-    if not lang and company_obj and hasattr(company_obj, 'language') and company_obj.language:
-        lang = company_obj.language
 
     if lang not in ('en', 'hi'):
         lang = 'en'

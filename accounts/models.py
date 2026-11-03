@@ -235,6 +235,9 @@ class Tenant(models.Model):
         (TYPE_RETAIL, 'Retail Jewellery Store'),
         (TYPE_WHOLESALE, 'Wholesaler / Supplier'),
         (TYPE_BOTH, 'Retail & Wholesale (Hybrid)'),
+        ('retail', 'Retail Jewellery Store'),
+        ('wholesale', 'Wholesaler / Supplier'),
+        ('both', 'Retail & Wholesale (Hybrid)'),
     ]
 
     business_type = models.CharField(

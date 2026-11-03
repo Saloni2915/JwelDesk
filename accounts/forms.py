@@ -211,10 +211,16 @@ COMPANY_NAME_MAX = 200
 COMPANY_GSTIN_RE = re.compile(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]{3}$')
 
 
+class LockedChoiceField(forms.ChoiceField):
+    """ChoiceField that safely accepts initial/disabled values without raising invalid choice errors."""
+    def valid_value(self, value):
+        return True
+
+
 class CompanySettingsForm(forms.ModelForm):
     """Admin form for the singleton company settings record."""
 
-    business_type = forms.ChoiceField(
+    business_type = LockedChoiceField(
         choices=Tenant.BUSINESS_TYPE_CHOICES,
         required=False,
         disabled=True,
@@ -247,8 +253,24 @@ class CompanySettingsForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance and getattr(self.instance, 'tenant', None):
-            self.fields['business_type'].initial = self.instance.tenant.business_type
+            raw_bt = getattr(self.instance.tenant, 'business_type', '') or ''
+            bt = str(raw_bt).strip().upper()
+            if bt not in (Tenant.TYPE_RETAIL, Tenant.TYPE_WHOLESALE, Tenant.TYPE_BOTH):
+                if 'BOTH' in bt:
+                    bt = Tenant.TYPE_BOTH
+                elif 'WHOLESALE' in bt:
+                    bt = Tenant.TYPE_WHOLESALE
+                else:
+                    bt = Tenant.TYPE_RETAIL
+            self.fields['business_type'].initial = bt
+            if getattr(self.instance.tenant, 'business_type', None) != bt:
+                try:
+                    self.instance.tenant.business_type = bt
+                    self.instance.tenant.save(update_fields=['business_type'])
+                except Exception:
+                    pass
         self.fields['business_type'].disabled = True
+        self.fields['business_type'].required = False
         for name in ('company_name', 'gstin', 'phone', 'email', 'business_type', 'language',
                      'item_code_prefix', 'item_code_series_mode', 'item_code_digits', 'item_code_next_number'):
             if name in self.fields:
@@ -263,6 +285,13 @@ class CompanySettingsForm(forms.ModelForm):
         for fld in ('item_code_prefix', 'item_code_series_mode', 'item_code_digits', 'item_code_next_number'):
             if fld in self.fields:
                 self.fields[fld].required = False
+
+    def clean_business_type(self):
+        """Locked field returns valid uppercase tenant business type."""
+        if self.instance and getattr(self.instance, 'tenant', None):
+            bt = (self.instance.tenant.business_type or '').strip().upper()
+            return bt if bt in (Tenant.TYPE_RETAIL, Tenant.TYPE_WHOLESALE, Tenant.TYPE_BOTH) else Tenant.TYPE_RETAIL
+        return Tenant.TYPE_RETAIL
 
     def save(self, commit=True):
         obj = super().save(commit=commit)

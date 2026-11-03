@@ -272,8 +272,15 @@ def company_settings(request):
                 instance = form.save(commit=False)
                 instance.tenant = tenant
                 instance.save()
-                if hasattr(instance, 'language') and instance.language:
-                    request.session['django_language'] = instance.language
+                lang = getattr(instance, 'language', 'en') or 'en'
+                if lang not in ('en', 'hi'):
+                    lang = 'en'
+                request.session['django_language'] = lang
+                try:
+                    from django.utils import translation
+                    translation.activate(lang)
+                except Exception:
+                    pass
 
                 if logo_cleared:
                     clear_logo_blob()
@@ -295,16 +302,23 @@ def company_settings(request):
                 try:
                     from django.core.cache import cache
                     cache.delete(f'company_settings:tenant:{tenant.id}')
+                    cache.delete('company_settings:singleton')
                 except Exception:
                     pass
-                messages.success(request, 'Company settings and showroom logo updated successfully!')
-                return redirect('accounts:company_settings')
+                if lang == 'hi':
+                    messages.success(request, 'कंपनी सेटिंग्स और भाषा (हिंदी) सफलतापूर्वक अपडेट हो गई है!')
+                else:
+                    messages.success(request, 'Company settings and showroom logo updated successfully!')
+                res = redirect('accounts:company_settings')
+                res.set_cookie('django_language', lang, max_age=365*24*60*60, path='/')
+                res.set_cookie('jd_language', lang, max_age=365*24*60*60, path='/')
+                return res
             except Exception as e:
                 import logging
                 logging.getLogger(__name__).error("Failed to save company settings: %s", e)
                 # Resilient fallback: update text fields and record filename directly
                 try:
-                    for field in ('company_name', 'gstin', 'phone', 'email', 'address', 'invoice_footer_note'):
+                    for field in ('company_name', 'gstin', 'phone', 'email', 'address', 'language', 'invoice_footer_note'):
                         setattr(settings_obj, field, form.cleaned_data.get(field, getattr(settings_obj, field)))
                     if uploaded_logo and logo_bytes:
                         final_filename = f"company/{uploaded_logo.name}"
@@ -319,13 +333,26 @@ def company_settings(request):
                         settings_obj.logo = None
                         clear_logo_blob()
                     settings_obj.save()
+                    lang = getattr(settings_obj, 'language', 'en') or 'en'
+                    if lang not in ('en', 'hi'):
+                        lang = 'en'
+                    request.session['django_language'] = lang
+                    try:
+                        from django.utils import translation
+                        translation.activate(lang)
+                    except Exception:
+                        pass
                     try:
                         from django.core.cache import cache
+                        cache.delete(f'company_settings:tenant:{tenant.id}')
                         cache.delete('company_settings:singleton')
                     except Exception:
                         pass
                     messages.success(request, 'Company settings and showroom logo updated successfully!')
-                    return redirect('accounts:company_settings')
+                    res = redirect('accounts:company_settings')
+                    res.set_cookie('django_language', lang, max_age=365*24*60*60, path='/')
+                    res.set_cookie('jd_language', lang, max_age=365*24*60*60, path='/')
+                    return res
                 except Exception as fallback_err:
                     logging.getLogger(__name__).error("Fallback save also failed: %s", fallback_err)
                     messages.error(request, f'Unable to save company settings: {e}')
@@ -493,15 +520,6 @@ SIDEBAR_MENU_OPTIONS = (
         'desc_hi': 'B2B व्यापारी पोर्टल, खुदरा विक्रेता पार्टियां, थोक ऑर्डर बुकिंग, प्रेषण और लेज़र।',
         'sub_items': [
             {
-                'key': 'sub_wholesale_dashboard',
-                'business_type': 'wholesale',
-                'name': 'Wholesale Dashboard',
-                'name_hi': 'थोक डैशबोर्ड',
-                'icon': 'bi-speedometer2',
-                'desc': 'Executive wholesale operations telemetry and order pipelines',
-                'desc_hi': 'थोक व्यापार संचालन टेलीमेट्री और ऑर्डर पाइपलाइन',
-            },
-            {
                 'key': 'sub_wholesale_parties',
                 'business_type': 'wholesale',
                 'name': 'Retailer Parties',
@@ -586,14 +604,6 @@ SIDEBAR_MENU_OPTIONS = (
         'desc': 'Procurement from suppliers, purchase bills, payments, returns and stock inward.',
         'desc_hi': 'सप्लायर से आभूषण व बुलियन खरीद, खरीद बिल, भुगतान, रिटर्न और स्टॉक इन्वर्ड।',
         'sub_items': [
-            {
-                'key': 'sub_purchases_dashboard',
-                'name': 'Purchase Dashboard',
-                'name_hi': 'खरीद डैशबोर्ड',
-                'icon': 'bi-speedometer2',
-                'desc': 'Purchase telemetry, supplier payables, and procurement metrics',
-                'desc_hi': 'खरीद विश्लेषण, सप्लायर बकाया और खरीद आँकड़े',
-            },
             {
                 'key': 'sub_purchases_create',
                 'name': 'New Purchase',
@@ -904,15 +914,6 @@ SIDEBAR_MENU_OPTIONS = (
         'desc_hi': 'कारीगर जॉब कार्ड, सोना जारी/प्राप्ति वजन, छीलन रिकवरी और मजदूरी भुगतान।',
         'sub_items': [
             {
-                'key': 'sub_karigar_dashboard',
-                'business_type': 'all',
-                'name': 'Workshop Dashboard',
-                'name_hi': 'वर्कशॉप डैशबोर्ड',
-                'icon': 'bi-speedometer2',
-                'desc': 'Manufacturing telemetry, pending pieces, and artisan capacity',
-                'desc_hi': 'निर्माण टेलीमेट्री, लंबित आभूषण और कारीगर कार्यक्षमता',
-            },
-            {
                 'key': 'sub_karigar_list',
                 'business_type': 'all',
                 'name': 'Artisans Directory',
@@ -961,15 +962,6 @@ SIDEBAR_MENU_OPTIONS = (
         'desc': 'Pledged jewellery loans, collateral tracking, interest calculation, and pledge release.',
         'desc_hi': 'गिरवी सोने के ऋण, बंधक आभूषण ट्रैकिंग, ब्याज गणना और गिरवी छुड़ाना।',
         'sub_items': [
-            {
-                'key': 'sub_girvi_dashboard',
-                'business_type': 'all',
-                'name': 'Girvi Dashboard',
-                'name_hi': 'गिरवी डैशबोर्ड',
-                'icon': 'bi-speedometer2',
-                'desc': 'Overview of active girvi loans, interest due, and collateral',
-                'desc_hi': 'सक्रिय गिरवी ऋणों, देय ब्याज और बंधक आभूषणों का विवरण',
-            },
             {
                 'key': 'sub_girvi_create',
                 'business_type': 'all',
