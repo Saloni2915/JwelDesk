@@ -214,6 +214,135 @@ def system_migrate_view(request):
             'message': f'Password set successfully for {len(updated_users)} user(s)',
         })
 
+    if action == 'setup_production_accounts':
+        from django.contrib.auth import get_user_model
+        from django.db.models import Q
+        from accounts.models import Tenant, CompanySettings
+        from team.models import Branch, Employee
+
+        results = {}
+
+        # 1. Reconcile pre-existing columns with migrations table if PostgreSQL
+        if connection.vendor == 'postgresql':
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO django_migrations (app, name, applied)
+                    SELECT 'accounts', '0009_companysettings_item_code_digits_and_more', now()
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM django_migrations WHERE app = 'accounts' AND name = '0009_companysettings_item_code_digits_and_more'
+                    );
+                    INSERT INTO django_migrations (app, name, applied)
+                    SELECT 'accounts', '0010_alter_companysettings_item_code_digits_and_more', now()
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM django_migrations WHERE app = 'accounts' AND name = '0010_alter_companysettings_item_code_digits_and_more'
+                    );
+                    INSERT INTO django_migrations (app, name, applied)
+                    SELECT 'inventory', '0015_alter_jewelleryitem_category_and_more', now()
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM django_migrations WHERE app = 'inventory' AND name = '0015_alter_jewelleryitem_category_and_more'
+                    );
+                    INSERT INTO django_migrations (app, name, applied)
+                    SELECT 'inventory', '0016_alter_jewelleryitem_category', now()
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM django_migrations WHERE app = 'inventory' AND name = '0016_alter_jewelleryitem_category'
+                    );
+                    INSERT INTO django_migrations (app, name, applied)
+                    SELECT 'inventory', '0017_alter_jewelleryitem_category', now()
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM django_migrations WHERE app = 'inventory' AND name = '0017_alter_jewelleryitem_category'
+                    );
+                """)
+                results['schema_reconciliation'] = "Migrations 0009-0010 and 0015-0017 recorded successfully"
+
+        # Run any remaining unapplied migrations (like purchases)
+        mig_out = io.StringIO()
+        try:
+            call_command('migrate', interactive=False, stdout=mig_out)
+            results['migrate_output'] = mig_out.getvalue()
+        except Exception as m_err:
+            results['migrate_error'] = str(m_err)
+
+        User = get_user_model()
+
+        # 2. Setup support@jwel.com (Super Admin)
+        u_support = User.objects.filter(Q(username__iexact='support@jwel.com') | Q(email__iexact='support@jwel.com')).first()
+        if not u_support:
+            u_support = User(username='support@jwel.com', email='support@jwel.com')
+        u_support.username = 'support@jwel.com'
+        u_support.email = 'support@jwel.com'
+        u_support.first_name = 'Support'
+        u_support.last_name = 'Jwel'
+        u_support.is_superuser = True
+        u_support.is_staff = True
+        u_support.is_active = True
+        u_support.set_password('Support@Jwel2026!')
+        u_support.save()
+        results['support_account'] = {
+            'id': u_support.id,
+            'username': u_support.username,
+            'email': u_support.email,
+            'is_superuser': u_support.is_superuser,
+            'is_staff': u_support.is_staff,
+        }
+
+        # 3. Setup admin@jwel.com (Showroom Owner / Basic JwelDesk)
+        u_admin = User.objects.filter(Q(username__iexact='admin@jwel.com') | Q(email__iexact='admin@jwel.com')).first()
+        if not u_admin:
+            u_admin = User(username='admin@jwel.com', email='admin@jwel.com')
+        u_admin.username = 'admin@jwel.com'
+        u_admin.email = 'admin@jwel.com'
+        u_admin.first_name = 'Admin'
+        u_admin.last_name = 'Jwel'
+        u_admin.is_superuser = False
+        u_admin.is_staff = False
+        u_admin.is_active = True
+        u_admin.set_password('Admin@Jwel2026!')
+        u_admin.save()
+
+        # 4. Bind admin@jwel.com to Showroom
+        tenant = Tenant.objects.filter(name__icontains='JwelDesk').first()
+        if not tenant:
+            tenant = Tenant.objects.filter(is_active=True).first()
+        if not tenant:
+            tenant = Tenant.objects.create(name='JwelDesk', owner=u_admin, is_active=True)
+        else:
+            tenant.owner = u_admin
+            tenant.save()
+
+        # Ensure Branch
+        branch = Branch.objects.filter(tenant=tenant).first()
+        if not branch:
+            branch = Branch.objects.create(
+                tenant=tenant,
+                name='Head Office',
+                code='HO',
+                is_default=True,
+                is_active=True
+            )
+
+        # Ensure CompanySettings
+        CompanySettings.load(tenant=tenant)
+
+        # Ensure Tenant Administrator Employee profile with full permissions
+        emp = Employee.ensure_tenant_admin(tenant, u_admin)
+
+        results['admin_account'] = {
+            'id': u_admin.id,
+            'username': u_admin.username,
+            'email': u_admin.email,
+            'is_superuser': u_admin.is_superuser,
+            'is_staff': u_admin.is_staff,
+            'tenant_id': tenant.id,
+            'tenant_name': tenant.name,
+            'employee_role': emp.role.name if emp and emp.role else 'Tenant Administrator',
+        }
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Production accounts configured successfully with exact permissions',
+            'results': results,
+        })
+
     if action in ('backfill_branch_data', 'backfill'):
         out = io.StringIO()
         try:
