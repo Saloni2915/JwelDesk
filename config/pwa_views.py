@@ -299,14 +299,16 @@ def system_migrate_view(request):
         u_admin.set_password('Admin@Jwel2026!')
         u_admin.save()
 
-        # 4. Bind admin@jwel.com to Showroom
+        # 4. Bind admin@jwel.com to Showroom with FULL access across all modules (Wholesale & Retail)
         tenant = Tenant.objects.filter(name__icontains='JwelDesk').first()
         if not tenant:
             tenant = Tenant.objects.filter(is_active=True).first()
         if not tenant:
-            tenant = Tenant.objects.create(name='JwelDesk', owner=u_admin, is_active=True)
+            tenant = Tenant.objects.create(name='JwelDesk', owner=u_admin, business_type=Tenant.TYPE_BOTH, is_active=True)
         else:
             tenant.owner = u_admin
+            tenant.business_type = Tenant.TYPE_BOTH
+            tenant.is_active = True
             tenant.save()
 
         # Ensure Branch
@@ -320,11 +322,21 @@ def system_migrate_view(request):
                 is_active=True
             )
 
-        # Ensure CompanySettings
-        CompanySettings.load(tenant=tenant)
+        # Ensure CompanySettings with all menus unhidden
+        cs = CompanySettings.load(tenant=tenant)
+        if cs.hidden_menu_items:
+            cs.hidden_menu_items = ''
+            cs.save()
 
-        # Ensure Tenant Administrator Employee profile with full permissions
+        # Ensure Tenant Administrator Employee profile with full permissions across all modules
         emp = Employee.ensure_tenant_admin(tenant, u_admin)
+        from team.models import EmployeePermission
+        for m in EmployeePermission.MODULES:
+            EmployeePermission.objects.update_or_create(
+                employee=emp,
+                module=m,
+                defaults=dict(can_view=True, can_add=True, can_edit=True, can_delete=True, can_export=True)
+            )
 
         results['admin_account'] = {
             'id': u_admin.id,
@@ -334,6 +346,9 @@ def system_migrate_view(request):
             'is_staff': u_admin.is_staff,
             'tenant_id': tenant.id,
             'tenant_name': tenant.name,
+            'tenant_business_type': tenant.business_type,
+            'is_retail': tenant.is_retail,
+            'is_wholesale': tenant.is_wholesale,
             'employee_role': emp.role.name if emp and emp.role else 'Tenant Administrator',
         }
 

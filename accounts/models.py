@@ -257,13 +257,17 @@ class Tenant(models.Model):
 
     @property
     def is_retail(self):
-        return self.business_type in (self.TYPE_RETAIL, self.TYPE_BOTH)
+        bt = (self.business_type or '').upper()
+        return bt in (self.TYPE_RETAIL, self.TYPE_BOTH, 'BOTH', 'RETAIL')
 
     @property
     def is_wholesale(self):
-        return self.business_type in (self.TYPE_WHOLESALE, self.TYPE_BOTH)
+        bt = (self.business_type or '').upper()
+        return bt in (self.TYPE_WHOLESALE, self.TYPE_BOTH, 'BOTH', 'WHOLESALE')
 
     def save(self, *args, **kwargs):
+        if self.business_type:
+            self.business_type = str(self.business_type).strip().upper()
         if not self.slug:
             from django.utils.text import slugify
             base_slug = slugify(self.name) or 'shop'
