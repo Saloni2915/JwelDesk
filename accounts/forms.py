@@ -220,16 +220,13 @@ class LockedChoiceField(forms.ChoiceField):
 class CompanySettingsForm(forms.ModelForm):
     """Admin form for the singleton company settings record."""
 
-    business_type = LockedChoiceField(
+    business_type = forms.ChoiceField(
         choices=Tenant.BUSINESS_TYPE_CHOICES,
         required=False,
-        disabled=True,
         label="Business Model / Operations Type",
         widget=forms.Select(attrs={
-            'class': 'form-control',
-            'disabled': 'disabled',
-            'style': 'cursor: not-allowed; opacity: 0.85;',
-            'title': 'Business Operations Model is fixed and uneditable at showroom level.'
+            'class': 'form-select',
+            'title': 'Select your business operations model: Retail, Wholesale, or Hybrid.'
         })
     )
 
@@ -269,7 +266,6 @@ class CompanySettingsForm(forms.ModelForm):
                     self.instance.tenant.save(update_fields=['business_type'])
                 except Exception:
                     pass
-        self.fields['business_type'].disabled = True
         self.fields['business_type'].required = False
         for name in ('company_name', 'gstin', 'phone', 'email', 'business_type', 'language',
                      'item_code_prefix', 'item_code_series_mode', 'item_code_digits', 'item_code_next_number'):
@@ -287,11 +283,17 @@ class CompanySettingsForm(forms.ModelForm):
                 self.fields[fld].required = False
 
     def clean_business_type(self):
-        """Locked field returns valid uppercase tenant business type."""
+        """Return valid uppercase tenant business type and sync directly to tenant."""
+        bt = self.cleaned_data.get('business_type')
+        if not bt and self.instance and getattr(self.instance, 'tenant', None):
+            bt = self.instance.tenant.business_type
+        bt = str(bt or Tenant.TYPE_BOTH).strip().upper()
+        if bt not in (Tenant.TYPE_RETAIL, Tenant.TYPE_WHOLESALE, Tenant.TYPE_BOTH):
+            bt = Tenant.TYPE_BOTH
         if self.instance and getattr(self.instance, 'tenant', None):
-            bt = (self.instance.tenant.business_type or '').strip().upper()
-            return bt if bt in (Tenant.TYPE_RETAIL, Tenant.TYPE_WHOLESALE, Tenant.TYPE_BOTH) else Tenant.TYPE_RETAIL
-        return Tenant.TYPE_RETAIL
+            self.instance.tenant.business_type = bt
+            self.instance.tenant.save(update_fields=['business_type'])
+        return bt
 
     def save(self, commit=True):
         obj = super().save(commit=commit)

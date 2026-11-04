@@ -85,17 +85,17 @@
                                 {% endfor %}
                             </div>
 
-                            <!-- Business Type (Uneditable at Showroom Level) -->
+                            <!-- Business Operations Model -->
                             <div class="col-md-6">
                                 <label class="jd-label fw-semibold d-flex align-items-center justify-content-between" for="{{ form.business_type.id_for_label }}">
                                     <span>Business Operations Model</span>
-                                    <span class="badge bg-secondary bg-opacity-25 text-body border border-secondary border-opacity-25 small" style="font-size: 0.72rem;">
-                                        <i class="bi bi-lock-fill me-1 text-warning"></i>Locked
+                                    <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-35 small" style="font-size: 0.72rem;">
+                                        <i class="bi bi-buildings me-1"></i>Retail &amp; Wholesale
                                     </span>
                                 </label>
                                 {{ form.business_type }}
                                 <div class="form-text" style="color: var(--jd-muted, #9E9171); font-size: 0.78rem;">
-                                    <i class="bi bi-shield-lock me-1"></i>Core business model is locked to your account setup. Contact platform support to change.
+                                    <i class="bi bi-info-circle me-1"></i>Select <strong>Retail &amp; Wholesale (Hybrid)</strong> to access all Retail POS, Wholesale orders, catalogue, and B2B ledger.
                                 </div>
                                 {% for e in form.business_type.errors %}
                                     <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>

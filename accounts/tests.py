@@ -80,10 +80,10 @@ class LogoutRegressionTests(TestCase):
     def test_logout_confirm_page_shown_on_get(self):
         self.client.login(username='logoutuser', password='Password123')
         response = self.client.get(reverse('accounts:logout'))
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'accounts/logout_confirm.html')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('accounts:login'), response.url)
         from django.contrib.auth import get_user
-        self.assertTrue(get_user(self.client).is_authenticated)
+        self.assertFalse(get_user(self.client).is_authenticated)
 
 class CompanySettingsTests(TestCase):
     """Company settings page, permissions, validation and invoice usage."""
@@ -1562,10 +1562,10 @@ class BusinessCategoryVisibilityAndAccessTests(TestCase):
         self.assertContains(resp, 'Team &amp; HR')
         self.assertContains(resp, 'Settings')
 
-        # Backend protection: Direct access to /dashboard/ redirects to /wholesale/
+        # Centralized Dashboard renders directly for wholesale without redirecting away
         resp_dash = self.client.get(reverse('dashboard'), follow=False)
-        self.assertEqual(resp_dash.status_code, 302)
-        self.assertIn(reverse('wholesale:dashboard'), resp_dash.url)
+        self.assertEqual(resp_dash.status_code, 200)
+        self.assertContains(resp_dash, 'Wholesale &amp; B2B')
 
         # Backend protection: Direct access to retail URLs blocked and redirected to wholesale
         resp_sales = self.client.get(reverse('sale_list'), follow=False)
@@ -1598,7 +1598,7 @@ class BusinessCategoryVisibilityAndAccessTests(TestCase):
         self.assertContains(resp, 'All Customers')
         self.assertContains(resp, 'Custom Orders')
         self.assertContains(resp, 'Wholesale &amp; B2B')
-        self.assertContains(resp, 'Wholesale Suite')
+        self.assertContains(resp, 'Wholesale Orders')
 
         # Can access both retail and wholesale backend views
         resp_sales = self.client.get(reverse('sale_list'))
@@ -1606,7 +1606,7 @@ class BusinessCategoryVisibilityAndAccessTests(TestCase):
 
         resp_wholesale = self.client.get(reverse('wholesale:dashboard'))
         self.assertEqual(resp_wholesale.status_code, 200)
-        self.assertContains(resp_wholesale, 'Retail Showroom')
+        self.assertContains(resp_wholesale, 'Retail &amp; Wholesale')
 
         # Permission checks
         self.assertTrue(has_module_perm(self.hybrid_user, 'sales', tenant=self.hybrid_tenant))

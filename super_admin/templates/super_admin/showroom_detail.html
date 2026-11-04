@@ -122,6 +122,22 @@
 
                 <div class="col-4 sa-label">Address:</div>
                 <div class="col-8" style="color: var(--sa-text);">{{ tenant.company_settings.address|default:"Not configured" }}</div>
+
+                <div class="col-4 sa-label pt-1">Operations Model:</div>
+                <div class="col-8">
+                    <form method="POST" class="d-flex align-items-center gap-2">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_business_type">
+                        <select name="business_type" class="form-select form-select-sm" style="max-width: 220px; background: var(--sa-surface); color: var(--sa-text); border-color: var(--sa-border);" onchange="this.form.submit()">
+                            <option value="RETAIL" {% if tenant.business_type == 'RETAIL' %}selected{% endif %}>Retail Showroom</option>
+                            <option value="WHOLESALE" {% if tenant.business_type == 'WHOLESALE' %}selected{% endif %}>Wholesale &amp; B2B</option>
+                            <option value="BOTH" {% if tenant.business_type == 'BOTH' %}selected{% endif %}>Retail &amp; Wholesale (Hybrid)</option>
+                        </select>
+                        <span class="badge {% if tenant.is_wholesale and tenant.is_retail %}bg-warning text-dark{% elif tenant.is_wholesale %}bg-info text-dark{% else %}bg-success{% endif %} small">
+                            {{ tenant.get_business_type_display }}
+                        </span>
+                    </form>
+                </div>
             </div>
         </div>
     </div>

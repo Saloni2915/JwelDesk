@@ -379,6 +379,14 @@ def showroom_detail_view(request, tenant_id):
         pk=tenant_id
     )
 
+    if request.method == 'POST' and request.POST.get('action') == 'update_business_type':
+        new_bt = request.POST.get('business_type', '').strip().upper()
+        if new_bt in (Tenant.TYPE_RETAIL, Tenant.TYPE_WHOLESALE, Tenant.TYPE_BOTH):
+            tenant.business_type = new_bt
+            tenant.save(update_fields=['business_type', 'updated_at'])
+            messages.success(request, f"Showroom operations model updated to {tenant.get_business_type_display()}.")
+            return redirect('super_admin:showroom_detail', tenant_id=tenant.id)
+
     employees = (
         tenant.employees
         .select_related('role', 'user')

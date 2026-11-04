@@ -71,16 +71,30 @@ def check_wholesale_access(request, action='view'):
     if not request.user.is_authenticated:
         return False, None
     tenant = getattr(request, 'tenant', None)
+
+    # 1. Superuser fallback: If superuser has no tenant bound, fallback to first active tenant
+    if request.user.is_superuser:
+        if not tenant:
+            from accounts.models import Tenant
+            tenant = Tenant.objects.filter(is_active=True).first()
+            if tenant:
+                request.tenant = tenant
+        if tenant:
+            return True, tenant
+        return False, None
+
     if not tenant:
         return False, None
-    if request.user.is_superuser:
-        return True, tenant
+
+    # 2. Check if the tenant's business model supports wholesale
     if not getattr(tenant, 'is_wholesale', True):
         return False, tenant
-    if tenant.owner_id == request.user.id and tenant.is_active:
+
+    # 3. Showroom owner or tenant administrator has full access
+    if (tenant.owner_id == request.user.id or is_admin_user(request.user, tenant=tenant)) and tenant.is_active:
         return True, tenant
-    if is_admin_user(request.user, tenant=tenant):
-        return True, tenant
+
+    # 4. For regular staff: check granular employee module permissions
     if has_module_perm(request.user, 'wholesale', action=action, tenant=tenant):
         return True, tenant
     return False, tenant
