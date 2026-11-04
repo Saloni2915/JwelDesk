@@ -257,10 +257,11 @@ class CustomerImpersonationSecurityTests(TestCase):
         response_get = self.client.get(url)
         self.assertEqual(response_get.status_code, 405)
 
-        # POST without reason is rejected
+        # POST without explicit reason falls back to auto-administrative reason
         response_no_reason = self.client.post(url, {'reason': ''})
         self.assertEqual(response_no_reason.status_code, 302)
-        self.assertEqual(PlatformAuditLog.objects.count(), 0)
+        self.assertEqual(PlatformAuditLog.objects.count(), 1)
+        self.assertIn("Administrative management & support", PlatformAuditLog.objects.first().reason)
 
     def test_cannot_impersonate_superuser_or_staff(self):
         """Impersonating another superuser or staff member must be strictly blocked (403)."""

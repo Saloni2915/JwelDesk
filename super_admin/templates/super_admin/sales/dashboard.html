@@ -346,7 +346,7 @@
                             <small class="text-warning fw-semibold d-block" style="font-size: 0.75rem;">
                                 <i class="bi bi-clock me-1"></i>{{ f.scheduled_at|date:"d M, H:i" }}
                             </small>
-                            <small class="text-muted" style="font-size: 0.7rem;">{{ f.assigned_to.username|default:"Unassigned" }}</small>
+                            <small class="text-muted" style="font-size: 0.7rem;">{{ f.assigned_to_display }}</small>
                         </div>
                     </div>
                     {% empty %}

@@ -184,7 +184,7 @@
                         <div class="fw-semibold small" style="color: var(--sa-text);">{{ d.requested_datetime|date:"d M Y, h:i A" }}</div>
                         <div class="small text-muted">
                             <span class="badge bg-dark border border-secondary text-muted">{{ d.get_meeting_mode_display }}</span>
-                            {% if d.assigned_staff %} &bull; {{ d.assigned_staff.username }}{% endif %}
+                            {% if d.assigned_staff %} &bull; {{ d.assigned_staff_display }}{% endif %}
                         </div>
                         {% else %}
                         <span class="text-muted small">Not scheduled</span>

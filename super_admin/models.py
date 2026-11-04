@@ -887,6 +887,31 @@ class PlatformDemoLead(models.Model):
     def is_converted(self):
         return self.converted_tenant_id is not None or self.status in (self.STATUS_CONVERTED, self.STATUS_COMPLETED)
 
+    @property
+    def assigned_staff_display(self):
+        """Safe string display for assigned staff, avoiding template VariableDoesNotExist on None."""
+        if self.assigned_staff_id and self.assigned_staff:
+            return (
+                self.assigned_staff.get_full_name()
+                or self.assigned_staff.first_name
+                or self.assigned_staff.username
+                or "Staff"
+            )
+        return "Unassigned"
+
+    @property
+    def assigned_staff_initial(self):
+        """Single uppercase initial for staff avatar badge."""
+        if self.assigned_staff_id and self.assigned_staff:
+            name = (
+                self.assigned_staff.first_name
+                or self.assigned_staff.get_full_name()
+                or self.assigned_staff.username
+                or "S"
+            )
+            return name[:1].upper() if name else "S"
+        return "U"
+
 
 class PlatformLeadNote(models.Model):
     """Timestamped follow-up note and interaction log for a demo lead."""
@@ -914,9 +939,19 @@ class PlatformLeadNote(models.Model):
         verbose_name = 'Platform Lead Note'
         verbose_name_plural = 'Platform Lead Notes'
 
+    @property
+    def author_display(self):
+        if self.author_id and self.author:
+            return (
+                self.author.get_full_name()
+                or self.author.first_name
+                or self.author.username
+                or "Staff"
+            )
+        return "Staff"
+
     def __str__(self):
-        author_name = self.author.username if self.author else 'System'
-        return f"Note on {self.lead.lead_name} by {author_name} at {self.created_at:%Y-%m-%d %H:%M}"
+        return f"Note on {self.lead.lead_name} by {self.author_display} at {self.created_at:%Y-%m-%d %H:%M}"
 
 
 # ============================================================================
@@ -1611,6 +1646,17 @@ class PlatformLeadStageHistory(models.Model):
         verbose_name = 'Lead Stage Transition'
         verbose_name_plural = 'Lead Stage Transitions'
 
+    @property
+    def changed_by_display(self):
+        if self.changed_by_id and self.changed_by:
+            return (
+                self.changed_by.get_full_name()
+                or self.changed_by.first_name
+                or self.changed_by.username
+                or "Staff"
+            )
+        return "System"
+
     def __str__(self):
         return f"{self.lead.lead_name}: {self.from_stage} -> {self.to_stage}"
 
@@ -1652,6 +1698,17 @@ class PlatformLeadNegotiation(models.Model):
         ordering = ['-created_at']
         verbose_name = 'Lead Negotiation & Requirements'
         verbose_name_plural = 'Lead Negotiations & Requirements'
+
+    @property
+    def conducted_by_display(self):
+        if self.conducted_by_id and self.conducted_by:
+            return (
+                self.conducted_by.get_full_name()
+                or self.conducted_by.first_name
+                or self.conducted_by.username
+                or "Staff"
+            )
+        return "Staff"
 
     def __str__(self):
         return f"{self.lead.lead_name} Negotiation - {self.target_plan} (Budget: Rs {self.budget})"
@@ -1714,6 +1771,28 @@ class PlatformLeadActivity(models.Model):
         ordering = ['-scheduled_at', '-created_at']
         verbose_name = 'Lead Follow-up Activity'
         verbose_name_plural = 'Lead Follow-up Activities'
+
+    @property
+    def assigned_to_display(self):
+        if self.assigned_to_id and self.assigned_to:
+            return (
+                self.assigned_to.get_full_name()
+                or self.assigned_to.first_name
+                or self.assigned_to.username
+                or "Staff"
+            )
+        return "Unassigned"
+
+    @property
+    def created_by_display(self):
+        if self.created_by_id and self.created_by:
+            return (
+                self.created_by.get_full_name()
+                or self.created_by.first_name
+                or self.created_by.username
+                or "Staff"
+            )
+        return "System"
 
     def __str__(self):
         return f"[{self.get_activity_type_display()}] {self.title} ({self.lead.lead_name})"

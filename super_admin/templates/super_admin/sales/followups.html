@@ -183,7 +183,7 @@
                             {% endif %}
 
                             <div class="small text-muted mt-1">
-                                Assigned: <span class="fw-semibold" style="color: var(--sa-text);">{% if act.assigned_to %}{{ act.assigned_to.first_name|default:act.assigned_to.username }}{% else %}Unassigned{% endif %}</span>
+                                Assigned: <span class="fw-semibold" style="color: var(--sa-text);">{{ act.assigned_to_display }}</span>
                             </div>
                         </div>
 

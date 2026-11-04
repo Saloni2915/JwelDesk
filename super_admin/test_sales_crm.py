@@ -241,3 +241,113 @@ class SalesCRMModuleTests(TestCase):
         self.assertIn('source_data', resp.context)
         self.assertIn('exec_data', resp.context)
 
+    def test_safe_display_properties_with_null_and_user(self):
+        """Verify model display properties return safe strings even when foreign keys are None."""
+        from super_admin.models import PlatformLeadNote
+        # Null FK
+        unassigned_lead = PlatformDemoLead.objects.create(
+            lead_name="Safest Jewellers",
+            contact_name="Aarav",
+            phone="9988776655",
+            assigned_staff=None
+        )
+        self.assertEqual(unassigned_lead.assigned_staff_display, "Unassigned")
+        self.assertEqual(unassigned_lead.assigned_staff_initial, "U")
+
+        act = PlatformLeadActivity.objects.create(
+            lead=unassigned_lead,
+            title="Follow-up call",
+            assigned_to=None,
+            created_by=None
+        )
+        self.assertEqual(act.assigned_to_display, "Unassigned")
+        self.assertEqual(act.created_by_display, "System")
+
+        neg = PlatformLeadNegotiation.objects.create(
+            lead=unassigned_lead,
+            target_plan=TenantSubscription.PLAN_PRO,
+            conducted_by=None,
+            discussion_summary="Initial talk"
+        )
+        self.assertEqual(neg.conducted_by_display, "Staff")
+
+        hist = PlatformLeadStageHistory.objects.create(
+            lead=unassigned_lead,
+            from_stage="new",
+            to_stage="contacted",
+            changed_by=None
+        )
+        self.assertEqual(hist.changed_by_display, "System")
+
+        note = PlatformLeadNote.objects.create(
+            lead=unassigned_lead,
+            note="Test note",
+            author=None
+        )
+        self.assertEqual(note.author_display, "Staff")
+
+        # Assigned user with full name / username
+        user_with_name = User.objects.create_user(
+            username="raghav_sales",
+            first_name="Raghav",
+            last_name="Sharma",
+            password="Password123!"
+        )
+        unassigned_lead.assigned_staff = user_with_name
+        self.assertEqual(unassigned_lead.assigned_staff_display, "Raghav Sharma")
+        self.assertEqual(unassigned_lead.assigned_staff_initial, "R")
+
+    def test_unassigned_lead_and_entities_template_rendering(self):
+        """Lead detail and stage views render with HTTP 200 without template exceptions for unassigned leads."""
+        from super_admin.models import PlatformLeadNote
+        lead = PlatformDemoLead.objects.create(
+            lead_name="Empty Lead Jewellery",
+            contact_name="Sita",
+            phone="9871112233",
+            stage=PlatformDemoLead.STAGE_NEW,
+            assigned_staff=None
+        )
+        PlatformLeadActivity.objects.create(
+            lead=lead,
+            title="Introductory Call",
+            assigned_to=None,
+            created_by=None
+        )
+        PlatformLeadNegotiation.objects.create(
+            lead=lead,
+            target_plan=TenantSubscription.PLAN_PRO,
+            conducted_by=None,
+            discussion_summary="Discussed basic tier"
+        )
+        PlatformLeadStageHistory.objects.create(
+            lead=lead,
+            from_stage="new",
+            to_stage="contacted",
+            changed_by=None
+        )
+        PlatformLeadNote.objects.create(
+            lead=lead,
+            note="Customer prefers WhatsApp",
+            author=None
+        )
+
+        # 1. Detail page
+        url_detail = reverse('super_admin:lead_detail', kwargs={'lead_id': lead.id})
+        resp_detail = self.client.get(url_detail)
+        self.assertEqual(resp_detail.status_code, 200)
+        self.assertContains(resp_detail, "Empty Lead Jewellery")
+        self.assertContains(resp_detail, "Unassigned")
+
+        # 2. Stage view
+        url_stage = reverse('super_admin:sales_stage_view', kwargs={'stage_key': 'leads'})
+        resp_stage = self.client.get(url_stage)
+        self.assertEqual(resp_stage.status_code, 200)
+        self.assertContains(resp_stage, "Empty Lead Jewellery")
+
+        # 3. Pipeline kanban
+        url_pipeline = reverse('super_admin:sales_pipeline')
+        resp_pipeline = self.client.get(url_pipeline)
+        self.assertEqual(resp_pipeline.status_code, 200)
+        self.assertContains(resp_pipeline, "Empty Lead Jewellery")
+
+

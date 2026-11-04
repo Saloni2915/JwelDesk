@@ -154,7 +154,7 @@
                             {% if lead.assigned_staff %}
                             <div class="d-flex align-items-center gap-1 small">
                                 <i class="bi bi-person-circle text-muted"></i>
-                                <span>{{ lead.assigned_staff.first_name|default:lead.assigned_staff.username }}</span>
+                                <span>{{ lead.assigned_staff_display }}</span>
                             </div>
                             {% else %}
                             <span class="badge bg-secondary bg-opacity-15 text-muted small">Unassigned</span>

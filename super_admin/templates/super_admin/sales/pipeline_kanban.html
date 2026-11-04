@@ -103,10 +103,10 @@
                             <div class="d-flex align-items-center gap-1">
                                 {% if lead.assigned_staff %}
                                 <span class="rounded-circle bg-warning bg-opacity-20 text-warning d-inline-flex align-items-center justify-content-center fw-bold" style="width: 22px; height: 22px; font-size: 0.65rem;">
-                                    {{ lead.assigned_staff.first_name|default:lead.assigned_staff.username|slice:":1"|upper }}
+                                    {{ lead.assigned_staff_initial }}
                                 </span>
-                                <span class="text-muted small text-truncate" style="max-width: 80px; font-size: 0.75rem;">
-                                    {{ lead.assigned_staff.first_name|default:lead.assigned_staff.username }}
+                                <span class="text-muted small text-truncate" style="max-width: 80px; font-size: 0.75rem;" title="{{ lead.assigned_staff_display }}">
+                                    {{ lead.assigned_staff_display }}
                                 </span>
                                 {% else %}
                                 <span class="rounded-circle bg-secondary bg-opacity-20 text-muted d-inline-flex align-items-center justify-content-center fw-bold" style="width: 22px; height: 22px; font-size: 0.65rem;">

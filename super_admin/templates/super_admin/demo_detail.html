@@ -135,7 +135,7 @@
                 <div class="col-sm-6">
                     <div class="sa-label small">Assigned Staff Specialist</div>
                     <div style="color: var(--sa-text-secondary);">
-                        {% if lead.assigned_staff %}{{ lead.assigned_staff.get_full_name|default:lead.assigned_staff.username }}{% else %}Unassigned{% endif %}
+                        {{ lead.assigned_staff_display }}
                     </div>
                 </div>
                 <div class="col-sm-6">

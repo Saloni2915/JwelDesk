@@ -316,7 +316,7 @@
                     <td>
                         {% if lead.assigned_staff %}
                         <span class="small fw-semibold" style="color: var(--sa-text-secondary);">
-                            <i class="bi bi-person me-1 text-gold"></i>{{ lead.assigned_staff.get_full_name|default:lead.assigned_staff.username }}
+                            <i class="bi bi-person me-1 text-gold"></i>{{ lead.assigned_staff_display }}
                         </span>
                         {% else %}
                         <span class="text-muted small">Unassigned</span>
